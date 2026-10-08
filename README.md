@@ -46,21 +46,38 @@
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phased delivery plan and open questions |
 | [`prototype/index.html`](prototype/index.html) | Clickable UI prototype (no build step: open in a browser) |
 
-## Try the prototype
+## Remote Env console (prototype)
+
+`prototype/index.html` is the developer console for **Remote Env**
+(`flux/remote-env`, planned at `remote.defxn.com`), driven by the
+implementation batch ledger. It shows what is behind the scenes and never
+presents a missing capability as working:
+
+- **Batch ledger**: dependency spine for batches 0–15. Select a batch to see
+  its deliverables, tests, completion gate and what upstream blocks it.
+  Includes the M0–M5 milestones. Snapshot: B0 and B1 complete, B2–B15 `notBuilt`.
+- **Status surface**: how `remote-env status` reports each capability, and how
+  `notBuilt`, `unavailable`, `refused` and measured zero stay distinct.
+- **Laws & done**: the laws that apply to every batch, the definition of done
+  and the ownership boundaries.
+- **Protocol sandbox**: an in-page append-only journal for project → module →
+  environment → cohort → rollout → feedback. It runs the hostile vectors
+  (mutable `latest`, duplicate mounts, stale heads, foreign heads, plaintext
+  secrets, out-of-view feedback). Every refusal names the failure, the missing
+  evidence and the remedy. Unlock always refuses as `notBuilt` (needs B7–B10).
+- **Authority order**: global resolver first, node power only narrows an allow,
+  shown as a full truth table.
+
+The sandbox is simulated. Records are unsigned, digests are SHA-256 of
+sorted-key JSON (not Flux CIDs), and the reason codes are illustrative. The
+frozen schemas and codes live in `flux/remote-env`.
 
 ```sh
-open prototype/index.html        # macOS
-xdg-open prototype/index.html    # Linux
+xdg-open prototype/index.html    # or: open prototype/index.html
 ```
 
-Everything in it runs in-memory: make commits, open a patch, collect
-review signatures, merge at quorum, roll the branch back, add a team
-member (watch the key epoch rotate), and flip privacy settings.
-
-## Screens
-
-| Merge waiting on delegate quorum | Ledger after a rollback |
+| Batch ledger | Protocol sandbox |
 |---|---|
-| ![patch](docs/screens/patch-quorum.png) | ![ledger](docs/screens/ledger-rollback.png) |
-| **Commit graph (detached commits kept)** | **P2P network view** |
-| ![commits](docs/screens/commits.png) | ![network](docs/screens/network.png) |
+| ![ledger](docs/screens/ledger.png) | ![sandbox](docs/screens/sandbox.png) |
+| **Authority order** | **Status surface** |
+| ![authority](docs/screens/authority.png) | ![status](docs/screens/status.png) |
