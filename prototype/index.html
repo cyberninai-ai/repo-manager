@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHARD Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090d; --panel:#0d1117; --panel2:#111823; --line:#1c2430; --text:#d7e1ea; --muted:#6b7a8c;
+  --cyan:#00e5ff; --green:#39ff88; --amber:#ffb020; --magenta:#ff2bd6; --red:#ff3b5c;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --display:'Space Grotesk',var(--mono);
+  --scan:.025;
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6f8; --panel:#ffffff; --panel2:#f0f3f6; --line:#d9dee5; --text:#0e141b; --muted:#5b6775;
+  --cyan:#007c8c; --green:#0a8a45; --amber:#9a6200; --magenta:#b00f95; --red:#c4183a; --scan:0; color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:13px/1.55 var(--mono);
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:48px 48px;background-attachment:fixed}
+body::after{content:"";pointer-events:none;position:fixed;inset:0;z-index:100;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,var(--scan)) 0 1px,transparent 1px 3px)}
+@media (prefers-reduced-motion: reduce){ body::after{display:none} *{animation:none!important;transition:none!important} }
+a{color:var(--cyan);text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:52px 1fr 30px;height:100vh}
+header.top{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(6px)}
+.logo{font:700 16px var(--display);letter-spacing:.22em;display:flex;align-items:center;gap:8px}
+.logo b{color:var(--cyan)}
+.crumb{color:var(--muted)} .crumb strong{color:var(--text)}
+.spacer{flex:1}
+.search{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:6px 10px;width:260px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav.side{border-right:1px solid var(--line);background:var(--panel);padding:12px 0;overflow:auto}
+nav.side h6{font:600 10px var(--display);letter-spacing:.18em;color:var(--muted);margin:16px 16px 6px;text-transform:uppercase}
+nav.side a{display:flex;align-items:center;gap:10px;padding:7px 16px;color:var(--text);border-left:2px solid transparent}
+nav.side a:hover{background:var(--panel2)}
+nav.side a.on{border-left-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 8%,transparent);color:var(--cyan)}
+nav.side .count{margin-left:auto;font-size:11px;color:var(--muted)}
+nav.side .count.hot{color:var(--amber)}
+main{overflow:auto;padding:20px 24px 40px}
+footer.status{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 14px;border-top:1px solid var(--line);background:var(--panel);font-size:11px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.ticker{flex:1;overflow:hidden;color:var(--cyan);opacity:.85}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+h1{font:600 20px var(--display);letter-spacing:.06em;margin:0 0 4px;text-transform:uppercase}
+h2{font:600 13px var(--display);letter-spacing:.14em;margin:0 0 10px;text-transform:uppercase;color:var(--muted)}
+.sub{color:var(--muted);margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))} .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1000px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.app{grid-template-columns:minmax(0,1fr)}header.top{gap:8px;padding:0 12px}.crumb .hide-sm,label[for=actAs]{display:none}#actAs{max-width:120px}nav.side{display:none}.g2,.g3,.g4{grid-template-columns:1fr}.search{display:none}main{padding:16px}}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn.primary{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 16px -8px var(--cyan)}
+.btn.primary:hover{background:color-mix(in srgb,var(--cyan) 14%,transparent)}
+.btn.danger{border-color:color-mix(in srgb,var(--red) 60%,var(--line));color:var(--red)}
+.btn.danger:hover{background:color-mix(in srgb,var(--red) 12%,transparent)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line);color:var(--muted);box-shadow:none;background:var(--panel2)}
+input.f,select.f,textarea.f{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:7px 10px;width:100%}
+input.f:focus,select.f:focus,textarea.f:focus,.btn:focus-visible{outline:none;border-color:var(--cyan);box-shadow:0 0 0 1px color-mix(in srgb,var(--cyan) 40%,transparent),0 0 18px -6px var(--cyan)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:3px;padding:1px 7px;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.c-cyan{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,transparent)}
+.c-green{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+.c-amber{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,transparent)}
+.c-mag{color:var(--magenta);border-color:color-mix(in srgb,var(--magenta) 45%,transparent)}
+.c-red{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+.muted{color:var(--muted)} .green{color:var(--green)} .amber{color:var(--amber)} .red{color:var(--red)} .mag{color:var(--magenta)} .cyan{color:var(--cyan)}
+.oid{color:var(--cyan);font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{font:600 10px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.dim td{opacity:.4} tr.dim td:first-child{box-shadow:inset 2px 0 var(--red)}
+.stat{font:600 26px var(--display)} .stat small{font:12px var(--mono);color:var(--muted);display:block;letter-spacing:.06em}
+.hex{display:inline-flex;gap:3px;font-size:15px;vertical-align:middle}
+.hex .on{color:var(--green);text-shadow:0 0 8px var(--green)} .hex .off{color:var(--muted)}
+.check{display:flex;gap:8px;padding:4px 0} .check .i{width:16px;text-align:center}
+.tree div{padding:5px 8px;border-bottom:1px solid var(--line);display:flex;gap:10px}
+.tree div:hover{background:var(--panel2)}
+pre.readme{white-space:pre-wrap;margin:0;color:var(--text)}
+.list-item{display:flex;gap:12px;align-items:flex-start;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.list-item:hover{background:var(--panel2)}
+.list-item .t{font-weight:500}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted)}
+.tabs button.on{color:var(--cyan);border-bottom-color:var(--cyan)}
+.timeline{position:relative;padding-left:22px}
+.timeline:before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:1px;background:var(--line)}
+.tl{position:relative;margin-bottom:10px}
+.tl:before{content:"⬢";position:absolute;left:-21px;top:9px;font-size:12px;color:var(--muted)}
+.tl.ok:before{color:var(--green)} .tl.pend:before{color:var(--amber)} .tl.rb:before{color:var(--red)} .tl.dim{opacity:.45}
+.tl.dim .card{border-left:2px solid var(--red)}
+.avatar{width:22px;height:22px;border-radius:4px;display:inline-grid;place-items:center;font:700 11px var(--display);color:#000}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--red);border-radius:6px;max-width:560px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal.info{border-top-color:var(--cyan)}
+.toasts{position:fixed;right:16px;left:auto;bottom:42px;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:8px;z-index:60}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--cyan);padding:10px 14px;border-radius:4px;max-width:360px;animation:slide .2s ease-out}
+.toast.g{border-left-color:var(--green)} .toast.a{border-left-color:var(--amber)} .toast.r{border-left-color:var(--red)}
+@keyframes slide{from{transform:translateX(20px);opacity:0}}
+.flash{animation:flash .6s ease-out}
+@keyframes flash{from{box-shadow:0 0 0 1px var(--green),0 0 30px var(--green)}}
+.diff{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px;font-size:12px;overflow:auto}
+.diff .add{color:var(--green)} .diff .del{color:var(--red)}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:6px 12px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;word-break:break-all}
+svg text{font-family:var(--mono)}
+.radio{display:flex;gap:10px;padding:10px;border:1px solid var(--line);border-radius:4px;margin-bottom:8px;cursor:pointer}
+.radio.on{border-color:var(--magenta);background:color-mix(in srgb,var(--magenta) 6%,transparent)}
+.switch{width:36px;height:20px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);position:relative;cursor:pointer;flex:none}
+.switch:after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:.15s}
+.switch.on{border-color:var(--magenta)} .switch.on:after{left:18px;background:var(--magenta);box-shadow:0 0 8px var(--magenta)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo"><span class="cyan">⬢</span>SH<b>/</b>ARD</div>
+    <div class="crumb"><span class="hide-sm">cyberninai / </span><strong>repo-manager</strong> <span class="chip c-mag" id="visChip">⬡ private</span></div>
+    <div class="spacer"></div>
+    <div class="search">⌘K  search code, patches, peers…</div>
+    <label class="muted" for="actAs">acting as</label>
+    <select id="actAs" class="f" style="width:auto"></select>
+    <button class="btn sm" id="themeBtn" title="Toggle theme">◐</button>
+  </header>
+  <nav class="side" id="nav"></nav>
+  <main id="main"></main>
+  <footer class="status">
+    <span><span class="dot"></span> node online</span>
+    <span id="sPeers"></span>
+    <span id="sEpoch"></span>
+    <span id="sMain"></span>
+    <span class="ticker" id="ticker"></span>
+  </footer>
+</div>
+<div class="toasts" id="toasts"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ======================= STATE ======================= */
+const hex = n => Array.from({length:n},()=>'0123456789abcdef'[Math.random()*16|0]).join('');
+const USERS = {
+  ada:{name:'ada', did:'did:key:z6MkAda7f…', color:'#00e5ff', role:['owner'], delegate:true},
+  lin:{name:'lin', did:'did:key:z6MkLin3c…', color:'#39ff88', role:['owner','maintainer'], delegate:true},
+  kai:{name:'kai', did:'did:key:z6MkKai91…', color:'#ffb020', role:['maintainer'], delegate:false},
+  jun:{name:'jun', did:'did:key:z6MkJun0d…', color:'#ff2bd6', role:['contributor'], delegate:false},
+};
+let lamport = 900, tick = 0;
+const S = {
+  me:'ada', view:'dashboard', patchSel:null,
+  threshold:2,
+  commits:{}, order:[],
+  main:null,
+  branches:{},            // name -> {owner, head}
+  ledger:[], patches:[], orgOps:[],
+  members:{ada:['owner'],lin:['owner','maintainer'],kai:['maintainer'],jun:['contributor']},
+  invited:{},
+  privacy:{visibility:'private', onion:false, blind:[{id:'blind-fra-02',host:'storage.hetzner-box',epoch:7}], },
+  epochs:[{n:5,reason:'repo created'},{n:6,reason:'device revoked: ada/phone-old'},{n:7,reason:'member added: jun'}],
+  seeds:[
+    {id:'seed1.cyberninai.dev',kind:'trusted',online:true,epoch:7},
+    {id:'seed2.cyberninai.dev',kind:'trusted',online:true,epoch:7},
+    {id:'lin/laptop',kind:'member',online:true,epoch:7},
+    {id:'kai/workstation',kind:'member',online:false,epoch:7},
+    {id:'blind-fra-02',kind:'blind',online:true,epoch:7},
+  ],
+  log:[]
+};
+const me = () => USERS[S.me] || {name:S.me,color:'#888',role:S.members[S.me]||[],delegate:false};
+const isDelegate = u => (USERS[u]||{}).delegate;
+const isOwner = u => (S.members[u]||[]).includes('owner');
+const epoch = () => S.epochs[S.epochs.length-1].n;
+
+function mkCommit(msg, author, parents, branch, extra={}){
+  const id = hex(40); lamport++; tick++;
+  S.commits[id] = {id,msg,author,parents,branch,t:tick,signed:true,...extra};
+  S.order.push(id); return id;
+}
+function seed(){
+  let c = mkCommit('genesis: shard identity doc','ada',[],'main');
+  c = mkCommit('Add libp2p transport (QUIC + Noise)','ada',[c],'main');
+  c = mkCommit('Namespaced refs + sigrefs','lin',[c],'main');
+  const base = c;
+  c = mkCommit('COB engine: op DAG + lamport replay','lin',[c],'main');
+  c = mkCommit('Release v0.8','ada',[c],'main');
+  S.main = c;
+  const ids = S.order.slice();
+  ids.forEach((id,i)=>{ if(i===0) return; S.ledger.push({seq:S.ledger.length+1,kind:i===ids.length-1?'tag':'merge',ref:'main',from:ids[i-1],to:id,
+    reason:S.commits[id].msg,sigs:['ada','lin'],status:'final',proposer:S.commits[id].author,lamport:lamport-ids.length+i}); });
+  let b = mkCommit('Peer sync over QUIC streams','kai',[S.main],'feat/quic-sync');
+  b = mkCommit('Retry fetch from alternate seeds','kai',[b],'feat/quic-sync');
+  S.branches['feat/quic-sync'] = {owner:'kai',head:b};
+  let d = mkCommit('Docs: blind seed setup','jun',[base],'docs/blind-seeds');
+  S.branches['docs/blind-seeds'] = {owner:'jun',head:d};
+  S.patches.push({id:12,title:'Peer sync over QUIC streams',author:'kai',branch:'feat/quic-sync',state:'open',
+    revisions:[{n:1,head:b}],reviews:[],attest:[],merge:null,body:'Replaces the TCP fetch path with QUIC streams; falls back to alternate seeds on failure.'});
+  S.patches.push({id:11,title:'Docs: blind seed setup',author:'jun',branch:'docs/blind-seeds',state:'open',
+    revisions:[{n:1,head:d}],reviews:[{by:'kai',rev:1,v:'comment',body:'Mention the epoch rotation caveat.'}],attest:[],merge:null,body:'How to add an untrusted storage node that only ever sees ciphertext.'});
+}
+seed();
+
+/* ======================= HELPERS ======================= */
+const $ = s => document.querySelector(s);
+const short = id => id ? id.slice(0,7) : '—';
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const av = u => `<span class="avatar" style="background:${(USERS[u]||{color:'#888'}).color}" title="@${u}">${u[0].toUpperCase()}</span>`;
+const quorum = (have,need) => `<span class="hex">${Array.from({length:need},(_,i)=>`<span class="${i<have?'on':'off'}">${i<have?'⬢':'⬡'}</span>`).join('')}</span> <span class="${have>=need?'green':'amber'}">${have}/${need}</span>`;
+function toast(msg,kind=''){ const t=document.createElement('div'); t.className='toast '+kind; t.innerHTML=msg; const box=$('#toasts'); box.appendChild(t); while(box.children.length>3) box.firstChild.remove(); setTimeout(()=>t.remove(),3500); }
+function gossip(msg){ S.log.unshift(msg); S.log.length=Math.min(S.log.length,30); $('#ticker').textContent = '» '+S.log.slice(0,4).join('   » '); }
+function modal(html,cls=''){ $('#modalRoot').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal ${cls}" role="dialog" aria-modal="true">${html}</div></div>`; }
+function closeModal(){ $('#modalRoot').innerHTML=''; }
+function ancestors(id){ const seen=new Set(); const st=[id]; while(st.length){const c=st.pop(); if(!c||seen.has(c))continue; seen.add(c); (S.commits[c]?.parents||[]).forEach(p=>st.push(p));} return seen; }
+function pendingCount(){ return S.ledger.filter(e=>e.status==='pending').length + S.orgOps.filter(o=>o.status==='pending').length; }
+
+/* ======================= NAV ======================= */
+const VIEWS = [
+  ['NODE',[['dashboard','◉','Dashboard'],['network','⌬','Network']]],
+  ['REPO',[['code','▤','Code'],['commits','⎇','Commits'],['patches','⇄','Patches'],['ledger','⛓','History ledger']]],
+  ['GOVERN',[['teams','⬡','Teams'],['privacy','⬢','Privacy & keys']]],
+];
+function renderNav(){
+  const openP = S.patches.filter(p=>p.state==='open').length, pend = pendingCount();
+  $('#nav').innerHTML = VIEWS.map(([h,items])=>`<h6>${h}</h6>`+items.map(([k,i,l])=>{
+    let c=''; if(k==='patches') c=`<span class="count">${openP}</span>`;
+    if(k==='ledger'&&S.ledger.some(e=>e.status==='pending')) c=`<span class="count hot">◇ sign</span>`;
+    if(k==='teams'&&S.orgOps.some(o=>o.status==='pending')) c=`<span class="count hot">◇ sign</span>`;
+    return `<a href="#${k}" class="${S.view===k?'on':''}"><span>${i}</span>${l}${c}</a>`}).join('')).join('')
+    + `<h6>INBOX</h6><a href="#ledger"><span>◇</span>Awaiting signatures<span class="count ${pend?'hot':''}">${pend}</span></a>`;
+  $('#sPeers').textContent = `peers ${S.seeds.filter(s=>s.online).length+7} · dht 1,284`;
+  $('#sEpoch').innerHTML = `<span class="mag">⬡ epoch ${epoch()}</span>`;
+  $('#sMain').innerHTML = `main → <span class="cyan">${short(S.main)}</span>`;
+  $('#visChip').innerHTML = {public:'◎ public',unlisted:'◌ unlisted',private:'⬡ private',sealed:'⬢ sealed'}[S.privacy.visibility];
+  $('#visChip').className = 'chip '+(S.privacy.visibility==='public'||S.privacy.visibility==='unlisted'?'c-cyan':'c-mag');
+}
+function render(){ renderNav(); (R[S.view]||R.dashboard)(); }
+window.addEventListener('hashchange',()=>{ S.view=(location.hash.slice(1)||'dashboard').split('/')[0]; const p=location.hash.split('/')[1]; S.patchSel=p?+p:null; render(); $('#main').scrollTop=0; });
+function initActAs(){ const sel=$('#actAs'); sel.innerHTML = Object.keys(S.members).map(u=>`<option value="${u}" ${u===S.me?'selected':''}>@${u}${isDelegate(u)?' ◆ delegate':''}</option>`).join(''); }
+$('#actAs').onchange = e => { S.me=e.target.value; toast(`Switched device identity → <b>@${S.me}</b> <span class="muted">${(USERS[S.me]||{}).did||''}</span>`); render(); };
+$('#themeBtn').onclick = () => { const r=document.documentElement; const cur=r.dataset.theme || 'dark'; r.dataset.theme = cur==='light'?'dark':'light'; };
+
+/* ======================= VIEWS ======================= */
+const R = {};
+R.dashboard = () => {
+  const pendL = S.ledger.filter(e=>e.status==='pending'), pendO = S.orgOps.filter(o=>o.status==='pending');
+  $('#main').innerHTML = `
+  <h1>Node console</h1><div class="sub">${me().did||''} · device <span class="cyan">12D3KooW${S.me}…</span> · local-first, no server</div>
+  <div class="grid g4">
+    <div class="card"><div class="stat">${S.seeds.filter(s=>s.online).length+7}<small>PEERS CONNECTED</small></div></div>
+    <div class="card"><div class="stat">3<small>REPOS SEEDING</small></div></div>
+    <div class="card"><div class="stat">${S.seeds.filter(s=>s.online).length}<small>REPLICAS OF THIS REPO</small></div></div>
+    <div class="card"><div class="stat mag">⬡ ${epoch()}<small>KEY EPOCH</small></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h2>Awaiting your signature</h2>
+      ${pendL.length+pendO.length===0?'<div class="muted">Nothing to sign. Quorum is happy.</div>':''}
+      ${pendL.map(e=>`<div class="list-item" onclick="location.hash='ledger'"><span class="amber">◇</span><div><div class="t">L${e.seq} · ${e.kind} ${e.ref}</div><div class="muted">${esc(e.reason)}</div></div><div class="spacer"></div>${quorum(e.sigs.length,S.threshold)}</div>`).join('')}
+      ${pendO.map(o=>`<div class="list-item" onclick="location.hash='teams'"><span class="amber">◇</span><div><div class="t">org · ${o.kind} @${o.who}</div><div class="muted">${o.kind==='add'?'role '+o.role:'remove member'}</div></div><div class="spacer"></div>${quorum(o.sigs.length,2)}</div>`).join('')}
+    </div>
+    <div class="card"><h2>Activity (gossip)</h2>
+      ${S.log.slice(0,8).map(l=>`<div class="muted" style="padding:3px 0">» ${esc(l)}</div>`).join('')||'<div class="muted">Do something: commit, review, merge…</div>'}
+    </div>
+  </div>
+  <div class="card"><h2>Your shards</h2>
+    <table><tr><th>Repo</th><th>Visibility</th><th>Delegates</th><th>Replicas</th><th>Canonical main</th></tr>
+    <tr style="cursor:pointer" onclick="location.hash='code'"><td><b>cyberninai/repo-manager</b><div class="muted">shd:z3vXk9Qp…</div></td><td><span class="chip c-mag">${S.privacy.visibility}</span></td><td>${av('ada')} ${av('lin')} ${quorum(2,2)}</td><td>${S.seeds.length}</td><td class="oid">${short(S.main)}</td></tr>
+    <tr><td><b>ada/dotfiles</b><div class="muted">shd:z9TqLm2a…</div></td><td><span class="chip c-cyan">public</span></td><td>${av('ada')} 1/1</td><td>12</td><td class="oid">a1f93c0</td></tr>
+    <tr><td><b>cyberninai/seed-ops</b><div class="muted">shd:z4Hh8Kw1…</div></td><td><span class="chip c-mag">sealed</span></td><td>${av('ada')} ${av('lin')} ${av('kai')} 2/3</td><td>3</td><td class="oid">77b0e21</td></tr>
+    </table></div>`;
+};
+
+R.code = () => {
+  const branchOpts = ['main',...Object.keys(S.branches)].map(b=>`<option>${b}</option>`).join('');
+  const myBranches = Object.entries(S.branches).filter(([n,b])=>b.owner===S.me);
+  $('#main').innerHTML = `
+  <h1>repo-manager</h1><div class="sub">shd:z3vXk9QpLr2WmT8… · forked from — · delegates ${av('ada')} ${av('lin')} threshold 2</div>
+  <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+    <div>
+      <div class="card" style="padding:0">
+        <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line)">
+          <span class="chip c-cyan">⎇ main</span><span class="muted">canonical · computed locally from ${S.threshold} delegate signatures</span>
+          <div class="spacer"></div><span class="oid">${short(S.main)}</span>
+        </div>
+        <div class="tree">
+          ${[['▸','crates/','node, git, p2p, cob'],['▸','docs/','architecture & flows'],['▸','ui/','local web console'],['·','Cargo.toml','workspace'],['·','README.md','overview'],['·','SHARD.yaml','repo identity doc']].map(([i,n,d])=>`<div><span class="muted">${i}</span><span class="${n.endsWith('/')?'cyan':''}">${n}</span><span class="spacer"></span><span class="muted">${d}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="card"><h2>README.md</h2><pre class="readme"># repo-manager
+Sovereign code mesh. Git underneath, libp2p in between,
+signatures everywhere.
+
+  git clone shard://z3vXk9QpLr2WmT8
+  shd patch open --base main</pre></div>
+    </div>
+    <div>
+      <div class="card"><h2>Commit as @${S.me}</h2>
+        <div class="muted" style="margin-bottom:8px">Writes only to <span class="cyan">your namespace</span>. Canonical main never changes from a commit.</div>
+        <label class="muted">branch</label>
+        <input class="f" id="cBranch" list="blist" value="${myBranches[0]?.[0]||'feat/'+S.me+'-work'}" style="margin:4px 0 8px">
+        <datalist id="blist">${branchOpts}</datalist>
+        <label class="muted">message</label>
+        <input class="f" id="cMsg" placeholder="Describe the change" style="margin:4px 0 10px">
+        <div class="row"><button class="btn primary" onclick="doCommit()">◆ Sign & commit</button><span class="muted">secret scan ✓</span></div>
+      </div>
+      <div class="card"><h2>Branches</h2>
+        ${Object.entries(S.branches).map(([n,b])=>{const p=S.patches.find(x=>x.branch===n&&x.state==='open');return `<div class="row" style="padding:5px 0;border-bottom:1px solid var(--line)">${av(b.owner)}<span>${n}</span><span class="spacer"></span><span class="oid">${short(b.head)}</span>
+          ${p?`<a href="#patches/${p.id}" class="chip c-cyan">#${p.id}</a>`:(b.owner===S.me?`<button class="btn sm" onclick="openPatchModal('${n}')">Open patch</button>`:'')}</div>`}).join('')}
+      </div>
+      <div class="card"><h2>Replication</h2>
+        <div>held by <b>${S.seeds.filter(s=>s.online).length}</b> online nodes · <span class="mag">${S.seeds.filter(s=>s.kind==='blind').length} blind</span></div>
+        <div class="muted">clone: <span class="cyan">shd clone shd:z3vXk9…</span></div>
+      </div>
+    </div>
+  </div>`;
+};
+function doCommit(){
+  const br = $('#cBranch').value.trim(), msg = $('#cMsg').value.trim();
+  if(!br||!msg) return toast('Branch and message required','a');
+  if(br==='main') return toast('Canonical <b>main</b> is quorum-controlled. Commit to a branch and open a patch.','r');
+  const b = S.branches[br];
+  if(b && b.owner!==S.me) return toast(`<b>${br}</b> lives in @${b.owner}'s namespace. Use your own branch.`,'r');
+  const parent = b ? b.head : S.main;
+  const id = mkCommit(msg,S.me,[parent],br);
+  S.branches[br] = {owner:S.me,head:id};
+  const p = S.patches.find(x=>x.branch===br&&x.state==='open');
+  if(p){ p.revisions.push({n:p.revisions.length+1,head:id}); gossip(`patch #${p.id} r${p.revisions.length} by @${S.me}`); toast(`Added revision <b>r${p.revisions.length}</b> to patch #${p.id}. Older approvals are now stale.`,'a'); }
+  gossip(`@${S.me} sigrefs → ${br}@${short(id)}`);
+  toast(`◆ Signed <span class="oid">${short(id)}</span> → ${br}. Announced to ${S.seeds.filter(s=>s.online).length} peers.`,'g');
+  render();
+}
+function openPatchModal(br){
+  modal(`<h1>Open patch</h1><div class="sub">${br} → main</div>
+    <label class="muted">title</label><input class="f" id="pTitle" value="${esc(S.commits[S.branches[br].head].msg)}" style="margin:4px 0 10px">
+    <label class="muted">description</label><textarea class="f" id="pBody" rows="3" style="margin:4px 0 12px"></textarea>
+    <div class="row"><button class="btn primary" onclick="doOpenPatch('${br}')">Open patch</button><button class="btn" onclick="closeModal()">Cancel</button></div>`,'info');
+}
+function doOpenPatch(br){
+  const id = Math.max(...S.patches.map(p=>p.id))+1;
+  S.patches.unshift({id,title:$('#pTitle').value||br,author:S.me,branch:br,state:'open',revisions:[{n:1,head:S.branches[br].head}],reviews:[],attest:[],merge:null,body:$('#pBody').value});
+  gossip(`cob patch/#${id} opened by @${S.me}`); closeModal(); toast(`Patch #${id} opened. Delegates notified via gossip.`,'g'); location.hash='patches/'+id;
+}
+
+/* ---------- commits graph ---------- */
+R.commits = () => {
+  const lanes = ['main',...new Set(S.order.map(id=>S.commits[id].branch).filter(b=>b!=='main'))];
+  const onMain = ancestors(S.main);
+  const live = new Set(onMain); Object.values(S.branches).forEach(b=>ancestors(b.head).forEach(x=>live.add(x)));
+  const rows = S.order.slice().reverse();
+  const RH=34, LW=22, X0=16, gw = X0+lanes.length*LW;
+  const pos={}; rows.forEach((id,i)=>pos[id]={x:X0+lanes.indexOf(S.commits[id].branch)*LW,y:i*RH+RH/2});
+  const laneColor = i => ['var(--cyan)','var(--green)','var(--amber)','var(--magenta)','#8aa4ff','#ff8a5c'][i%6];
+  let paths='', dots='';
+  rows.forEach(id=>{ const c=S.commits[id], p=pos[id];
+    c.parents.forEach(pp=>{ const q=pos[pp]; if(!q) return; const col=laneColor(lanes.indexOf(S.commits[id].branch));
+      paths += `<path d="M${p.x},${p.y} C${p.x},${p.y+RH*.7} ${q.x},${q.y-RH*.7} ${q.x},${q.y}" stroke="${col}" stroke-width="2" fill="none" opacity="${live.has(id)?1:.25}"/>`; });
+    const col = laneColor(lanes.indexOf(c.branch));
+    dots += `<circle cx="${p.x}" cy="${p.y}" r="${id===S.main?6:4.5}" fill="${live.has(id)?col:'var(--bg)'}" stroke="${col}" stroke-width="2"/>`; });
+  $('#main').innerHTML = `<h1>Commits</h1><div class="sub">Every node in the graph is signed by a device key. Dim nodes are detached from all refs (rolled back), kept forever.</div>
+  <div class="card" style="padding:0;overflow:auto">
+    <div class="row" style="padding:8px 12px;border-bottom:1px solid var(--line)">${lanes.map((l,i)=>`<span class="chip" style="color:${laneColor(i)};border-color:${laneColor(i)}">${l}</span>`).join('')}</div>
+    <div style="display:flex;min-width:640px">
+      <svg width="${gw}" height="${rows.length*RH}" style="flex:none">${paths}${dots}</svg>
+      <div style="flex:1">${rows.map(id=>{const c=S.commits[id];const tags=[]; if(id===S.main)tags.push('<span class="chip c-cyan">main</span>');
+        Object.entries(S.branches).forEach(([n,b])=>{if(b.head===id)tags.push(`<span class="chip">${n}</span>`)});
+        if(!live.has(id))tags.push('<span class="chip c-red">detached</span>');
+        return `<div class="row" style="height:${RH}px;flex-wrap:nowrap;padding-right:12px;border-bottom:1px solid var(--line);${live.has(id)?'':'opacity:.45'}">
+          <span class="green" title="verified device signature">◆</span><span class="oid">${short(id)}</span>${av(c.author)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.msg)}</span>${tags.join('')}<span class="spacer"></span><span class="muted">L${c.t}</span></div>`}).join('')}</div>
+    </div>
+  </div>`;
+};
+
+/* ---------- patches ---------- */
+function policy(p){
+  const rev = p.revisions.length;
+  const approvals = p.reviews.filter(r=>r.v==='approve'&&r.rev===rev&&r.by!==p.author);
+  const att = p.attest.find(a=>a.rev===rev);
+  return {rev,approvals,att,stale:p.reviews.filter(r=>r.v==='approve'&&r.rev<rev),
+    ok: approvals.length>=1 && att && att.result==='pass'};
+}
+R.patches = () => {
+  if(S.patchSel) return renderPatch(S.patches.find(p=>p.id===S.patchSel));
+  $('#main').innerHTML = `<h1>Patches</h1><div class="sub">Pull requests as signed CRDT objects that replicate with the repo and work offline.</div>
+  <div class="card" style="padding:0 12px">${S.patches.map(p=>{const pol=policy(p);return `<div class="list-item" onclick="location.hash='patches/${p.id}'">
+    <span class="${p.state==='merged'?'mag':p.state==='open'?'green':'muted'}">${p.state==='merged'?'⬢':'⇄'}</span>
+    <div style="flex:1"><div class="t">${esc(p.title)} <span class="muted">#${p.id}</span></div>
+    <div class="muted">${p.branch} · by @${p.author} · r${p.revisions.length}${p.merge&&p.merge.status==='pending'?' · <span class="amber">merge pending signatures</span>':''}</div></div>
+    ${p.state==='open'?`<span class="chip ${pol.ok?'c-green':'c-amber'}">${pol.ok?'ready':'checks'}</span>`:`<span class="chip c-mag">${p.state}</span>`}</div>`}).join('')}</div>`;
+};
+function renderPatch(p){
+  if(!p){ location.hash='patches'; return; }
+  const pol = policy(p), head = p.revisions.at(-1).head, dlg = isDelegate(S.me);
+  const merged = p.state==='merged', mEntry = p.merge && S.ledger.find(e=>e.seq===p.merge.seq);
+  const reviewed = p.reviews.some(r=>r.by===S.me&&r.rev===pol.rev&&r.v==='approve');
+  $('#main').innerHTML = `<a href="#patches" class="muted">← patches</a>
+  <h1 style="margin-top:8px">${esc(p.title)} <span class="muted">#${p.id}</span></h1>
+  <div class="sub"><span class="chip ${merged?'c-mag':'c-green'}">${p.state}</span> @${p.author} wants to merge <span class="cyan">${p.branch}</span> → <span class="cyan">main</span> · cob patch/${hex(7)}</div>
+  <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+  <div>
+    <div class="card"><div class="row" style="margin-bottom:8px">${av(p.author)}<b>@${p.author}</b><span class="muted">opened</span></div>${esc(p.body||'No description.')}</div>
+    <div class="card"><h2>Revisions</h2>${p.revisions.map(r=>`<div class="row" style="padding:4px 0"><span class="chip ${r.n===pol.rev?'c-cyan':''}">r${r.n}</span><span class="oid">${short(r.head)}</span><span>${esc(S.commits[r.head].msg)}</span></div>`).join('')}
+      <div class="diff" style="margin-top:10px"><div class="muted">crates/p2p/src/fetch.rs</div><div class="del">- let conn = tcp::connect(addr).await?;</div><div class="add">+ let conn = quic::open_stream(&amp;peer, FETCH_PROTO).await</div><div class="add">+     .or_else(|_| seeds.next_alternate())?;</div></div>
+      ${p.author===S.me&&!merged?`<div class="row" style="margin-top:10px"><button class="btn sm" onclick="pushRevision(${p.id})">Push new revision</button><span class="muted">simulates a git push to ${p.branch}</span></div>`:''}
+    </div>
+    <div class="card"><h2>Reviews</h2>
+      ${p.reviews.map(r=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line);${r.rev<pol.rev?'opacity:.5':''}">${av(r.by)}<b>@${r.by}</b>
+        <span class="chip ${r.v==='approve'?'c-green':r.v==='changes'?'c-red':''}">${r.v}</span><span class="muted">on r${r.rev}${r.rev<pol.rev?' (stale)':''}</span><span>${esc(r.body||'')}</span><span class="spacer"></span><span class="green">◆</span></div>`).join('')||'<div class="muted">No reviews yet.</div>'}
+      ${!merged?`<div class="row" style="margin-top:10px"><input class="f" id="rvBody" placeholder="Comment (signed, works offline)" style="flex:1">
+        <button class="btn" onclick="review(${p.id},'comment')">Comment</button>
+        <button class="btn primary" ${p.author===S.me||reviewed?'disabled':''} onclick="review(${p.id},'approve')">◆ Approve r${pol.rev}</button>
+        <button class="btn danger" ${p.author===S.me?'disabled':''} onclick="review(${p.id},'changes')">Request changes</button></div>
+        ${p.author===S.me?'<div class="muted" style="margin-top:6px">Authors cannot approve their own patch. Switch identity (top right).</div>':''}`:''}
+    </div>
+  </div>
+  <div>
+    <div class="card"><h2>Checks (attestations)</h2>
+      ${pol.att?`<div class="check"><span class="i ${pol.att.result==='pass'?'green':'amber'}">${pol.att.result==='pass'?'◆':'◌'}</span><div>ci/test on r${pol.rev}<div class="muted">${pol.att.result==='pass'?'pass · signed by runner-ams-1 · 84s':'running on runner-ams-1…'}</div></div></div>`
+        :`<div class="muted">No attestation for r${pol.rev}.</div>`}
+      ${!merged&&!pol.att?`<button class="btn sm" style="margin-top:8px" onclick="runCI(${p.id})">Request run from trusted runners</button>`:''}
+    </div>
+    <div class="card" id="mergeCard"><h2>Merge</h2>
+      <div class="check"><span class="i ${pol.approvals.length?'green':'amber'}">${pol.approvals.length?'✓':'◇'}</span>1 approval on latest revision (${pol.approvals.length})</div>
+      <div class="check"><span class="i ${pol.att&&pol.att.result==='pass'?'green':'amber'}">${pol.att&&pol.att.result==='pass'?'✓':'◇'}</span>attestation ci/test</div>
+      <div class="check"><span class="i green">✓</span>all commits signed</div>
+      <div class="check"><span class="i ${mEntry&&mEntry.status==='final'?'green':'amber'}">${mEntry&&mEntry.status==='final'?'✓':'◇'}</span>delegate signatures&nbsp;${quorum(mEntry?mEntry.sigs.length:0,S.threshold)}</div>
+      ${mEntry?`<div class="muted" style="margin:6px 0">ledger L${mEntry.seq}: ${mEntry.sigs.map(s=>'@'+s+' ◆').join(' ')}</div>`:''}
+      ${merged?`<div class="green" style="margin-top:8px">⬢ Merged at L${p.merge.seq} → <span class="oid">${short(mEntry.to)}</span></div>`
+       : mEntry ? (mEntry.status==='pending'
+          ? (dlg && !mEntry.sigs.includes(S.me) ? `<button class="btn primary" onclick="cosign(${mEntry.seq})">◆ Co-sign merge as @${S.me}</button>`
+             : `<div class="amber">Waiting for ${S.threshold-mEntry.sigs.length} more delegate signature(s).${dlg?'':' Only delegates can sign.'}</div><div class="muted">Try: switch identity to ${['ada','lin'].filter(u=>!mEntry.sigs.includes(u)).map(u=>'@'+u).join(', ')}</div>`)
+          : '')
+       : `<div class="row" style="margin-top:10px"><select class="f" id="mStrat" style="width:auto"><option value="squash">squash</option><option value="merge">merge commit</option></select>
+          <button class="btn primary" ${pol.ok&&dlg?'':'disabled'} onclick="proposeMerge(${p.id})">◆ Merge</button></div>
+          ${!dlg?'<div class="muted" style="margin-top:6px">Only repo delegates (@ada, @lin) can sign merges.</div>':''}`}
+    </div>
+  </div></div>`;
+}
+function pushRevision(id){ const p=S.patches.find(x=>x.id===id); const h=mkCommit('Address review: '+['handle relay fallback','tighten timeouts','add metrics'][p.revisions.length%3],S.me,[S.branches[p.branch].head],p.branch);
+  S.branches[p.branch].head=h; p.revisions.push({n:p.revisions.length+1,head:h}); gossip(`patch #${id} r${p.revisions.length} by @${S.me}`);
+  toast(`Revision r${p.revisions.length} pushed. Approvals and attestations on older revisions are stale.`,'a'); render(); }
+function review(id,v){ const p=S.patches.find(x=>x.id===id); const body=$('#rvBody').value;
+  if(v==='comment'&&!body) return toast('Write a comment first','a');
+  p.reviews.push({by:S.me,rev:p.revisions.length,v,body}); lamport++; gossip(`@${S.me} ${v} patch #${id} r${p.revisions.length}`);
+  toast(`◆ Review signed as @${S.me}`, v==='approve'?'g':v==='changes'?'r':''); render(); }
+function runCI(id){ const p=S.patches.find(x=>x.id===id), rev=p.revisions.length; const a={rev,result:'running'}; p.attest.push(a); gossip(`runner-ams-1 fetching patch #${id} r${rev}`); render();
+  setTimeout(()=>{ a.result='pass'; gossip(`attest ci/test pass @${short(p.revisions[rev-1].head)} by runner-ams-1`); toast('◆ Attestation <b>ci/test: pass</b> signed by runner-ams-1','g'); if(S.view==='patches')render(); },1600); }
+function proposeMerge(id){
+  const p=S.patches.find(x=>x.id===id), strat=$('#mStrat').value, head=p.revisions.at(-1).head;
+  const parents = strat==='merge'?[S.main,head]:[S.main];
+  const c = mkCommit(`${strat==='squash'?'Squash':'Merge'} patch #${id}: ${p.title}`,S.me,parents,'main',{pending:true});
+  const e = {seq:S.ledger.length+1,kind:'merge',ref:'main',from:S.main,to:c,reason:`Merge patch #${id}: ${p.title} (${strat})`,sigs:[S.me],status:'pending',proposer:S.me,patch:id,lamport:++lamport};
+  S.ledger.push(e); p.merge={seq:e.seq}; gossip(`ledger L${e.seq} proposed by @${S.me} (1/${S.threshold})`);
+  toast(`Merge proposed as ledger <b>L${e.seq}</b>. Needs ${S.threshold-1} more delegate signature.`,'a'); maybeFinalize(e); render();
+}
+function cosign(seq){
+  const e=S.ledger.find(x=>x.seq===seq); if(!isDelegate(S.me)||e.sigs.includes(S.me)) return;
+  if(e.kind==='merge' && e.from!==S.main){ e.status='superseded'; toast(`L${seq} is stale: main moved since it was proposed. Re-propose.`,'r'); const p=S.patches.find(x=>x.id===e.patch); if(p)p.merge=null; render(); return; }
+  e.sigs.push(S.me); gossip(`@${S.me} co-signed L${seq} (${e.sigs.length}/${S.threshold})`);
+  toast(`◆ Verified deterministic result <span class="oid">${short(e.to)}</span> and co-signed L${seq}`,'g'); maybeFinalize(e); render();
+}
+function maybeFinalize(e){
+  if(e.sigs.length<S.threshold) return;
+  e.status='final';
+  if(e.kind==='merge'){ S.main=e.to; delete S.commits[e.to].pending; const p=S.patches.find(x=>x.id===e.patch); if(p){p.state='merged'; delete S.branches[p.branch];} }
+  if(e.kind==='rollback'){ S.main=e.to; S.ledger.forEach(x=>{ if(x.seq>e.target && x.seq<e.seq && x.status==='final' && !x.rolledBy){ x.rolledBy=e.seq; } }); }
+  if(e.kind==='restore'){ S.main=e.to; S.ledger.forEach(x=>{ if(x.rolledBy===e.target) delete x.rolledBy; }); const rb=S.ledger.find(x=>x.seq===e.target); if(rb) rb.restoredBy=e.seq; }
+  gossip(`QUORUM L${e.seq} ${e.kind} → main@${short(S.main)}`);
+  toast(`⬢ Quorum reached. Canonical <b>main</b> → <span class="oid">${short(S.main)}</span> on every node that receives L${e.seq}.`,'g');
+}
+
+/* ---------- ledger ---------- */
+R.ledger = () => {
+  const L = S.ledger.slice().reverse();
+  $('#main').innerHTML = `<h1>History ledger</h1><div class="sub">Every canonical ref move: who, why, with whose signatures. Append-only and hash-chained. A rollback adds an entry and never erases one.</div>
+  <div class="row" style="margin-bottom:14px"><span class="chip c-cyan">main → ${short(S.main)}</span><span class="muted">threshold ${S.threshold} of 2 delegates</span><span class="spacer"></span><a class="btn sm" href="#commits">⎇ commit graph</a></div>
+  <div class="timeline">${L.map(e=>{
+    const cls = e.status==='pending'?'pend':e.rolledBy?'dim':e.kind==='rollback'?'rb':e.status==='superseded'?'dim':'ok';
+    const kc = {merge:'c-green',tag:'c-cyan',rollback:'c-red',restore:'c-amber'}[e.kind]||'';
+    const canRollTo = e.status==='final' && !e.rolledBy && e.to!==S.main && ancestors(S.main).has(e.to) && isDelegate(S.me);
+    return `<div class="tl ${cls}"><div class="card" style="margin-bottom:0;padding:12px 14px">
+      <div class="row"><b>L${e.seq}</b><span class="chip ${kc}">${e.kind}</span><span class="oid">${short(e.from)} → ${short(e.to)}</span><span>${esc(e.reason)}</span>
+      <span class="spacer"></span>${quorum(e.sigs.length,S.threshold)}</div>
+      <div class="row muted" style="margin-top:6px">signed by ${e.sigs.map(s=>'@'+s+' <span class="green">◆</span>').join(' ')} · lamport ${e.lamport}
+        ${e.rolledBy?`<span class="red">· rolled back by L${e.rolledBy}</span>`:''}${e.restoredBy?`<span class="amber">· restored by L${e.restoredBy}</span>`:''}${e.status==='superseded'?'<span class="red">· superseded</span>':''}
+        <span class="spacer"></span>
+        ${e.status==='pending'&&isDelegate(S.me)&&!e.sigs.includes(S.me)?`<button class="btn sm primary" onclick="cosign(${e.seq})">◆ Co-sign</button>`:''}
+        ${e.status==='pending'&&(!isDelegate(S.me)||e.sigs.includes(S.me))?`<span class="amber">awaiting ${['ada','lin'].filter(u=>!e.sigs.includes(u)).map(u=>'@'+u).join(', ')}</span>`:''}
+        ${canRollTo?`<button class="btn sm danger" onclick="rollbackModal(${e.seq})">↶ Roll back main to here</button>`:''}
+        ${e.kind==='rollback'&&e.status==='final'&&!e.restoredBy&&isDelegate(S.me)&&!S.ledger.some(x=>x.kind==='restore'&&x.target===e.seq&&x.status==='pending')?`<button class="btn sm" onclick="restore(${e.seq})">↷ Restore forward</button>`:''}
+      </div></div></div>`}).join('')}</div>`;
+};
+function rollbackModal(seq){
+  const t=S.ledger.find(x=>x.seq===seq); const lost=S.ledger.filter(x=>x.seq>seq&&x.status==='final'&&!x.rolledBy&&x.kind!=='rollback');
+  modal(`<h1 class="red">Roll back main</h1><div class="sub">main <span class="oid">${short(S.main)}</span> → <span class="oid">${short(t.to)}</span> (state after L${seq})</div>
+  <h2>What happens</h2><div>These entries become <b>detached</b> from main (kept, dimmed, restorable):</div>
+  <div style="margin:8px 0 12px">${lost.map(x=>`<div class="muted">· L${x.seq} ${x.kind}: ${esc(x.reason)}</div>`).join('')}</div>
+  <div>Open branches get a one-click rebase helper. Needs ${S.threshold} delegate signatures.</div>
+  <h2 style="margin-top:14px">What can't be undone</h2><div class="muted">Nothing. Rollback is itself a ledger entry; "Restore forward" reverses it.</div>
+  <label class="muted" style="display:block;margin-top:14px">reason (required, signed into the ledger)</label>
+  <input class="f" id="rbReason" placeholder="e.g. v0.9 corrupts peer table" style="margin:4px 0 14px">
+  <div class="row"><button class="btn danger" onclick="doRollback(${seq})">◆ Sign rollback proposal</button><button class="btn" onclick="closeModal()">Cancel</button></div>`);
+}
+function doRollback(seq){
+  const reason=$('#rbReason').value.trim(); if(!reason) return toast('A reason is required','a');
+  const t=S.ledger.find(x=>x.seq===seq);
+  const e={seq:S.ledger.length+1,kind:'rollback',ref:'main',from:S.main,to:t.to,target:seq,reason:`Rollback to L${seq}: ${reason}`,sigs:[S.me],status:'pending',proposer:S.me,lamport:++lamport};
+  S.ledger.push(e); closeModal(); gossip(`ledger L${e.seq} rollback proposed by @${S.me}`); toast(`Rollback proposed as L${e.seq}. Needs co-signature.`,'a'); maybeFinalize(e); render();
+}
+function restore(seq){
+  const rb=S.ledger.find(x=>x.seq===seq);
+  const e={seq:S.ledger.length+1,kind:'restore',ref:'main',from:S.main,to:rb.from,target:seq,reason:`Restore forward, undo rollback L${seq}`,sigs:[S.me],status:'pending',proposer:S.me,lamport:++lamport};
+  S.ledger.push(e); gossip(`ledger L${e.seq} restore proposed by @${S.me}`); toast(`Restore proposed as L${e.seq}.`,'a'); maybeFinalize(e); render();
+}
+
+/* ---------- teams ---------- */
+R.teams = () => {
+  const owners = Object.keys(S.members).filter(isOwner);
+  $('#main').innerHTML = `<h1>Org · cyberninai</h1><div class="sub">Membership is a signed org document. Changes need 2-of ${owners.length} owners. No admin panel can bypass it.</div>
+  <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+  <div>
+    ${S.orgOps.filter(o=>o.status==='pending').map(o=>`<div class="card" style="border-color:var(--amber)"><div class="row"><span class="amber">◇</span><b>Pending: ${o.kind==='add'?'add':'remove'} @${o.who}</b>${o.kind==='add'?`<span class="chip">${o.role}</span>`:''}
+      <span class="spacer"></span>${quorum(o.sigs.length,2)}
+      ${isOwner(S.me)&&!o.sigs.includes(S.me)?`<button class="btn sm primary" onclick="signOrg(${o.id})">◆ Co-sign</button>`:`<span class="muted">awaiting ${owners.filter(u=>!o.sigs.includes(u)).map(u=>'@'+u).join(', ')}</span>`}</div></div>`).join('')}
+    <div class="card"><h2>Members</h2><table><tr><th>Member</th><th>Roles</th><th>Teams</th><th>Devices</th><th></th></tr>
+      ${Object.entries(S.members).map(([u,r])=>`<tr><td>${av(u)} <b>@${u}</b><div class="muted">${(USERS[u]||{}).did||'did:key:z6Mk'+u+'…'}</div></td>
+        <td>${r.map(x=>`<span class="chip ${x==='owner'?'c-mag':x==='maintainer'?'c-cyan':''}">${x}</span>`).join(' ')}</td>
+        <td class="muted">${r.includes('maintainer')||r.includes('owner')?'maintainers':''}${u==='kai'?', infra':''}</td><td class="muted">${u==='ada'?3:u==='lin'?2:1}</td>
+        <td>${isOwner(S.me)&&u!==S.me?`<button class="btn sm danger" onclick="removeModal('${u}')">Remove</button>`:''}</td></tr>`).join('')}</table></div>
+    <div class="card"><h2>Capabilities</h2><table><tr><th>Role</th><th>Read private</th><th>Push</th><th>Review</th><th>Sign merges</th><th>Change policy</th></tr>
+      ${[['reader',1,0,0,0,0],['contributor',1,1,1,0,0],['maintainer',1,1,1,1,0],['owner',1,1,1,1,1]].map(([r,...c])=>`<tr><td>${r}</td>${c.map(x=>`<td class="${x?'green':'muted'}">${x?'✓':'·'}</td>`).join('')}</tr>`).join('')}</table></div>
+  </div>
+  <div>
+    <div class="card"><h2>Invite member</h2>
+      <label class="muted">handle or did:key</label><input class="f" id="invWho" placeholder="@rae" style="margin:4px 0 8px">
+      <label class="muted">role</label><select class="f" id="invRole" style="margin:4px 0 12px"><option>contributor</option><option>maintainer</option><option>reader</option><option>owner</option></select>
+      <button class="btn primary" ${isOwner(S.me)?'':'disabled'} onclick="proposeOrg('add')">◆ Sign invite (1/2)</button>
+      ${isOwner(S.me)?'':'<div class="muted" style="margin-top:6px">Only owners can propose membership changes.</div>'}
+      <div class="muted" style="margin-top:10px">On quorum: invite delivered, member's devices join the MLS group for private repos, key epoch rotates.</div>
+    </div>
+    <div class="card"><h2>Policy</h2><dl class="kv"><dt>change_members</dt><dd>2-of owners</dd><dt>repo delegates</dt><dd>org#maintainers</dd><dt>org seeds</dt><dd>seed1, seed2.cyberninai.dev</dd></dl></div>
+  </div></div>`;
+};
+let orgId=1;
+function proposeOrg(kind,who,role){
+  who = who || $('#invWho').value.trim().replace(/^@/,''); role = role || ($('#invRole')||{}).value;
+  if(!who) return toast('Enter a handle','a');
+  if(kind==='add'&&S.members[who]) return toast(`@${who} is already a member`,'a');
+  const o={id:orgId++,kind,who,role,sigs:[S.me],status:'pending'}; S.orgOps.push(o);
+  gossip(`org op ${kind} @${who} signed by @${S.me} (1/2)`); toast(`Proposal signed. Needs one more owner.`,'a'); closeModal(); render();
+}
+function removeModal(u){
+  modal(`<h1 class="red">Remove @${u}</h1><div class="sub">org cyberninai · requires 2 owner signatures</div>
+  <h2>What happens</h2><div>@${u} loses read access to <b>new</b> commits in private repos. Key epoch ${epoch()} → ${epoch()+1}. Their delegate signatures stop counting for future ledger entries.</div>
+  <h2 style="margin-top:14px">What can't be undone</h2><div class="amber">Code and issues @${u} already synced stay on their devices. P2P cannot recall data. Rotate any secrets they could read.</div>
+  <label class="muted" style="display:block;margin-top:14px">type <b>${u}</b> to confirm</label><input class="f" id="rmConfirm" style="margin:4px 0 14px">
+  <div class="row"><button class="btn danger" onclick="if($('#rmConfirm').value==='${u}')proposeOrg('remove','${u}');else toast('Type the handle to confirm','a')">◆ Sign removal (1/2)</button><button class="btn" onclick="closeModal()">Cancel</button></div>`);
+}
+function signOrg(id){
+  const o=S.orgOps.find(x=>x.id===id); o.sigs.push(S.me);
+  if(o.sigs.length>=2){ o.status='final';
+    if(o.kind==='add'){ S.members[o.who]=[o.role]; }
+    else { delete S.members[o.who]; if(USERS[o.who]) USERS[o.who].delegate=false; }
+    S.epochs.push({n:epoch()+1,reason:`member ${o.kind==='add'?'added':'removed'}: ${o.who}`});
+    S.seeds.forEach(s=>s.epoch = s.online ? epoch() : s.epoch);
+    gossip(`org quorum: ${o.kind} @${o.who}; MLS epoch → ${epoch()}`);
+    toast(`⬢ Quorum. @${o.who} ${o.kind==='add'?'added':'removed'}. MLS key epoch rotated → <span class="mag">${epoch()}</span>.`,'g'); initActAs();
+  } else toast('Co-signed','g');
+  render();
+}
+
+/* ---------- privacy ---------- */
+const VIS = {
+  public:['◎','Public','Announced on the DHT; anyone can fetch. Plaintext on seeds.'],
+  unlisted:['◌','Unlisted','Not announced. Anyone holding the repo ID can fetch.'],
+  private:['⬡','Private','Blinded rendezvous. Only authorized PeerIds can fetch. Encrypted on blind seeds.'],
+  sealed:['⬢','Sealed','Private + ref names and metadata encrypted, onion transport preferred.'],
+};
+R.privacy = () => {
+  const P=S.privacy;
+  $('#main').innerHTML = `<h1>Privacy & keys</h1><div class="sub">Access control is enforced by cryptography and transport authentication, not by a server's goodwill.</div>
+  <div class="grid g2">
+    <div class="card"><h2>Visibility</h2>
+      ${Object.entries(VIS).map(([k,[i,l,d]])=>`<div class="radio ${P.visibility===k?'on':''}" onclick="setVis('${k}')"><span class="${k==='public'||k==='unlisted'?'cyan':'mag'}" style="font-size:16px">${i}</span><div><b>${l}</b><div class="muted">${d}</div></div></div>`).join('')}
+    </div>
+    <div>
+      <div class="card"><h2>Transport</h2>
+        <div class="row"><div class="switch ${P.onion?'on':''}" role="switch" tabindex="0" aria-checked="${P.onion}" onclick="S.privacy.onion=!S.privacy.onion;gossip('transport policy: onion '+(S.privacy.onion?'required':'optional'));render()"></div>
+        <div><b>Require onion routing</b><div class="muted">Peers must reach this repo over Tor/Arti. Hides IPs, slower sync.</div></div></div>
+        <div class="row" style="margin-top:12px"><div class="switch on"></div><div><b>Noise XX on every stream</b><div class="muted">Always on. PeerId = device key.</div></div></div>
+      </div>
+      <div class="card"><h2>Key epochs (MLS)</h2>
+        ${S.epochs.slice().reverse().map((e,i)=>`<div class="row" style="padding:4px 0"><span class="${i===0?'mag':'muted'}">⬡ ${e.n}</span><span class="${i===0?'':'muted'}">${esc(e.reason)}</span>${i===0?'<span class="chip c-mag">current</span>':''}</div>`).join('')}
+        <button class="btn sm" style="margin-top:8px" onclick="S.epochs.push({n:epoch()+1,reason:'manual rotation by @'+S.me});S.seeds.forEach(s=>{if(s.online)s.epoch=epoch()});gossip('MLS commit → epoch '+epoch());toast('Key epoch rotated → '+epoch(),'g');render()">Rotate now</button>
+      </div>
+    </div>
+  </div>
+  <div class="card"><h2>Replication map</h2><table><tr><th>Node</th><th>Kind</th><th>Sees</th><th>Status</th><th>Epoch</th></tr>
+    ${S.seeds.map(s=>`<tr><td><b>${s.id}</b></td><td><span class="chip ${s.kind==='blind'?'c-mag':s.kind==='trusted'?'c-cyan':''}">${s.kind}</span></td>
+      <td class="muted">${s.kind==='blind'?'ciphertext only (size, timing)':'plaintext over Noise'}</td>
+      <td>${s.online?'<span class="green">● online</span>':'<span class="muted">○ offline</span>'}</td>
+      <td class="${s.epoch===epoch()?'mag':'amber'}">${s.epoch}${s.epoch!==epoch()?' (catch-up on reconnect)':''}</td></tr>`).join('')}</table>
+    <div class="row" style="margin-top:12px"><input class="f" id="blindHost" placeholder="/dns4/storage.example/udp/4001/quic-v1" style="flex:1"><button class="btn" onclick="addBlind()">+ Add blind seed</button></div>
+  </div>`;
+};
+function setVis(k){
+  const cur=S.privacy.visibility; if(k===cur) return;
+  const widening = ['sealed','private','unlisted','public'].indexOf(k) > ['sealed','private','unlisted','public'].indexOf(cur);
+  modal(`<h1 class="${widening?'red':'cyan'}">${VIS[cur][1]} → ${VIS[k][1]}</h1><div class="sub">Repo policy change · ledger kind=policy · needs ${S.threshold} delegate signatures</div>
+    <h2>What happens</h2><div>${VIS[k][2]}</div>
+    <h2 style="margin-top:14px">What can't be undone</h2><div class="${widening?'red':'amber'}">${widening?'Once announced publicly, copies can exist anywhere. Narrowing later will not unpublish them.':'Existing clones held by people who already had access are not erased. Only future commits are protected.'}</div>
+    <div class="row" style="margin-top:16px"><button class="btn ${widening?'danger':'primary'}" onclick="S.privacy.visibility='${k}';S.ledger.push({seq:S.ledger.length+1,kind:'policy',ref:'shard/id',from:S.main,to:S.main,reason:'visibility ${cur} → ${k}',sigs:['ada','lin'],status:'final',lamport:++lamport});gossip('policy: visibility → ${k}');closeModal();toast('Visibility → ${k} (co-signed by delegates)','g');render()">◆ Sign change</button><button class="btn" onclick="closeModal()">Cancel</button></div>`, widening?'':'info');
+}
+function addBlind(){ const h=$('#blindHost').value.trim()||'blind-'+hex(4); S.seeds.push({id:h.split('/')[2]||h,kind:'blind',online:true,epoch:epoch()}); gossip('blind seed added: '+h); toast('Blind seed added. It receives only AEAD-encrypted bundles.','g'); render(); }
+
+/* ---------- network ---------- */
+let netTimer=null;
+R.network = () => {
+  const nodes=[{id:'you',label:'@'+S.me+' (you)',k:'me'},...S.seeds.map(s=>({id:s.id,label:s.id,k:s.kind,on:s.online})),
+    {id:'relay-nyc',label:'relay-nyc',k:'relay',on:true},{id:'p1',label:'12D3…f9a',k:'stranger',on:true},{id:'p2',label:'12D3…02c',k:'stranger',on:true},{id:'p3',label:'12D3…b71',k:'stranger',on:true}];
+  const W=760,H=420,cx=W/2,cy=H/2;
+  nodes.forEach((n,i)=>{ if(i===0){n.x=cx;n.y=cy;return;} const a=(i/(nodes.length-1))*Math.PI*2; const r=n.k==='stranger'?185:140; n.x=cx+Math.cos(a)*r*1.5; n.y=cy+Math.sin(a)*r; });
+  const col=k=>({me:'var(--cyan)',trusted:'var(--cyan)',member:'var(--green)',blind:'var(--magenta)',relay:'var(--amber)',stranger:'var(--muted)'}[k]);
+  $('#main').innerHTML = `<h1>Network</h1><div class="sub">libp2p · QUIC + Noise · Kademlia DHT · GossipSub topic shard/repo/&lt;blinded-id&gt; · relay v2 + DCUtR hole punching</div>
+  <div class="card" style="padding:8px"><svg id="net" viewBox="0 0 ${W} ${H}" width="100%" style="max-height:440px">
+    ${nodes.slice(1).map(n=>`<line x1="${cx}" y1="${cy}" x2="${n.x}" y2="${n.y}" stroke="${col(n.k)}" stroke-opacity="${n.on===false?.12:.35}" stroke-dasharray="${n.k==='relay'?'4 4':''}"/>`).join('')}
+    ${nodes.map(n=>`<g><circle cx="${n.x}" cy="${n.y}" r="${n.k==='me'?14:9}" fill="var(--panel)" stroke="${col(n.k)}" stroke-width="2" opacity="${n.on===false?.35:1}"/>
+      <text x="${n.x}" y="${n.y+(n.k==='me'?30:24)}" text-anchor="middle" font-size="11" fill="var(--text)" opacity="${n.on===false?.4:.9}">${n.label}</text></g>`).join('')}
+    <g id="pkts"></g></svg>
+    <div class="row" style="padding:8px">${[['cyan','trusted seed / you'],['green','member device'],['mag','blind seed'],['amber','relay'],['muted','DHT peer (no repo access)']].map(([c,l])=>`<span class="${c}">●</span><span class="muted">${l}</span>`).join(' ')}</div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><h2>Reachability</h2><dl class="kv"><dt>AutoNAT</dt><dd class="amber">behind NAT</dd><dt>Relay</dt><dd>relay-nyc (reserved)</dd><dt>Hole punch</dt><dd class="green">DCUtR ok → 4 direct</dd></dl></div>
+    <div class="card"><h2>DHT</h2><dl class="kv"><dt>routing table</dt><dd>1,284 peers</dd><dt>provider recs</dt><dd>3 public · 2 blinded</dd><dt>next re-announce</dt><dd>11m</dd></dl></div>
+    <div class="card"><h2>Seeding policy</h2><dl class="kv"><dt>default</dt><dd>block</dd><dt>scope</dt><dd>followed + delegates</dd><dt>rate limit</dt><dd>unknown peers 64 KiB/s</dd></dl></div>
+  </div>`;
+  clearInterval(netTimer);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const live=nodes.filter(n=>n.on!==false&&n.k!=='stranger'&&n.k!=='me');
+  netTimer=setInterval(()=>{ if(S.view!=='network'){clearInterval(netTimer);return;}
+    const g=$('#pkts'); if(!g) return; const t=live[Math.random()*live.length|0]; const out=Math.random()<.5;
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r',3.5); c.setAttribute('fill',col(t.k)); g.appendChild(c);
+    const [a,b]=out?[nodes[0],t]:[t,nodes[0]]; const t0=performance.now();
+    (function step(now){ const k=Math.min(1,(now-t0)/900); c.setAttribute('cx',a.x+(b.x-a.x)*k); c.setAttribute('cy',a.y+(b.y-a.y)*k); if(k<1)requestAnimationFrame(step); else c.remove(); })(t0);
+  },500);
+};
+
+/* ======================= BOOT ======================= */
+gossip('connected to seed1.cyberninai.dev via QUIC'); gossip('dht bootstrap: 1,284 peers');
+initActAs();
+S.view=(location.hash.slice(1)||'dashboard').split('/')[0]; S.patchSel=+location.hash.split('/')[1]||null;
+render();
+</script>
+</body>
+</html>
