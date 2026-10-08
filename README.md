@@ -46,38 +46,48 @@
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phased delivery plan and open questions |
 | [`prototype/index.html`](prototype/index.html) | Clickable UI prototype (no build step: open in a browser) |
 
-## Remote Env console (prototype)
+## Remote Env product design (prototype)
 
-`prototype/index.html` is the developer console for **Remote Env**
-(`flux/remote-env`, planned at `remote.defxn.com`), driven by the
-implementation batch ledger. It shows what is behind the scenes and never
-presents a missing capability as working:
+`prototype/index.html` is the **UI design** for Remote Env's developer and
+tester product surfaces. The engineering team builds the product; this file
+shows what people see and how each flow feels. Layout and patterns follow
+GitHub (project header with tabs, Releases-style versions, Issues-style
+feedback, audit log, settings sidebar) so the product feels familiar from
+the first visit.
 
-- **Batch ledger**: dependency spine for batches 0–15. Select a batch to see
-  its deliverables, tests, completion gate and what upstream blocks it.
-  Includes the M0–M5 milestones. Snapshot: B0 and B1 complete, B2–B15 `notBuilt`.
-- **Status surface**: how `remote-env status` reports each capability, and how
-  `notBuilt`, `unavailable`, `refused` and measured zero stay distinct.
-- **Laws & done**: the laws that apply to every batch, the definition of done
-  and the ownership boundaries.
-- **Protocol sandbox**: an in-page append-only journal for project → module →
-  environment → cohort → rollout → feedback. It runs the hostile vectors
-  (mutable `latest`, duplicate mounts, stale heads, foreign heads, plaintext
-  secrets, out-of-view feedback). Every refusal names the failure, the missing
-  evidence and the remedy. Unlock always refuses as `notBuilt` (needs B7–B10).
-- **Authority order**: global resolver first, node power only narrows an allow,
-  shown as a full truth table.
+**Developer view**
+- **Home**: projects and "needs your attention".
+- **Overview**: live environments, open feedback, README, about sidebar.
+- **Modules**: version list per module; publish, deprecate, revoke.
+- **Environments**: each version pins exact module versions; side-by-side
+  diff against the previous version; "New version" composer.
+- **Rollouts**: release, pause, resume, roll back (reason required), close
+  (typed confirm), with a timeline.
+- **Testers**: tester groups, invite flow, "is this person in the group?" check.
+- **Feedback**: Issues-style list and detail. The tester's original report is
+  locked, corrections are added instead of edits, and every report is tied to
+  the exact version tested.
+- **Activity**: permanent audit log with filters.
+- **Settings**: people & access, encryption keys, close project.
 
-The sandbox is simulated. Records are unsigned, digests are SHA-256 of
-sorted-key JSON (not Flux CIDs), and the reason codes are illustrative. The
-frozen schemas and codes live in `flux/remote-env`.
+**Tester view**: inbox (active, paused and revoked invites), "confirm it's you"
+unlock steps, run screen with the exact version bar, report-an-issue form.
+
+**Design system** (`#/design`): status labels, refusal message pattern
+(What happened / What's needed / How to fix + error code), confirmation
+rules, color roles, and a table mapping UI words to protocol terms for the
+dev handoff.
+
+Data and actions are mocked in the page. Light and dark themes are included.
 
 ```sh
 xdg-open prototype/index.html    # or: open prototype/index.html
 ```
 
-| Batch ledger | Protocol sandbox |
+| Project overview | Rollouts |
 |---|---|
-| ![ledger](docs/screens/ledger.png) | ![sandbox](docs/screens/sandbox.png) |
-| **Authority order** | **Status surface** |
-| ![authority](docs/screens/authority.png) | ![status](docs/screens/status.png) |
+| ![overview](docs/screens/overview.png) | ![rollouts](docs/screens/rollouts.png) |
+| **Feedback** | **Tester run screen** |
+| ![feedback](docs/screens/feedback-item.png) | ![tester](docs/screens/tester-run.png) |
+| **Refusal message** | **Design system** |
+| ![refusal](docs/screens/publish-refusal.png) | ![design](docs/screens/design.png) |

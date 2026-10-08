@@ -3,702 +3,779 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Remote Env Console</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<title>Remote Env</title>
 <style>
 :root{
-  --bg:#07090d; --panel:#0d1117; --panel2:#111823; --line:#1c2430; --text:#d7e1ea; --muted:#6b7a8c;
-  --cyan:#00e5ff; --green:#39ff88; --amber:#ffb020; --magenta:#ff2bd6; --red:#ff3b5c;
-  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  --display:'Space Grotesk',var(--mono);
-  --scan:.025; color-scheme:dark;
+  --bg:#0d1117; --bg2:#010409; --panel:#161b22; --subtle:#1c2129; --hover:#1f242c; --border:#30363d; --border2:#21262d;
+  --text:#e6edf3; --muted:#848d97; --link:#4493f8; --accent:#2f81f7; --accent-fg:#ffffff;
+  --green:#3fb950; --green-bg:rgba(46,160,67,.15); --yellow:#d29922; --yellow-bg:rgba(187,128,9,.15);
+  --red:#f85149; --red-bg:rgba(248,81,73,.1); --purple:#a371f7; --purple-bg:rgba(163,113,247,.15);
+  --gray-bg:rgba(110,118,129,.15); --btn:#21262d; --btn-hover:#30363d; --primary:#238636; --primary-hover:#2ea043;
+  --shadow:0 8px 24px rgba(1,4,9,.75);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
 }
 :root[data-theme="light"]{
-  --bg:#f4f6f8; --panel:#ffffff; --panel2:#f0f3f6; --line:#d9dee5; --text:#0e141b; --muted:#5b6775;
-  --cyan:#007c8c; --green:#0a8a45; --amber:#9a6200; --magenta:#b00f95; --red:#c4183a; --scan:0; color-scheme:light;
+  --bg:#ffffff; --bg2:#f6f8fa; --panel:#ffffff; --subtle:#f6f8fa; --hover:#f3f4f6; --border:#d0d7de; --border2:#d8dee4;
+  --text:#1f2328; --muted:#656d76; --link:#0969da; --accent:#0969da;
+  --green:#1a7f37; --green-bg:#dafbe1; --yellow:#9a6700; --yellow-bg:#fff8c5; --red:#d1242f; --red-bg:#ffebe9; --purple:#8250df; --purple-bg:#fbefff;
+  --gray-bg:#eaeef2; --btn:#f6f8fa; --btn-hover:#eef1f4; --primary:#1f883d; --primary-hover:#1a7f37; --shadow:0 8px 24px rgba(140,149,159,.2);
+  color-scheme:light;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--text);font:13px/1.55 var(--mono);
-  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
-  background-size:48px 48px;background-attachment:fixed}
-body::after{content:"";pointer-events:none;position:fixed;inset:0;z-index:100;
-  background:repeating-linear-gradient(0deg,rgba(255,255,255,var(--scan)) 0 1px,transparent 1px 3px)}
-@media (prefers-reduced-motion: reduce){ body::after{display:none} *{animation:none!important;transition:none!important} }
-a{color:var(--cyan);text-decoration:none}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 var(--sans)}
+a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
 button,input,select,textarea{font:inherit;color:inherit}
-code{color:var(--cyan)}
-.app{display:grid;grid-template-columns:236px minmax(0,1fr);grid-template-rows:52px auto 1fr 30px;height:100vh}
-header.top{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel)}
-.logo{font:700 15px var(--display);letter-spacing:.2em;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.logo b{color:var(--cyan)}
-.crumb{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.crumb strong{color:var(--text)}
-.spacer{flex:1}
-.banner{grid-column:1/-1;display:flex;gap:10px;align-items:center;padding:6px 16px;font-size:12px;border-bottom:1px solid color-mix(in srgb,var(--amber) 40%,var(--line));background:color-mix(in srgb,var(--amber) 7%,var(--panel));color:var(--amber)}
-nav.side{border-right:1px solid var(--line);background:var(--panel);padding:8px 0;overflow:auto}
-nav.side h6{font:600 10px var(--display);letter-spacing:.18em;color:var(--muted);margin:16px 16px 6px;text-transform:uppercase}
-nav.side a{display:flex;align-items:center;gap:10px;padding:7px 16px;color:var(--text);border-left:2px solid transparent}
-nav.side a:hover{background:var(--panel2)}
-nav.side a.on{border-left-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 8%,transparent);color:var(--cyan)}
-nav.side .count{margin-left:auto;font-size:11px;color:var(--muted)}
-main{overflow:auto;padding:20px 24px 40px;min-width:0}
-footer.status{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 14px;border-top:1px solid var(--line);background:var(--panel);font-size:11px;color:var(--muted);overflow:hidden;white-space:nowrap}
-h1{font:600 20px var(--display);letter-spacing:.06em;margin:0 0 4px;text-transform:uppercase}
-h2{font:600 12px var(--display);letter-spacing:.14em;margin:0 0 10px;text-transform:uppercase;color:var(--muted)}
-h3{font:600 14px var(--display);margin:0 0 6px}
-.sub{color:var(--muted);margin-bottom:18px;max-width:900px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:16px;min-width:0}
-.grid{display:grid;gap:16px}
-.g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.split{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
-@media (max-width:1100px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:760px){.app{grid-template-columns:minmax(0,1fr)}nav.side{display:none}.g2,.g4{grid-template-columns:minmax(0,1fr)}main{padding:16px}.crumb,.hide-sm{display:none}header.top{padding:0 12px}}
-.show-sm{display:none}
-@media (max-width:760px){.show-sm{display:inline}}
-.mnav{display:none;gap:6px;overflow-x:auto;margin:-4px 0 14px;padding-bottom:4px}
-@media (max-width:760px){.mnav{display:flex}}
-.btn{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer;white-space:nowrap}
-.btn:hover{border-color:var(--cyan);color:var(--cyan)}
-.btn.primary{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 16px -8px var(--cyan)}
-.btn.danger{border-color:color-mix(in srgb,var(--red) 60%,var(--line));color:var(--red)}
-.btn.sm{padding:3px 8px;font-size:12px}
-.btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line);color:var(--muted);box-shadow:none}
-input.f,select.f,textarea.f{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 9px;width:100%;min-width:0}
-input.f:focus,select.f:focus,textarea.f:focus,.btn:focus-visible{outline:none;border-color:var(--cyan);box-shadow:0 0 0 1px color-mix(in srgb,var(--cyan) 40%,transparent),0 0 18px -6px var(--cyan)}
-label.l{display:block;color:var(--muted);font-size:11px;margin:8px 0 3px;letter-spacing:.04em}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:3px;padding:0 7px;font-size:11px;letter-spacing:.04em;white-space:nowrap}
-.s-complete{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent)}
-.s-notBuilt{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,transparent)}
-.s-sim{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,transparent)}
-.muted{color:var(--muted)} .green{color:var(--green)} .amber{color:var(--amber)} .red{color:var(--red)} .mag{color:var(--magenta)} .cyan{color:var(--cyan)}
-.oid{color:var(--cyan);font-size:12px;word-break:break-all}
+code,.mono{font-family:var(--mono);font-size:12px}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:text-bottom}
+.muted{color:var(--muted)} .green{color:var(--green)} .yellow{color:var(--yellow)} .red{color:var(--red)} .purple{color:var(--purple)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap} .spacer{flex:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* header */
+.gh-header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:12px 24px;display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--text);white-space:nowrap}
+.logo .mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#2f81f7,#a371f7);display:grid;place-items:center;color:#fff;font-size:15px}
+.search{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--muted);width:280px;background:var(--bg)}
+.search kbd{margin-left:auto;border:1px solid var(--border);border-radius:4px;padding:0 5px;font-size:11px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.seg button{background:var(--btn);border:0;padding:4px 12px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:var(--panel);color:var(--text);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+.iconbtn{background:transparent;border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer;color:var(--muted);position:relative}
+.iconbtn:hover{color:var(--text);background:var(--hover)}
+.iconbtn .dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--bg2)}
+.avatar{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;font-weight:600;color:#fff;flex:none;vertical-align:middle}
+.avatar.lg{width:32px;height:32px;font-size:13px}
+
+/* repo header */
+.repohead{background:var(--bg2);border-bottom:1px solid var(--border2);padding:16px 24px 0}
+.crumb{font-size:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.crumb a{color:var(--link)} .crumb b a{font-weight:600}
+.tabs{display:flex;gap:4px;margin-top:16px;overflow-x:auto;scrollbar-width:none}
+.tabs a{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--text);border-bottom:2px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0}
+.tabs a:hover{text-decoration:none;background:var(--hover)}
+.tabs a.on{border-bottom-color:#fd8c73;font-weight:600}
+.tabs a svg{color:var(--muted)}
+.counter{background:var(--gray-bg);border-radius:20px;padding:0 7px;font-size:12px;font-weight:500;line-height:18px}
+
+/* layout */
+.wrap{max-width:1280px;margin:0 auto;padding:24px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 296px;gap:24px}
+@media (max-width:960px){.cols{grid-template-columns:minmax(0,1fr)}.search{display:none}}
+@media (max-width:640px){.wrap{padding:16px}.gh-header{padding:10px 16px;gap:10px}.repohead{padding:12px 16px 0}.hide-sm{display:none!important}.crumb{font-size:17px}}
+h1{font-size:24px;font-weight:600;margin:0} h2{font-size:16px;font-weight:600;margin:0 0 12px} h3{font-size:14px;font-weight:600;margin:0}
+.sub{color:var(--muted);margin:4px 0 16px}
+
+/* boxes */
+.box{border:1px solid var(--border);border-radius:6px;background:var(--panel);margin-bottom:16px;min-width:0}
+.box-h{padding:12px 16px;background:var(--subtle);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.box-b{padding:16px}
+.box-row{padding:12px 16px;border-top:1px solid var(--border2);display:flex;gap:12px;align-items:flex-start}
+.box-row:first-child{border-top:0}
+.box-row.click{cursor:pointer} .box-row.click:hover{background:var(--hover)}
+.side h3{font-size:14px;margin:0 0 8px} .side section{padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--border2)}
+.side section:last-child{border:0}
+.side .kv{display:flex;gap:8px;align-items:center;color:var(--muted);margin:6px 0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--btn);border:1px solid var(--border);border-radius:6px;padding:5px 14px;font-weight:500;cursor:pointer;line-height:20px;white-space:nowrap;color:var(--text)}
+.btn:hover{background:var(--btn-hover);text-decoration:none}
+.btn.primary{background:var(--primary);border-color:rgba(240,246,252,.1);color:#fff}
+.btn.primary:hover{background:var(--primary-hover)}
+.btn.danger{color:var(--red)} .btn.danger:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.sm{padding:2px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,.iconbtn:focus-visible,a:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 12px;width:100%;line-height:20px}
+.input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,129,247,.3)}
+label.f{display:block;font-weight:600;margin:14px 0 6px}
+.hint{color:var(--muted);font-size:12px;margin-top:4px}
+
+/* labels */
+.state{display:inline-flex;align-items:center;gap:4px;border-radius:2em;padding:2px 10px;font-size:12px;font-weight:500;line-height:18px;white-space:nowrap;border:1px solid transparent}
+.st-active{background:var(--green-bg);color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
+.st-paused{background:var(--yellow-bg);color:var(--yellow);border-color:color-mix(in srgb,var(--yellow) 40%,transparent)}
+.st-draft,.st-closed,.st-unavailable{background:var(--gray-bg);color:var(--muted);border-color:var(--border)}
+.st-deprecated{background:var(--yellow-bg);color:var(--yellow)}
+.st-revoked{background:var(--red-bg);color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
+.st-notbuilt{background:transparent;color:var(--muted);border:1px dashed var(--border)}
+.st-open{background:var(--primary);color:#fff} .st-triaged{background:var(--purple);color:#fff} .st-done{background:var(--purple-bg);color:var(--purple)} .st-wontfix{background:var(--gray-bg);color:var(--muted)}
+.lbl{display:inline-block;border-radius:2em;padding:0 7px;font-size:12px;font-weight:500;line-height:18px;border:1px solid transparent}
+.l-bug{background:rgba(248,81,73,.15);color:#ff7b72;border-color:rgba(248,81,73,.4)}
+.l-ui{background:rgba(56,139,253,.15);color:#79c0ff;border-color:rgba(56,139,253,.4)}
+.l-praise{background:rgba(46,160,67,.15);color:#56d364;border-color:rgba(46,160,67,.4)}
+.l-perf{background:rgba(187,128,9,.15);color:#e3b341;border-color:rgba(187,128,9,.4)}
+:root[data-theme="light"] .l-bug{color:#a40e26} :root[data-theme="light"] .l-ui{color:#0550ae} :root[data-theme="light"] .l-praise{color:#116329} :root[data-theme="light"] .l-perf{color:#7d4e00}
+.ver{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:2em;font-size:12px;line-height:18px;overflow:hidden;white-space:nowrap;vertical-align:middle}
+.ver b{padding:0 7px;background:var(--subtle);font-weight:500;border-right:1px solid var(--border)} .ver span{padding:0 7px;font-family:var(--mono)}
+.fp{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--subtle);border:1px solid var(--border2);border-radius:6px;padding:0 6px;cursor:pointer}
+.fp:hover{color:var(--link);border-color:var(--border)}
+.fp svg.i{width:12px;height:12px}
+
+/* tables */
 table{width:100%;border-collapse:collapse}
-th{font:600 10px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
-td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{text-align:left;font-weight:600;padding:8px 16px;background:var(--subtle);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}
+td{padding:10px 16px;border-top:1px solid var(--border2);vertical-align:middle}
+tr:first-child td{border-top:0}
 .tbl{overflow-x:auto}
-ul.l{margin:0;padding-left:18px} ul.l li{margin:3px 0}
-.term{background:#030507;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-size:12.5px;overflow-x:auto;white-space:pre;color:#c9d6e2}
-:root[data-theme="light"] .term{background:#0b1016}
-.term .g{color:#39ff88} .term .a{color:#ffb020} .term .c{color:#00e5ff} .term .m{color:#6b7a8c}
-.refusal{border:1px solid color-mix(in srgb,var(--red) 50%,var(--line));border-left:3px solid var(--red);border-radius:4px;padding:10px 12px;margin-bottom:10px;background:color-mix(in srgb,var(--red) 5%,var(--panel))}
-.refusal.nb{border-color:color-mix(in srgb,var(--amber) 50%,var(--line));border-left-color:var(--amber);background:color-mix(in srgb,var(--amber) 5%,var(--panel))}
-.refusal.ok{border-color:color-mix(in srgb,var(--green) 45%,var(--line));border-left-color:var(--green);background:color-mix(in srgb,var(--green) 5%,var(--panel))}
-.refusal dl{display:grid;grid-template-columns:120px minmax(0,1fr);gap:3px 10px;margin:6px 0 0}
-.refusal dt{color:var(--muted)} .refusal dd{margin:0}
-@media (max-width:760px){.refusal dl{grid-template-columns:minmax(0,1fr)} .refusal dd{margin-bottom:4px}}
-.step{border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px;background:var(--panel)}
-.step .num{font:700 11px var(--display);color:var(--muted);letter-spacing:.14em}
-.jrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;padding:7px 4px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}
-.jrow:hover{background:var(--panel2)}
-pre.json{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px;font-size:12px;overflow:auto;max-height:340px;margin:8px 0 0;white-space:pre-wrap;word-break:break-all}
-.ttable td,.ttable th{text-align:center} .ttable td:first-child,.ttable th:first-child{text-align:left}
-.cell{display:inline-block;padding:2px 8px;border-radius:3px;border:1px solid var(--line);font-size:11.5px;white-space:nowrap}
-.cell.ok{color:var(--green);border-color:color-mix(in srgb,var(--green) 50%,transparent);background:color-mix(in srgb,var(--green) 8%,transparent)}
-.cell.no{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
-.cell.na{color:var(--muted)}
-.cell.nb{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 40%,transparent)}
-tr.hl td{background:color-mix(in srgb,var(--cyan) 7%,transparent)}
-.tile{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--panel)}
-.tile .v{font:600 20px var(--display)} .tile .k{font-size:11px;color:var(--muted);letter-spacing:.06em}
-.pipe{display:flex;align-items:stretch;overflow-x:auto;padding-bottom:6px}
-.pipe .st{flex:1 0 160px;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--panel)}
-.pipe .ar{flex:0 0 22px;display:grid;place-items:center;color:var(--muted)}
-svg text{font-family:var(--mono)}
-.node{cursor:pointer}
-.node:hover rect:first-child,.node:focus rect:first-child{stroke-width:2;stroke:var(--cyan)}
-.node:focus{outline:none}
-.toasts{position:fixed;right:16px;bottom:42px;display:flex;flex-direction:column;gap:8px;z-index:60;max-width:calc(100vw - 32px)}
-.toast{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--cyan);padding:9px 13px;border-radius:4px;max-width:380px;animation:slide .2s ease-out}
-.toast.g{border-left-color:var(--green)} .toast.r{border-left-color:var(--red)}
-@keyframes slide{from{transform:translateX(20px);opacity:0}}
-.law{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}
-.law .i{color:var(--cyan);font:700 12px var(--display)}
-.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
-.bar>i{display:block;height:100%;background:var(--green)}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--hover)}
+.diff-add td{background:rgba(46,160,67,.12)} .diff-del td{background:rgba(248,81,73,.1)} .diff-chg td{background:rgba(187,128,9,.1)}
+.diff-add td:first-child{box-shadow:inset 3px 0 var(--green)} .diff-del td:first-child{box-shadow:inset 3px 0 var(--red)} .diff-chg td:first-child{box-shadow:inset 3px 0 var(--yellow)}
+
+/* callouts */
+.callout{border:1px solid;border-radius:6px;padding:12px 16px;margin:12px 0;display:flex;gap:12px}
+.callout.err{background:var(--red-bg);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
+.callout.warn{background:var(--yellow-bg);border-color:color-mix(in srgb,var(--yellow) 40%,transparent)}
+.callout.info{background:rgba(56,139,253,.1);border-color:rgba(56,139,253,.4)}
+.callout.ok{background:var(--green-bg);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
+.callout .ic{padding-top:2px} .callout.err .ic{color:var(--red)} .callout.warn .ic{color:var(--yellow)} .callout.info .ic{color:var(--link)} .callout.ok .ic{color:var(--green)}
+.callout dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 12px;margin:8px 0 0}
+.callout dt{color:var(--muted)} .callout dd{margin:0}
+@media (max-width:640px){.callout dl{grid-template-columns:minmax(0,1fr)}.callout dd{margin-bottom:6px}}
+.code{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* timeline */
+.tl{position:relative;padding-left:40px}
+.tl:before{content:"";position:absolute;left:15px;top:0;bottom:0;width:2px;background:var(--border2)}
+.tl-item{position:relative;padding:8px 0}
+.tl-badge{position:absolute;left:-40px;top:6px;width:32px;height:32px;border-radius:50%;background:var(--subtle);border:2px solid var(--bg);display:grid;place-items:center;color:var(--muted)}
+.tl-badge.g{background:var(--primary);color:#fff} .tl-badge.y{background:#9e6a03;color:#fff} .tl-badge.r{background:#da3633;color:#fff} .tl-badge.p{background:#8957e5;color:#fff}
+.comment{border:1px solid var(--border);border-radius:6px;background:var(--panel);margin:8px 0}
+.comment .ch{padding:8px 16px;background:var(--subtle);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.comment .cb{padding:12px 16px}
+.comment.author{border-color:color-mix(in srgb,var(--accent) 50%,var(--border))} .comment.author .ch{background:rgba(56,139,253,.08)}
+
+/* misc */
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty svg.i{width:24px;height:24px;margin-bottom:8px}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filters .input{flex:1;min-width:200px}
+.statbig{display:flex;gap:12px;align-items:center}
+.pill-tabs{display:flex;gap:16px} .pill-tabs a{color:var(--muted)} .pill-tabs a.on{color:var(--text);font-weight:600}
+.envcard{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.livedot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.livedot.p{background:var(--yellow);box-shadow:0 0 0 3px var(--yellow-bg)} .livedot.c{background:var(--muted);box-shadow:none}
+.bar{height:8px;border-radius:4px;background:var(--gray-bg);overflow:hidden} .bar i{display:block;height:100%;background:var(--green)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px} .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.swatch{height:36px;border-radius:6px;border:1px solid var(--border)}
+
+/* modal + toast */
+.overlay{position:fixed;inset:0;background:rgba(1,4,9,.6);display:grid;place-items:start center;padding:72px 16px 16px;z-index:50;overflow:auto}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:560px;box-shadow:var(--shadow)}
+.modal.wide{max-width:760px}
+.modal-h{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.modal-b{padding:16px;max-height:calc(100vh - 220px);overflow:auto}
+.modal-f{padding:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.toasts{position:fixed;left:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:60;max-width:calc(100vw - 32px)}
+.toast{background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);padding:10px 14px;display:flex;gap:8px;align-items:center;max-width:420px;animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(8px);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.steps{list-style:none;margin:0;padding:0} .steps li{display:flex;gap:10px;align-items:center;padding:8px 0;color:var(--muted)} .steps li.done{color:var(--text)} .steps li.done svg{color:var(--green)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:sp .8s linear infinite;flex:none} @keyframes sp{to{transform:rotate(360deg)}}
+.runbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:var(--subtle);border:1px solid var(--border);border-radius:6px 6px 0 0}
+.stage{height:420px;border:1px solid var(--border);border-top:0;border-radius:0 0 6px 6px;background:#05070b;position:relative;overflow:hidden}
+.stage canvas{width:100%;height:100%;display:block}
+.dropdown{position:relative} .menu{position:absolute;right:0;top:calc(100% + 4px);background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);min-width:220px;z-index:40;padding:4px}
+.menu a,.menu button{display:flex;gap:8px;align-items:center;width:100%;padding:6px 10px;border-radius:6px;color:var(--text);background:none;border:0;cursor:pointer;text-align:left}
+.menu a:hover,.menu button:hover{background:var(--hover);text-decoration:none}
+.menu hr{border:0;border-top:1px solid var(--border2);margin:4px 0}
+footer.foot{border-top:1px solid var(--border2);margin-top:24px;padding:24px;color:var(--muted);font-size:12px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="logo"><span class="cyan">⬢</span>REMOTE<b>/</b>ENV</div>
-    <div class="crumb">flux/remote-env · <strong>remote.defxn.com</strong> <span class="chip s-notBuilt">planned · not deployed</span></div>
-    <div class="spacer"></div>
-    <button class="btn sm" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
-  </header>
-  <div class="banner"><b>◇ DESIGN PROTOTYPE</b><span class="show-sm">ledger snapshot · simulated sandbox</span><span class="hide-sm">Batch status is a snapshot of the implementation batch ledger (2026-10-08). The protocol sandbox runs in this page only: no engine, no signing, no resolver, no network.</span></div>
-  <nav class="side" id="nav"></nav>
-  <main id="main"></main>
-  <footer class="status" id="status"></footer>
-</div>
-<div class="toasts" id="toasts"></div>
+<div id="app"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="modal"></div>
 
 <script>
-/* =====================================================================
-   LEDGER SNAPSHOT
-   Source of truth: the Remote Env implementation batch ledger. This page
-   renders a dated snapshot and never upgrades a status on its own.
-   ===================================================================== */
-const SNAPSHOT_DATE = '2026-10-08';
-const B = [
- {n:0,name:'Product boundary and repo routing',status:'complete',deps:[],
-  note:'flux/remote-env is the sole product root. The signed workspace registry routes product terms there with no declared runtime dependencies; nine tests prove the read-only status/CLI/import contract. Remaining workspace:doctor errors are pre-existing stale paths that do not name remote-env. No gateway, resolver, preview host, UI, Caddy route, DNS record or deployment was added.',
-  deliver:['Create flux/remote-env as the single product implementation root','Register in .workspace/workspace-manifest.json with only its real dependency closure; regenerate routing; run workspace:doctor','Package metadata, test command, CLI entrypoint, explicit notBuilt status surface','Record ownership boundaries with Bundle, Registry, Repo, Domains, Flux Access Resolver and node-power resolver','Reserve remote.defxn.com only as a planned control-plane product (no Caddy, DNS or deployment claims)'],
-  tests:['Workspace routing selects remote-env for its product and protocol terms','Importing library modules performs no filesystem, network or process work','Status reports each unavailable capability as notBuilt'],
-  gate:'The workspace can route, test and describe the product without claiming that a gateway, resolver, preview host or UI exists.'},
- {n:1,name:'Schemas, registries and hostile vectors',status:'complete',deps:[0],
-  note:'Six record schemas and three manifest/descriptor schemas frozen under flux/remote-env/schemas, registered in the canonical flx/flux-spec record and access catalogs, covered by generated signing-byte/CID vectors and the hostile corpus. The JavaScript reference consumer reproduces every object, byte sequence, CID and reason code.',
-  caveat:'No Rust or Dense Remote Env consumer exists yet. No second runtime is reported as passing and no Dense role letter was allocated.',
-  deliver:['Freeze canonical JSON schemas: flux.remote-project.v1, flux.remote-module.v1, flux.remote-environment.v1, flux.remote-cohort.v1, flux.remote-rollout.v1, flux.remote-feedback.v1','Stable action/resource mappings in the canonical access permission catalog','Register record and manifest types through existing Flux registries (no role letter, no product-local registry)','Freeze canonical signing bytes, CID vectors, reason codes and interface version rules','Capability-manifest, encryption-descriptor and artifact-descriptor schemas without mutable URLs or latest tags'],
-  tests:['Duplicate fields, forbidden unknown fields, conflicting singular roles','Malformed IDs, CIDs, signatures, MIME types, byte lengths, timestamps','Mutable version selectors, unverified network URLs, unresolved module dependencies','Environment heads with duplicate mount points or module IDs','Cross-project references, predecessor gaps, sequence reuse, cycles','Rollout events targeting a head from another project/environment','Plaintext secret/key/session fields in any public record'],
-  gate:'JavaScript and any Rust/dense consumers produce identical canonical objects, signing bytes, CIDs and refusal codes for every positive and hostile vector.'},
- {n:2,name:'Canonical integrity, blob and mutation primitives',status:'notBuilt',deps:[1],
-  deliver:['Consume existing canonical signing/addressing and blob behavior; extract a neutral package from @deadark/pva-core with compatibility exports if needed; never copy','Reuse SQLite WAL + exact-head transaction behavior from flux/name-integrity; extract a shared primitive only if it serves both without changing historical behavior','One artifact-descriptor verifier for CID, MIME and byte length','One mutation boundary for validation, append, derived index and receipt persistence','Read-only open mode and exact row/record diagnostics'],
-  tests:['Signing and CID conformance against frozen Batch 1 vectors','Streamed blob ingest/retrieval without buffering the full artifact','Missing blob, wrong MIME, wrong length, changed bytes fail before append','Crash injection around each transaction boundary leaves all-or-none state','Two independent processes cannot commit the same sequence, predecessor or nonce'],
-  gate:'Remote Env has no local signature, CID, blob-store or ordered-journal fork, and the transaction primitive passes independent-process collision and crash tests.'},
- {n:3,name:'Durable journal, indexes and replay verifier',status:'notBuilt',deps:[2],
-  deliver:['SQLite WAL event, head, nonce, decision-reference and derived-index tables','Append/read projections for projects, modules, environment heads, cohorts, rollouts, feedback metadata','Serialized compare-and-append transitions with exact predecessor checks','Read-only remote-env verify that reconstructs every index from verified events','Truncation/corruption reporting with exact table, row, CID and reason','Backup, restore and versioned migrations that never rewrite signed payloads'],
-  tests:['Concurrent competing head, cohort and rollout writes produce one winner','Restart reconstructs the same heads and projections','Tampered signature, CID, predecessor, policy binding, index row, receipt reference fail at the exact record','Truncated/corrupt DB and interrupted migration identify the recovery action','Read-only verification performs no writes, timestamp changes or migrations'],
-  gate:'A fresh derived store rebuilt from the journal is byte-equivalent at the canonical projection boundary, and every corruption fixture is rejected with an exact diagnostic.'},
- {n:4,name:'Local engine, CLI and read API',status:'notBuilt',deps:[3],
-  deliver:['Local protocol engine over the Batch 3 store','CLI: status, verify, project create|show, module publish|show, environment publish|show|history, cohort create|show, rollout activate|pause|resume|rollback|close, feedback submit|show|history','Read-only HTTP routes for exact objects and histories','Mutating HTTP routes may prepare unsigned records; signing stays in the client; append refuses unsigned/invalid records','Stable pagination cursors tied to an observed head'],
-  tests:['End-to-end local project → module → environment → cohort → rollout → feedback','Forged signatures, stale heads, unknown references fail before mutation','Pagination stable while newer events append','CLI and HTTP prepare identical signing bytes','Private keys never cross HTTP or appear in process arguments'],
-  gate:'All local product history can be created, verified, queried and replayed without network access, while access-controlled operations remain explicitly notBuilt.'},
- {n:5,name:'Immutable adapters: Repo, Registry, Bundle, Domains',status:'notBuilt',deps:[4],
-  deliver:['Read/verify adapters for exact Bundle release and Registry package-version CIDs','Repo snapshot adapter only once repo.defxn.com has a stable snapshot contract; until then source provenance is optional and notBuilt','Domains adapter only for optional authorized preview-domain binding; Remote Env never claims a name','Validate availability, publisher proof, provenance and interface compatibility before a module enters a head','Cache only verified immutable objects by CID'],
-  tests:['Cross-product CID/signature vectors and tampered-object refusals','Missing, deprecated, incompatible releases are distinguished','Mutable tags and domain targets cannot enter an environment head','Domain delegation authorizes binding only, not project/module/tester access','Adapter outages report unavailable evidence; no stale mutable lookups reused'],
-  gate:'An environment head can be reproduced using only exact, independently verified immutable product objects, with optional unavailable products honestly marked.'},
- {n:6,name:'Composition, cohorts, views and rollout history',status:'notBuilt',deps:[5],
-  deliver:['Deterministic composition of a complete head from exact module records','Interface/dependency graph validation with cycle detection','Cohorts backed by verified membership evidence or a deterministic policy selector','Deterministic identity bucketing where policy permits staged percentages','One environment-view CID per exact head + actor/cohort projection + capability surface','Append-only activate, pause, resume, close, deprecate and rollback events','Session-transition policy for viewers of a superseded head'],
-  tests:['Updating one module preserves all unchanged module CIDs','Ordering differences cannot change the composition CID','Dependency/interface conflicts and cycles fail before append','Two rollout writers cannot activate competing heads at one sequence','Rollback points to an earlier head while preserving intervening events','Cohort bucketing deterministic across processes and languages'],
-  gate:'Every tester projection is reproducible from one environment-view CID, and no runtime can assemble an unrecorded mix of modules.'},
- {n:7,name:'Artifact encryption, identity keys and key epochs',status:'notBuilt',deps:[2],
-  deliver:['Reviewed standard AEAD and sealed-key primitives via a recorded cryptographic decision','Dedicated identity encryption subkey with a signed binding to the signing identity (never reuse Ed25519 signing keys)','Encrypt artifact bytes before public storage; address the ciphertext','Bind algorithm, nonce, lengths, ciphertext CID and key epoch into the signed module record','Wrap content keys through project/group epochs and identity-bound sealed grants','Rotate epochs for future artifacts after revocation','Streamed encrypt/decrypt with range-compatible chunk framing'],
-  tests:['Known-answer and cross-runtime crypto vectors','Changed ciphertext, descriptor, nonce, epoch, binding or length fails authentication','Storage readers and unauthorized identities obtain ciphertext only','A revoked identity cannot unwrap later epochs','Previously obtained plaintext cannot be revoked (explicitly preserved limitation)','Large artifacts streamed under a bounded-memory assertion'],
-  gate:'No private artifact plaintext or usable content key reaches public storage, history or logs, and independent clients decrypt the frozen vectors exactly.'},
- {n:8,name:'Global Flux Access Resolver integration',status:'notBuilt',deps:[6,7,'FAR'],
-  deliver:['Map every protected operation to the frozen Batch 1 action/resource catalog','Exact AccessQuery: identity, policy, evidence head, proof of possession, nonce','Verify independent checker receipts over the same query, resolver code, evidence head and result','Persist decisions for mutations and key release; hash-chained receipts for read-heavy operations','Fail closed on deny, incomplete revocation evidence, checker disagreement, stale policy, changed head, replayed nonce'],
-  tests:['Allow, deny, indeterminate vectors match the canonical resolver','Forged grant/deny, wrong audience/network, expired delegation, incomplete evidence, widened scope fail with stable reasons','A receipt for one head/action cannot authorize another','Checker disagreement blocks execution and becomes durable conflict evidence','No product-local ACL fallback when the resolver is unavailable'],
-  gate:'Every protected Remote Env operation is authorized by a reproducible global decision bound to its exact policy, evidence head, action and resource.'},
- {n:9,name:'Node-power resolver integration',status:'notBuilt',deps:[8],
-  deliver:['Construct NodePowerQuery only after a verified global allow','Bind node role, capabilities, budget, custody, availability, local policy to the global decision CID','Return only capable, refuse or unavailable','Persist node-power receipts separately from global access history','Required capabilities for metadata, ciphertext storage, key release, preview execution, feedback storage'],
-  tests:['Missing, stale or mismatched global decisions block node-power evaluation','Global deny/indeterminate cannot become execution under any node state','Global allow + local refuse/unavailable returns a local refusal without changing the global result','Capability, budget, custody evidence cannot be substituted across nodes'],
-  gate:'Exhaustive authority-order tests prove that node power only narrows a verified global allow.'},
- {n:10,name:'Identity sessions and unlock gateway',status:'notBuilt',deps:[6,7,8,9],
-  deliver:['Signed challenge / proof-of-possession login with one-use nonce and short expiry','Short-lived session capability bound to actor, audience, environment-view CID, module CIDs, access-decision CID, expiry, nonce','HttpOnly, Secure, restrictive SameSite cookies where cookies are used','Ciphertext and sealed-key delivery only after global and node-power receipts pass','Durable key-release receipts that never record the released secret','Invalidation on expiry, revocation, paused rollout or head mismatch','Rate limits and abuse evidence that are not an alternate authorization system'],
-  tests:['Challenge replay, session fixation, audience confusion, CSRF, stolen bearer reuse, concurrent nonce use fail closed','Sessions cannot widen module lists or survive forbidden head/policy changes','Key-release receipts bind exact identity, ciphertext, epoch and decision','Gateway logs contain no private key, content key, plaintext or reusable proof'],
-  gate:'An authorized identity can unlock only the exact modules in one environment view, while every unauthorized, stale or replayed path is refused and audited.'},
- {n:11,name:'Isolated modular web runtime',status:'notBuilt',deps:[10],
-  deliver:['Signed shell manifest loading only exact verified module CIDs','Separate origins or equally strong sandboxes for mutually untrusted modules','Strict CSP, iframe sandboxing; explicit controls for navigation, popups, downloads, media, clipboard, storage, network','Versioned, allowlisted inter-module message channels','Narrow identity capability messages; no private key or reusable gateway credential injection','Storage partitioned by project, head, identity and module','Exact-version and environment-view metadata for diagnostics and feedback'],
-  tests:['Cross-module DOM, cookie, storage, identity access blocked','Undeclared network, worker, popup, navigation attempts fail','MIME/runtime disagreement and changed bytes do not execute','Message interfaces work only at compatible versions','Image, SVG, video, WASM/worker, generative fixtures follow declared policy'],
-  gate:'The hostile browser suite shows one compromised test module cannot escape its declared capability boundary or impersonate another module.'},
- {n:12,name:'Feedback, audit history and operational evidence',status:'notBuilt',deps:[6,10],
-  deliver:['Signed, version-bound feedback with correction-by-supersession','Public, project-private and author-private visibility on the same encrypted blob contract','Reproduction metadata bound to environment-view and module CIDs','Append-only triage/status events; original tester statements never edited','Feedback reads authorized by global resolver then node power','Metrics that distinguish notBuilt, unavailable, refused and measured zero'],
-  tests:['Feedback cannot target an unknown head/module or a version outside the tester session','Corrections preserve originals and exact supersession lineage','Private feedback is ciphertext to unauthorized storage readers','Metrics never average missing capabilities into a score','Every submitted field survives into the exact rendered/read representation'],
-  gate:'A developer can prove which identity or approved pseudonym tested which exact view and read its authorized feedback without leaking private content.'},
- {n:13,name:'Replication, remote serving and preview routing',status:'notBuilt',deps:[10,11,12],
-  deliver:['Replication policy for journals, verified indexes, ciphertext artifacts, encrypted feedback','Quorum/completeness evidence for metadata needed by access decisions','HEAD, byte ranges, immutable cache headers, MIME/length correctness for ciphertext','remote.defxn.com control/API Caddy contract on both round-robin nodes','Dedicated *.remote.defxn.com DNS and restricted on-demand TLS (never reuse *.defxn.com policy)','Certificates only for durable active environment-host records','Recovery, backup and node-loss runbooks'],
-  tests:['Both edge shapes return the same verified head','Partition, lag, stale evidence, missing replicas report unavailable/indeterminate, never success','Range/HEAD via each proxy node without plaintext leakage','Unknown preview hosts cannot get certificates or reach a default tenant','One node loss preserves reads per policy; mutations blocked without quorum'],
-  gate:'Independent nodes serve identical verified ciphertext and metadata, and the preview TLS boundary cannot mint or route an unregistered environment host.'},
- {n:14,name:'Developer and tester product surfaces',status:'notBuilt',deps:[4,5,6,7,8,9,10,11,12,13],
-  deliver:['Developer surface: project, module, environment, cohort, rollout, rollback, feedback history','Tester inbox: granted environments, identity proof, unlock, exact-version display, feedback','Clear states: draft, active, paused, closed, deprecated, revoked, unavailable, notBuilt','Client-side signing through the shared identity capability; no uploaded key files','Shared Dead Ark theme/runtime primitives from the SDK and UI package','Accessibility and browser compatibility coverage'],
-  tests:['Browser-level developer publish/activate/rollback','Browser-level tester unlock/run/feedback','Private keys never leave the signer','Every refusal renders failure, missing evidence and remedy','Displayed environment and module CIDs match the gateway session exactly'],
-  gate:'Non-technical developers and testers can complete the two primary flows without the UI hiding, weakening or reinterpreting any protocol decision.'},
- {n:15,name:'Security, governance and public activation',status:'notBuilt',deps:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],
-  deliver:['Approved independently operated global resolver/checker roster','Approved independent metadata/artifact nodes and documented custody roles','Threat model + external review: identity proof, receipts, encryption/epochs, sessions, sandbox escape, preview TLS, replication, recovery','Key rotation, compromise, revocation, incident response, backup/restore, DR drills','Capacity and dominant-cost measurements naming device, store size and constants','G7 security gate evidence and explicit activation decision','Production runbook with rollback and post-deploy verification'],
-  tests:['Cross-node hostile suite against the real independent roster','Restore from backup followed by full replay verification','Resolver disagreement, node loss, key compromise, certificate abuse exercises','No fixture, local operator key or synthetic quorum presented as production authority'],
-  gate:'Public activation occurs only when the independent roster, service wiring, replication, security review and G7 approval are operational facts.'},
-];
-const MILESTONES = [
- {id:'M0',name:'contract frozen',b:[0,1,2],meaning:'Canonical ownership, schemas, vectors and shared primitives exist'},
- {id:'M1',name:'local protocol',b:[3,4,5,6],meaning:'Local immutable environments and rollout history are reproducible'},
- {id:'M2',name:'private unlock',b:[7,8,9,10],meaning:'Real global authorization and identity-bound encrypted delivery work'},
- {id:'M3',name:'safe modular runtime',b:[11,12],meaning:'Isolated execution and version-bound feedback work'},
- {id:'M4',name:'remote pre-production',b:[13,14],meaning:'Replicated gateway, preview routing and product surfaces work privately'},
- {id:'M5',name:'public activation',b:[15],meaning:'Independent operation, review and G7 approval are complete'},
-];
-const LAWS = [
- 'Future events append; historical records and CIDs are never rewritten.',
- 'Canonical JSON is the signing and hashing form. Small manifests stay plain JSON until storage measurements demonstrate a Flux Compact win.',
- 'Signing, CID, ordered mutation, blob and access behavior is imported from a canonical implementation. Remote Env may not keep private copies.',
- 'A successful parse is not authorization.',
- 'The global Flux Access Resolver is the primary authorization authority. Node power is evaluated second and can only narrow a global allow.',
- 'Validation, exact-head checking, nonce use, append and index changes commit as one ordered mutation.',
- 'Replay re-verifies records and invariants; it never indexes trusted parsed JSON directly.',
- 'A missing capability is reported as notBuilt, never as a measured zero or a fabricated success.',
- 'A refusal identifies the failure, missing evidence and available remedy.',
- 'Private keys, bearer credentials, plaintext private artifacts and private feedback never enter public history or logs.',
- 'Every defect becomes a named regression carrying the reason it exists.',
-];
-const DOD = [
- 'One canonical owner and no new duplicate protocol logic',
- 'Positive, boundary, hostile, restart and concurrency tests appropriate to the batch pass',
- 'Validators return stable machine codes plus actionable diagnostics',
- 'All new exported scripts guard their executable body',
- 'Documentation describes only capabilities that exist',
- 'Compatibility behavior preserves historical signing bytes and CIDs',
- 'The batch-specific completion gate is demonstrated',
-];
-const byN = n => B.find(b=>b.n===n);
-const done = n => byN(n)?.status==='complete';
-const nDone = () => B.filter(b=>b.status==='complete').length;
-const msDone = () => MILESTONES.filter(m=>m.b.every(done)).length;
-function upstream(n, acc=new Set()){ (byN(n)?.deps||[]).forEach(d=>{ if(d==='FAR'){acc.add('FAR');return;} if(!acc.has(d)){acc.add(d); upstream(d,acc);} }); return acc; }
-
-/* ======================= helpers ======================= */
-const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const chip = st => `<span class="chip s-${st}">${st==='complete'?'◆ complete':st==='notBuilt'?'◇ notBuilt':st==='sim'?'▷ simulated':st}</span>`;
-function toast(msg,k=''){ const t=document.createElement('div'); t.className='toast '+k; t.innerHTML=msg; const box=$('#toasts'); box.appendChild(t); while(box.children.length>3) box.firstChild.remove(); setTimeout(()=>t.remove(),3600); }
-// Sorted-key JSON: an in-page illustration of the canonical signing form, not the canonical implementation.
-function canon(v){
-  if(Array.isArray(v)) return '['+v.map(canon).join(',')+']';
-  if(v && typeof v==='object') return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}';
-  return JSON.stringify(v);
-}
-const HAS_SUBTLE = !!(window.crypto && crypto.subtle);
-async function digest(obj){
-  if(!HAS_SUBTLE) return null;
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(typeof obj==='string'?obj:canon(obj)));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-const sim = h => h ? 'sim:sha256:'+h : 'unavailable';
-const short = h => h ? h.replace('sim:sha256:','').slice(0,10)+'…' : '—';
-
-/* ======================= nav ======================= */
-const VIEWS = [
- ['BUILD',[['ledger','⛓','Batch ledger'],['status','▤','Status surface'],['laws','§','Laws & done']]],
- ['PROTOCOL',[['sandbox','▷','Protocol sandbox'],['authority','⬡','Authority order']]],
-];
-let view = 'ledger', selBatch = 2;
-const mnav = () => `<div class="mnav">${VIEWS.flatMap(v=>v[1]).map(([k,i,l])=>`<a class="btn sm ${view===k?'primary':''}" href="#${k}">${i} ${l}</a>`).join('')}</div>`;
-function renderNav(){
-  $('#nav').innerHTML = VIEWS.map(([h,items])=>`<h6>${h}</h6>`+items.map(([k,i,l])=>{
-    let c=''; if(k==='ledger') c=`<span class="count">${nDone()}/${B.length}</span>`;
-    if(k==='sandbox') c=`<span class="count">${S.journal.length} ev</span>`;
-    return `<a href="#${k}" class="${view===k?'on':''}"><span>${i}</span>${l}${c}</a>`}).join('')).join('')
-   + `<h6>SNAPSHOT</h6><div class="muted" style="padding:0 16px;font-size:11px">ledger ${SNAPSHOT_DATE}<br>product root flux/remote-env<br>public activation: <span class="amber">notBuilt</span></div>`;
-  $('#status').innerHTML = `<span>batches <span class="green">${nDone()} complete</span> · <span class="amber">${B.length-nDone()} notBuilt</span></span>
-    <span>milestones <span class="amber">${msDone()}/${MILESTONES.length}</span></span><span>resolver <span class="amber">notBuilt</span></span><span>gateway <span class="amber">notBuilt</span></span>
-    <span class="hide-sm">sandbox journal ${S.journal.length} events · digests ${HAS_SUBTLE?'SHA-256 (WebCrypto)':'<span class="amber">unavailable</span>'}</span>`;
-}
-function render(){ renderNav(); (R[view]||R.ledger)(); if(!$('#main .mnav')) $('#main').insertAdjacentHTML('afterbegin',mnav()); }
-window.addEventListener('hashchange',()=>{ view=location.hash.slice(1)||'ledger'; render(); $('#main').scrollTop=0; });
-$('#themeBtn').onclick=()=>{ const r=document.documentElement; r.dataset.theme = r.dataset.theme==='light'?'dark':'light'; };
-
-const R = {};
-
-/* ======================= LEDGER VIEW ======================= */
-const POS = {0:[0,1],1:[1,1],2:[2,1],3:[3,1],7:[3,2],4:[4,1],5:[5,1],6:[6,1],FAR:[6,0],8:[7,1],9:[8,1],10:[9,1],11:[10,1],12:[10,2],13:[11,1],14:[12,1],15:[13,1]};
-const LX = [118,360,602], RH=66, BW=196, BH=44;
-const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[2,7],[6,8],[7,8],['FAR',8],[8,9],[9,10],[8,10],[7,10],[6,10],[10,11],[10,12],[6,12],[10,13],[11,13],[12,13],[13,14],[14,15]];
-function spineSVG(){
-  const ups = upstream(selBatch);
-  const inSet = x => x===selBatch || ups.has(x);
-  const P = k => { const [l,c]=POS[k]; return {x:LX[c], y:l*RH+12}; };
-  let e='';
-  EDGES.forEach(([a,b])=>{
-    const p=P(a), q=P(b), x1=p.x, y1=p.y+BH, x2=q.x, y2=q.y;
-    const lit = ups.has(a) && inSet(b);
-    let d;
-    if(x1===x2 && POS[b][0]-POS[a][0]>1){ const bow = x1-BW/2-14-(POS[b][0]-POS[a][0])*7; d=`M${x1-40},${y1} C${bow},${y1+20} ${bow},${y2-20} ${x2-40},${y2}`; }
-    else d=`M${x1},${y1} C${x1},${y1+RH*.6} ${x2},${y2-RH*.6} ${x2},${y2}`;
-    e+=`<path d="${d}" fill="none" stroke="${lit?'var(--cyan)':'var(--line)'}" stroke-width="${lit?2:1.4}" ${a==='FAR'?'stroke-dasharray="4 4"':''}/>`;
-  });
-  let n='';
-  Object.keys(POS).forEach(k=>{
-    const key = k==='FAR'?'FAR':+k, p=P(key), x=p.x-BW/2, y=p.y;
-    if(key==='FAR'){ n+=`<g><rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="5" fill="var(--panel)" stroke="var(--magenta)" stroke-dasharray="4 3"/>
-      <text x="${x+10}" y="${y+18}" font-size="10.5" fill="var(--magenta)">EXTERNAL CONTRACT</text><text x="${x+10}" y="${y+34}" font-size="11.5" fill="var(--text)">Flux Access Resolver</text></g>`; return; }
-    const b=byN(key), sel=key===selBatch, up=ups.has(key);
-    const stc = b.status==='complete'?'var(--green)':'var(--amber)';
-    n+=`<g class="node" tabindex="0" role="button" aria-label="Batch ${key} ${esc(b.name)} ${b.status}" data-b="${key}">
-      <rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="5" fill="${sel?'color-mix(in srgb, var(--cyan) 12%, var(--panel))':'var(--panel)'}" stroke="${sel?'var(--cyan)':up?'color-mix(in srgb, var(--cyan) 55%, var(--line))':'var(--line)'}" stroke-width="${sel?2:1}"/>
-      <rect x="${x}" y="${y}" width="4" height="${BH}" rx="2" fill="${stc}"/>
-      <text x="${x+12}" y="${y+17}" font-size="11" fill="${stc}" font-weight="700">B${key} · ${b.status}</text>
-      <text x="${x+12}" y="${y+33}" font-size="11" fill="var(--text)">${esc(b.name.length>26?b.name.slice(0,25)+'…':b.name)}</text></g>`;
-  });
-  const H = 14*RH+12;
-  return `<svg viewBox="0 0 720 ${H}" width="100%" style="min-width:560px;display:block" aria-label="Batch dependency spine">${e}${n}
-    <text x="${LX[1]+BW/2+8}" y="${12*RH+38}" font-size="10.5" fill="var(--muted)">+ needs 4–13</text>
-    <text x="${LX[1]+BW/2+8}" y="${13*RH+38}" font-size="10.5" fill="var(--muted)">+ needs all prior</text></svg>`;
-}
-function batchDetail(){
-  const b = byN(selBatch), ups=[...upstream(selBatch)];
-  const blockers = ups.filter(u=>u!=='FAR' && !done(u)).sort((a,b)=>a-b);
-  const ext = ups.includes('FAR');
-  let state='';
-  if(b.status==='complete') state = `<div class="refusal ok"><b class="green">Gate demonstrated · ${SNAPSHOT_DATE}</b><div style="margin-top:4px">${esc(b.note)}</div>${b.caveat?`<div class="amber" style="margin-top:6px">◇ ${esc(b.caveat)}</div>`:''}</div>`;
-  else if(blockers.length||ext) state = `<div class="refusal nb"><b class="amber">Blocked</b><div style="margin-top:4px">Upstream gates not passing: ${blockers.map(x=>'B'+x).join(', ')||'none'}${ext?'<br>Also needs the external Flux Access Resolver contract with real decision verification. A mock cannot satisfy the gate.':''}</div></div>`;
-  else state = `<div class="refusal ok"><b class="cyan">Unblocked</b><div style="margin-top:4px">Every upstream gate passes. Work may start against frozen contracts.</div></div>`;
-  return `<div class="row"><h3 style="margin:0">Batch ${b.n} · ${esc(b.name)}</h3><span class="spacer"></span>${chip(b.status)}</div>
-   <div class="muted" style="margin:6px 0 12px">depends on: ${b.deps.length?b.deps.map(d=>d==='FAR'?'<span class="mag">Flux Access Resolver (external)</span>':`<a href="#ledger" data-b="${d}">B${d}</a>`).join(', '):'nothing'}</div>
-   ${state}
-   <h2 style="margin-top:14px">Deliverables</h2><ul class="l">${b.deliver.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-   <h2 style="margin-top:14px">${b.n===1?'Hostile vectors':b.n===11?'Browser regressions':b.n===15?'Activation tests':'Tests'}</h2><ul class="l">${b.tests.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-   <h2 style="margin-top:14px">Completion gate</h2><div style="border-left:2px solid var(--cyan);padding-left:10px">${esc(b.gate)}</div>`;
-}
-R.ledger = () => {
-  const next = B.find(b=>b.status!=='complete' && [...upstream(b.n)].every(u=>u!=='FAR'&&done(u)));
-  $('#main').innerHTML = mnav()+`<h1>Implementation batch ledger</h1>
-  <div class="sub">Batch numbers express dependencies, not dates. Work runs in parallel only where the graph allows it, and only against frozen contracts. Each batch stays <span class="amber">notBuilt</span> until its completion gate is demonstrated.</div>
-  <div class="grid g4">
-    <div class="tile"><div class="v green">${nDone()} / ${B.length}</div><div class="k">GATES DEMONSTRATED</div><div class="bar" style="margin-top:8px"><i style="width:${nDone()/B.length*100}%"></i></div></div>
-    <div class="tile"><div class="v amber">B${next?next.n:'—'}</div><div class="k">NEXT UNBLOCKED · ${next?esc(next.name.toUpperCase()):'NONE'}</div></div>
-    <div class="tile"><div class="v amber">${msDone()} / ${MILESTONES.length}</div><div class="k">MILESTONES · M0 STILL NEEDS B2</div></div>
-    <div class="tile"><div class="v amber">planned</div><div class="k">REMOTE.DEFXN.COM · NO DNS, CADDY OR DEPLOY</div></div>
-  </div>
-  <div class="grid split" style="margin-top:16px">
-    <div class="card" style="padding:10px"><h2 style="padding:4px 6px 0">Dependency spine · select a batch to trace what blocks it</h2><div style="overflow-x:auto" id="spine">${spineSVG()}</div></div>
-    <div><div class="card" id="detail" style="position:sticky;top:0">${batchDetail()}</div></div>
-  </div>
-  <div class="card"><h2>Release milestones</h2><div class="tbl"><table><tr><th>Milestone</th><th>Batches</th><th>Gates</th><th>Meaning</th><th>Status</th></tr>
-   ${MILESTONES.map(m=>{const d=m.b.filter(done).length;return `<tr><td style="white-space:nowrap"><b>${m.id}</b> ${m.name}</td><td>${m.b.map(x=>`<span class="chip ${done(x)?'s-complete':'s-notBuilt'}">B${x}</span>`).join(' ')}</td>
-     <td style="min-width:90px">${d}/${m.b.length}<div class="bar" style="margin-top:4px"><i style="width:${d/m.b.length*100}%"></i></div></td><td class="muted">${m.meaning}</td><td>${chip(d===m.b.length?'complete':'notBuilt')}</td></tr>`}).join('')}
-   </table></div><div class="muted" style="margin-top:8px">Milestones are capability statements, not dates. One missing gate keeps a milestone notBuilt.</div></div>`;
-  const bind = () => document.querySelectorAll('#main [data-b]').forEach(el=>{
-    const go = ()=>{ selBatch=+el.dataset.b; $('#spine').innerHTML=spineSVG(); $('#detail').innerHTML=batchDetail(); bind(); };
-    el.onclick = e=>{ e.preventDefault(); go(); };
-    el.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } };
-  });
-  bind();
+/* ============================================================
+   Remote Env: product design prototype.
+   UI behavior is mocked in-page to demonstrate the designed flows.
+   ============================================================ */
+const ICONS = {
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  package:'<path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/>',
+  layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  rollout:'<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  msg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  tick:'<polyline points="20 6 9 17 4 12"/>',
+  alert:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+  warn:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  pause:'<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+  play:'<polygon points="5 3 19 12 5 21 5 3"/>',
+  undo:'<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  key:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+  compare:'<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  issue:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
+  closed:'<circle cx="12" cy="12" r="10"/><polyline points="16 9 10.5 15 8 12.5"/>',
+  chev:'<polyline points="6 9 12 15 18 9"/>',
+  stop:'<rect x="5" y="5" width="14" height="14" rx="2"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  palette:'<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 10c0-4.4-4.5-8-10-8z"/>',
+  sun:'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>',
+  eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+  tag:'<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
 };
-
-/* ======================= STATUS VIEW ======================= */
-const CAPS = [
- ['product root + workspace routing',0,'complete'],
- ['status / CLI / import contract (read-only)',0,'complete'],
- ['record + manifest schemas (6 + 3) frozen',1,'complete'],
- ['signing-byte / CID vectors + hostile corpus (JS)',1,'complete'],
- ['rust / dense consumer conformance',1,'notBuilt','no consumer exists'],
- ['canonical signing / CID / blob consumption',2,'notBuilt'],
- ['ordered mutation boundary (WAL, exact head)',2,'notBuilt'],
- ['journal + indexes + remote-env verify',3,'notBuilt'],
- ['local engine, CLI mutations, read API',4,'notBuilt'],
- ['bundle / registry adapters',5,'notBuilt'],
- ['repo snapshot adapter',5,'notBuilt','waits on repo.defxn.com snapshot contract'],
- ['composition, cohorts, environment views',6,'notBuilt'],
- ['artifact encryption + key epochs',7,'notBuilt'],
- ['global access authorization',8,'notBuilt','external resolver contract'],
- ['node-power narrowing',9,'notBuilt'],
- ['identity sessions + unlock gateway',10,'notBuilt'],
- ['isolated module runtime',11,'notBuilt'],
- ['feedback + operational evidence',12,'notBuilt'],
- ['replication + preview routing',13,'notBuilt','no DNS, Caddy route or certificate'],
- ['developer / tester surfaces',14,'notBuilt','this page is a design prototype, not B14'],
- ['public activation (G7)',15,'notBuilt'],
-];
-R.status = () => {
-  const pad=(s,n)=>s+' '.repeat(Math.max(1,n-s.length));
-  const lines = CAPS.map(([c,b,s,why])=>`${pad(c,50)}${pad('B'+b,6)}<span class="${s==='complete'?'g':'a'}">${pad(s,10)}</span>${why?`<span class="m">${why}</span>`:''}`).join('\n');
-  $('#main').innerHTML = mnav()+`<h1>Status surface</h1>
-  <div class="sub">How the product reports itself. Every unavailable capability says <span class="amber">notBuilt</span>. Nothing reads as zero, healthy or passing unless a gate proved it. This is an illustrative rendering; the CLI owns the real output format.</div>
-  <div class="term"><span class="c">$</span> remote-env status
-<span class="m">product   </span>flux/remote-env
-<span class="m">host      </span>remote.defxn.com  <span class="a">planned control-plane product · not deployed</span>
-<span class="m">ledger    </span>snapshot ${SNAPSHOT_DATE}
-
-<span class="m">${pad('capability',50)}${pad('batch',6)}${pad('status',10)}note</span>
-${lines}
-
-<span class="m">read-only · importing the library performs no filesystem, network or process work</span></div>
-  <h2 style="margin-top:22px">Operational metrics: four distinct states, never averaged</h2>
-  <div class="grid g4">
-    <div class="tile"><div class="k">ACTIVE ROLLOUTS</div><div class="v amber">notBuilt</div><div class="muted">B6 rollout history does not exist. This is not "0".</div></div>
-    <div class="tile"><div class="k">REPLICA COMPLETENESS</div><div class="v muted">unavailable</div><div class="muted">Evidence source exists but cannot be reached. Never reused stale.</div></div>
-    <div class="tile"><div class="k">KEY RELEASES</div><div class="v red">refused</div><div class="muted">Request evaluated and denied, recorded with its reason.</div></div>
-    <div class="tile"><div class="k">OPEN FEEDBACK</div><div class="v green">0</div><div class="muted">Measured zero. Only valid once B12 can count.</div></div>
-  </div>
-  <div class="muted" style="margin-top:8px">The tiles show what each state will look like once its batch exists. Today every operational metric is notBuilt.</div>`;
-};
-
-/* ======================= LAWS VIEW ======================= */
-R.laws = () => {
-  $('#main').innerHTML = mnav()+`<h1>Laws & definition of done</h1><div class="sub">Applied to every batch. The protocol sandbox enforces the subset it can express in one page; the rest belong to later batches.</div>
-  <div class="grid g2">
-    <div class="card"><h2>Laws</h2>${LAWS.map((l,i)=>`<div class="law"><span class="i">L${String(i+1).padStart(2,'0')}</span><span>${esc(l)}</span></div>`).join('')}</div>
-    <div>
-      <div class="card"><h2>Definition of done (per batch)</h2>${DOD.map((l,i)=>`<div class="law"><span class="i">D${i+1}</span><span>${esc(l)}</span></div>`).join('')}</div>
-      <div class="card"><h2>Ownership boundaries (B0)</h2><div class="tbl"><table>
-        <tr><th>Owner</th><th>Remote Env relies on it for</th></tr>
-        <tr><td>Flux Access Resolver</td><td>Primary authorization decisions (B8)</td></tr>
-        <tr><td>Node-power resolver</td><td>Narrowing a global allow per node (B9)</td></tr>
-        <tr><td>Bundle · Registry</td><td>Exact release and package-version CIDs (B5)</td></tr>
-        <tr><td>Repo</td><td>Source snapshots, once a stable contract exists (B5)</td></tr>
-        <tr><td>Domains</td><td>Optional authorized preview-domain binding only (B5)</td></tr>
-        <tr><td>flx/flux-spec</td><td>Record and access catalogs (registered in B1)</td></tr>
-      </table></div></div>
-    </div>
-  </div>`;
-};
-
-/* ======================= AUTHORITY VIEW ======================= */
-let selG='allow', selN='capable';
-function decide(g,n){
-  if(g==='notBuilt') return {out:'refused · notBuilt',cls:'nb',why:'No global decision can be produced. There is no product-local ACL fallback.'};
-  if(g==='deny') return {out:'refused · global deny',cls:'no',why:'NodePowerQuery is only constructed after a verified global allow, so node power is never evaluated.'};
-  if(g==='indeterminate') return {out:'refused · fail closed',cls:'no',why:'Incomplete evidence, checker disagreement, stale policy, changed head or replayed nonce fails closed and is recorded as conflict evidence.'};
-  if(n==='capable') return {out:'execute',cls:'ok',why:'Verified global allow, narrowed by node power to capable. Both receipts persist separately.'};
-  if(n==='refuse') return {out:'refused · local',cls:'no',why:'Local refusal. The global result stays allow and is not rewritten.'};
-  return {out:'unavailable',cls:'na',why:'The node cannot evaluate (capability, budget, custody or availability evidence missing). Reported as unavailable, never as success.'};
+const ic = (n,cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function hash(s){ let h=0x811c9dc5; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,0x01000193)>>>0; } let out=''; let x=h; for(let i=0;i<5;i++){ x=Math.imul(x^(x>>>13),0x5bd1e995)>>>0; out+=x.toString(16).padStart(8,'0'); } return out; }
+const fp = (key) => { const h=hash(key); return `<span class="fp" role="button" tabindex="0" title="Content fingerprint · click to copy" data-copy="${h}">${h.slice(0,7)}${ic('copy')}</span>`; };
+const COLORS = {mara:'#8957e5',devon:'#1f6feb',jo:'#bf3989','tester-07':'#2da44e',sam:'#d4a72c',priya:'#e16f24','tester-22':'#0e8a16',you:'#2da44e'};
+const av = (u,lg) => `<span class="avatar ${lg?'lg':''}" style="background:${COLORS[u]||'#6e7781'}" aria-hidden="true">${esc(u[0].toUpperCase())}</span>`;
+const user = u => `${av(u)} <a href="#" onclick="return false"><b style="color:var(--text)">${esc(u)}</b></a>`;
+const STATE_LABEL = {active:'Active',paused:'Paused',draft:'Draft',closed:'Closed',deprecated:'Deprecated',revoked:'Revoked',unavailable:'Unavailable',notbuilt:'Not available yet'};
+const STATE_ICON = {active:'check',paused:'pause',draft:'file',closed:'stop',deprecated:'warn',revoked:'x',unavailable:'alert',notbuilt:'clock'};
+const state = s => `<span class="state st-${s}">${ic(STATE_ICON[s])}${STATE_LABEL[s]}</span>`;
+const ver = (m,v) => `<span class="ver"><b>${esc(m)}</b><span>${esc(v)}</span></span>`;
+function toast(msg,kind='ok'){ const t=document.createElement('div'); t.className='toast'; t.innerHTML=`${ic(kind==='ok'?'check':kind==='err'?'alert':'alert', kind==='ok'?'green':kind==='err'?'red':'yellow')}<span>${msg}</span>`; const b=document.getElementById('toasts'); b.appendChild(t); while(b.children.length>3) b.firstChild.remove(); setTimeout(()=>t.remove(),3800); }
+function callout(kind,title,{what,need,fix,code}={},body=''){
+  const icn={err:'alert',warn:'warn',info:'alert',ok:'check'}[kind];
+  return `<div class="callout ${kind}" role="${kind==='err'?'alert':'status'}"><div class="ic">${ic(icn)}</div><div style="min-width:0;flex:1"><b>${title}</b>${body?`<div>${body}</div>`:''}
+    ${what?`<dl><dt>What happened</dt><dd>${what}</dd>${need?`<dt>What's needed</dt><dd>${need}</dd>`:''}${fix?`<dt>How to fix</dt><dd>${fix}</dd>`:''}</dl>`:''}
+    ${code?`<div class="code" style="margin-top:6px">Error code: ${esc(code)}</div>`:''}</div></div>`;
 }
-R.authority = () => {
-  const G=['allow','deny','indeterminate','notBuilt'], N=['capable','refuse','unavailable'];
-  const d=decide(selG,selN);
-  $('#main').innerHTML = mnav()+`<h1>Authority order</h1><div class="sub">The global Flux Access Resolver decides first. Node power is evaluated second and can only <b>narrow</b> a verified global allow. This page illustrates the rule Batch 9's exhaustive tests must prove; it is not those tests.</div>
-  <div class="card"><h2>Path of a protected operation</h2><div class="pipe">
-   ${[['AccessQuery','identity · policy · evidence head · proof of possession · nonce',8],['Global decision','allow | deny | indeterminate + independent checker receipts',8],['NodePowerQuery','bound to global decision CID · role · capabilities · budget · custody',9],['Session capability','actor · audience · view CID · module CIDs · decision CID · expiry',10],['Key release','ciphertext + sealed key · receipt without the secret',10]]
-     .map(([t,dd,b],i,a)=>`<div class="st"><div class="row"><b>${t}</b><span class="spacer"></span><span class="chip s-notBuilt">B${b}</span></div><div class="muted" style="font-size:12px;margin-top:4px">${dd}</div></div>${i<a.length-1?'<div class="ar">→</div>':''}`).join('')}
-  </div></div>
-  <div class="grid g2">
-    <div class="card"><h2>Evaluate a combination</h2>
-      <label class="l">global resolver result</label><div class="row">${G.map(g=>`<button class="btn sm ${g===selG?'primary':''}" data-g="${g}">${g}</button>`).join('')}</div>
-      <label class="l">node-power result ${selG!=='allow'?'<span class="amber">(not evaluated unless global = allow)</span>':''}</label><div class="row">${N.map(n=>`<button class="btn sm ${n===selN&&selG==='allow'?'primary':''}" data-n="${n}" ${selG!=='allow'?'disabled':''}>${n}</button>`).join('')}</div>
-      <div style="margin-top:16px"><span class="cell ${d.cls}" style="font-size:14px;padding:4px 12px">${d.out}</span></div>
-      <div style="margin-top:10px">${esc(d.why)}</div>
-      <div class="muted" style="margin-top:10px">Today the real result is always <span class="amber">refused · notBuilt</span>. B8 has no resolver integration, and a mock cannot satisfy its gate or run in a production profile.</div>
-    </div>
-    <div class="card"><h2>Full truth table</h2><div class="tbl"><table class="ttable">
-      <tr><th>global \\ node</th>${N.map(n=>`<th>${n}</th>`).join('')}</tr>
-      ${G.map(g=>`<tr class="${g===selG?'hl':''}"><td><b>${g}</b></td>${g==='allow'?N.map(n=>{const r=decide(g,n);return `<td><span class="cell ${r.cls}">${r.out}</span></td>`}).join(''):`<td colspan="3"><span class="cell ${decide(g).cls}">${decide(g).out}</span> <span class="muted">node power not evaluated</span></td>`}</tr>`).join('')}
-    </table></div><div class="muted" style="margin-top:8px">Exactly one cell executes. No node state can turn a deny, indeterminate or notBuilt row into execution.</div></div>
-  </div>`;
-  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{selG=b.dataset.g;render();});
-  document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{selN=b.dataset.n;render();});
-};
 
-/* =====================================================================
-   PROTOCOL SANDBOX
-   In-page model of the record flow that B4/B6 will own. Field shapes are
-   illustrative; the frozen schemas live in flux/remote-env/schemas.
-   Digests are SHA-256 over sorted-key JSON, not Flux CIDs. Reason codes
-   are illustrative; the frozen codes are the Batch 1 vectors.
-   ===================================================================== */
-const S = { journal:[], refusals:[], refusalCount:0, project:null, modules:[], heads:[], cohort:null, rollouts:[], feedback:[], open:null, envView:null, hostile:null };
-const PROJECT_ID = 'prj-demo';
-const lastHead = () => S.heads.at(-1);
-const lastRollout = () => S.rollouts.at(-1);
-const rolloutState = () => { const r=lastRollout(); if(!r) return 'draft'; return {activate:'active',resume:'active',rollback:'active',pause:'paused',close:'closed'}[r.record.action]; };
-const activeHeadDigest = () => { for(let i=S.rollouts.length-1;i>=0;i--){ const a=S.rollouts[i].record.action; if(['activate','rollback','resume'].includes(a)) return S.rollouts[i].record.head; } return null; };
-
-function refuse(code, failure, missing, remedy, owner){
-  S.refusalCount++;
-  S.refusals.unshift({code,failure,missing,remedy,owner}); S.refusals.length=Math.min(S.refusals.length,12);
-  toast(`<b class="red">refused</b> ${esc(code)}`,'r'); return null;
-}
-const SECRET_FIELDS = /^(privateKey|secretKey|secret|password|bearer|sessionToken|contentKey|seed)$/i;
-function scanSecrets(o,path=''){ if(o&&typeof o==='object'){ for(const k of Object.keys(o)){ if(SECRET_FIELDS.test(k)) return path+k; const r=scanSecrets(o[k],path+k+'.'); if(r) return r; } } return null; }
-async function append(type, record){
-  const secret = scanSecrets(record);
-  if(secret) return refuse('record.plaintext-secret-field',`Public record field "${secret}" carries a secret-shaped value.`,'An encrypted descriptor or sealed grant in place of plaintext (B7).','Remove the field. Secrets travel only as ciphertext under key epochs (B7) and never enter public history.','L10 · B1 hostile vector');
-  const h = await digest(record);
-  const ev = {seq:S.journal.length+1,type,record,digest:sim(h)};
-  S.journal.push(ev); S.open=ev.seq; return ev;
-}
-const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
-
-async function createProject(name){
-  if(S.project) return refuse('project.exists','Project already has a genesis record.','None.','Projects are created once; later changes append new events.','L01');
-  const ev = await append('flux.remote-project.v1',{type:'flux.remote-project.v1',projectId:PROJECT_ID,name,owner:'id:dev-demo',signature:'notBuilt'});
-  if(ev){ S.project=ev; toast('project record appended (simulated)','g'); }
-}
-async function publishModule(moduleId, version, mime, bytes, extra={}){
-  if(!S.project) return refuse('reference.unknown-project','Module references a project that has no record.','A flux.remote-project.v1 genesis record.','Create the project first.','B1 hostile vector');
-  if(!moduleId) return refuse('module.invalid-id','Module ID is empty.','A module ID.','Name the module.','B1 hostile vector');
-  if(!EXACT_VERSION.test(version)) return refuse('module.mutable-version-selector',`Version "${version}" is not an exact version.`,'An exact version bound to an exact artifact CID.','Publish an exact version such as 1.4.0. Selectors like latest, ^1.2 or ~1 cannot enter a head.','B1 hostile vector · B5');
-  if(!/^\d+$/.test(String(bytes))||+bytes<=0) return refuse('artifact.invalid-length','Artifact byte length is missing or not a positive integer.','A verified length in the artifact descriptor.','Supply the exact byte length the blob store measured (B2 verifier).','B1 · B2');
-  if((extra.projectId||PROJECT_ID)!==PROJECT_ID) return refuse('reference.cross-project',`Module claims project "${extra.projectId}".`,'A record in this project.','Publish the module inside the project that will use it.','B1 hostile vector');
-  if(S.modules.some(m=>m.record.moduleId===moduleId&&m.record.version===version)) return refuse('module.version-reuse',`${moduleId}@${version} already exists.`,'None.','Publish a new exact version. Existing records are never rewritten.','L01');
-  const artifactCid = sim(await digest('artifact:'+moduleId+':'+version+':'+bytes));
-  const rec = {type:'flux.remote-module.v1',projectId:PROJECT_ID,moduleId,version,
-    artifact:{cid:artifactCid,mime,bytes:+bytes},encryption:'notBuilt (B7)',signature:'notBuilt',...(extra.fields||{})};
-  const ev = await append('flux.remote-module.v1',rec);
-  if(ev){ S.modules.push(ev); toast(`module ${esc(moduleId)}@${esc(version)} appended`,'g'); }
-}
-async function publishHead(mounts, predecessorOverride){
-  if(!S.project) return refuse('reference.unknown-project','No project record.','Project genesis.','Create the project first.','B1');
-  if(!mounts.length) return refuse('environment.empty','An environment head must mount at least one module.','Mounted module records.','Select modules and mount points.','B6');
-  const seen=new Set(), ids=new Set();
-  for(const m of mounts){
-    if(seen.has(m.mount)) return refuse('environment.duplicate-mount-point',`Mount point "${m.mount}" is used twice.`,'A unique mount per module.','Give each module its own mount point.','B1 hostile vector');
-    if(ids.has(m.moduleId)) return refuse('environment.duplicate-module-id',`Module "${m.moduleId}" is mounted twice.`,'One exact version per module ID in a head.','Pick a single version of each module.','B1 hostile vector');
-    seen.add(m.mount); ids.add(m.moduleId);
+/* ======================= DATA ======================= */
+const D = {
+  role:'dev',
+  project:{owner:'defxn',name:'demo-game',desc:'Browser game playtest. Physics engine, level packs and a UI shell, shipped as separate modules.',visibility:'Private'},
+  members:[{u:'mara',role:'Owner'},{u:'devon',role:'Maintainer'},{u:'jo',role:'Developer'}],
+  modules:[
+    {id:'ui-shell',desc:'Game shell, menus and HUD',type:'HTML app',mount:'/',versions:[
+      {v:'1.0.0',size:'2.0 MB',by:'devon',at:'Sep 26',status:'active',notes:'First playable shell'},
+      {v:'1.1.0',size:'2.3 MB',by:'devon',at:'Oct 5',status:'active',notes:'Responsive menus, new HUD'}]},
+    {id:'physics',desc:'Rigid-body physics (WebAssembly)',type:'WebAssembly',mount:'/engine',versions:[
+      {v:'2.3.0',size:'180 KB',by:'mara',at:'Sep 26',status:'active',notes:'Jump tuning'},
+      {v:'2.3.1',size:'184 KB',by:'mara',at:'Oct 5',status:'active',notes:'Fixed timestep at high refresh rates'}]},
+    {id:'level-pack',desc:'Levels 1–6 with assets',type:'Data bundle',mount:'/levels',versions:[
+      {v:'0.8.0',size:'1.1 MB',by:'jo',at:'Sep 20',status:'revoked',notes:'Contained unlicensed audio'},
+      {v:'0.9.0',size:'1.0 MB',by:'jo',at:'Oct 2',status:'active',notes:'Levels 1–6'}]},
+  ],
+  envs:[
+    {id:'playtest',desc:'Open playtest for invited players',versions:[
+      {n:1,mods:{'ui-shell':'1.0.0',physics:'2.3.0'},by:'mara',at:'Sep 28',note:'First playtest'},
+      {n:2,mods:{'ui-shell':'1.0.0',physics:'2.3.0','level-pack':'0.9.0'},by:'mara',at:'Oct 3',note:'Add levels 1–6'},
+      {n:3,mods:{'ui-shell':'1.1.0',physics:'2.3.1','level-pack':'0.9.0'},by:'devon',at:'Oct 6',note:'New HUD + physics fix'}]},
+    {id:'internal',desc:'Team-only builds',versions:[
+      {n:1,mods:{'ui-shell':'1.1.0',physics:'2.3.1'},by:'devon',at:'Oct 5',note:'HUD review'}]},
+  ],
+  rollouts:{
+    playtest:{state:'active',live:3,group:'early',events:[
+      {a:'activate',v:1,by:'mara',at:'Sep 28'},{a:'activate',v:2,by:'mara',at:'Oct 3'},{a:'activate',v:3,by:'devon',at:'Oct 6'}]},
+    internal:{state:'paused',live:1,group:'qa',events:[{a:'activate',v:1,by:'devon',at:'Oct 5'},{a:'pause',v:1,by:'devon',at:'Oct 7',reason:'Waiting on art review'}]},
+  },
+  groups:[
+    {id:'early',name:'Early testers',rule:'20% of invited players',pct:20,size:412,members:82,desc:'Picked automatically and stays the same for each player'},
+    {id:'qa',name:'QA team',rule:'Named people',members:3,people:['jo','sam','priya'],desc:'Internal QA'},
+  ],
+  feedback:[
+    {n:14,title:'Physics jitters on 144 Hz monitors',env:'playtest',v:3,mod:'physics',mv:'2.3.1',by:'tester-07',vis:'Public',status:'open',labels:['bug','perf'],at:'2 hours ago',
+      body:'Character vibrates when standing still on a 144 Hz display. Fine at 60 Hz. Chrome 129, Windows 11.',events:[{k:'comment',by:'mara',at:'1 hour ago',body:'Thanks! Can you try with "Fixed timestep" toggled in settings?'}]},
+    {n:13,title:'Level 4 door doesn\'t open after reload',env:'playtest',v:3,mod:'level-pack',mv:'0.9.0',by:'tester-22',vis:'Team only',status:'triaged',labels:['bug'],at:'yesterday',
+      body:'Reloaded the page mid-level; the door trigger stays locked.',events:[{k:'status',by:'jo',at:'20 hours ago',from:'open',to:'triaged'}]},
+    {n:12,title:'Menu text overlaps on small screens',env:'playtest',v:3,mod:'ui-shell',mv:'1.1.0',by:'tester-07',vis:'Public',status:'open',labels:['ui'],at:'yesterday',body:'On a 360 px wide phone the settings labels overlap the toggles.',events:[]},
+    {n:11,title:'Love the new jump feel',env:'playtest',v:2,mod:'physics',mv:'2.3.0',by:'tester-22',vis:'Public',status:'done',labels:['praise'],at:'Oct 4',body:'Jumping feels much snappier than the first build.',events:[{k:'status',by:'mara',at:'Oct 4',from:'open',to:'done'}]},
+    {n:10,title:'Crash on start in Safari',env:'playtest',v:1,mod:'ui-shell',mv:'1.0.0',by:'tester-07',vis:'Public',status:'done',labels:['bug'],at:'Sep 29',body:'White screen on Safari 18 right after the logo.',
+      events:[{k:'correction',by:'tester-07',at:'Sep 29',body:'Correction: only happens with a content blocker enabled.'},{k:'status',by:'devon',at:'Sep 30',from:'open',to:'done'}]},
+  ],
+  activity:[
+    {k:'feedback',who:'tester-07',at:'2 hours ago',text:'reported <b>#14 Physics jitters on 144 Hz monitors</b> on playtest v3'},
+    {k:'access',who:'mara',at:'yesterday',text:'invited <b>priya</b> to <b>QA team</b>'},
+    {k:'rollout',who:'devon',at:'Oct 7',text:'paused <b>internal</b> (Waiting on art review)'},
+    {k:'rollout',who:'devon',at:'Oct 6',text:'released <b>playtest v3</b> to Early testers'},
+    {k:'version',who:'devon',at:'Oct 6',text:'published environment <b>playtest v3</b>'},
+    {k:'module',who:'devon',at:'Oct 5',text:'published module <b>ui-shell 1.1.0</b>'},
+    {k:'module',who:'mara',at:'Oct 5',text:'published module <b>physics 2.3.1</b>'},
+    {k:'access',who:'mara',at:'Oct 3',text:'revoked <b>level-pack 0.8.0</b> (Contained unlicensed audio)'},
+  ],
+  keys:[{n:4,at:'Oct 3',why:'Removed a former contractor'},{n:3,at:'Sep 20',why:'Scheduled rotation'},{n:2,at:'Sep 1',why:'Lost device: devon/laptop'}],
+  tester:{
+    granted:[
+      {proj:'defxn/demo-game',env:'playtest',state:'active',v:3,by:'mara',note:'Thanks for helping! Focus on levels 4–6 this week.'},
+      {proj:'nova/space-sim',env:'beta',state:'paused',v:7,by:'lee',note:'Paused while we fix save files.'},
+      {proj:'tiny/puzzle-box',env:'preview',state:'revoked',v:2,by:'ana',note:''},
+    ],
+    unlocked:false
   }
-  const expected = lastHead()?.digest || null;
-  const predecessor = predecessorOverride!==undefined ? predecessorOverride : expected;
-  if(predecessor!==expected) return refuse('environment.stale-head',`Predecessor ${short(predecessor)} is not the current head ${short(expected)}.`,'An exact-head match at append time.','Re-read the current head, recompose and resubmit. Two writers cannot both win one sequence.','L06 · B3 compare-and-append');
-  const rec = {type:'flux.remote-environment.v1',projectId:PROJECT_ID,environmentId:'env-staging',sequence:S.heads.length+1,predecessor,
-    modules:mounts.slice().sort((a,b)=>a.mount<b.mount?-1:1).map(m=>({mount:m.mount,moduleId:m.moduleId,record:m.record})),signature:'notBuilt'};
-  const ev = await append('flux.remote-environment.v1',rec);
-  if(ev){ S.heads.push(ev); toast(`environment head #${rec.sequence} appended`,'g'); }
-}
-async function createCohort(name, percent){
-  if(!S.project) return refuse('reference.unknown-project','No project record.','Project genesis.','Create the project first.','B1');
-  const p=+percent; if(!(Number.isInteger(p)&&p>=1&&p<=100)) return refuse('cohort.invalid-selector','Bucket percentage must be a whole number from 1 to 100.','A deterministic policy selector.','Pick a percentage between 1 and 100.','B6');
-  const ev = await append('flux.remote-cohort.v1',{type:'flux.remote-cohort.v1',projectId:PROJECT_ID,cohortId:'coh-'+(name.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'cohort'),
-    selector:{kind:'identity-bucket',percent:p},membershipEvidence:'notBuilt (B6)',signature:'notBuilt'});
-  if(ev){ S.cohort=ev; toast('cohort record appended','g'); }
-}
-async function bucketOf(identity){ const h=await digest(S.cohort.record.cohortId+'|'+identity); return h?parseInt(h.slice(0,8),16)%100:null; }
-const TRANSITIONS = {draft:['activate'],active:['activate','pause','rollback','close'],paused:['resume','rollback','close'],closed:[]};
-async function rollout(action, headDigest, extra={}){
-  const st = rolloutState();
-  if(!S.cohort) return refuse('rollout.no-cohort','Rollout has no cohort.','A flux.remote-cohort.v1 record.','Create a cohort first.','B6');
-  if(!TRANSITIONS[st].includes(action)) return refuse('rollout.invalid-transition',`"${action}" is not allowed from state "${st}".`,'None.',`Allowed from ${st}: ${TRANSITIONS[st].join(', ')||'nothing (closed is final)'}.`,'B6');
-  if(extra.foreign) return refuse('rollout.foreign-head','Rollout targets a head recorded for project "prj-other".','A head in this project and environment.','Target an environment head recorded for env-staging in prj-demo.','B1 hostile vector');
-  const head = ['pause','close','resume'].includes(action) ? activeHeadDigest() : headDigest;
-  const target = S.heads.find(h=>h.digest===head);
-  if(!target) return refuse('rollout.unknown-head','Target head is not in the journal.','An appended environment head.','Publish an environment head first.','B1');
-  const cur = S.heads.findIndex(h=>h.digest===activeHeadDigest()), tgt=S.heads.indexOf(target);
-  if(action==='rollback' && tgt>=cur) return refuse('rollout.rollback-not-earlier','Rollback must point to an earlier head than the active one.','An earlier head in this environment.','Pick a lower-sequence head, or use activate to move forward.','B6');
-  if(action==='activate' && cur>=0 && tgt<=cur) return refuse('rollout.activate-not-forward','Activate must move to a newer head.','A head with a higher sequence than the active one.','Use rollback to return to an earlier head; it is recorded as a rollback, not a silent re-activation.','B6');
-  const prev = lastRollout();
-  const rec = {type:'flux.remote-rollout.v1',projectId:PROJECT_ID,environmentId:'env-staging',sequence:S.rollouts.length+1,predecessor:prev?prev.digest:null,
-    action,head,cohortId:S.cohort.record.cohortId,signature:'notBuilt'};
-  const ev = await append('flux.remote-rollout.v1',rec);
-  if(ev){ S.rollouts.push(ev); const a=activeHeadDigest(); S.envView = rolloutState()==='closed'?null:sim(await digest({head:a,cohort:S.cohort.record.cohortId,capabilities:'notBuilt (B11)'})); toast(`rollout ${action} appended`,'g'); }
-}
-async function submitFeedback(body, moduleDigest, visibility){
-  const active = activeHeadDigest();
-  if(!active||rolloutState()!=='active') return refuse('feedback.no-active-view','No active environment view to bind feedback to.','An active rollout and its environment-view digest.','Activate or resume a rollout first.','B12');
-  if(visibility!=='public') return refuse('feedback.encryption-notBuilt',`${visibility} feedback needs the encrypted blob contract.`,'Artifact encryption and key epochs (B7).','Submit as public in the sandbox, or wait for B7 and B12. Private feedback is never stored as plaintext.','L08 · L10');
-  const head = S.heads.find(h=>h.digest===active);
-  if(!head.record.modules.some(m=>m.record===moduleDigest)) return refuse('feedback.version-not-in-view','Feedback claims a module version the active view does not include.','A module CID inside the session\'s environment view.','Report against a module in the active head. A tester cannot claim a version their session did not receive.','B12');
-  if(!body.trim()) return refuse('feedback.empty','Feedback statement is empty.','None.','Write what you observed.','B12');
-  const ev = await append('flux.remote-feedback.v1',{type:'flux.remote-feedback.v1',projectId:PROJECT_ID,environmentView:S.envView,head:active,module:moduleDigest,
-    visibility,statement:body,tester:'pseudonym:tester-07 (identity proof notBuilt, B10)',signature:'notBuilt'});
-  if(ev){ S.feedback.push(ev); toast('feedback appended','g'); }
-}
-function unlock(){
-  refuse('access.resolver-notBuilt','No global access decision exists for this unlock.','Global AccessQuery decision + checker receipts (B8), node-power receipt (B9), identity session (B10), encrypted artifact + sealed key (B7).','Complete B7–B10. There is no local ACL fallback and no mock in a production profile.','L05 · L08');
-}
+};
+const P = () => `${D.project.owner}/${D.project.name}`;
+const env = id => D.envs.find(e=>e.id===id);
+const mod = id => D.modules.find(m=>m.id===id);
+const fb = n => D.feedback.find(f=>f.n===n);
+const newestVer = m => m.versions.filter(v=>v.status!=='revoked').at(-1);
+const openCount = () => D.feedback.filter(f=>f.status==='open'||f.status==='triaged').length;
+function log(k,text){ D.activity.unshift({k,who:D.role==='dev'?'mara':'tester-07',at:'just now',text}); }
 
-/* --- hostile corpus runner --- */
-const viewModules = () => S.heads.find(h=>h.digest===activeHeadDigest())?.record.modules || [];
-const HOSTILE = [
- ['H1','mutable version selector "latest"', ()=>publishModule('ui-shell','latest','text/html',2048)],
- ['H2','duplicate mount point in a head', ()=>{ const m=S.modules.slice(-2); if(m.length<2) return refuse('fixture.needs-modules','This vector needs two module records.','Two published modules.','Seed the happy path first.','sandbox'); return publishHead([{mount:'/app',moduleId:m[0].record.moduleId,record:m[0].digest},{mount:'/app',moduleId:m[1].record.moduleId,record:m[1].digest}]); }],
- ['H3','stale predecessor (competing writer)', ()=>{ if(S.heads.length<2) return refuse('fixture.needs-heads','This vector needs two heads.','Two environment heads.','Seed the happy path first.','sandbox'); const m=S.modules[0]; return publishHead([{mount:'/x',moduleId:m.record.moduleId,record:m.digest}], S.heads[0].digest); }],
- ['H4','rollout targets another project\'s head', ()=>rollout(TRANSITIONS[rolloutState()][0]||'activate', lastHead()?.digest, {foreign:true})],
- ['H5','plaintext private key in a public record', ()=>publishModule('leaky','1.0.0','application/wasm',512,{fields:{privateKey:'ed25519:9f…'}})],
- ['H6','cross-project module reference', ()=>publishModule('foreign','1.0.0','text/javascript',100,{projectId:'prj-other'})],
- ['H7','feedback claims a version outside the view', ()=>{ const outside=S.modules.find(m=>!viewModules().some(x=>x.record===m.digest)); return submitFeedback('crash on load', outside?.digest||'sim:sha256:0', 'public'); }],
- ['H8','private feedback without encryption', ()=>submitFeedback('internal note', viewModules()[0]?.record, 'project-private')],
-];
-async function runHostile(){
-  const before = S.journal.length, results=[];
-  for(const [id,name,fn] of HOSTILE){
-    const n=S.refusalCount, j=S.journal.length; await fn();
-    const refused = S.journal.length===j && S.refusalCount>n;
-    results.push({id,name,refused, code: refused ? S.refusals[0].code : 'APPENDED (defect)'});
-  }
-  S.hostile = {results, appended:S.journal.length-before};
-}
-async function seedHappy(){
-  if(!S.project) await createProject('demo-game');
-  const need=[['ui-shell','1.0.0','text/html',2048],['physics','2.3.1','application/wasm',184320],['level-pack','0.9.0','application/octet-stream',1048576]];
-  for(const [i,v,m,b] of need) if(!S.modules.some(x=>x.record.moduleId===i)) await publishModule(i,v,m,b);
-  const M = id => S.modules.find(x=>x.record.moduleId===id);
-  if(!S.heads.length) await publishHead([{mount:'/',moduleId:'ui-shell',record:M('ui-shell').digest},{mount:'/engine',moduleId:'physics',record:M('physics').digest}]);
-  if(S.heads.length<2) await publishHead([{mount:'/',moduleId:'ui-shell',record:M('ui-shell').digest},{mount:'/engine',moduleId:'physics',record:M('physics').digest},{mount:'/levels',moduleId:'level-pack',record:M('level-pack').digest}]);
-  if(!S.cohort) await createCohort('early testers',20);
-  if(rolloutState()==='draft') await rollout('activate',lastHead().digest);
-}
+/* ======================= ROUTER ======================= */
+const route = () => (location.hash.slice(1)||'/').split('/').filter(Boolean);
+window.addEventListener('hashchange',()=>{ render(); window.scrollTo(0,0); });
+function go(h){ location.hash=h; }
 
-/* --- sandbox render --- */
-R.sandbox = () => {
-  const st = rolloutState(), active=activeHeadDigest(), activeHead=st!=='closed'?S.heads.find(h=>h.digest===active):null;
-  $('#main').innerHTML = mnav()+`<h1>Protocol sandbox</h1>
-  <div class="sub">Walk the B4 flow (project → module → environment → cohort → rollout → feedback) against an in-page append-only journal. Validation follows the ledger's hostile vectors. <b class="amber">Simulated:</b> records are unsigned (signing is B2), digests are SHA-256 of sorted-key JSON (not Flux CIDs), and the real engine will refuse unsigned records.</div>
-  <div class="row" style="margin-bottom:14px"><button class="btn primary" id="seed">▷ Seed happy path</button><button class="btn danger" id="hostile">⚠ Run hostile corpus (H1–H8)</button><button class="btn" id="reset">Reset</button>
-    <span class="spacer"></span>${chip('sim')} <span class="muted">rollout <b class="${st==='active'?'green':st==='paused'?'amber':st==='closed'?'red':''}">${st}</b></span></div>
-  ${S.hostile?`<div class="card"><h2>Hostile corpus · ${S.hostile.results.filter(r=>r.refused).length}/${S.hostile.results.length} refused · ${S.hostile.appended} appended</h2><div class="tbl"><table><tr><th>Vector</th><th>Input</th><th>Outcome</th></tr>
-    ${S.hostile.results.map(r=>`<tr><td>${r.id}</td><td>${esc(r.name)}</td><td>${r.refused?`<span class="cell no">refused</span> <span class="muted">${esc(r.code)}</span>`:`<span class="cell nb">${esc(r.code)}</span>`}</td></tr>`).join('')}</table></div>
-    <div class="muted" style="margin-top:6px">Every refusal happened before append, so the journal is unchanged. In the real system these are the frozen Batch 1 vectors with stable reason codes; the codes here are illustrative.</div></div>`:''}
-  <div class="grid split">
-  <div>
-    <div class="step"><div class="row"><span class="num">01 · PROJECT CREATE</span><span class="spacer"></span>${S.project?chip('sim'):''}</div>
-      <div class="row" style="margin-top:8px"><input class="f" id="pName" value="demo-game" style="flex:1" aria-label="project name" ${S.project?'disabled':''}><button class="btn" id="pBtn" ${S.project?'disabled':''}>project create</button></div></div>
-
-    <div class="step"><div class="num">02 · MODULE PUBLISH</div>
-      <div class="grid g4" style="gap:8px;margin-top:4px">
-        <div><label class="l" for="mId">moduleId</label><input class="f" id="mId" value="ui-shell"></div>
-        <div><label class="l" for="mVer">version (exact)</label><input class="f" id="mVer" value="1.1.0"></div>
-        <div><label class="l" for="mMime">mime</label><select class="f" id="mMime"><option>text/html</option><option>text/javascript</option><option>application/wasm</option><option>image/svg+xml</option><option>video/mp4</option></select></div>
-        <div><label class="l" for="mBytes">bytes</label><input class="f" id="mBytes" value="2304"></div>
-      </div>
-      <div class="row" style="margin-top:8px"><button class="btn" id="mBtn">module publish</button><span class="muted">try <code>latest</code> or <code>^1.2</code></span></div>
-      ${S.modules.length?`<div class="tbl" style="margin-top:8px"><table><tr><th>module</th><th>version</th><th>artifact</th><th>record</th></tr>${S.modules.map(m=>`<tr><td>${esc(m.record.moduleId)}</td><td>${esc(m.record.version)}</td><td class="muted">${esc(m.record.artifact.mime)} · ${m.record.artifact.bytes} B</td><td class="oid">${short(m.digest)}</td></tr>`).join('')}</table></div>`:''}
+function header(){
+  return `<header class="gh-header">
+    <a class="logo" href="#/"><span class="mark">⬢</span><span class="hide-sm">Remote Env</span></a>
+    <div class="search" role="search">${ic('search')}<span>Search or jump to…</span><kbd>/</kbd></div>
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="View as">
+      <button class="${D.role==='dev'?'on':''}" onclick="setRole('dev')">Developer</button>
+      <button class="${D.role==='tester'?'on':''}" onclick="setRole('tester')">Tester</button>
     </div>
+    <button class="iconbtn hide-sm" title="Notifications" aria-label="Notifications">${ic('bell')}<span class="dot"></span></button>
+    <button class="iconbtn" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()">${ic('sun')}</button>
+    <div class="dropdown"><button class="iconbtn" style="border:0" aria-label="Account menu" onclick="toggleMenu(event)">${av(D.role==='dev'?'mara':'tester-07',true)}</button>
+      <div class="menu" id="acct" hidden>
+        <div style="padding:6px 10px" class="muted">Signed in as <b style="color:var(--text)">${D.role==='dev'?'mara':'tester-07'}</b></div><hr>
+        <a href="#/">${ic('book')}Your projects</a><a href="#/tester">${ic('inbox')}Tester inbox</a><a href="#/design">${ic('palette')}Design system</a>
+      </div></div>
+  </header>`;
+}
+function setRole(r){ D.role=r; go(r==='dev'?'#/':'#/tester'); render(); }
+function toggleTheme(){ const r=document.documentElement; r.dataset.theme = r.dataset.theme==='light'?'dark':'light'; }
+function toggleMenu(e){ e.stopPropagation(); const m=document.getElementById('acct'); m.hidden=!m.hidden; }
+document.addEventListener('click',()=>{ const m=document.getElementById('acct'); if(m) m.hidden=true; });
 
-    <div class="step"><div class="num">03 · ENVIRONMENT PUBLISH</div>
-      ${S.modules.length?`<div class="tbl" style="margin-top:6px"><table><tr><th></th><th>module record</th><th>mount</th></tr>${S.modules.map((m,i)=>`<tr><td><input type="checkbox" class="hm" data-i="${i}" aria-label="include ${esc(m.record.moduleId)}@${esc(m.record.version)}"></td><td>${esc(m.record.moduleId)}@${esc(m.record.version)} <span class="oid">${short(m.digest)}</span></td><td><input class="f hmount" data-i="${i}" aria-label="mount point" value="/${i===0?'':esc(m.record.moduleId)}" style="width:130px"></td></tr>`).join('')}</table></div>
-        <div class="row" style="margin-top:8px"><button class="btn" id="hBtn">environment publish</button><span class="muted">next #${S.heads.length+1} · predecessor ${short(lastHead()?.digest)}</span></div>`
-      :'<div class="muted" style="margin-top:6px">Publish modules first.</div>'}
-      ${S.heads.length?`<div style="margin-top:10px">${S.heads.map(h=>`<div class="row" style="padding:3px 0"><span class="chip ${activeHead&&h.digest===active?'s-complete':''}">#${h.record.sequence}</span><span class="oid">${short(h.digest)}</span><span class="muted">${h.record.modules.map(m=>esc(m.mount)+'→'+esc(m.moduleId)).join('  ')}</span>${activeHead&&h.digest===active?`<span class="${st==='active'?'green':'amber'}">${st}</span>`:''}</div>`).join('')}</div>`:''}
+function repoHead(tab){
+  const t = (id,label,icon,count) => `<a href="#/p/${id}" class="${tab===id?'on':''}">${ic(icon)}${label}${count!=null?` <span class="counter">${count}</span>`:''}</a>`;
+  return `<div class="repohead"><div class="crumb">${ic('package','muted')}<a href="#/">${D.project.owner}</a><span class="muted">/</span><b><a href="#/p/overview">${D.project.name}</a></b><span class="state st-draft" style="font-size:12px">${ic('lock')}${D.project.visibility}</span>
+    <span class="spacer"></span><button class="btn sm hide-sm" onclick="inviteModal()">${ic('users')}Invite testers</button><button class="btn sm primary" onclick="publishModuleModal()">${ic('upload')}Publish module</button></div>
+    <nav class="tabs" aria-label="Project">${t('overview','Overview','book')}${t('modules','Modules','package',D.modules.length)}${t('environments','Environments','layers',D.envs.length)}${t('rollouts','Rollouts','rollout')}${t('testers','Testers','users',D.groups.length)}${t('feedback','Feedback','msg',openCount())}${t('activity','Activity','clock')}${t('settings','Settings','sliders')}</nav></div>`;
+}
+
+/* ======================= DEV: HOME ======================= */
+function vHome(){
+  const r=D.rollouts.playtest;
+  return `<div class="wrap"><div class="cols"><div>
+    <div class="row" style="margin-bottom:16px"><h1>Your projects</h1><span class="spacer"></span><button class="btn primary" onclick="toast('New project wizard: name, owner, visibility, first environment','info')">${ic('plus')}New project</button></div>
+    <div class="box">
+      <div class="box-row click" onclick="go('#/p/overview')"><div style="flex:1;min-width:0"><div class="row"><a href="#/p/overview"><b>${P()}</b></a><span class="state st-draft">${D.project.visibility}</span></div>
+        <div class="muted" style="margin:4px 0">${esc(D.project.desc)}</div>
+        <div class="row muted" style="font-size:12px"><span class="row" style="gap:4px"><span class="livedot ${r.state==='paused'?'p':''}"></span>playtest v${r.live} live</span><span>${D.modules.length} modules</span><span>${openCount()} open feedback</span><span>Updated Oct 7</span></div></div></div>
+      <div class="box-row click" onclick="toast('Demo only: open demo-game','info')"><div style="flex:1"><div class="row"><a href="#" onclick="return false"><b>defxn/level-editor</b></a><span class="state st-draft">Private</span></div><div class="muted" style="margin:4px 0">In-browser level editor for designers.</div>
+        <div class="row muted" style="font-size:12px"><span class="row" style="gap:4px"><span class="livedot c"></span>No live rollout</span><span>2 modules</span><span>Updated Sep 30</span></div></div></div>
     </div>
-
-    <div class="step"><div class="row"><span class="num">04 · COHORT CREATE</span><span class="spacer"></span>${S.cohort?`<span class="chip s-sim">${esc(S.cohort.record.cohortId)} · ${S.cohort.record.selector.percent}%</span>`:''}</div>
-      ${S.cohort?`<div class="row" style="margin-top:8px"><input class="f" id="bId" placeholder="identity, e.g. id:alice" aria-label="identity" style="flex:1"><button class="btn" id="bBtn">deterministic bucket</button></div><div id="bOut" class="muted" style="margin-top:6px">bucket = SHA-256(cohortId | identity) mod 100. The same identity gets the same bucket in every process.</div>
-        <div class="muted" style="margin-top:4px">membership evidence <span class="amber">notBuilt (B6)</span></div>`
-      :`<div class="row" style="margin-top:8px"><input class="f" id="cName" value="early testers" aria-label="cohort name" style="flex:1"><input class="f" id="cPct" value="20" style="width:70px" aria-label="percent"><span class="muted">%</span><button class="btn" id="cBtn">cohort create</button></div>`}
-    </div>
-
-    <div class="step"><div class="row"><span class="num">05 · ROLLOUT</span><span class="spacer"></span><span class="muted">state <b>${st}</b></span></div>
-      <div class="row" style="margin-top:8px">
-        <select class="f" id="rHead" style="width:auto" aria-label="target head">${S.heads.map(h=>`<option value="${h.digest}" ${h===lastHead()?'selected':''}>head #${h.record.sequence} ${short(h.digest)}</option>`).join('')||'<option value="">no heads</option>'}</select>
-        ${['activate','pause','resume','rollback','close'].map(a=>`<button class="btn sm ${a==='rollback'||a==='close'?'danger':''}" data-r="${a}" ${TRANSITIONS[st].includes(a)?'':'disabled'}>${a}</button>`).join('')}
-      </div>
-      ${S.envView?`<div class="muted" style="margin-top:8px">environment view <span class="oid">${short(S.envView)}</span> = digest(head ${short(active)}, cohort, capability surface <span class="amber">notBuilt B11</span>)</div>`:''}
-      ${S.rollouts.length?`<div style="margin-top:8px">${S.rollouts.map(r=>`<div class="row" style="padding:2px 0"><span class="chip">r${r.record.sequence}</span><span class="${r.record.action==='rollback'||r.record.action==='close'?'red':r.record.action==='activate'?'green':''}">${r.record.action}</span><span class="muted">→ head #${S.heads.find(h=>h.digest===r.record.head)?.record.sequence}</span></div>`).join('')}<div class="muted" style="margin-top:4px">A rollback appends an event pointing at an earlier head. Every intervening event stays in history.</div></div>`:''}
-    </div>
-
-    <div class="step"><div class="row"><span class="num">06 · TESTER UNLOCK</span><span class="spacer"></span>${chip('notBuilt')}</div>
-      <div class="row" style="margin-top:8px"><button class="btn" id="uBtn" ${activeHead?'':'disabled'}>unlock environment view</button><span class="muted">needs B7 · B8 · B9 · B10</span></div></div>
-
-    <div class="step"><div class="num">07 · FEEDBACK SUBMIT</div>
-      ${activeHead?`<div class="grid g2" style="gap:8px;margin-top:4px">
-        <div><label class="l" for="fMod">about module</label><select class="f" id="fMod">${S.modules.map(m=>`<option value="${m.digest}">${esc(m.record.moduleId)}@${esc(m.record.version)}${activeHead.record.modules.some(x=>x.record===m.digest)?'':' (not in view)'}</option>`).join('')}</select></div>
-        <div><label class="l" for="fVis">visibility</label><select class="f" id="fVis"><option>public</option><option>project-private</option><option>author-private</option></select></div></div>
-        <label class="l" for="fBody">statement</label><textarea class="f" id="fBody" rows="2" placeholder="What did you observe?"></textarea>
-        <div class="row" style="margin-top:8px"><button class="btn" id="fBtn">feedback submit</button></div>
-        ${S.feedback.map(f=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="oid">${short(f.digest)}</span> <span>${esc(f.record.statement)}</span><div class="muted">view ${short(f.record.environmentView)} · ${esc(f.record.visibility)}</div></div>`).join('')}`
-      :'<div class="muted" style="margin-top:6px">Feedback binds to an active environment view. Activate a rollout first.</div>'}
+    <h2 style="margin-top:24px">Needs your attention</h2>
+    <div class="box">
+      <div class="box-row click" onclick="go('#/p/feedback/14')">${ic('issue','green')}<div style="flex:1"><b>Physics jitters on 144 Hz monitors</b><div class="muted" style="font-size:12px">New feedback on playtest v3 · ${ver('physics','2.3.1')}</div></div><span class="muted" style="font-size:12px">2h</span></div>
+      <div class="box-row click" onclick="go('#/p/rollouts')">${ic('pause','yellow')}<div style="flex:1"><b>internal is paused</b><div class="muted" style="font-size:12px">Paused by devon on Oct 7: Waiting on art review</div></div><span class="muted" style="font-size:12px">1d</span></div>
     </div>
   </div>
-
-  <div>
-    <div class="card"><h2>Refusals · failure, missing evidence, remedy</h2>
-      ${S.refusals.length?S.refusals.map(r=>`<div class="refusal ${r.code.includes('notBuilt')?'nb':''}"><b class="${r.code.includes('notBuilt')?'amber':'red'}">${esc(r.code)}</b> <span class="muted">· ${esc(r.owner)}</span>
-        <dl><dt>failure</dt><dd>${esc(r.failure)}</dd><dt>missing evidence</dt><dd>${esc(r.missing)}</dd><dt>remedy</dt><dd>${esc(r.remedy)}</dd></dl></div>`).join('')
-       :'<div class="muted">No refusals yet. Try the hostile corpus.</div>'}
-    </div>
-    <div class="card"><h2>Journal · append-only · ${S.journal.length} events</h2>
-      ${S.journal.slice().reverse().map(e=>`<div class="jrow" data-j="${e.seq}" tabindex="0" role="button"><span class="muted">#${e.seq}</span><span>${e.type.replace('flux.remote-','').replace('.v1','')} <span class="oid">${short(e.digest)}</span></span><span class="chip s-sim">unsigned</span></div>
-        ${S.open===e.seq?`<pre class="json">${esc(JSON.stringify(e.record,null,2))}</pre><div class="muted" style="font-size:11px;margin:4px 0 8px;word-break:break-all">hashed form: ${esc(canon(e.record).slice(0,220))}${canon(e.record).length>220?'…':''}</div>`:''}`).join('')||'<div class="muted">Empty. Seed the happy path or create a project.</div>'}
-    </div>
+  <aside class="side"><section><h3>Recent activity</h3>${D.activity.slice(0,5).map(a=>`<div style="padding:6px 0;font-size:13px">${av(a.who)} <b>${esc(a.who)}</b> ${a.text}<div class="muted" style="font-size:12px">${a.at}</div></div>`).join('')}</section></aside>
   </div></div>`;
+}
 
-  const v = id => $(id)?.value ?? '';
-  const on = (id,fn) => { const el=$(id); if(el) el.onclick = async()=>{ await fn(); render(); }; };
-  on('#seed', seedHappy); on('#hostile', runHostile);
-  on('#reset', ()=>{ Object.assign(S,{journal:[],refusals:[],refusalCount:0,project:null,modules:[],heads:[],cohort:null,rollouts:[],feedback:[],open:null,envView:null,hostile:null}); });
-  on('#pBtn', ()=>createProject(v('#pName')||'demo'));
-  on('#mBtn', ()=>publishModule(v('#mId').trim(),v('#mVer').trim(),v('#mMime'),v('#mBytes').trim()));
-  on('#hBtn', ()=>{ const mounts=[...document.querySelectorAll('.hm')].filter(c=>c.checked).map(c=>{const m=S.modules[+c.dataset.i];return {mount:document.querySelector(`.hmount[data-i="${c.dataset.i}"]`).value.trim(),moduleId:m.record.moduleId,record:m.digest};}); return publishHead(mounts); });
-  on('#cBtn', ()=>createCohort(v('#cName')||'cohort',v('#cPct')));
-  on('#uBtn', unlock);
-  on('#fBtn', ()=>submitFeedback(v('#fBody'),v('#fMod'),v('#fVis')));
-  document.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{ await rollout(b.dataset.r, v('#rHead')); render(); });
-  document.querySelectorAll('[data-j]').forEach(r=>{ const t=()=>{ S.open = S.open===+r.dataset.j?null:+r.dataset.j; render(); }; r.onclick=t; r.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); t(); } }; });
-  const bb=$('#bBtn'); if(bb) bb.onclick=async()=>{ const id=v('#bId').trim(); if(!id) return; const k=await bucketOf(id); const p=S.cohort.record.selector.percent;
-    $('#bOut').innerHTML = k===null?'<span class="amber">digest unavailable</span>':`${esc(id)} → bucket <b>${k}</b> → ${k<p?'<span class="green">in cohort</span>':'<span class="muted">not in cohort</span>'} (in when bucket &lt; ${p})`; };
-};
+/* ======================= DEV: OVERVIEW ======================= */
+function envCard(e){
+  const r=D.rollouts[e.id], g=D.groups.find(x=>x.id===r.group);
+  return `<div class="box-row click" onclick="go('#/p/environments/${e.id}')"><div class="envcard" style="width:100%">
+    <span class="livedot ${r.state==='paused'?'p':r.state==='closed'?'c':''}"></span>
+    <div style="min-width:0"><div class="row"><b>${e.id}</b>${state(r.state)}<span class="muted">v${r.live} → ${esc(g.name)}</span></div><div class="muted" style="font-size:12px">${esc(e.desc)} · ${e.versions.length} version${e.versions.length>1?'s':''}</div></div>
+    <span class="hide-sm">${fp('env:'+e.id+':'+r.live)}</span></div></div>`;
+}
+function vOverview(){
+  const latest = D.feedback.filter(f=>f.status==='open'||f.status==='triaged').slice(0,3);
+  return `<div class="wrap"><div class="cols"><div>
+    <div class="box"><div class="box-h"><h3>Environments</h3><span class="spacer"></span><a href="#/p/environments">View all</a></div>${D.envs.map(envCard).join('')}</div>
+    <div class="box"><div class="box-h"><h3>Open feedback</h3><span class="spacer"></span><a href="#/p/feedback">View all</a></div>${latest.map(fbRow).join('')}</div>
+    <div class="box"><div class="box-h">${ic('book')}<h3>README</h3></div><div class="box-b">
+      <h2 style="font-size:20px;border-bottom:1px solid var(--border2);padding-bottom:8px">demo-game</h2>
+      <p>Each part of the game ships as its own <b>module</b>. An <b>environment version</b> pins an exact version of every module, and a <b>rollout</b> decides which testers get it.</p>
+      <p class="muted">Testers always see exactly the version you released, and their feedback is tied to it.</p></div></div>
+  </div>
+  <aside class="side">
+    <section><h3>About</h3><p style="margin:0 0 8px">${esc(D.project.desc)}</p><div class="kv">${ic('layers')}${D.envs.length} environments</div><div class="kv">${ic('package')}${D.modules.length} modules</div><div class="kv">${ic('users')}${D.groups.reduce((a,g)=>a+g.members,0)} testers</div></section>
+    <section><h3>Live now</h3>${D.envs.map(e=>{const r=D.rollouts[e.id];return `<div class="kv"><span class="livedot ${r.state==='paused'?'p':''}"></span><span style="color:var(--text)">${e.id} v${r.live}</span>${state(r.state)}</div>`}).join('')}</section>
+    <section><h3>Team</h3><div class="row">${D.members.map(m=>`<span title="${m.u} · ${m.role}">${av(m.u,true)}</span>`).join('')}</div></section>
+    <section><h3>Protection</h3><div class="kv">${ic('lock')}Files encrypted before upload</div><div class="kv">${ic('shield')}Every unlock checked by Flux Access</div><div class="kv">${ic('clock')}History can't be edited or deleted</div></section>
+  </aside></div></div>`;
+}
 
-/* ======================= boot ======================= */
-view = location.hash.slice(1)||'ledger';
+/* ======================= DEV: MODULES ======================= */
+function vModules(){
+  return `<div class="wrap"><div class="filters"><input class="input" placeholder="Find a module…" aria-label="Find a module"><button class="btn primary" onclick="publishModuleModal()">${ic('upload')}Publish module</button></div>
+  <div class="box"><div class="tbl"><table><tr><th>Module</th><th>Newest version</th><th class="hide-sm">Type</th><th class="hide-sm">Used in</th><th>Updated</th></tr>
+  ${D.modules.map(m=>{const nv=newestVer(m);const used=D.envs.filter(e=>e.versions.at(-1).mods[m.id]).map(e=>e.id);return `<tr class="click" onclick="go('#/p/modules/${m.id}')"><td>${ic('package','muted')} <a href="#/p/modules/${m.id}"><b>${m.id}</b></a><div class="muted" style="font-size:12px">${esc(m.desc)}</div></td><td>${ver(m.id,nv.v)}</td><td class="hide-sm muted">${m.type}</td><td class="hide-sm">${used.map(u=>`<span class="lbl" style="border-color:var(--border)">${u}</span>`).join(' ')||'<span class="muted">—</span>'}</td><td class="muted">${nv.at}</td></tr>`}).join('')}
+  </table></div></div></div>`;
+}
+function vModule(id){
+  const m=mod(id); if(!m) return vModules();
+  return `<div class="wrap"><div class="row" style="margin-bottom:4px"><a href="#/p/modules">Modules</a><span class="muted">/</span><h1 style="font-size:20px">${m.id}</h1><span class="spacer"></span><button class="btn primary" onclick="publishModuleModal('${m.id}')">${ic('upload')}Publish new version</button></div>
+  <div class="sub">${esc(m.desc)} · ${m.type} · mounted at <code>${m.mount}</code></div>
+  <div class="cols"><div>
+  ${m.versions.slice().reverse().map((v,i)=>`<div class="box"><div class="box-b"><div class="row"><h2 style="margin:0;font-size:20px">${v.v}</h2>${i===0&&v.status==='active'?'<span class="state st-active">Newest</span>':''}${v.status!=='active'?state(v.status):''}<span class="spacer"></span>
+    ${v.status==='active'?`<div class="dropdown"><button class="btn sm" onclick="versionMenu(event,'${m.id}','${v.v}')">${ic('chev')}</button></div>`:''}</div>
+    <div class="row muted" style="margin:8px 0;font-size:12px">${av(v.by)} <b style="color:var(--text)">${v.by}</b> published on ${v.at} · ${v.size} · ${fp('mod:'+m.id+':'+v.v)} · ${ic('lock')} encrypted</div>
+    <p style="margin:8px 0 0">${esc(v.notes)}</p>
+    ${v.status==='revoked'?callout('err','This version was revoked',{},`It can't be added to new environment versions. Testers who already downloaded it keep their copy. Reason: ${esc(v.notes)}`):''}
+    ${v.status==='deprecated'?callout('warn','Deprecated',{},`Still works where it's used, but you'll be warned before adding it to a new environment version.`):''}
+  </div></div>`).join('')}
+  </div><aside class="side"><section><h3>Used in</h3>${D.envs.filter(e=>e.versions.some(x=>x.mods[m.id])).map(e=>`<div class="kv">${ic('layers')}<a href="#/p/environments/${e.id}">${e.id}</a> ${e.versions.filter(x=>x.mods[m.id]).map(x=>'v'+x.n).join(', ')}</div>`).join('')||'<div class="muted">Not used yet</div>'}</section>
+  <section><h3>Versions are permanent</h3><p class="muted" style="margin:0">A published version never changes. To fix something, publish a new version. To stop using one, deprecate or revoke it.</p></section></aside></div></div>`;
+}
+function versionMenu(e,id,v){
+  e.stopPropagation(); const host=e.currentTarget.parentElement; host.querySelector('.menu')?.remove();
+  host.insertAdjacentHTML('beforeend',`<div class="menu"><button onclick="setModStatus('${id}','${v}','deprecated')">${ic('warn')}Deprecate</button><button style="color:var(--red)" onclick="revokeModal('${id}','${v}')">${ic('x')}Revoke…</button></div>`);
+  setTimeout(()=>document.addEventListener('click',()=>host.querySelector('.menu')?.remove(),{once:true}));
+}
+function setModStatus(id,v,s){ const x=mod(id).versions.find(y=>y.v===v); x.status=s; log('module',`${s} <b>${id} ${v}</b>`); toast(`${id} ${v} marked ${s}`); render(); }
+function revokeModal(id,v){
+  modal(`Revoke ${id} ${v}?`,`${callout('warn','Revoking is permanent',{},'')}
+    <ul style="padding-left:18px;margin:8px 0"><li>It can no longer be added to environment versions or downloaded by new testers.</li><li>Environment versions that include it stay in history but can't be released again.</li><li><b>Testers who already downloaded it keep their copy.</b> If it contained a secret, rotate that secret.</li></ul>
+    <label class="f" for="rvReason">Reason <span class="muted">(shown in history)</span></label><input class="input" id="rvReason" placeholder="e.g. Contained unlicensed audio">`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="if(!document.getElementById('rvReason').value.trim()){toast('Add a reason','warn');return;} setModStatus('${id}','${v}','revoked');closeModal()">Revoke version</button>`);
+}
+
+/* ======================= DEV: ENVIRONMENTS ======================= */
+function vEnvironments(){
+  return `<div class="wrap"><div class="row" style="margin-bottom:16px"><h1 style="font-size:20px">Environments</h1><span class="spacer"></span><button class="btn primary" onclick="toast('New environment: name, description, first version','info')">${ic('plus')}New environment</button></div>
+  <div class="box">${D.envs.map(envCard).join('')}</div>
+  ${callout('info','What is an environment?',{},'A named place testers open, like <b>playtest</b>. Each <b>version</b> pins one exact version of every module, so everyone in the same version sees exactly the same thing.')}</div>`;
+}
+function diffRows(a,b){
+  const ids=[...new Set([...Object.keys(a||{}),...Object.keys(b)])];
+  return ids.map(id=>{ const o=a?.[id], n=b[id]; const k=!o?'add':!n?'del':o!==n?'chg':'same';
+    return `<tr class="diff-${k}"><td><b>${id}</b></td><td><code>${mod(id)?.mount||''}</code></td><td>${o?`<code>${o}</code>`:'<span class="muted">—</span>'}</td><td>${n?`<code>${n}</code>`:'<span class="muted">removed</span>'}</td><td class="muted" style="font-size:12px">${{add:'Added',del:'Removed',chg:'Changed',same:'Unchanged'}[k]}</td></tr>`; }).join('');
+}
+function vEnv(id, n){
+  const e=env(id); if(!e) return vEnvironments();
+  const r=D.rollouts[id]; const sel = n? e.versions.find(x=>x.n===+n) : e.versions.at(-1); const prev=e.versions.find(x=>x.n===sel.n-1);
+  return `<div class="wrap"><div class="row" style="margin-bottom:4px"><a href="#/p/environments">Environments</a><span class="muted">/</span><h1 style="font-size:20px">${e.id}</h1>${state(r.state)}<span class="spacer"></span>
+    <button class="btn" onclick="go('#/p/rollouts')">${ic('rollout')}Manage rollout</button><button class="btn primary" onclick="composeModal('${e.id}')">${ic('plus')}New version</button></div>
+  <div class="sub">${esc(e.desc)}</div>
+  <div class="cols"><div>
+    <div class="box"><div class="box-h"><h3>v${sel.n}</h3>${sel.n===r.live?`<span class="state st-${r.state}">${r.state==='active'?'Live':'Live · paused'}</span>`:''}<span class="muted">${esc(sel.note)}</span><span class="spacer"></span>${fp('env:'+e.id+':'+sel.n)}</div>
+      <div class="tbl"><table><tr><th>Module</th><th>Path</th><th>${prev?'v'+prev.n:'Before'}</th><th>v${sel.n}</th><th></th></tr>${diffRows(prev?.mods,sel.mods)}</table></div>
+      <div class="box-b muted" style="font-size:12px;border-top:1px solid var(--border2)">${av(sel.by)} ${sel.by} published v${sel.n} on ${sel.at}${prev?` · compared with v${prev.n}`:''}</div></div>
+  </div>
+  <aside class="side"><section><h3>Versions</h3>${e.versions.slice().reverse().map(x=>`<a href="#/p/environments/${e.id}/${x.n}" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;${x.n===sel.n?'background:var(--hover);':''}color:var(--text)">${ic('layers','muted')}<b>v${x.n}</b><span class="muted" style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.note)}</span>${x.n===r.live?'<span class="livedot '+(r.state==='paused'?'p':'')+'"></span>':''}</a>`).join('')}</section>
+  <section><h3>Same version, same experience</h3><p class="muted" style="margin:0">Testers can't receive a mix of modules that isn't one of these recorded versions.</p></section></aside></div></div>`;
+}
+function composeModal(id){
+  const e=env(id), cur=e.versions.at(-1);
+  const rows = D.modules.map(m=>`<tr><td><b>${m.id}</b><div class="muted" style="font-size:12px"><code>${m.mount}</code></div></td><td><select class="input cm" data-m="${m.id}" aria-label="${m.id} version"><option value="">Not included</option>
+    ${m.versions.slice().reverse().map(v=>`<option value="${v.v}" ${cur.mods[m.id]===v.v?'selected':''} ${v.status==='revoked'?'disabled':''}>${v.v}${v.status==='revoked'?' (revoked)':v.status==='deprecated'?' (deprecated)':''}</option>`).join('')}</select></td></tr>`).join('');
+  modal(`New version of ${id}`,`<p class="muted" style="margin-top:0">Pick an exact version of each module. Starts from v${cur.n}.</p><div class="box" style="margin:0"><table>${rows}</table></div>
+    <label class="f" for="cmNote">What changed?</label><input class="input" id="cmNote" placeholder="e.g. Physics fix for high refresh rates">
+    <div id="cmMsg"></div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="publishEnv('${id}')">Publish v${cur.n+1}</button>`,true);
+}
+function publishEnv(id){
+  const e=env(id), cur=e.versions.at(-1), mods={};
+  document.querySelectorAll('.cm').forEach(s=>{ if(s.value) mods[s.dataset.m]=s.value; });
+  const msg=document.getElementById('cmMsg');
+  if(!Object.keys(mods).length){ msg.innerHTML=callout('err',"Can't publish an empty version",{what:'No modules are selected.',need:'At least one module version.',fix:'Choose a version for one or more modules.',code:'environment.empty'}); return; }
+  if(JSON.stringify(Object.entries(mods).sort())===JSON.stringify(Object.entries(cur.mods).sort())){ msg.innerHTML=callout('err','Nothing changed',{what:`This is identical to v${cur.n}.`,need:'At least one different module version.',fix:`Change a module version, or release v${cur.n} instead.`,code:'environment.identical-composition'}); return; }
+  const dep = Object.entries(mods).filter(([m,v])=>mod(m).versions.find(x=>x.v===v).status==='deprecated');
+  if(dep.length && !msg.dataset.ack){ msg.dataset.ack=1; msg.innerHTML=callout('warn','Includes a deprecated version',{},`${dep.map(([m,v])=>m+' '+v).join(', ')} is deprecated. Click Publish again to continue anyway.`); return; }
+  const note=document.getElementById('cmNote').value.trim()||'Updated modules';
+  e.versions.push({n:cur.n+1,mods,by:'mara',at:'just now',note}); log('version',`published environment <b>${id} v${cur.n+1}</b>`);
+  closeModal(); toast(`${id} v${cur.n+1} published. It isn't live until you release it.`); go(`#/p/environments/${id}/${cur.n+1}`);
+}
+
+/* ======================= DEV: ROLLOUTS ======================= */
+const EV_TXT = {activate:'released',pause:'paused',resume:'resumed',rollback:'rolled back to',close:'closed'};
+const EV_BADGE = {activate:['rollout','g'],pause:['pause','y'],resume:['play','g'],rollback:['undo','r'],close:['stop','']};
+function vRollouts(){
+  return `<div class="wrap"><h1 style="font-size:20px">Rollouts</h1><div class="sub">Choose which environment version is live and who gets it. Every change is kept in the timeline.</div>
+  ${D.envs.map(e=>{ const r=D.rollouts[e.id], g=D.groups.find(x=>x.id===r.group), newest=e.versions.at(-1).n;
+    return `<div class="box"><div class="box-h"><span class="livedot ${r.state==='paused'?'p':r.state==='closed'?'c':''}"></span><h3>${e.id}</h3>${state(r.state)}<span class="spacer"></span>
+      ${r.state==='active'?`<button class="btn sm" onclick="rolloutAction('${e.id}','pause')">${ic('pause')}Pause</button>`:''}
+      ${r.state==='paused'?`<button class="btn sm" onclick="rolloutAction('${e.id}','resume')">${ic('play')}Resume</button>`:''}
+      ${r.state!=='closed'&&r.live>1?`<button class="btn sm" onclick="rollbackModal('${e.id}')">${ic('undo')}Roll back</button>`:''}
+      ${r.state!=='closed'&&newest>r.live?`<button class="btn sm primary" onclick="releaseModal('${e.id}',${newest})">${ic('rollout')}Release v${newest}</button>`:''}
+      ${r.state!=='closed'?`<button class="btn sm danger" onclick="closeRolloutModal('${e.id}')">Close</button>`:''}</div>
+      <div class="box-b"><div class="grid3">
+        <div><div class="muted" style="font-size:12px">Live version</div><div style="font-size:20px;font-weight:600">v${r.live} ${newest>r.live?`<span class="muted" style="font-size:12px;font-weight:400">· v${newest} ready</span>`:''}</div></div>
+        <div><div class="muted" style="font-size:12px">Who gets it</div><div style="font-weight:600">${esc(g.name)}</div><div class="muted" style="font-size:12px">${esc(g.rule)} · ${g.members} people</div></div>
+        <div><div class="muted" style="font-size:12px">Fingerprint testers see</div><div>${fp('view:'+e.id+':'+r.live)}</div></div></div>
+        <h3 style="margin:20px 0 8px">Timeline</h3>
+        <div class="tl">${r.events.slice().reverse().map(ev=>{const [icn,c]=EV_BADGE[ev.a];return `<div class="tl-item"><span class="tl-badge ${c}">${ic(icn)}</span><div style="padding-top:5px">${av(ev.by)} <b>${ev.by}</b> ${EV_TXT[ev.a]} ${ev.a==='close'?'the rollout':'<b>v'+ev.v+'</b>'} <span class="muted">· ${ev.at}</span>${ev.reason?`<div class="muted" style="font-size:13px;margin-top:2px">“${esc(ev.reason)}”</div>`:''}</div></div>`}).join('')}</div>
+      </div></div>`}).join('')}</div>`;
+}
+function rolloutAction(id,a,extra={}){
+  const r=D.rollouts[id];
+  const v = extra.v ?? r.live;
+  r.events.push({a,v,by:'mara',at:'just now',reason:extra.reason});
+  if(a==='pause') r.state='paused'; if(a==='resume'||a==='activate'||a==='rollback') r.state='active'; if(a==='close') r.state='closed';
+  if(a==='activate'||a==='rollback') r.live=v;
+  log('rollout',`${EV_TXT[a]} <b>${id}${a==='close'?'':' v'+v}</b>${extra.reason?` (${esc(extra.reason)})`:''}`);
+  toast({pause:`${id} paused. Testers can't open it until you resume.`,resume:`${id} resumed`,activate:`${id} v${v} is live`,rollback:`${id} rolled back to v${v}`,close:`${id} rollout closed`}[a]); closeModal(); render();
+}
+function releaseModal(id,n){
+  const r=D.rollouts[id], g=D.groups.find(x=>x.id===r.group), e=env(id);
+  modal(`Release ${id} v${n}?`,`<p style="margin-top:0"><b>${esc(g.name)}</b> (${g.members} people) will get v${n} the next time they open ${id}.</p>
+    <div class="box" style="margin:0"><table><tr><th>Module</th><th>Path</th><th>v${r.live} (live)</th><th>v${n}</th><th></th></tr>${diffRows(e.versions.find(x=>x.n===r.live).mods,e.versions.find(x=>x.n===n).mods)}</table></div>
+    ${callout('info','People already playing',{},`Testers with v${r.live} open finish their session first, then switch to v${n}.`)}`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="rolloutAction('${id}','activate',{v:${n}})">Release v${n}</button>`,true);
+}
+function rollbackModal(id){
+  const r=D.rollouts[id], e=env(id); const opts=e.versions.filter(x=>x.n<r.live).reverse();
+  modal(`Roll back ${id}`,`<label class="f" for="rbV" style="margin-top:0">Go back to</label><select class="input" id="rbV">${opts.map(x=>`<option value="${x.n}">v${x.n}: ${esc(x.note)}</option>`).join('')}</select>
+    <label class="f" for="rbR">Reason <span class="muted">(required, shown in the timeline)</span></label><input class="input" id="rbR" placeholder="e.g. Level 4 crashes after reload">
+    <div id="rbMsg"></div>
+    <h3 style="margin:16px 0 6px">What happens</h3><ul style="padding-left:18px;margin:0"><li>Testers get the earlier version at their next session.</li><li>v${r.live} and everything since stay in history. Nothing is deleted.</li><li>You can release v${r.live} again later.</li></ul>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="doRollback('${id}')">${ic('undo')}Roll back</button>`);
+}
+function doRollback(id){ const reason=document.getElementById('rbR').value.trim(); if(!reason){ document.getElementById('rbMsg').innerHTML=callout('err','A reason is required',{what:'Rollbacks without a reason are refused.',need:'A short reason testers and teammates can read.',fix:'Describe why you are rolling back.',code:'rollout.reason-required'}); return; }
+  rolloutAction(id,'rollback',{v:+document.getElementById('rbV').value,reason}); }
+function closeRolloutModal(id){
+  modal(`Close the ${id} rollout?`,`${callout('warn','Closing is final',{},'')}<ul style="padding-left:18px;margin:0"><li>Nobody can open ${id} after this, including testers mid-session.</li><li>Feedback and history stay readable.</li><li>To test again, start a new rollout.</li></ul>
+    <label class="f" for="clC">Type <b>${id}</b> to confirm</label><input class="input" id="clC">`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="if(document.getElementById('clC').value==='${id}')rolloutAction('${id}','close');else toast('Type the environment name to confirm','warn')">Close rollout</button>`);
+}
+
+/* ======================= DEV: TESTERS ======================= */
+function vTesters(){
+  return `<div class="wrap"><div class="row" style="margin-bottom:16px"><h1 style="font-size:20px">Tester groups</h1><span class="spacer"></span><button class="btn primary" onclick="inviteModal()">${ic('users')}Invite testers</button></div>
+  <div class="box"><div class="tbl"><table><tr><th>Group</th><th>How people are picked</th><th>People</th><th class="hide-sm">Used by</th></tr>
+  ${D.groups.map(g=>`<tr><td><b>${esc(g.name)}</b><div class="muted" style="font-size:12px">${esc(g.desc)}</div></td><td>${esc(g.rule)}${g.pct?`<div class="bar" style="margin-top:6px;max-width:160px"><i style="width:${g.pct}%"></i></div>`:''}</td>
+    <td>${g.people?`<div class="row" style="gap:2px">${g.people.map(p=>`<span title="${p}">${av(p)}</span>`).join('')}</div>`:g.members}</td><td class="hide-sm">${Object.entries(D.rollouts).filter(([,r])=>r.group===g.id).map(([k])=>`<span class="lbl" style="border-color:var(--border)">${k}</span>`).join(' ')}</td></tr>`).join('')}
+  </table></div></div>
+  <div class="grid2"><div class="box"><div class="box-h"><h3>Is someone in Early testers?</h3></div><div class="box-b"><div class="row"><input class="input" id="chk" placeholder="Tester handle, e.g. tester-07" style="flex:1" aria-label="Tester handle"><button class="btn" onclick="checkBucket()">Check</button></div><div id="chkOut" class="hint">The same person always gets the same answer, so testers don't flip in and out between visits.</div></div></div>
+  <div class="box"><div class="box-h"><h3>Pending invites</h3></div><div class="box-row">${av('priya')}<div style="flex:1"><b>priya</b><div class="muted" style="font-size:12px">QA team · waiting for identity check</div></div><button class="btn sm" onclick="toast('Invite resent')">Resend</button></div></div></div></div>`;
+}
+function checkBucket(){ const id=document.getElementById('chk').value.trim(); if(!id) return; const b=parseInt(hash('early|'+id).slice(0,6),16)%100;
+  document.getElementById('chkOut').innerHTML = b<20?`${ic('check','green')} <b>${esc(id)}</b> is in Early testers.`:`<b>${esc(id)}</b> is not in Early testers (outside the 20%).`; }
+function inviteModal(){
+  modal('Invite testers',`<label class="f" for="invW" style="margin-top:0">Handles or emails</label><textarea class="input" id="invW" rows="3" placeholder="alex@example.com, tester-31"></textarea>
+    <label class="f" for="invG">Add to group</label><select class="input" id="invG">${D.groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('')}</select>
+    ${callout('info','How access works',{},'Invitees confirm who they are with their signer app the first time. Access is checked again every time they open an environment.')}`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="const w=document.getElementById('invW').value.trim(); if(!w){toast('Add at least one person','warn');return;} log('access','invited <b>'+esc(w)+'</b>'); closeModal(); toast('Invites sent')">Send invites</button>`);
+}
+
+/* ======================= DEV: FEEDBACK ======================= */
+const FB_ST = {open:['issue','green','Open'],triaged:['eye','purple','Triaged'],done:['closed','purple','Done'],wontfix:['x','muted',"Won't fix"]};
+function fbRow(f){
+  const [i,c]=FB_ST[f.status];
+  return `<div class="box-row click" onclick="go('#/p/feedback/${f.n}')">${ic(i,c)}<div style="flex:1;min-width:0"><div class="row" style="gap:6px"><a href="#/p/feedback/${f.n}" style="color:var(--text)"><b>${esc(f.title)}</b></a>${f.labels.map(l=>`<span class="lbl l-${l}">${l}</span>`).join('')}</div>
+    <div class="muted" style="font-size:12px;margin-top:2px">#${f.n} by ${esc(f.by)} · ${f.at} · ${f.env} v${f.v} · ${ver(f.mod,f.mv)}${f.vis!=='Public'?` · ${ic('lock')} ${f.vis}`:''}</div></div>
+    ${f.events.filter(e=>e.k==='comment').length?`<span class="muted row" style="gap:4px;font-size:12px">${ic('msg')}${f.events.filter(e=>e.k==='comment').length}</span>`:''}</div>`;
+}
+let fbTab='open';
+function vFeedback(){
+  const open=D.feedback.filter(f=>f.status==='open'||f.status==='triaged'), closed=D.feedback.filter(f=>!(f.status==='open'||f.status==='triaged'));
+  const list = fbTab==='open'?open:closed;
+  return `<div class="wrap"><div class="filters"><input class="input" value="is:${fbTab} env:playtest" aria-label="Filter feedback"><button class="btn">${ic('tag')}Labels</button><button class="btn">${ic('layers')}Version</button></div>
+  <div class="box"><div class="box-h"><div class="pill-tabs"><a href="#/p/feedback" class="${fbTab==='open'?'on':''}" onclick="fbTab='open';render();return false">${ic('issue')} ${open.length} Open</a><a href="#/p/feedback" class="${fbTab==='closed'?'on':''}" onclick="fbTab='closed';render();return false">${ic('tick')} ${closed.length} Closed</a></div></div>
+  ${list.map(fbRow).join('')||`<div class="empty">${ic('msg')}<div>No ${fbTab} feedback</div></div>`}</div></div>`;
+}
+function vFeedbackItem(n){
+  const f=fb(+n); if(!f) return vFeedback();
+  const [i,c,label]=FB_ST[f.status];
+  return `<div class="wrap"><h1 style="font-weight:400">${esc(f.title)} <span class="muted">#${f.n}</span></h1>
+  <div class="row" style="margin:8px 0 16px;padding-bottom:16px;border-bottom:1px solid var(--border2)"><span class="state st-${f.status==='done'?'done':f.status==='wontfix'?'wontfix':f.status}">${ic(i)}${label}</span><span class="muted"><b style="color:var(--text)">${esc(f.by)}</b> reported this on ${f.env} v${f.v} · ${f.at}</span></div>
+  <div class="cols"><div>
+    <div class="tl" style="padding-left:44px">
+      <div class="tl-item"><span style="position:absolute;left:-44px;top:8px">${av(f.by,true)}</span><div class="comment"><div class="ch"><b>${esc(f.by)}</b><span class="muted">reported ${f.at}</span><span class="spacer"></span><span class="state st-draft" title="The original report can't be edited">${ic('lock')}Original</span></div>
+        <div class="cb">${esc(f.body)}<div class="muted" style="font-size:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)">Tested on ${f.env} v${f.v} · ${ver(f.mod,f.mv)} · fingerprint ${fp('view:'+f.env+':'+f.v)}</div></div></div></div>
+      ${f.events.map(e=>e.k==='comment'?`<div class="tl-item"><span style="position:absolute;left:-44px;top:8px">${av(e.by,true)}</span><div class="comment ${D.members.some(m=>m.u===e.by)?'author':''}"><div class="ch"><b>${esc(e.by)}</b><span class="muted">commented ${e.at}</span>${D.members.some(m=>m.u===e.by)?'<span class="lbl" style="border-color:var(--border)">Developer</span>':''}</div><div class="cb">${esc(e.body)}</div></div></div>`
+        : e.k==='correction'?`<div class="tl-item"><span style="position:absolute;left:-44px;top:8px">${av(e.by,true)}</span><div class="comment"><div class="ch"><b>${esc(e.by)}</b><span class="muted">added a correction ${e.at}</span><span class="lbl l-perf">Correction</span></div><div class="cb">${esc(e.body)}</div></div></div>`
+        : `<div class="tl-item" style="padding-left:4px;margin-left:-44px"><div class="row" style="padding-left:6px">${ic('tag','muted')}${av(e.by)} <b>${e.by}</b> <span class="muted">changed status from ${FB_ST[e.from][2]} to ${FB_ST[e.to][2]} · ${e.at}</span></div></div>`).join('')}
+      <div class="tl-item"><span style="position:absolute;left:-44px;top:8px">${av('mara',true)}</span><div class="comment"><div class="ch"><b>Add a comment</b></div><div class="cb"><textarea class="input" id="cmt" rows="3" placeholder="Reply to the tester…"></textarea>
+        <div class="row" style="margin-top:8px"><span class="muted" style="font-size:12px">${f.vis==='Public'?'Visible to everyone with access':'Visible to the team only'}</span><span class="spacer"></span>
+        ${f.status==='open'||f.status==='triaged'?`<button class="btn" onclick="setFb(${f.n},'done')">${ic('closed','purple')}Mark done</button>`:`<button class="btn" onclick="setFb(${f.n},'open')">Reopen</button>`}
+        <button class="btn primary" onclick="addComment(${f.n})">Comment</button></div></div></div></div>
+    </div>
+  </div>
+  <aside class="side">
+    <section><h3>Status</h3><select class="input" onchange="setFb(${f.n},this.value)" aria-label="Status">${Object.entries(FB_ST).map(([k,v])=>`<option value="${k}" ${k===f.status?'selected':''}>${v[2]}</option>`).join('')}</select></section>
+    <section><h3>Labels</h3><div class="row">${f.labels.map(l=>`<span class="lbl l-${l}">${l}</span>`).join('')}</div></section>
+    <section><h3>Tested version</h3><div class="kv">${ic('layers')}<a href="#/p/environments/${f.env}/${f.v}">${f.env} v${f.v}</a></div><div class="kv">${ic('package')}${ver(f.mod,f.mv)}</div></section>
+    <section><h3>Visibility</h3><div class="kv">${ic(f.vis==='Public'?'eye':'lock')}${f.vis}</div></section>
+    <section><h3>Reporter</h3><div class="kv">${av(f.by)} ${esc(f.by)} ${ic('check','green')} <span style="font-size:12px">verified tester</span></div></section>
+  </aside></div></div>`;
+}
+function setFb(n,s){ const f=fb(n); if(f.status===s) return; f.events.push({k:'status',by:'mara',at:'just now',from:f.status,to:s}); f.status=s; log('feedback',`marked <b>#${n}</b> ${FB_ST[s][2]}`); toast(`#${n} marked ${FB_ST[s][2]}`); render(); }
+function addComment(n){ const t=document.getElementById('cmt').value.trim(); if(!t){ toast('Write a comment first','warn'); return; } fb(n).events.push({k:'comment',by:'mara',at:'just now',body:t}); render(); }
+
+/* ======================= DEV: ACTIVITY ======================= */
+let actF='all';
+const ACT = {all:'All',rollout:'Rollouts',version:'Versions',module:'Modules',feedback:'Feedback',access:'Access'};
+const ACT_I = {rollout:'rollout',version:'layers',module:'package',feedback:'msg',access:'key'};
+function vActivity(){
+  const list=D.activity.filter(a=>actF==='all'||a.k===actF);
+  return `<div class="wrap"><h1 style="font-size:20px">Activity</h1><div class="sub">${ic('lock')} Every change is recorded permanently. Entries can't be edited or deleted.</div>
+  <div class="filters">${Object.entries(ACT).map(([k,l])=>`<button class="btn sm ${actF===k?'primary':''}" onclick="actF='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="box">${list.map(a=>`<div class="box-row">${ic(ACT_I[a.k],'muted')}<div style="flex:1;min-width:0">${av(a.who)} <b>${esc(a.who)}</b> ${a.text}</div><span class="muted hide-sm" style="font-size:12px">${fp('act:'+a.text)}</span><span class="muted" style="font-size:12px;white-space:nowrap">${a.at}</span></div>`).join('')||`<div class="empty">Nothing here yet</div>`}</div></div>`;
+}
+
+/* ======================= DEV: SETTINGS ======================= */
+let setTab='general';
+function vSettings(){
+  const nav=[['general','General','sliders'],['access','People & access','users'],['keys','Encryption keys','key'],['danger','Close project','alert']];
+  const body = {
+    general:`<h2>General</h2><label class="f" for="sn">Project name</label><input class="input" id="sn" value="${D.project.name}" style="max-width:360px"><label class="f" for="sd">Description</label><textarea class="input" id="sd" rows="2">${esc(D.project.desc)}</textarea>
+      <label class="f">Visibility</label><div class="row">${state('draft').replace('Draft','Private')}<span class="muted">Only invited people can see or open this project.</span></div><div style="margin-top:16px"><button class="btn primary" onclick="toast('Saved')">Save changes</button></div>`,
+    access:`<h2>People & access</h2><div class="box"><div class="tbl"><table><tr><th>Person</th><th>Role</th><th></th></tr>${D.members.map(m=>`<tr><td>${user(m.u)}</td><td><select class="input" style="width:auto" aria-label="Role for ${m.u}"><option ${m.role==='Owner'?'selected':''}>Owner</option><option ${m.role==='Maintainer'?'selected':''}>Maintainer</option><option ${m.role==='Developer'?'selected':''}>Developer</option></select></td><td style="text-align:right">${m.role!=='Owner'?`<button class="btn sm danger" onclick="removeMember('${m.u}')">Remove</button>`:''}</td></tr>`).join('')}</table></div></div>
+      ${callout('info','Access is checked by Flux Access',{},'Roles here are requests to the shared access service, which makes the final decision. If it can\'t be reached, actions are refused rather than allowed.')}`,
+    keys:`<h2>Encryption keys</h2><p class="muted">Files and private feedback are encrypted. The key rotates whenever someone loses access, so they can't read anything published afterwards.</p>
+      <div class="box">${D.keys.map((k,i)=>`<div class="box-row">${ic('key',i===0?'green':'muted')}<div style="flex:1"><b>Key version ${k.n}</b> ${i===0?'<span class="state st-active">Current</span>':''}<div class="muted" style="font-size:12px">${k.at} · ${esc(k.why)}</div></div></div>`).join('')}</div>
+      <button class="btn" onclick="D.keys.unshift({n:D.keys[0].n+1,at:'just now',why:'Manual rotation by mara'});log('access','rotated encryption key');toast('Key rotated');render()">Rotate key now</button>`,
+    danger:`<h2 class="red">Close project</h2><div class="box" style="border-color:var(--red)"><div class="box-row"><div style="flex:1"><b>Close this project</b><div class="muted">Ends every rollout. History, versions and feedback stay readable but nothing new can be published. This can't be undone.</div></div><button class="btn danger" onclick="toast('Demo only: would open a typed confirmation','warn')">Close project</button></div></div>`,
+  }[setTab];
+  return `<div class="wrap"><div style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px" class="settings">
+    <nav aria-label="Settings">${nav.map(([k,l,i])=>`<a href="#/p/settings" onclick="setTab='${k}';render();return false" style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-radius:6px;color:var(--text);${setTab===k?'background:var(--hover);font-weight:600;box-shadow:inset 3px 0 var(--accent)':''}">${ic(i,'muted')}${l}</a>`).join('')}</nav>
+    <div>${body}</div></div></div><style>@media(max-width:760px){.settings{grid-template-columns:minmax(0,1fr)!important}}</style>`;
+}
+function removeMember(u){
+  modal(`Remove ${u}?`,`<ul style="padding-left:18px;margin:0"><li>${u} loses access to this project right away.</li><li>The encryption key rotates, so ${u} can't read anything published from now on.</li><li><b>Anything ${u} already downloaded can't be taken back.</b> Rotate any secrets they could see.</li></ul>`,
+   `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="D.members=D.members.filter(m=>m.u!=='${u}');D.keys.unshift({n:D.keys[0].n+1,at:'just now',why:'Removed ${u}'});log('access','removed <b>${u}</b> and rotated the key');closeModal();toast('${u} removed · key rotated');render()">Remove ${u}</button>`);
+}
+
+/* ======================= PUBLISH MODULE ======================= */
+function publishModuleModal(pre){
+  modal('Publish module version',`<label class="f" for="pmM" style="margin-top:0">Module</label><select class="input" id="pmM">${D.modules.map(m=>`<option ${m.id===pre?'selected':''}>${m.id}</option>`).join('')}<option value="__new">+ New module…</option></select>
+    <label class="f" for="pmV">Version</label><input class="input" id="pmV" placeholder="e.g. 1.2.0" style="max-width:200px"><div class="hint">Use an exact version like 1.2.0. Each version can be published once.</div>
+    <label class="f">File</label><div class="box" style="margin:0;border-style:dashed"><div class="box-b row" style="justify-content:center;flex-direction:column;gap:4px"><span id="pmFile" class="muted">${ic('upload')} Drop a file or <a href="#" onclick="return pickFile()">browse</a></span></div></div>
+    <div class="hint">${ic('lock')} Encrypted on your device before upload. Signed with your identity.</div>
+    <label class="f" for="pmN">Release notes</label><textarea class="input" id="pmN" rows="2"></textarea><div id="pmMsg"></div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="doPublishModule()">Publish</button>`);
+}
+function pickFile(){ document.getElementById('pmFile').innerHTML=ic('file')+' build.wasm · 191 KB'; return false; }
+function doPublishModule(){
+  const id=document.getElementById('pmM').value, v=document.getElementById('pmV').value.trim(), out=document.getElementById('pmMsg');
+  if(id==='__new'){ out.innerHTML=callout('info','New modules',{},'In the full product this opens a short form for the module name, type and path.'); return; }
+  if(!/^\d+\.\d+\.\d+$/.test(v)){ out.innerHTML=callout('err',"Can't publish this version",{what:v?`“${esc(v)}” isn't an exact version.`:'No version was entered.',need:'An exact version number like 1.2.0.',fix:'Words like “latest” or ranges like “^1.2” can change over time, so they can\'t be published. Enter the exact number.',code:'module.mutable-version-selector'}); return; }
+  const m=mod(id); if(m.versions.some(x=>x.v===v)){ out.innerHTML=callout('err','This version already exists',{what:`${id} ${v} was published earlier.`,need:'A version number that hasn\'t been used.',fix:'Published versions never change. Bump the number (for example to '+v.replace(/(\d+)$/,d=>+d+1)+').',code:'module.version-reuse'}); return; }
+  if(!document.getElementById('pmFile').textContent.includes('build')){ out.innerHTML=callout('err','No file attached',{what:'The version has no file.',need:'The built file for this module.',fix:'Drop or browse for the file.',code:'artifact.missing'}); return; }
+  m.versions.push({v,size:'191 KB',by:'mara',at:'just now',status:'active',notes:document.getElementById('pmN').value||'No notes'});
+  log('module',`published module <b>${id} ${v}</b>`); closeModal(); toast(`${id} ${v} published. Add it to an environment version to test it.`); go('#/p/modules/'+id);
+}
+
+/* ======================= TESTER ======================= */
+function vTesterInbox(){
+  const T=D.tester.granted;
+  return `<div class="wrap" style="max-width:960px"><div class="row" style="margin-bottom:4px"><h1>Tester inbox</h1></div><div class="sub">Builds you've been invited to test.</div>
+  <div class="box">${T.map((t,i)=>`<div class="box-row"><div style="flex:1;min-width:0">
+      <div class="row"><b>${t.proj}</b><span class="muted">·</span><span>${t.env}</span>${state(t.state)}</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">Invited by ${t.by} · version ${t.v}</div>
+      ${t.note?`<div style="margin-top:6px;font-size:13px">“${esc(t.note)}”</div>`:''}</div>
+      ${t.state==='active'?`<button class="btn primary" onclick="unlockModal(${i})">${ic('play')}Open</button>`:t.state==='paused'?`<button class="btn" disabled>Paused</button>`:`<button class="btn" onclick="revokedModal(${i})">Why?</button>`}</div>`).join('')}</div>
+  <h2 style="margin-top:24px">Your feedback</h2>
+  <div class="box">${D.feedback.filter(f=>f.by==='tester-07').map(f=>`<div class="box-row">${ic(FB_ST[f.status][0],FB_ST[f.status][1])}<div style="flex:1"><b>${esc(f.title)}</b><div class="muted" style="font-size:12px">demo-game · ${f.env} v${f.v} · ${FB_ST[f.status][2]}${f.events.some(e=>e.k==='comment')?' · developer replied':''}</div></div></div>`).join('')}</div></div>`;
+}
+function revokedModal(i){ const t=D.tester.granted[i];
+  modal(`Can't open ${t.proj}`,callout('err','You no longer have access',{what:`Your access to ${t.proj} (${t.env}) was removed by the developer.`,need:'A current invite from the project.',fix:`Contact ${t.by} if you think this is a mistake. Copies you already opened stay on your device.`,code:'access.revoked'}),`<button class="btn" onclick="closeModal()">OK</button>`); }
+function unlockModal(i){
+  const t=D.tester.granted[i];
+  modal(`Open ${t.env}`,`<p style="margin-top:0" class="muted">${t.proj} · version ${t.v}</p><ul class="steps" id="steps">
+    <li id="s1"><span class="spin"></span>Confirm it's you in your signer app</li><li id="s2">${ic('clock')}Check your access</li><li id="s3">${ic('clock')}Unlock version ${t.v}</li></ul>
+    <div class="hint">${ic('lock')} Your keys never leave your signer. Remote Env only sees a one-time proof.</div>`,`<button class="btn" onclick="closeModal()">Cancel</button>`);
+  const steps=['s1','s2','s3']; let k=0;
+  const tick=()=>{ const el=document.getElementById(steps[k]); if(!el) return; el.classList.add('done'); el.innerHTML=ic('check')+el.textContent; k++;
+    const nx=document.getElementById(steps[k]); if(nx){ nx.innerHTML='<span class="spin"></span>'+nx.textContent; setTimeout(tick,700); } else setTimeout(()=>{ closeModal(); D.tester.unlocked=true; go('#/tester/run'); },450); };
+  setTimeout(tick,900);
+}
+let anim=null;
+function vRun(){
+  const e=env('playtest'), r=D.rollouts.playtest, v=e.versions.find(x=>x.n===r.live);
+  if(r.state!=='active') return `<div class="wrap" style="max-width:720px">${callout('warn',`playtest is ${r.state}`,{what:`The developer ${r.state==='paused'?'paused':'closed'} this environment.`,need:'An active rollout.',fix:r.state==='paused'?'You\'ll get a notification when it\'s back.':'Check your inbox for new invites.',code:'rollout.'+r.state})}<a class="btn" href="#/tester">Back to inbox</a></div>`;
+  if(!D.tester.unlocked) return `<div class="wrap" style="max-width:720px">${callout('info','Not unlocked yet',{},'Open this environment from your inbox to confirm your identity.')}<a class="btn" href="#/tester">Back to inbox</a></div>`;
+  return `<div class="wrap"><div class="row" style="margin-bottom:12px"><a href="#/tester">${ic('inbox')} Inbox</a><span class="muted">/</span><b>defxn/demo-game</b><span class="muted">·</span>playtest<span class="spacer"></span><button class="btn primary" onclick="reportModal()">${ic('msg')}Report an issue</button></div>
+  <div class="runbar"><span class="livedot"></span><b>playtest v${v.n}</b>${Object.entries(v.mods).map(([m,x])=>ver(m,x)).join('')}<span class="spacer"></span><span class="muted" style="font-size:12px">fingerprint</span>${fp('view:playtest:'+v.n)}</div>
+  <div class="stage"><canvas id="game" aria-label="Game preview placeholder"></canvas></div>
+  <div class="hint" style="margin-top:8px">${ic('shield')} Each module runs in its own sandbox and can only use what it declared.</div></div>`;
+}
+function startGame(){
+  const c=document.getElementById('game'); if(!c) return; const x=c.getContext('2d'); let t=0;
+  const draw=()=>{ if(!document.getElementById('game')) return; const w=c.width=c.clientWidth, h=c.height=c.clientHeight; x.fillStyle='#05070b'; x.fillRect(0,0,w,h);
+    x.strokeStyle='rgba(47,129,247,.18)'; for(let i=0;i<w;i+=40){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke();} for(let j=0;j<h;j+=40){x.beginPath();x.moveTo(0,j);x.lineTo(w,j);x.stroke();}
+    x.fillStyle='#21262d'; x.fillRect(0,h-60,w,60); [[.2,.55],[.45,.42],[.7,.5]].forEach(([a,b])=>{x.fillStyle='#30363d';x.fillRect(a*w,b*h,120,14);});
+    const px=(t*2)%(w+40)-20, py=h-60-28-Math.abs(Math.sin(t/18))*90; x.fillStyle='#3fb950'; x.fillRect(px,py,28,28);
+    x.fillStyle='#e6edf3'; x.font='14px ui-monospace,monospace'; x.fillText('LEVEL 4 · score '+(1200+Math.floor(t/3)),16,26);
+    t++; anim=requestAnimationFrame(draw); };
+  cancelAnimationFrame(anim); if(matchMedia('(prefers-reduced-motion: reduce)').matches){ draw(); cancelAnimationFrame(anim); } else draw();
+}
+function reportModal(){
+  const v=env('playtest').versions.find(x=>x.n===D.rollouts.playtest.live);
+  modal('Report an issue',`<label class="f" for="rT" style="margin-top:0">Title</label><input class="input" id="rT" placeholder="Short summary">
+    <label class="f" for="rB">What happened?</label><textarea class="input" id="rB" rows="4" placeholder="Steps, what you expected, what you saw"></textarea>
+    <div class="grid2"><div><label class="f" for="rM">Which part?</label><select class="input" id="rM">${Object.entries(v.mods).map(([m,x])=>`<option value="${m}|${x}">${m} ${x}</option>`).join('')}<option value="">Not sure</option></select></div>
+    <div><label class="f" for="rV">Who can see it?</label><select class="input" id="rV"><option>Public</option><option>Team only</option><option>Only me and the developers</option></select></div></div>
+    <div class="hint">We attach the exact version you're testing (playtest v${v.n}) automatically. You can add a correction later, but the original report can't be edited.</div><div id="rMsg"></div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitReport()">Submit report</button>`);
+}
+function submitReport(){
+  const t=document.getElementById('rT').value.trim(), b=document.getElementById('rB').value.trim(), m=document.getElementById('rM').value, vis=document.getElementById('rV').value;
+  if(!t||!b){ document.getElementById('rMsg').innerHTML=callout('err','Add a title and description',{what:'The report is missing details.',need:'A title and what happened.',fix:'Fill in both fields so the developer can reproduce it.',code:'feedback.empty'}); return; }
+  const n=Math.max(...D.feedback.map(f=>f.n))+1, [mm,mv]=(m||'ui-shell|'+env('playtest').versions.at(-1).mods['ui-shell']).split('|');
+  D.feedback.unshift({n,title:t,env:'playtest',v:D.rollouts.playtest.live,mod:mm,mv,by:'tester-07',vis:vis==='Public'?'Public':'Team only',status:'open',labels:['bug'],at:'just now',body:b,events:[]});
+  D.activity.unshift({k:'feedback',who:'tester-07',at:'just now',text:`reported <b>#${n} ${esc(t)}</b>`});
+  closeModal(); toast(`Thanks! Report #${n} sent to the developers.`);
+}
+
+/* ======================= DESIGN SYSTEM ======================= */
+function vDesign(){
+  const terms=[['Environment version','environment head','flux.remote-environment.v1'],['Module version','module record','flux.remote-module.v1'],['Tester group','cohort','flux.remote-cohort.v1'],['Rollout · release / pause / resume / roll back / close','rollout events','flux.remote-rollout.v1'],['Feedback · report / correction','feedback, supersession','flux.remote-feedback.v1'],['Project','project','flux.remote-project.v1'],['Fingerprint','CID / environment-view CID','short form; full value on copy'],['Confirm it\'s you','signed challenge, proof of possession','B10'],['Access checked by Flux Access','global resolver + node power','B8–B9'],['Encryption key version','key epoch','B7'],['Not available yet','notBuilt','status surface']];
+  return `<div class="wrap"><h1>Design system</h1><div class="sub">Components and rules for the Remote Env product surfaces. Behavior and data in this prototype are mocked; the protocol decides, the UI only shows the decision.</div>
+  <div class="grid2">
+   <div class="box"><div class="box-h"><h3>Status labels</h3></div><div class="box-b"><div class="row">${Object.keys(STATE_LABEL).map(state).join('')}</div>
+     <p class="muted" style="margin-bottom:0;font-size:13px">One label per lifecycle state. Never reuse "Active" for something that is only "Draft", and never show a missing capability as zero or empty. Use <b>Not available yet</b>.</p></div></div>
+   <div class="box"><div class="box-h"><h3>Version & fingerprint</h3></div><div class="box-b"><div class="row">${ver('physics','2.3.1')} ${fp('demo')} <span class="state st-active">Live</span></div>
+     <p class="muted" style="margin-bottom:0;font-size:13px">Show exact versions everywhere testers or feedback are involved. Fingerprints show 7 characters and copy the full value. The displayed fingerprint must match what the tester's session received.</p></div></div>
+  </div>
+  <div class="box"><div class="box-h"><h3>Refusal message</h3><span class="muted">Every refusal answers three questions</span></div><div class="box-b">
+    ${callout('err',"Can't publish this version",{what:'“latest” isn\'t an exact version.',need:'An exact version number like 1.2.0.',fix:'Enter the exact number. Words and ranges can change, so they can\'t be published.',code:'module.mutable-version-selector'})}
+    ${callout('warn','Not available yet',{what:'Private feedback needs encrypted storage, which isn\'t turned on for this project.',need:'Encrypted feedback storage.',fix:'Send it as Public or Team only for now.',code:'feedback.encryption-not-built'})}
+    <p class="muted" style="font-size:13px;margin-bottom:0">Title says what couldn't happen. Body: <b>What happened</b> (the failure), <b>What's needed</b> (missing evidence), <b>How to fix</b> (the remedy). Machine code is shown small for support. Use red for refused, yellow for not available / warnings.</p></div></div>
+  <div class="grid2">
+   <div class="box"><div class="box-h"><h3>Confirmations</h3></div><div class="box-b" style="font-size:13px">
+     <div class="row" style="margin-bottom:8px"><button class="btn">Cancel</button><button class="btn primary">Release v4</button><button class="btn danger">Roll back</button></div>
+     <ul style="padding-left:18px;margin:0"><li>Release, pause, resume: simple confirm showing who is affected.</li><li>Roll back, revoke: require a reason, list "What happens".</li><li>Close, remove member: typed confirmation and a "can't be undone" note.</li><li>Always say what can't be taken back (already-downloaded copies).</li></ul></div></div>
+   <div class="box"><div class="box-h"><h3>Color roles</h3></div><div class="box-b"><div class="grid3" style="gap:8px">${[['--green','Live · success'],['--yellow','Paused · warning'],['--red','Refused · danger'],['--purple','Done · triaged'],['--accent','Links · focus'],['--muted','Closed · secondary']].map(([v,l])=>`<div><div class="swatch" style="background:var(${v})"></div><div style="font-size:12px;margin-top:4px">${l}</div></div>`).join('')}</div></div></div>
+  </div>
+  <div class="box"><div class="box-h"><h3>Words on screen vs. protocol terms</h3><span class="muted">for the dev handoff</span></div><div class="tbl"><table><tr><th>In the UI</th><th>Protocol term</th><th>Reference</th></tr>${terms.map(([a,b,c])=>`<tr><td><b>${a}</b></td><td>${b}</td><td><code>${c}</code></td></tr>`).join('')}</table></div></div>
+  <div class="box"><div class="box-h"><h3>Principles</h3></div><div class="box-b"><ol style="margin:0;padding-left:18px">
+    <li>Familiar first: tabs, lists, timelines and labels follow GitHub patterns, so nothing needs explaining.</li>
+    <li>The UI never decides access. It shows what the access service decided, including when it can't be reached.</li>
+    <li>History is permanent. There are no delete buttons for versions, rollouts or reports, only new entries (deprecate, revoke, roll back, correction).</li>
+    <li>Plain words on screen; exact identifiers one click away.</li>
+    <li>Keys stay in the signer. No screen asks for a key file or secret.</li></ol></div></div></div>`;
+}
+
+/* ======================= MODAL ======================= */
+let lastFocus=null;
+function modal(title,body,foot,wide){
+  lastFocus=document.activeElement;
+  document.getElementById('modal').innerHTML=`<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <div class="modal-h"><h3 id="mt" style="flex:1">${title}</h3><button class="iconbtn" style="border:0" aria-label="Close" onclick="closeModal()">${ic('x')}</button></div><div class="modal-b">${body}</div><div class="modal-f">${foot}</div></div></div>`;
+  setTimeout(()=>document.querySelector('.modal input, .modal select, .modal textarea, .modal .btn')?.focus(),0);
+}
+function closeModal(){ document.getElementById('modal').innerHTML=''; lastFocus?.focus?.(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('click',e=>{ const c=e.target.closest('[data-copy]'); if(c){ navigator.clipboard?.writeText(c.dataset.copy).catch(()=>{}); toast('Fingerprint copied'); } });
+document.addEventListener('keydown',e=>{ const c=e.target.closest?.('[data-copy]'); if(c&&e.key==='Enter'){ c.click(); } });
+
+/* ======================= RENDER ======================= */
+function render(){
+  const r=route(); let html=header();
+  if(r[0]==='p'){
+    const tab=r[1]||'overview'; if(D.role!=='dev'){ D.role='dev'; html=header(); }
+    html+=repoHead(tab);
+    html+=({overview:vOverview,modules:()=>r[2]?vModule(r[2]):vModules(),environments:()=>r[2]?vEnv(r[2],r[3]):vEnvironments(),rollouts:vRollouts,testers:vTesters,feedback:()=>r[2]?vFeedbackItem(r[2]):vFeedback(),activity:vActivity,settings:vSettings}[tab]||vOverview)();
+  } else if(r[0]==='tester'){ if(D.role!=='tester'){ D.role='tester'; html=header(); } html+= r[1]==='run'?vRun():vTesterInbox(); }
+  else if(r[0]==='design'){ html+=vDesign(); }
+  else { if(D.role==='tester'){ html+=vTesterInbox(); } else html+=vHome(); }
+  html+=`<footer class="foot"><span>Remote Env · design prototype</span><a href="#/design">Design system</a><span>Data and actions are mocked</span></footer>`;
+  document.getElementById('app').innerHTML=html;
+  if(r[0]==='tester'&&r[1]==='run') startGame();
+}
 render();
 </script>
 </body>
