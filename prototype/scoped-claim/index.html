@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scoped Claim Authorization</title>
 <link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="sca-dialog.css">
 <style>
 /* Component styles read semantic tokens only. No hex values below this line
    except transparent mixes of tokens. */
@@ -29,111 +30,7 @@ button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px 
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);box-shadow:inset 0 -2px 0 var(--primary)}
 .launch{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
-.btn{border-radius:8px;padding:8px 16px;border:1px solid var(--line);background:var(--raised)}
-.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:600}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
 
-/* ---------- component: <flux-authorization-dialog> stand-in ---------- */
-dialog.sca{padding:0;border:0;background:transparent;color:var(--text);width:min(640px,100vw - 32px);max-height:min(860px,100vh - 32px)}
-dialog.sca::backdrop{background:color-mix(in srgb,var(--scrim) 62%,transparent);backdrop-filter:blur(3px)}
-.panel{display:flex;flex-direction:column;max-height:min(860px,100vh - 32px);
-  background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px) saturate(1.2);
-  border:1px solid var(--line);border-radius:16px;overflow:hidden;
-  box-shadow:0 24px 64px -12px color-mix(in srgb,var(--scrim) 55%,transparent)}
-.panel[data-state="expired"],.panel[data-state="error"]{border-top:3px solid var(--danger)}
-.panel[data-state="signed"]{border-top:3px solid var(--trust)}
-
-/* header (pinned) */
-.hd{padding:18px 20px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px}
-.hd-top{display:flex;align-items:center;gap:8px}
-.hd-top .meta{flex:1}
-.pill{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
-.pill.preview{color:var(--primary)} .pill.signing{color:var(--warning)} .pill.signed{color:var(--trust)}
-.pill.error,.pill.expired{color:var(--danger)} .pill.refused{color:var(--text-muted)}
-.close{background:transparent;border:0;color:var(--text-muted);width:28px;height:28px;border-radius:6px;display:grid;place-items:center}
-.close:hover{background:var(--raised);color:var(--text)}
-.hd h2{font:600 20px/1.25 var(--font-display);margin:0}
-.verb{font-family:var(--font-mono);font-size:13px;color:var(--primary);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
-.lede{margin:0;color:var(--text)}
-.lede b{font-weight:600}
-.pinned-digest{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:12px}
-.pinned-digest .exp{font-size:12px}
-.pinned-digest .mono{color:var(--text);word-break:break-all}
-
-/* body */
-.bd{overflow:auto;flex:1;position:relative}
-.layer{padding:16px 20px 20px}
-.group+.group{margin-top:16px}
-.group>.meta{display:block;margin-bottom:6px}
-dl.fields{margin:0;display:grid;grid-template-columns:minmax(120px,max-content) 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--raised)}
-dl.fields>div{display:contents}
-dl.fields dt,dl.fields dd{padding:9px 12px;margin:0;border-top:1px solid var(--line)}
-dl.fields>div:first-child dt,dl.fields>div:first-child dd{border-top:0}
-dl.fields dt{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);padding-top:11px}
-dl.fields dd{min-width:0;overflow-wrap:anywhere}
-dd .sub{display:block;color:var(--text-muted);font-size:12px}
-dd .mono{font-size:13px}
-.digest{font-family:var(--font-mono);font-size:13px;line-height:1.7;letter-spacing:.02em}
-.digest span{display:inline-block;white-space:nowrap;margin-right:.5ch}
-.exp{font-family:var(--font-mono);font-size:13px}
-.exp.soon{color:var(--warning)} .exp.gone{color:var(--danger)}
-.vis-public{color:var(--warning)}
-
-.inspect{margin-top:16px;display:grid;gap:8px}
-.inspect button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.inspect button:hover{border-color:var(--primary)}
-.inspect .t{flex:1}
-.inspect .t b{display:block;font-weight:600}
-.inspect .t small{color:var(--text-muted)}
-.inspect .arrow{font-family:var(--font-mono);color:var(--primary)}
-
-/* peeled layer */
-.layer.peel{animation:peel .15s ease-out}
-@keyframes peel{from{transform:translateX(16px);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.layer.peel{animation:none}}
-.back{background:transparent;border:0;color:var(--primary);padding:0;margin-bottom:12px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
-.layer h3{font:600 16px/1.3 var(--font-display);margin:0 0 4px}
-.layer>p.note{color:var(--text-muted);margin:0 0 12px;font-size:13px}
-pre.code{margin:0;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:12px;font:12px/1.6 var(--font-mono);color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:none}
-.tabs{display:flex;gap:4px;margin-bottom:8px}
-.tabs button{background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 10px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted)}
-.tabs button[aria-selected="true"]{border-color:var(--line);background:var(--raised);color:var(--text)}
-ol.stack{list-style:none;margin:0;padding:0;display:grid;gap:0}
-ol.stack li{position:relative;padding:0 0 14px 22px}
-ol.stack li::before{content:"";position:absolute;left:5px;top:6px;width:9px;height:9px;border-radius:2px;transform:rotate(45deg);background:var(--trust)}
-ol.stack li::after{content:"";position:absolute;left:9px;top:18px;bottom:0;width:1px;background:var(--line)}
-ol.stack li:last-child::after{display:none}
-ol.stack li.pending::before{background:transparent;border:1.5px solid var(--warning)}
-ol.stack .k{font-family:var(--font-mono);font-size:12px;color:var(--text-muted)}
-ol.stack .a{font-family:var(--font-mono);font-size:13px}
-
-/* state blocks */
-.notice{border:1px solid var(--line);border-left:3px solid var(--text-muted);border-radius:10px;padding:12px 14px;background:var(--raised);margin-bottom:16px}
-.notice.danger{border-left-color:var(--danger)} .notice.trust{border-left-color:var(--trust)} .notice.warning{border-left-color:var(--warning)}
-.notice h4{margin:0 0 4px;font-size:14px}
-.notice dl{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:13px}
-.notice dt{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding-top:2px}
-.notice dd{margin:0}
-.notice p{margin:0;font-size:13px}
-.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--warning);border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px;margin-right:6px}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
-
-/* footer (pinned) */
-.ft{border-top:1px solid var(--line);padding:12px 20px;display:grid;gap:10px}
-.verify{font-family:var(--font-mono);font-size:12px;display:flex;gap:6px;align-items:baseline}
-.verify.ok{color:var(--trust)} .verify.bad{color:var(--danger)} .verify.wait{color:var(--text-muted)}
-.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.actions .btn.primary{min-width:180px;overflow-wrap:anywhere}
-
-@media (max-width:560px){
-  dialog.sca{width:100vw;max-width:100vw;max-height:100dvh;margin:0;height:100dvh}
-  .panel{max-height:100dvh;height:100dvh;border-radius:0}
-  dl.fields{grid-template-columns:1fr}
-  dl.fields dd{border-top:0;padding-top:0}
-  .actions{flex-direction:column-reverse}
-  .actions .btn{width:100%}
-}
 </style>
 </head>
 <body>
@@ -170,10 +67,8 @@ ol.stack .a{font-family:var(--font-mono);font-size:13px}
   </div>
 </main>
 
-<dialog class="sca" id="sca" aria-labelledby="sca-title" aria-describedby="sca-lede">
-  <div class="panel" id="panel"></div>
-</dialog>
 
+<script src="sca-dialog.js"></script>
 <script>
 'use strict';
 
@@ -243,238 +138,9 @@ const REQUESTS = {
   },
 };
 
-/* ---------- canonical bytes + digest ---------- */
-function canonical(v) {
-  if (Array.isArray(v)) return '[' + v.map(canonical).join(',') + ']';
-  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}';
-  return JSON.stringify(v);
-}
-const enc = new TextEncoder();
-async function sha256(bytes) {
-  if (!globalThis.crypto || !crypto.subtle) return null; // no secure context → cannot verify
-  const buf = await crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-function hex(bytes) {
-  const out = [];
-  for (let i = 0; i < bytes.length; i += 16) {
-    const row = [...bytes.slice(i, i + 16)].map(b => b.toString(16).padStart(2, '0')).join(' ');
-    out.push(i.toString(16).padStart(6, '0') + '  ' + row);
-  }
-  return out.join('\n');
-}
-const chunk = (s, n = 8) => s.match(new RegExp('.{1,' + n + '}', 'g')) || [];
-const verbHTML = v => esc(v).replace(/\./g, '.<wbr>');
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const fmtTime = d => d.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 
-/* ---------- component ---------- */
-const dlg = document.getElementById('sca');
-const panel = document.getElementById('panel');
-let S = null; // current session
-let tick = null;
-
-async function prepare(key, initialState) {
-  const r = REQUESTS[key];
-  const manifestBytes = enc.encode(canonical(r.manifest));
-  const manifestDigest = await sha256(manifestBytes);
-  const now = Date.now();
-  const expiresAt = new Date(now + r.ttlSeconds * 1000);
-  // What the requester claims the digest is. In the mismatch demo it lies.
-  const claimedDigest = initialState === 'error'
-    ? (manifestDigest || '').replace(/^.{8}/, 'deadbeef')
-    : manifestDigest;
-  const authorization = {
-    action: r.action, authority: r.authority.id, callsign: r.callsign.id,
-    configuration: r.configuration.pointer, expires: expiresAt.toISOString(),
-    manifestDigest: 'sha256:' + claimedDigest, network: r.network.id,
-    requester: r.requester.origin, scope: r.scope, visibility: r.visibility.label,
-  };
-  const authBytes = enc.encode(canonical(authorization));
-  S = { key, r, manifestBytes, manifestDigest, claimedDigest, authorization, authBytes,
-        expiresAt, state: 'preview', layer: null, bytesView: 'utf8', receipt: null };
-  if (manifestDigest === null) S.state = 'error', S.errorCode = 'SCA_NO_CRYPTO';
-  else if (claimedDigest !== manifestDigest) S.state = 'error', S.errorCode = 'SCA_DIGEST_MISMATCH';
-  else if (initialState === 'expired') S.expiresAt = new Date(now - 4000), S.state = 'expired';
-  else if (initialState === 'signed') S.state = 'signed', S.receipt = fakeReceipt();
-  else S.state = initialState === 'error' ? 'preview' : initialState;
-}
-
-function fakeReceipt() {
-  const sig = [...crypto.getRandomValues(new Uint8Array(64))].map(b => b.toString(16).padStart(2, '0')).join('');
-  return { at: new Date(), sig, claimId: 'claim:' + S.manifestDigest.slice(0, 16) };
-}
-
-function secondsLeft() { return Math.round((S.expiresAt - Date.now()) / 1000); }
-function expiryText() {
-  const s = secondsLeft();
-  if (s <= 0) return { cls: 'gone', rel: 'expired' };
-  const m = Math.floor(s / 60), sec = String(s % 60).padStart(2, '0');
-  return { cls: s <= 60 ? 'soon' : '', rel: `in ${m}:${sec}` };
-}
-
-const PILL = { preview: 'Review before signing', signing: 'Signing', signed: 'Signed', expired: 'Expired', error: 'Cannot sign', refused: 'Not signed' };
-
-function render() {
-  const { r, state } = S;
-  panel.dataset.state = state;
-  const exp = expiryText();
-  const lockedStates = ['signing', 'signed', 'expired', 'error', 'refused'];
-  panel.innerHTML = `
-    <header class="hd">
-      <div class="hd-top">
-        <span class="meta">Scoped claim authorization</span>
-        <span class="pill ${state}" role="status">${PILL[state]}</span>
-        <button class="close" data-act="cancel" aria-label="Close without signing">✕</button>
-      </div>
-      <h2 id="sca-title">${esc(r.title)}</h2>
-      <p class="lede" id="sca-lede"><b>${esc(r.requester.name)}</b> is asking <b>${esc(r.callsign.name)}</b> to sign
-        <span class="verb">${verbHTML(r.action)}</span> in <span class="mono">${esc(r.scope)}</span>
-        under <b>${esc(r.authority.name)}</b>.</p>
-      <div class="pinned-digest"><span class="meta">Digest</span>
-        <span class="mono">sha256:${esc(S.claimedDigest.slice(0, 16))}…${esc(S.claimedDigest.slice(-8))}</span>
-        <span class="meta" style="margin-left:auto">Expires</span><span class="exp ${exp.cls}" data-exp>${exp.rel}</span></div>
-    </header>
-    <div class="bd" id="sca-body">${S.layer ? layerHTML() : summaryHTML(exp)}</div>
-    <footer class="ft">${footerHTML(exp, lockedStates.includes(state))}</footer>`;
-}
-
-function stateNotice() {
-  const s = S.state;
-  if (s === 'signing') return `<div class="notice warning" role="status"><h4><span class="spinner" aria-hidden="true"></span>Waiting for your key</h4>
-    <p>Your browser handle is signing the exact bytes below. Nothing has been broadcast yet. Don't close this tab.</p></div>`;
-  if (s === 'signed') return `<div class="notice trust" role="status"><h4>Signed and broadcast</h4>
-    <dl><dt>Claim</dt><dd class="mono">${esc(S.receipt.claimId)}</dd>
-    <dt>Signed at</dt><dd class="mono">${fmtTime(S.receipt.at)}</dd>
-    <dt>Signature</dt><dd class="mono" style="overflow-wrap:anywhere">ed25519:${esc(S.receipt.sig)}</dd></dl>
-    <p style="margin-top:8px">This claim can't be recalled. The fields below are exactly what you signed.</p></div>`;
-  if (s === 'expired') return `<div class="notice danger" role="alert"><h4>This authorization expired</h4>
-    <dl><dt>What happened</dt><dd>The request passed its expiry at <span class="mono">${fmtTime(S.expiresAt)}</span> before it was signed.</dd>
-    <dt>What's needed</dt><dd>A fresh request with a new expiry.</dd>
-    <dt>How to fix</dt><dd>Close this and start the action again from ${esc(S.r.requester.origin)}.</dd>
-    <dt>Code</dt><dd class="mono">SCA_EXPIRED</dd></dl></div>`;
-  if (s === 'error') {
-    const nocrypto = S.errorCode === 'SCA_NO_CRYPTO';
-    return `<div class="notice danger" role="alert"><h4>${nocrypto ? 'This browser can’t check the digest' : 'The content doesn’t match its digest'}</h4>
-    <dl><dt>What happened</dt><dd>${nocrypto
-      ? 'Your browser didn’t provide the hashing tool needed to check the manifest digest. This usually means the page isn’t on HTTPS.'
-      : 'The digest in this request doesn’t match the content it describes. What you would sign isn’t what you’re being shown.'}</dd>
-    <dt>What's needed</dt><dd>A request whose digest matches its manifest bytes.</dd>
-    <dt>How to fix</dt><dd>${nocrypto ? 'Open defxn over HTTPS and try again.' : 'Don’t sign. Close this and report it. If it repeats, the requesting page may be compromised.'}</dd>
-    <dt>Code</dt><dd class="mono">${S.errorCode}</dd></dl></div>`;
-  }
-  if (s === 'refused') return `<div class="notice" role="status"><h4>Nothing was signed</h4>
-    <p>You closed the authorization. No signature was produced and nothing was broadcast. The request below is kept for reference only.</p></div>`;
-  return '';
-}
-
-function summaryHTML(exp) {
-  const r = S.r;
-  const d = chunk(S.claimedDigest).map(c => `<span>${c}</span>`).join('');
-  return `<div class="layer">
-    ${stateNotice()}
-    <section class="group" aria-labelledby="g-what"><span class="meta" id="g-what">${S.state === 'signed' ? 'What you signed' : 'What you’re signing'}</span>
-      <dl class="fields">
-        <div><dt>Action</dt><dd><span class="verb">${verbHTML(r.action)}</span></dd></div>
-        <div><dt>Scope</dt><dd class="mono">${esc(r.scope)}</dd></div>
-        <div><dt>Manifest digest</dt><dd><div class="digest" aria-label="sha256 ${esc(S.claimedDigest)}">sha256:<br>${d}</div></dd></div>
-      </dl></section>
-    <section class="group" aria-labelledby="g-who"><span class="meta" id="g-who">Who</span>
-      <dl class="fields">
-        <div><dt>Callsign</dt><dd><b>${esc(r.callsign.name)}</b><span class="sub mono">${esc(r.callsign.id)}</span></dd></div>
-        <div><dt>Requester</dt><dd>${esc(r.requester.name)}<span class="sub mono">${esc(r.requester.origin)}</span></dd></div>
-        <div><dt>DAO authority</dt><dd>${esc(r.authority.name)}<span class="sub mono">${esc(r.authority.id)}</span></dd></div>
-      </dl></section>
-    <section class="group" aria-labelledby="g-where"><span class="meta" id="g-where">Where and limits</span>
-      <dl class="fields">
-        <div><dt>Network</dt><dd>${esc(r.network.name)}<span class="sub mono">${esc(r.network.id)}</span></dd></div>
-        <div><dt>Configuration</dt><dd>${esc(r.configuration.label)}<span class="sub mono">${esc(r.configuration.pointer)}</span></dd></div>
-        <div><dt>Visibility</dt><dd><span class="${r.visibility.public ? 'vis-public' : ''}">${esc(r.visibility.label)}</span><span class="sub">${esc(r.visibility.note)}</span></dd></div>
-        <div><dt>Expires</dt><dd><span class="exp ${exp.cls}" data-exp>${exp.rel}</span><span class="sub mono">${fmtTime(S.expiresAt)}</span></dd></div>
-      </dl></section>
-    <div class="inspect" role="group" aria-label="Inspect">
-      <button data-layer="stack"><span class="t"><b>Inspect claim stack</b><small>${r.stack.length} claims from your root identity to this request</small></span><span class="arrow">→</span></button>
-      <button data-layer="manifest"><span class="t"><b>Inspect signing manifest</b><small>${S.manifestBytes.length} bytes · the content the digest covers</small></span><span class="arrow">→</span></button>
-      <button data-layer="bytes"><span class="t"><b>Exact bytes to sign</b><small>${S.authBytes.length} bytes · what your key signs</small></span><span class="arrow">→</span></button>
-    </div>
-  </div>`;
-}
-
-function layerHTML() {
-  const back = `<button class="back" data-act="back">← Back to summary</button>`;
-  if (S.layer === 'stack') {
-    const items = S.r.stack.map(([k, a, by, pending]) => `<li class="${pending ? 'pending' : ''}">
-      <div class="k">${esc(k)}</div><div class="a">${esc(a)}</div><div class="sub" style="color:var(--text-muted);font-size:12px">${esc(by)}</div></li>`).join('');
-    return `<div class="layer peel">${back}<h3>Claim stack</h3>
-      <p class="note">Every claim that gives this request its authority, from your root identity down. Each one is signed by the party named under it.</p>
-      <ol class="stack">${items}</ol></div>`;
-  }
-  if (S.layer === 'manifest') {
-    return `<div class="layer peel">${back}<h3>Signing manifest</h3>
-      <p class="note">The content the manifest digest covers, in canonical form (sorted keys, no whitespace), shown pretty-printed. The digest is SHA-256 over the canonical bytes.</p>
-      <pre class="code">${esc(JSON.stringify(S.r.manifest, null, 2))}</pre>
-      <p class="note" style="margin-top:10px">Recomputed digest: <span class="mono">sha256:${esc(S.manifestDigest || 'unavailable')}</span></p></div>`;
-  }
-  const utf = new TextDecoder().decode(S.authBytes);
-  return `<div class="layer peel">${back}<h3>Exact bytes to sign</h3>
-    <p class="note">Your key signs these bytes and nothing else. They bind every field on the summary, including the manifest digest.</p>
-    <div class="tabs" role="tablist">
-      <button role="tab" data-bytes="utf8" aria-selected="${S.bytesView === 'utf8'}">UTF-8</button>
-      <button role="tab" data-bytes="hex" aria-selected="${S.bytesView === 'hex'}">Hex</button></div>
-    <pre class="code" role="tabpanel">${esc(S.bytesView === 'hex' ? hex(S.authBytes) : utf)}</pre></div>`;
-}
-
-function footerHTML(exp, locked) {
-  const s = S.state;
-  let verify;
-  if (S.errorCode === 'SCA_NO_CRYPTO') verify = `<div class="verify bad">✕ Digest not checked: hashing unavailable</div>`;
-  else if (S.claimedDigest !== S.manifestDigest) verify = `<div class="verify bad">✕ Digest doesn't match manifest bytes</div>`;
-  else verify = `<div class="verify ok">◆ Digest checked against manifest bytes in your browser</div>`;
-  let actions;
-  if (s === 'preview') actions = `<button class="btn" data-act="cancel">Cancel</button>
-      <button class="btn primary" data-act="sign">Sign ${verbHTML(S.r.action)}</button>`;
-  else if (s === 'signing') actions = `<button class="btn" disabled>Cancel</button><button class="btn primary" disabled><span class="spinner" aria-hidden="true"></span>Signing…</button>`;
-  else if (s === 'signed') actions = `<button class="btn" data-act="copy">Copy claim ID</button><button class="btn primary" data-act="close">Done</button>`;
-  else actions = `<button class="btn primary" data-act="close">Close</button>`;
-  return `${verify}<div class="actions">${actions}</div>`;
-}
-
-/* ---------- events ---------- */
-panel.addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.layer) { S.layer = b.dataset.layer; render(); panel.querySelector('.back').focus(); return; }
-  if (b.dataset.bytes) { S.bytesView = b.dataset.bytes; render(); return; }
-  const act = b.dataset.act;
-  if (act === 'back') { const from = S.layer; S.layer = null; render(); panel.querySelector(`[data-layer="${from}"]`)?.focus(); }
-  else if (act === 'cancel') { if (S.state === 'preview') { S.state = 'refused'; S.layer = null; render(); } else close(); }
-  else if (act === 'close') close();
-  else if (act === 'copy') navigator.clipboard?.writeText(S.receipt.claimId);
-  else if (act === 'sign') {
-    if (secondsLeft() <= 0) { S.state = 'expired'; render(); return; }
-    S.state = 'signing'; S.layer = null; render();
-    setTimeout(() => { if (S.state !== 'signing') return; S.receipt = fakeReceipt(); S.state = 'signed'; render(); panel.querySelector('[data-act="close"]').focus(); }, 1400);
-  }
-});
-// Esc peels the open layer first, then cancels. It never cancels mid-signing.
-dlg.addEventListener('cancel', e => {
-  e.preventDefault();
-  if (S.layer) { panel.querySelector('[data-act="back"]').click(); return; }
-  if (S.state === 'signing') return;
-  if (S.state === 'preview') { S.state = 'refused'; render(); return; }
-  close();
-});
-function close() { clearInterval(tick); dlg.close(); document.getElementById('open').focus(); }
-
-/* expiry ticker: updates the live countdown, flips to expired at zero */
-function startTick() {
-  clearInterval(tick);
-  tick = setInterval(() => {
-    if (S.state !== 'preview') return;
-    if (secondsLeft() <= 0) { S.state = 'expired'; S.layer = null; render(); return; }
-    const x = expiryText();
-    panel.querySelectorAll('[data-exp]').forEach(el => { el.textContent = x.rel; el.className = 'exp ' + x.cls; });
-  }, 1000);
-}
+// stack tuples → { kind, subject, by, pending }
+for (const r of Object.values(REQUESTS)) r.stack = r.stack.map(([kind, subject, by, pending]) => ({ kind, subject, by, pending }));
 
 /* ---------- harness ---------- */
 const pick = id => document.querySelector(`#${id} [aria-pressed="true"]`).dataset.v;
@@ -485,11 +151,8 @@ for (const id of ['ctl-action', 'ctl-state', 'ctl-theme']) {
     if (id === 'ctl-theme') document.documentElement.dataset.theme = b.dataset.v;
   });
 }
-document.getElementById('open').addEventListener('click', async () => {
-  await prepare(pick('ctl-action'), pick('ctl-state'));
-  render(); dlg.showModal(); startTick();
-  document.getElementById('sca-title').setAttribute('tabindex', '-1');
-  document.getElementById('sca-title').focus(); // focus the title, never the Sign button
+document.getElementById('open').addEventListener('click', () => {
+  SCA.request(REQUESTS[pick('ctl-action')], pick('ctl-state')).catch(() => {});
 });
 </script>
 </body>

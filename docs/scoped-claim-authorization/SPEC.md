@@ -4,6 +4,7 @@ Status: design draft v0.1 · Stream: *Scoped Claim Authorization Everywhere* (de
 Prototype: [`prototype/scoped-claim/index.html`](../../prototype/scoped-claim/index.html)
 Contrast gate: [`prototype/scoped-claim/check-contrast.cjs`](../../prototype/scoped-claim/check-contrast.cjs)
 Research protocol: [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md)
+Platform UI that hosts it: [`docs/defxn/PLATFORM.md`](../defxn/PLATFORM.md)
 
 > **Provenance.** This spec was written without access to the defxn or
 > flux-dao-app source. Anything marked **⚑ verify** depends on code it could
@@ -352,8 +353,8 @@ shape in the prototype, which is illustrative, against it).
 
 | Item | Where it stands |
 |------|-----------------|
-| One component spec covering all three surfaces | This document + prototype (all three actions, all six states, both themes) |
+| One component spec covering all three surfaces | This document + `sca-dialog.js`, used by all nine entry points in the platform prototype |
 | Research report confirming comprehension | Protocol ready in `RESEARCH_PLAN.md`; **no sessions run yet** |
-| Identity-to-mesh flow has a home | §9: route, entry points, flow; prototype shows its modal |
+| Identity-to-mesh flow has a home | §9, built in the platform prototype at `#/account/directory` ([PLATFORM.md](../defxn/PLATFORM.md) §4) |
 | Zero reduced variants in the codebase | Contract + CI gates in §8; audit procedure in §5; **needs the defxn audit** |
 | Light and dark pass contrast | Stand-in tokens pass the local gate; **re-run on defxn with SDK values** |
