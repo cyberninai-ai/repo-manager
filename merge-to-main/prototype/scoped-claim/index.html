@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scoped Claim Authorization</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="sca-dialog.css">
+<style>
+/* Component styles read semantic tokens only. No hex values below this line
+   except transparent mixes of tokens. */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);color:var(--text);font:14px/1.5 var(--font-sans)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.mono{font-family:var(--font-mono)}
+.meta{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- review harness (not part of the component) ---------- */
+.harness{max-width:960px;margin:0 auto;padding:24px 16px 64px}
+.harness h1{font:600 22px/1.2 var(--font-display);margin:0 0 4px}
+.harness p{color:var(--text-muted);margin:0 0 20px;max-width:70ch}
+.controls{display:grid;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ctl .meta{min-width:90px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:6px 12px;color:var(--text-muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);box-shadow:inset 0 -2px 0 var(--primary)}
+.launch{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+
+</style>
+</head>
+<body>
+
+<main class="harness">
+  <h1>Scoped Claim Authorization</h1>
+  <p>One signing surface for every identity-bound action on defxn. Pick an action and open the modal. The state control below lets reviewers see every state without walking the whole flow. The control panel is a review tool, not part of the component.</p>
+
+  <section class="controls" aria-label="Review controls">
+    <div class="ctl"><span class="meta">Action</span>
+      <div class="seg" id="ctl-action" role="group" aria-label="Action">
+        <button data-v="transfer" aria-pressed="true">FXN transfer</button>
+        <button data-v="publish">CMS publish</button>
+        <button data-v="directory">Identity → mesh</button>
+      </div></div>
+    <div class="ctl"><span class="meta">Open in state</span>
+      <div class="seg" id="ctl-state" role="group" aria-label="Initial state">
+        <button data-v="preview" aria-pressed="true">Preview</button>
+        <button data-v="signing">Signing</button>
+        <button data-v="signed">Signed</button>
+        <button data-v="expired">Expired</button>
+        <button data-v="error">Digest mismatch</button>
+        <button data-v="refused">Refused</button>
+      </div></div>
+    <div class="ctl"><span class="meta">Theme</span>
+      <div class="seg" id="ctl-theme" role="group" aria-label="Theme">
+        <button data-v="dark" aria-pressed="true">Dark</button>
+        <button data-v="light">Light</button>
+      </div></div>
+  </section>
+
+  <div class="launch">
+    <button class="btn primary" id="open">Open authorization</button>
+  </div>
+</main>
+
+
+<script src="sca-dialog.js"></script>
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------ *
+ * Illustrative requests. Values are made up. Field names follow the   *
+ * spec's field contract (docs/scoped-claim-authorization/SPEC.md).    *
+ * ------------------------------------------------------------------ */
+const REQUESTS = {
+  transfer: {
+    title: 'Sign an FXN transfer',
+    requester: { name: 'defxn Treasury', origin: 'defxn #/treasury' },
+    network: { name: 'Flux mesh · mainnet', id: 'flux-mainnet' },
+    authority: { name: 'Flux DAO', id: 'did:flux:dao:7Qm3…k2Fa' },
+    configuration: { label: 'treasury policy v14', pointer: 'cfg://flux-dao/treasury@14' },
+    scope: 'fxn.treasury.transfers',
+    action: 'transfer',
+    ttlSeconds: 300,
+    callsign: { name: 'KESTREL-7', id: 'did:flux:id:9cXv…mE1q' },
+    visibility: { label: 'Public ledger', note: 'Anyone on the network can read this transfer.', public: true },
+    manifest: { kind: 'transfer', asset: 'FXN', amount: '250.000000', to: 'HERON-2 (did:flux:id:3bLe…Qa90)', memo: 'Q3 grant tranche 2' },
+    stack: [
+      ['Root identity', 'did:flux:id:9cXv…mE1q', 'self-signed · 2025-11-02'],
+      ['DAO membership', 'member of Flux DAO', 'signed by Flux DAO quorum 3/5'],
+      ['Role grant', 'treasury.operator', 'signed by Flux DAO · expires 2027-01-01'],
+      ['This request', 'transfer in fxn.treasury.transfers', 'awaiting your signature', true],
+    ],
+  },
+  publish: {
+    title: 'Sign a site content publish',
+    requester: { name: 'defxn CMS', origin: 'defxn CMS admin' },
+    network: { name: 'Flux mesh · mainnet', id: 'flux-mainnet' },
+    authority: { name: 'defxn Editorial (Flux DAO)', id: 'did:flux:dao:7Qm3…k2Fa/editorial' },
+    configuration: { label: 'site config r208', pointer: 'cfg://defxn/site@208' },
+    scope: 'defxn.site.content',
+    action: 'publish',
+    ttlSeconds: 600,
+    callsign: { name: 'KESTREL-7', id: 'did:flux:id:9cXv…mE1q' },
+    visibility: { label: 'Public', note: 'Published pages are served to every visitor.', public: true },
+    manifest: { kind: 'site.publish', route: '/posts/mesh-directory-launch', files: [
+      { path: 'posts/mesh-directory-launch.html', sha256: '4e1f0c…b9a2', bytes: 18342 },
+      { path: 'assets/directory-hero.webp', sha256: '9d02aa…71ce', bytes: 120458 } ], replaces: 'r207' },
+    stack: [
+      ['Root identity', 'did:flux:id:9cXv…mE1q', 'self-signed · 2025-11-02'],
+      ['DAO membership', 'member of Flux DAO', 'signed by Flux DAO quorum 3/5'],
+      ['Role grant', 'editorial.publisher', 'signed by defxn Editorial · expires 2026-12-31'],
+      ['This request', 'publish in defxn.site.content', 'awaiting your signature', true],
+    ],
+  },
+  directory: {
+    title: 'Publish your identity to the mesh directory',
+    requester: { name: 'defxn Account', origin: 'defxn #/account/directory' },
+    network: { name: 'Flux mesh · mainnet', id: 'flux-mainnet' },
+    authority: { name: 'Flux DAO · Founding', id: 'did:flux:dao:7Qm3…k2Fa/founding' },
+    configuration: { label: 'directory schema v3', pointer: 'cfg://flux-dao/directory@3' },
+    scope: 'founding.directory',
+    action: 'founding.directory.publish',
+    ttlSeconds: 300,
+    callsign: { name: 'KESTREL-7', id: 'did:flux:id:9cXv…mE1q' },
+    visibility: { label: 'Mesh directory · all peers', note: 'Every peer on the network can look you up by callsign.', public: true },
+    manifest: { kind: 'directory.entry', callsign: 'KESTREL-7', identity: 'did:flux:id:9cXv…mE1q',
+      deviceKeys: ['ed25519:7bF2…Lk0', 'ed25519:Q91c…z3e'], profile: { displayName: 'Kestrel', links: ['https://defxn.example/@kestrel'] } },
+    stack: [
+      ['Root identity', 'did:flux:id:9cXv…mE1q', 'self-signed · 2025-11-02'],
+      ['DAO membership', 'founding member of Flux DAO', 'signed by Flux DAO quorum 3/5'],
+      ['This request', 'founding.directory.publish', 'awaiting your signature', true],
+    ],
+  },
+};
+
+
+// stack tuples → { kind, subject, by, pending }
+for (const r of Object.values(REQUESTS)) r.stack = r.stack.map(([kind, subject, by, pending]) => ({ kind, subject, by, pending }));
+
+/* ---------- harness ---------- */
+const pick = id => document.querySelector(`#${id} [aria-pressed="true"]`).dataset.v;
+for (const id of ['ctl-action', 'ctl-state', 'ctl-theme']) {
+  document.getElementById(id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if (id === 'ctl-theme') document.documentElement.dataset.theme = b.dataset.v;
+  });
+}
+document.getElementById('open').addEventListener('click', () => {
+  SCA.request(REQUESTS[pick('ctl-action')], pick('ctl-state')).catch(() => {});
+});
+</script>
+</body>
+</html>

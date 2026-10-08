@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>defxn</title>
+<link rel="stylesheet" href="../scoped-claim/tokens.css">
+<link rel="stylesheet" href="../scoped-claim/sca-dialog.css">
+<link rel="stylesheet" href="app.css">
+<script>
+  // Theme before first paint: saved choice, else the OS preference.
+  try {
+    const t = localStorage.getItem('defxn-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.dataset.theme = t;
+  } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+</script>
+</head>
+<body>
+<a class="sr" href="#main">Skip to content</a>
+
+<header class="top">
+  <a class="brand" href="#/"><span class="mark" aria-hidden="true">dx</span>defxn</a>
+  <span class="netchip" title="Network"><span class="dot" aria-hidden="true"></span><span>Flux mesh · mainnet</span><span class="long" id="peers"></span></span>
+  <span class="spacer"></span>
+  <button class="iconbtn" id="theme" aria-label="Switch theme"></button>
+  <a class="idchip" href="#/account" id="idchip"></a>
+</header>
+
+<div class="shell">
+  <nav class="side" id="nav" aria-label="Main"></nav>
+  <main id="main" tabindex="-1"><div class="wrap" id="view"></div></main>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="../scoped-claim/sca-dialog.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

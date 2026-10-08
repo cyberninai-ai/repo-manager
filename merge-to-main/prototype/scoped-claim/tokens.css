@@ -1,0 +1,60 @@
+/*
+ * Scoped Claim Authorization — semantic tokens.
+ *
+ * Names follow the Dead Ark UI System semantic set (--surface, --raised,
+ * --text, --primary, --trust, --warning, --danger …). The VALUES here are
+ * stand-ins so the prototype renders; on defxn the component must read the
+ * SDK's own values and declare none of its own. Keep names, swap values.
+ *
+ * check-contrast.cjs parses this file: keep one `--name: #hex;` per line and
+ * the three blocks (dark default, light) intact.
+ */
+
+:root {
+  /* canvas / surfaces */
+  --canvas: #0a0c11;
+  --surface: #11141b;
+  --raised: #181c25;
+  --line: #2b313d;
+  --scrim: #000000;
+
+  /* text */
+  --text: #e7eaf0;
+  --text-muted: #a3acbb;
+  --on-primary: #0a0c11;
+
+  /* meaning */
+  --primary: #82a8ff;
+  --trust: #5bd395;
+  --warning: #f0b84a;
+  --danger: #ff7a7a;
+
+  /* type slots */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  /* canvas / surfaces */
+  --canvas: #eef0f4;
+  --surface: #ffffff;
+  --raised: #f5f6f9;
+  --line: #cfd4dd;
+  --scrim: #0a0c11;
+
+  /* text */
+  --text: #11141b;
+  --text-muted: #4b5466;
+  --on-primary: #ffffff;
+
+  /* meaning */
+  --primary: #2c58cc;
+  --trust: #11744a;
+  --warning: #855600;
+  --danger: #b3261e;
+
+  color-scheme: light;
+}
