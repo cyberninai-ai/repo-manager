@@ -49,45 +49,44 @@
 ## Remote Env product design (prototype)
 
 `prototype/index.html` is the **UI design** for Remote Env's developer and
-tester product surfaces. The engineering team builds the product; this file
-shows what people see and how each flow feels. Layout and patterns follow
-GitHub (project header with tabs, Releases-style versions, Issues-style
-feedback, audit log, settings sidebar) so the product feels familiar from
-the first visit.
+tester surfaces, in the DEFXN visual language: warm near-black ground with a
+faint labelled grid, copper emphasis, teal primary actions, navy secondary
+actions, mono eyebrows and units, and framed archive-style panels. The
+engineering team builds the product; this file shows what people see.
 
-**Developer view**
-- **Home**: projects and "needs your attention".
-- **Overview**: live environments, open feedback, README, about sidebar.
-- **Modules**: version list per module; publish, deprecate, revoke.
-- **Environments**: each version pins exact module versions; side-by-side
-  diff against the previous version; "New version" composer.
-- **Rollouts**: release, pause, resume, roll back (reason required), close
-  (typed confirm), with a timeline.
-- **Testers**: tester groups, invite flow, "is this person in the group?" check.
-- **Feedback**: Issues-style list and detail. The tester's original report is
-  locked, corrections are added instead of edits, and every report is tied to
-  the exact version tested.
-- **Activity**: permanent audit log with filters.
-- **Settings**: people & access, encryption keys, close project.
+### Design law: never show too much
 
-**Tester view**: inbox (active, paused and revoked invites), "confirm it's you"
-unlock steps, run screen with the exact version bar, report-an-issue form.
+We do the hard work so people don't have to think. Every screen follows:
 
-**Design system** (`#/design`): status labels, refusal message pattern
-(What happened / What's needed / How to fix + error code), confirmation
-rules, color roles, and a table mapping UI words to protocol terms for the
-dev handoff.
+1. **One answer per screen.** The headline is the answer ("v3 is live for 82 testers.").
+2. **One next step.** A single primary action, chosen from state (release v4 → review reports → compose).
+3. **Details on demand.** Lists stay short; depth opens in a side drawer.
+4. **We do the hard work.** Show the diff, the count, the fingerprint. Never ask people to compare or remember.
+5. **Numbers carry units.** "82 people", "3 reports".
+6. **Say what can't be undone,** only where it matters, before it happens.
+7. **Refusals explain themselves:** what happened, what's needed, how to fix.
+8. **Plain words, exact IDs nearby.** Fingerprints show 4 characters and copy the full value.
 
-Data and actions are mocked in the page. Light and dark themes are included.
+### Surfaces
+
+- **Overview**: the state as a headline, the live build diagram (modules → environment version, checks, fingerprint), a 5-step progress tracker, and a stats strip.
+- **Build**: module tiles (drawer: versions, publish, revoke) and environment versions (drawer: diff, release, roll back). Compose a new version in one dialog.
+- **Release**: live state, one primary action, guarded roll back and close, a short timeline that expands.
+- **Feedback**: open and done lists; each report opens in a drawer with the locked original, corrections, reply and mark done.
+- **Menu**: Activity, People & keys, switch view, Design system.
+- **Tester**: inbox, the "Confirm it's you → Check access → Unlock" steps, the run screen with an exact version bar, and a two-field report form.
+- **Design system** (`#/system`): the laws, color, type, components and a UI-to-protocol term table for the devs.
+
+Data and actions are mocked in the page.
 
 ```sh
 xdg-open prototype/index.html    # or: open prototype/index.html
 ```
 
-| Project overview | Rollouts |
+| Overview | Build |
 |---|---|
-| ![overview](docs/screens/overview.png) | ![rollouts](docs/screens/rollouts.png) |
-| **Feedback** | **Tester run screen** |
-| ![feedback](docs/screens/feedback-item.png) | ![tester](docs/screens/tester-run.png) |
-| **Refusal message** | **Design system** |
-| ![refusal](docs/screens/publish-refusal.png) | ![design](docs/screens/design.png) |
+| ![overview](docs/screens/overview.png) | ![build](docs/screens/build.png) |
+| **Release** | **Report drawer** |
+| ![release](docs/screens/release.png) | ![report](docs/screens/report.png) |
+| **Tester run screen** | **Design system** |
+| ![run](docs/screens/run.png) | ![system](docs/screens/system.png) |
