@@ -65,17 +65,24 @@ We do the hard work so people don't have to think. Every screen follows:
 5. **Numbers carry units.** "82 people", "3 reports".
 6. **Say what can't be undone,** only where it matters, before it happens.
 7. **Refusals explain themselves:** what happened, what's needed, how to fix.
-8. **Plain words, exact IDs nearby.** Fingerprints show 4 characters and copy the full value.
+8. **Empty is a starting point.** Every empty screen says what goes there and offers the one action that fills it.
 
-### Surfaces
+### Structure: two levels, nothing deeper
 
-- **Overview**: the state as a headline, the live build diagram (modules → environment version, checks, fingerprint), a 5-step progress tracker, and a stats strip.
-- **Build**: module tiles (drawer: versions, publish, revoke) and environment versions (drawer: diff, release, roll back). Compose a new version in one dialog.
-- **Release**: live state, one primary action, guarded roll back and close, a short timeline that expands.
-- **Feedback**: open and done lists; each report opens in a drawer with the locked original, corrections, reply and mark done.
-- **Menu**: Activity, People & keys, switch view, Design system.
-- **Tester**: inbox, the "Confirm it's you → Check access → Unlock" steps, the run screen with an exact version bar, and a two-field report form.
-- **Design system** (`#/system`): the laws, color, type, components and a UI-to-protocol term table for the devs.
+**Workspace** (one account, many projects and people)
+- **Home**: "2 builds live. 3 things need you." with the next action, then your projects, builds shared with you, and a few from Explore.
+- **Explore**: public builds from other people, with kind filters and search. Open them, or ask to join the ones where the owner approves each tester.
+- **Testing**: builds shared with you (ready, paused, access removed, requested) and the reports you sent.
+- **New project**: a 3-step dialog (name and kind → first environment and who can open it → create).
+
+**Project** (switch projects from the pill nav)
+- **Overview**: the state of the selected environment as a headline, a live build diagram, a 5-step tracker and stats. New projects show guided empty states: publish first module → compose v1 → release.
+- **Build**: modules (drawer: versions, publish, revoke) and environment versions (drawer: diff, release, roll back).
+- **Release**: per environment (switch inline, **+** creates a new one). Who can open it (invite only, link, public on Explore, listed ask-to-join), invite testers, copy link, release, pause, roll back, close, timeline.
+- **Feedback**: open and done reports; drawer with the locked original, corrections, reply and mark done.
+- **Menu**: activity, people & keys, explore, design system.
+
+**Opening any build** (yours, shared or public): "Confirm it's you → Check access → Unlock", then the run screen with the exact version bar and a report form that goes to the owner.
 
 Data and actions are mocked in the page.
 
@@ -83,10 +90,10 @@ Data and actions are mocked in the page.
 xdg-open prototype/index.html    # or: open prototype/index.html
 ```
 
-| Overview | Build |
+| Home | Explore |
 |---|---|
-| ![overview](docs/screens/overview.png) | ![build](docs/screens/build.png) |
-| **Release** | **Report drawer** |
-| ![release](docs/screens/release.png) | ![report](docs/screens/report.png) |
-| **Tester run screen** | **Design system** |
-| ![run](docs/screens/run.png) | ![system](docs/screens/system.png) |
+| ![home](docs/screens/home.png) | ![explore](docs/screens/explore.png) |
+| **New project** | **A new, empty project** |
+| ![wizard](docs/screens/wizard.png) | ![empty](docs/screens/new-empty.png) |
+| **Project with switcher** | **Testing for others** |
+| ![switcher](docs/screens/switcher.png) | ![testing](docs/screens/testing.png) |

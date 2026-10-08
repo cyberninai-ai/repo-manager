@@ -261,6 +261,44 @@ tr.d-add td:first-child{box-shadow:inset 2px 0 var(--green)} tr.d-chg td:first-c
 .foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px 40px 28px;font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .foot a:hover{color:var(--text)}
 @media (max-width:860px){.foot{padding:16px}}
+
+/* ---------- workspace additions ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.pcard{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;text-align:left;width:100%;position:relative;transition:border-color .15s,transform .15s}
+.pcard:hover{border-color:var(--line2);transform:translateY(-1px)}
+.pcard .pt{font:600 20px/1.15 var(--display);letter-spacing:-.03em}
+.pcard .pd{color:var(--muted);font-size:14px;line-height:1.45;min-height:40px}
+.pcard .pf{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+.pcard .attn{position:absolute;top:16px;right:16px;font:500 10px var(--mono);background:var(--copper2);color:#1a0d08;border-radius:10px;padding:2px 8px;letter-spacing:.06em}
+.sect{display:flex;align-items:baseline;gap:12px;margin:44px 0 16px}
+.sect h2{font:600 26px var(--display);letter-spacing:-.035em;margin:0}
+.sect a,.sect button.textlink{margin:0 0 0 auto}
+.envrow{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
+.dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(143,220,159,.12)} .dot.paused{background:var(--amber)} .dot.draft{background:transparent;border:1.5px dashed var(--dim)}
+.empty{border:1px dashed var(--line2);border-radius:10px;padding:36px 24px;text-align:center;color:var(--muted)}
+.empty h3{font:600 22px var(--display);letter-spacing:-.03em;color:var(--text);margin:10px 0 6px}
+.empty .ti{margin:0 auto}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line2);border-radius:8px;cursor:pointer;text-align:left;background:none;width:100%}
+.opt:hover{background:rgba(255,224,204,.03)}
+.opt.on{border-color:var(--teal-line);background:var(--teal-soft)}
+.opt .ob{font-weight:500} .opt .os{font-size:13px;color:var(--muted);margin-top:2px}
+.opt .radio{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line2);margin-top:3px;flex:none;display:grid;place-items:center}
+.opt.on .radio{border-color:var(--teal)} .opt.on .radio::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.kinds{display:flex;gap:8px;flex-wrap:wrap}
+.kinds button{padding:7px 14px;border-radius:20px;border:1px solid var(--line2);background:none;cursor:pointer;color:var(--muted);font-size:13px}
+.kinds button.on{border-color:var(--copper);color:var(--copper);background:rgba(233,161,132,.08)}
+.switch-btn{display:flex!important;gap:8px;align-items:center;color:var(--text)!important;font-weight:500}
+.switch-btn .sq{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font:600 11px var(--display);color:#1a0d08}
+.pmenu{position:fixed;width:320px;background:var(--panel-solid);border:1px solid var(--line2);border-radius:12px;padding:8px;box-shadow:0 30px 80px rgba(0,0,0,.6);z-index:40;animation:pop .15s}
+.pmenu button{display:flex;gap:12px;align-items:center;width:100%;padding:9px 10px;border-radius:8px;background:none;border:0;cursor:pointer;text-align:left}
+.pmenu button:hover,.pmenu button.cur{background:var(--raise)}
+.pmenu .t{font-size:14px} .pmenu .s{font:10px var(--mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.pmenu hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
+.sq{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font:600 13px var(--display);color:#1a0d08;flex:none}
+.linkbox{display:flex;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--line2);border-radius:8px;background:rgba(0,0,0,.25);font:12px var(--mono);color:var(--green)}
+.search{display:flex;align-items:center;gap:8px;max-width:360px;flex:1}
 </style>
 </head>
 <body>
@@ -272,9 +310,12 @@ tr.d-add td:first-child{box-shadow:inset 2px 0 var(--green)} tr.d-chg td:first-c
 <script>
 /* =================================================================
    Remote Env · product design prototype (DEFXN visual language)
-   Data and actions are mocked to show the designed flows.
+   One account works across many projects: your own, ones shared
+   with you to test, and public ones on Explore. Data is mocked.
    ================================================================= */
 const ICONS={
+  home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  compass:'<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
   grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
   layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
   play:'<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
@@ -283,407 +324,646 @@ const ICONS={
   users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   term:'<rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="7 10 10 13 7 16"/><line x1="12" y1="16" x2="16" y2="16"/>',
   arrow:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  back:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
   ne:'<line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/>',
   check:'<polyline points="20 6 9 17 4 12"/>',
   x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  chev:'<polyline points="6 9 12 15 18 9"/>',
   lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  globe:'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  hand:'<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
   shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>',
   monitor:'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
   zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   map:'<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
   cube:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+  wave:'<path d="M2 12h3l3-8 4 16 3-8h7"/>',
   copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   palette:'<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 10c0-4.4-4.5-8-10-8z"/>',
-  swap:'<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
   upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   pause:'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
   undo:'<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
   inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   history:'<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 15"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
 };
 const ic=(n,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function hash(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0;}let o='',x=h;for(let i=0;i<5;i++){x=Math.imul(x^(x>>>13),0x5bd1e995)>>>0;o+=x.toString(16).padStart(8,'0');}return o;}
 const fp=k=>{const h=hash(k);return `<button class="fp" data-copy="${h}" title="Fingerprint · copy full value">#${h.slice(0,4)}${ic('copy')}</button>`;};
-const COL={mara:'#e9a184',devon:'#7cc8e8',jo:'#d7a6e8','tester-07':'#8fdc9f','tester-22':'#ebbd6a'};
-const av=u=>`<span class="av" style="background:${COL[u]||'#b9a79c'}" aria-hidden="true">${esc(u[0].toUpperCase())}</span>`;
+const PAL=['#e9a184','#7cc8e8','#d7a6e8','#8fdc9f','#ebbd6a','#f2c09a','#9fd7cf','#c9b6f2'];
+const colorOf=s=>PAL[parseInt(hash(s).slice(0,2),16)%PAL.length];
+const av=u=>`<span class="av" style="background:${colorOf(u)}" aria-hidden="true">${esc(u[0].toUpperCase())}</span>`;
+const sq=(p,cls='sq')=>`<span class="${cls}" style="background:${colorOf(p.name)}" aria-hidden="true">${esc(p.name[0].toUpperCase())}</span>`;
 const ver=(m,v)=>`<span class="ver"><b>${esc(m)}</b><span>${esc(v)}</span></span>`;
 const chip=(s,t)=>`<span class="chip ${s}">${['live','paused','revoked'].includes(s)?'<i></i>':''}${t}</span>`;
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const fmt=n=>n>=1000?(n/1000).toFixed(n>=10000?0:1).replace('.0','')+'k':String(n);
 function toast(m){const t=document.createElement('div');t.className='toast';t.innerHTML=ic('check')+`<span>${m}</span>`;const b=document.getElementById('toasts');b.appendChild(t);while(b.children.length>2)b.firstChild.remove();setTimeout(()=>t.remove(),3200);}
 function refusal(title,{what,need,fix,code},warn){return `<div class="refusal ${warn?'warn':''}" role="${warn?'status':'alert'}"><div class="rh">› ${esc(title)} ‹</div><dl><dt>What happened</dt><dd>${what}</dd><dt>What's needed</dt><dd>${need}</dd><dt>How to fix</dt><dd>${fix}</dd></dl>${code?`<div class="code">ERR · ${esc(code)}</div>`:''}</div>`;}
 
 /* ======================= DATA ======================= */
+const ACCESS={
+  invite:{icon:'lock',label:'Invite only',sub:'Only people you invite can open it.'},
+  link:{icon:'link',label:'Anyone with the link',sub:'Share a link. Not listed anywhere.'},
+  public:{icon:'globe',label:'Public on Explore',sub:'Listed on Explore. Anyone can open it.'},
+  request:{icon:'hand',label:'Listed, ask to join',sub:'Listed on Explore. You approve each person.'},
+};
+const KINDS=['Game','Web app','Tool','Media'];
+const KIND_ICON={'Game':'zap','Web app':'monitor','Tool':'cube','Media':'wave'};
+const mods=list=>list.map(([id,name,icon,vs])=>({id,name,icon,versions:vs.map(v=>typeof v==='string'?{v,size:'—',by:'',at:'',st:'active',notes:''}:v)}));
+const env=(o)=>Object.assign({access:'invite',group:{name:'Invited people',people:0},versions:[],rollout:{state:'draft',live:0,events:[]}},o);
+
 const D={
-  role:'dev', me:'mara', project:'demo-game', owner:'defxn',
-  modules:[
-    {id:'ui-shell',name:'Game shell',icon:'monitor',kind:'HTML app',versions:[{v:'1.0.0',size:'2.0 MB',by:'devon',at:'Sep 26',st:'active',notes:'First playable shell'},{v:'1.1.0',size:'2.3 MB',by:'devon',at:'Oct 5',st:'active',notes:'Responsive menus, new HUD'}]},
-    {id:'physics',name:'Physics',icon:'zap',kind:'WebAssembly',versions:[{v:'2.3.0',size:'180 KB',by:'mara',at:'Sep 26',st:'active',notes:'Jump tuning'},{v:'2.3.1',size:'184 KB',by:'mara',at:'Oct 5',st:'active',notes:'Fixed timestep at high refresh rates'}]},
-    {id:'level-pack',name:'Levels',icon:'map',kind:'Data bundle',versions:[{v:'0.8.0',size:'1.1 MB',by:'jo',at:'Sep 20',st:'revoked',notes:'Contained unlicensed audio'},{v:'0.9.0',size:'1.0 MB',by:'jo',at:'Oct 2',st:'active',notes:'Levels 1–6'}]},
-  ],
-  envs:{
-    playtest:{versions:[
-      {n:1,mods:{'ui-shell':'1.0.0',physics:'2.3.0'},by:'mara',at:'Sep 28',note:'First playtest'},
-      {n:2,mods:{'ui-shell':'1.0.0',physics:'2.3.0','level-pack':'0.9.0'},by:'mara',at:'Oct 3',note:'Levels 1–6'},
-      {n:3,mods:{'ui-shell':'1.1.0',physics:'2.3.1','level-pack':'0.9.0'},by:'devon',at:'Oct 6',note:'New HUD and physics fix'}],
-      rollout:{state:'active',live:3,group:'early',events:[{a:'release',v:1,by:'mara',at:'Sep 28'},{a:'release',v:2,by:'mara',at:'Oct 3'},{a:'release',v:3,by:'devon',at:'Oct 6'}]}},
-    internal:{versions:[{n:1,mods:{'ui-shell':'1.1.0',physics:'2.3.1'},by:'devon',at:'Oct 5',note:'HUD review'}],
-      rollout:{state:'paused',live:1,group:'qa',events:[{a:'release',v:1,by:'devon',at:'Oct 5'},{a:'pause',v:1,by:'devon',at:'Oct 7',reason:'Waiting on art review'}]}},
-  },
-  groups:{early:{name:'Early testers',rule:'20% of invited players',people:82},qa:{name:'QA team',rule:'Named people',people:3}},
-  feedback:[
-    {n:14,title:'Physics jitters on 144 Hz monitors',env:'playtest',v:3,mod:'physics',mv:'2.3.1',by:'tester-07',vis:'Public',st:'open',at:'2 h ago',body:'Character vibrates when standing still on a 144 Hz display. Fine at 60 Hz. Chrome 129, Windows 11.',thread:[{k:'reply',by:'mara',at:'1 h ago',body:'Thanks! Does it still happen with “Fixed timestep” on in settings?'}]},
-    {n:13,title:'Level 4 door stays locked after reload',env:'playtest',v:3,mod:'level-pack',mv:'0.9.0',by:'tester-22',vis:'Team only',st:'open',at:'1 d ago',body:'Reloaded mid-level; the door trigger never fires again.',thread:[]},
-    {n:12,title:'Menu text overlaps on small phones',env:'playtest',v:3,mod:'ui-shell',mv:'1.1.0',by:'tester-07',vis:'Public',st:'open',at:'1 d ago',body:'On a 360 px wide phone the settings labels overlap the toggles.',thread:[]},
-    {n:11,title:'Jump feels much better',env:'playtest',v:2,mod:'physics',mv:'2.3.0',by:'tester-22',vis:'Public',st:'done',at:'Oct 4',body:'Jumping is snappier than the first build.',thread:[{k:'status',by:'mara',at:'Oct 4',to:'done'}]},
-    {n:10,title:'White screen on Safari',env:'playtest',v:1,mod:'ui-shell',mv:'1.0.0',by:'tester-07',vis:'Public',st:'done',at:'Sep 29',body:'White screen on Safari 18 right after the logo.',thread:[{k:'correction',by:'tester-07',at:'Sep 29',body:'Only happens with a content blocker on.'},{k:'status',by:'devon',at:'Sep 30',to:'done'}]},
+  me:'mara',
+  projects:[
+    {id:'demo-game',owner:'defxn',name:'demo-game',kind:'Game',desc:'Browser platformer. Physics, levels and UI shell ship as separate modules.',role:'owner',
+      members:[{u:'mara',r:'Owner'},{u:'devon',r:'Maintainer'},{u:'jo',r:'Developer'}],keys:[{n:4,at:'Oct 3',why:'Contractor removed'}],
+      modules:[
+        {id:'ui-shell',name:'Game shell',icon:'monitor',versions:[{v:'1.0.0',size:'2.0 MB',by:'devon',at:'Sep 26',st:'active',notes:'First playable shell'},{v:'1.1.0',size:'2.3 MB',by:'devon',at:'Oct 5',st:'active',notes:'Responsive menus, new HUD'}]},
+        {id:'physics',name:'Physics',icon:'zap',versions:[{v:'2.3.0',size:'180 KB',by:'mara',at:'Sep 26',st:'active',notes:'Jump tuning'},{v:'2.3.1',size:'184 KB',by:'mara',at:'Oct 5',st:'active',notes:'Fixed timestep at high refresh rates'}]},
+        {id:'level-pack',name:'Levels',icon:'map',versions:[{v:'0.8.0',size:'1.1 MB',by:'jo',at:'Sep 20',st:'revoked',notes:'Contained unlicensed audio'},{v:'0.9.0',size:'1.0 MB',by:'jo',at:'Oct 2',st:'active',notes:'Levels 1–6'}]}],
+      envs:{
+        playtest:env({access:'invite',group:{name:'Early testers',rule:'20% of invited players',people:82},versions:[
+          {n:1,mods:{'ui-shell':'1.0.0',physics:'2.3.0'},by:'mara',at:'Sep 28',note:'First playtest'},
+          {n:2,mods:{'ui-shell':'1.0.0',physics:'2.3.0','level-pack':'0.9.0'},by:'mara',at:'Oct 3',note:'Levels 1–6'},
+          {n:3,mods:{'ui-shell':'1.1.0',physics:'2.3.1','level-pack':'0.9.0'},by:'devon',at:'Oct 6',note:'New HUD and physics fix'}],
+          rollout:{state:'active',live:3,events:[{a:'release',v:1,by:'mara',at:'Sep 28'},{a:'release',v:2,by:'mara',at:'Oct 3'},{a:'release',v:3,by:'devon',at:'Oct 6'}]}}),
+        internal:env({access:'invite',group:{name:'QA team',rule:'Named people',people:3},versions:[{n:1,mods:{'ui-shell':'1.1.0',physics:'2.3.1'},by:'devon',at:'Oct 5',note:'HUD review'}],
+          rollout:{state:'paused',live:1,events:[{a:'release',v:1,by:'devon',at:'Oct 5'},{a:'pause',v:1,by:'devon',at:'Oct 7',reason:'Waiting on art review'}]}})},
+      feedback:[
+        {n:14,title:'Physics jitters on 144 Hz monitors',env:'playtest',v:3,mod:'physics',mv:'2.3.1',by:'tester-07',vis:'Public',st:'open',at:'2 h ago',body:'Character vibrates when standing still on a 144 Hz display. Fine at 60 Hz.',thread:[{k:'reply',by:'mara',at:'1 h ago',body:'Thanks! Does it still happen with “Fixed timestep” on?'}]},
+        {n:13,title:'Level 4 door stays locked after reload',env:'playtest',v:3,mod:'level-pack',mv:'0.9.0',by:'tester-22',vis:'Team only',st:'open',at:'1 d ago',body:'Reloaded mid-level; the door trigger never fires again.',thread:[]},
+        {n:12,title:'Menu text overlaps on small phones',env:'playtest',v:3,mod:'ui-shell',mv:'1.1.0',by:'tester-07',vis:'Public',st:'open',at:'1 d ago',body:'On a 360 px wide phone the settings labels overlap the toggles.',thread:[]},
+        {n:11,title:'Jump feels much better',env:'playtest',v:2,mod:'physics',mv:'2.3.0',by:'tester-22',vis:'Public',st:'done',at:'Oct 4',body:'Jumping is snappier than the first build.',thread:[{k:'status',by:'mara',at:'Oct 4',to:'done'}]}]},
+    {id:'level-editor',owner:'mara',name:'level-editor',kind:'Tool',desc:'In-browser level editor for the design team.',role:'owner',members:[{u:'mara',r:'Owner'}],keys:[{n:1,at:'Oct 7',why:'Project created'}],
+      modules:[],envs:{preview:env({access:'link',group:{name:'Anyone with the link',rule:'Anyone with the link',people:0}})},feedback:[]},
+    {id:'cafe-pos',owner:'ana',name:'cafe-pos',kind:'Web app',desc:'Point of sale for small cafés.',role:'tester',
+      modules:mods([['checkout','Checkout','monitor',['3.1.0']],['menu','Menu','doc',['1.4.2']]]),
+      envs:{staging:env({access:'invite',my:'invited',from:'ana',note:'Try the new checkout flow and split bills.',group:{name:'Pilot cafés',people:12},versions:[{n:18,mods:{checkout:'3.1.0',menu:'1.4.2'}}],rollout:{state:'active',live:18,events:[]}})},feedback:[]},
+    {id:'space-sim',owner:'nova',name:'space-sim',kind:'Game',desc:'Fly cargo routes between moons.',role:'tester',
+      modules:mods([['engine','Engine','zap',['4.2.0']],['ships','Ships','cube',['1.8.2']]]),
+      envs:{beta:env({access:'invite',my:'invited',from:'lee',note:'Paused while save files are fixed.',group:{name:'Beta pilots',people:40},versions:[{n:7,mods:{engine:'4.2.0',ships:'1.8.2'}}],rollout:{state:'paused',live:7,events:[]}})},feedback:[
+        {n:31,title:'Docking camera clips through hull',env:'beta',v:7,mod:'ships',mv:'1.8.2',by:'mara',vis:'Public',st:'open',at:'Oct 5',body:'Docking at Io station, the camera goes inside the ship.',thread:[{k:'reply',by:'lee',at:'Oct 6',body:'Got it, fixing in 1.8.3.'}]}]},
+    {id:'puzzle-box',owner:'tiny',name:'puzzle-box',kind:'Game',desc:'Daily logic puzzles.',role:'tester',
+      modules:mods([['puzzles','Puzzles','cube',['2.0.0']]]),
+      envs:{preview:env({access:'invite',my:'revoked',from:'ana',group:{name:'Friends',people:9},versions:[{n:2,mods:{puzzles:'2.0.0'}}],rollout:{state:'active',live:2,events:[]}})},feedback:[]},
+    {id:'synth-lab',owner:'kiko',name:'synth-lab',kind:'Media',desc:'A modular synth that runs in your browser. Patch, play, record.',role:'none',
+      modules:mods([['audio-core','Audio core','wave',['5.0.1']],['patch-ui','Patch UI','monitor',['2.6.0']]]),
+      envs:{open:env({access:'public',group:{name:'Everyone',people:1240},versions:[{n:12,mods:{'audio-core':'5.0.1','patch-ui':'2.6.0'}}],rollout:{state:'active',live:12,events:[]}})},feedback:[]},
+    {id:'terrain-gen',owner:'orbit',name:'terrain-gen',kind:'Tool',desc:'Generate heightmaps from a sketch.',role:'none',
+      modules:mods([['gen','Generator','map',['0.5.0']]]),
+      envs:{alpha:env({access:'request',group:{name:'Approved testers',people:56},versions:[{n:5,mods:{gen:'0.5.0'}}],rollout:{state:'active',live:5,events:[]}})},feedback:[]},
+    {id:'ink-reader',owner:'studio9',name:'ink-reader',kind:'Web app',desc:'A calm reader for long articles, with offline sync.',role:'none',
+      modules:mods([['reader','Reader','doc',['2.2.0']],['sync','Sync','link',['1.0.4']]]),
+      envs:{beta:env({access:'public',group:{name:'Everyone',people:388},versions:[{n:2,mods:{reader:'2.2.0',sync:'1.0.4'}}],rollout:{state:'active',live:2,events:[]}})},feedback:[]},
+    {id:'pixel-drift',owner:'nami',name:'pixel-drift',kind:'Game',desc:'Top-down drift racing in 64 colours.',role:'none',
+      modules:mods([['racer','Racer','zap',['0.9.3']],['tracks','Tracks','map',['0.4.0']]]),
+      envs:{demo:env({access:'public',group:{name:'Everyone',people:2310},versions:[{n:9,mods:{racer:'0.9.3',tracks:'0.4.0'}}],rollout:{state:'active',live:9,events:[]}})},feedback:[]},
+    {id:'star-forge',owner:'lumen',name:'star-forge',kind:'Game',desc:'Build and trade between procedurally made star systems.',role:'none',
+      modules:mods([['core','Core','zap',['1.1.0']]]),
+      envs:{closed:env({access:'request',group:{name:'Approved testers',people:120},versions:[{n:3,mods:{core:'1.1.0'}}],rollout:{state:'active',live:3,events:[]}})},feedback:[]},
   ],
   activity:[
-    {k:'feedback',who:'tester-07',at:'2 h ago',t:'reported #14 on playtest v3'},
-    {k:'access',who:'mara',at:'1 d ago',t:'invited priya to QA team'},
-    {k:'release',who:'devon',at:'Oct 7',t:'paused internal: Waiting on art review'},
-    {k:'release',who:'devon',at:'Oct 6',t:'released playtest v3 to Early testers'},
-    {k:'build',who:'devon',at:'Oct 6',t:'composed playtest v3'},
-    {k:'build',who:'mara',at:'Oct 5',t:'published physics 2.3.1'},
-    {k:'access',who:'mara',at:'Oct 3',t:'revoked level-pack 0.8.0: unlicensed audio'},
+    {p:'demo-game',k:'feedback',who:'tester-07',at:'2 h ago',t:'reported #14 on playtest v3'},
+    {p:'demo-game',k:'release',who:'devon',at:'Oct 7',t:'paused internal: Waiting on art review'},
+    {p:'demo-game',k:'release',who:'devon',at:'Oct 6',t:'released playtest v3'},
+    {p:'level-editor',k:'build',who:'mara',at:'Oct 7',t:'created the project'},
   ],
-  members:[{u:'mara',r:'Owner'},{u:'devon',r:'Maintainer'},{u:'jo',r:'Developer'}],
-  keys:[{n:4,at:'Oct 3',why:'Contractor removed'},{n:3,at:'Sep 20',why:'Scheduled rotation'}],
-  inbox:[
-    {proj:'demo-game',env:'playtest',st:'live',from:'mara',note:'Focus on levels 4–6 this week.'},
-    {proj:'space-sim',env:'beta',st:'paused',from:'lee',note:'Paused while save files are fixed.'},
-    {proj:'puzzle-box',env:'preview',st:'revoked',from:'ana',note:''},
-  ],
-  unlocked:false, relEnv:'playtest', fbTab:'open', buildEnv:'playtest', allEv:false
+  unlocked:{}, recent:[], sel:{}, fbTab:'open', exKind:'All', exQ:'', allEv:false,
 };
-const mod=id=>D.modules.find(m=>m.id===id);
-const E=id=>D.envs[id];
-const newest=id=>E(id).versions.at(-1).n;
-const openFb=()=>D.feedback.filter(f=>f.st==='open');
-const log=(k,t)=>D.activity.unshift({k,who:D.me,at:'just now',t});
+const P=id=>D.projects.find(p=>p.id===id);
+const mod=(p,id)=>p.modules.find(m=>m.id===id);
+const isDev=p=>p.role==='owner'||p.role==='maintainer';
+const devProjects=()=>D.projects.filter(isDev);
+const envIds=p=>Object.keys(p.envs);
+const newest=e=>e.versions.length?e.versions.at(-1).n:0;
+const openFb=p=>p.feedback.filter(f=>f.st==='open');
+const stCls=s=>s==='active'?'live':s==='paused'?'paused':s==='draft'?'draft':'';
+const STATE_TXT={active:'Live',paused:'Paused',draft:'Not live',closed:'Closed'};
+const audience=e=>e.access==='public'?'Anyone on Explore':e.access==='link'?'Anyone with the link':`${esc(e.group.name)} · ${plural(e.group.people,'person').replace('persons','people')}`;
+const peopleN=e=>e.group.people;
+function selEnv(p){ const s=D.sel[p.id]; if(s&&p.envs[s]) return s; const ids=envIds(p); return ids.find(i=>p.envs[i].rollout.state==='active')||ids[0]; }
+function attention(p){ const a=[]; envIds(p).forEach(id=>{const e=p.envs[id]; if(newest(e)>e.rollout.live&&e.rollout.state!=='closed') a.push({t:`Release ${id} v${newest(e)}`,go:`releaseModal('${p.id}','${id}',${newest(e)})`});});
+  const o=openFb(p).length; if(o) a.push({t:`Review ${plural(o,'report')}`,go:`location.hash='#/p/${p.id}/feedback'`});
+  if(!p.modules.length) a.push({t:'Publish the first module',go:`publishModal('${p.id}')`}); return a; }
+const log=(p,k,t)=>D.activity.unshift({p,k,who:D.me,at:'just now',t});
+const testingList=()=>{ const out=[]; D.projects.forEach(p=>envIds(p).forEach(id=>{const e=p.envs[id]; if(!isDev(p)&&(e.my||D.recent.includes(p.id+'/'+id))) out.push({p,id,e});})); return out; };
+const canOpen=e=>e.my==='invited'||e.access==='public'||e.access==='link'||e.my==='approved';
 
 /* ======================= SHELL ======================= */
-const NAV=[['overview','Overview','grid'],['build','Build','layers'],['release','Release','play'],['feedback','Feedback','msg']];
-const route=()=>(location.hash.replace(/^#\/?/,'')||'overview').split('/');
+const route=()=>(location.hash.replace(/^#\/?/,'')||'home').split('/');
+const WS=[['home','Home','home'],['explore','Explore','compass'],['testing','Testing','inbox']];
+const PS=[['overview','Overview','grid'],['build','Build','layers'],['release','Release','play'],['feedback','Feedback','msg']];
 function topBar(){
-  const r=route()[0];
-  if(D.role==='tester') return `<header class="top"><a class="brand" href="#/tester"><b>REMOTE</b><span>DEFXN · TESTER</span></a><span class="spacer"></span>
-    <nav class="navpill" aria-label="Main"><a href="#/tester" class="${r==='tester'&&!route()[1]?'on':''}">${ic('inbox')}Inbox</a><span class="acct">${ic('user')}<span>tester-07<small><i></i>Verified</small></span></span><button class="runbtn" onclick="setRole('dev')">${ic('swap')}<span class="lbl-hide">Developer view</span></button></nav>
-    <button class="menubtn" onclick="toggleMenu(event)" aria-label="Menu" aria-haspopup="menu">MENU <span class="dots"><i></i><i></i><i></i></span></button></header>`;
-  return `<header class="top"><a class="brand" href="#/overview"><b>REMOTE</b><span>DEFXN · ${D.project.toUpperCase()}</span></a><span class="spacer"></span>
-    <nav class="navpill" aria-label="Main">${NAV.map(([k,l,i])=>`<a href="#/${k}" class="${r===k?'on':''}" ${r===k?'aria-current="page"':''}>${ic(i)}<span class="lbl-hide">${l}</span>${k==='feedback'&&openFb().length?`<span class="badge">${openFb().length}</span>`:''}</a>`).join('')}
-    <span class="acct">${ic('user')}<span>Account<small><i></i>${D.me}</small></span></span>
-    <button class="runbtn" onclick="setRole('tester')">${ic('term')}<span class="lbl-hide">Open as tester</span></button></nav>
+  const r=route(), inP=r[0]==='p'&&P(r[1]), p=inP?P(r[1]):null, sec=inP?(r[2]||'overview'):r[0];
+  const testingCount=testingList().filter(x=>x.e.my==='invited'&&x.e.rollout.state==='active').length;
+  const links = p ? `<button class="switch-btn" onclick="projectMenu(event)" aria-haspopup="menu"><span class="sq" style="width:22px;height:22px;border-radius:6px;font-size:11px;background:${colorOf(p.name)}" aria-hidden="true">${esc(p.name[0].toUpperCase())}</span><span class="lbl-hide">${esc(p.name)}</span>${ic('chev')}</button>`
+      + PS.map(([k,l,i])=>`<a href="#/p/${p.id}/${k}" class="${sec===k?'on':''}" ${sec===k?'aria-current="page"':''}>${ic(i)}<span class="lbl-hide">${l}</span>${k==='feedback'&&openFb(p).length?`<span class="badge">${openFb(p).length}</span>`:''}</a>`).join('')
+    : WS.map(([k,l,i])=>`<a href="#/${k}" class="${sec===k?'on':''}" ${sec===k?'aria-current="page"':''}>${ic(i)}<span class="lbl-hide">${l}</span>${k==='testing'&&testingCount?`<span class="badge">${testingCount}</span>`:''}</a>`).join('');
+  const mlinks = p ? `<a href="#/home">← Home</a>`+PS.map(([k,l])=>`<a href="#/p/${p.id}/${k}" class="${sec===k?'on':''}">${l}${k==='feedback'&&openFb(p).length?' · '+openFb(p).length:''}</a>`).join('')
+    : WS.map(([k,l])=>`<a href="#/${k}" class="${sec===k?'on':''}">${l}${k==='testing'&&testingCount?' · '+testingCount:''}</a>`).join('');
+  return `<header class="top"><a class="brand" href="#/home"><b>REMOTE</b><span>${p?esc((p.owner+' / '+p.name).toUpperCase()):'DEFXN · WORKSPACE'}</span></a><span class="spacer"></span>
+    <nav class="navpill" aria-label="Main">${links}<span class="acct">${ic('user')}<span>Account<small><i></i>${D.me}</small></span></span>
+    <button class="runbtn" onclick="newProject()">${ic('plus')}<span class="lbl-hide">New project</span></button></nav>
     <button class="menubtn" onclick="toggleMenu(event)" aria-label="Menu" aria-haspopup="menu">MENU <span class="dots"><i></i><i></i><i></i></span></button></header>
-    <nav class="mnav" aria-label="Sections">${NAV.map(([k,l])=>`<a href="#/${k}" class="${r===k?'on':''}">${l}${k==='feedback'&&openFb().length?' · '+openFb().length:''}</a>`).join('')}</nav>`;
+    <nav class="mnav" aria-label="Sections">${mlinks}</nav>`;
 }
+function closeMenus(){ document.getElementById('menu')?.remove(); document.getElementById('pmenu')?.remove(); }
 function toggleMenu(e){
-  e.stopPropagation(); const ex=document.getElementById('menu'); if(ex){ex.remove();return;}
-  const item=(i,t,s,act)=>`<button role="menuitem" onclick="${act}">${ic(i,'copper')}<span><div class="t">${t}</div><div class="s">${s}</div></span></button>`;
+  e.stopPropagation(); const ex=document.getElementById('menu'); closeMenus(); if(ex) return;
+  const r=route(), p=r[0]==='p'?P(r[1]):null;
+  const item=(i,t,s,act)=>`<button role="menuitem" onclick="closeMenus();${act}">${ic(i,'copper')}<span><div class="t">${t}</div><div class="s">${s}</div></span></button>`;
   document.body.insertAdjacentHTML('beforeend',`<div class="menu" id="menu" role="menu">
-    ${D.role==='dev'?item('history','Activity','Everything that happened','openActivity()')+item('users','People & keys','Team, roles, encryption','openPeople()'):''}
-    ${item('swap',D.role==='dev'?'Open as tester':'Developer view',D.role==='dev'?'See what testers see':'Back to your project',`setRole('${D.role==='dev'?'tester':'dev'}')`)}
-    <hr>${item('palette','Design system','Laws, tokens, components',"document.getElementById('menu').remove();location.hash='#/system'")}</div>`);
+    ${item('plus','New project','Start from scratch','newProject()')}
+    ${p&&isDev(p)?item('history','Activity',`Everything in ${esc(p.name)}`,`openActivity('${p.id}')`)+item('users','People & keys','Team, roles, encryption',`openPeople('${p.id}')`):item('history','Activity','Across your projects','openActivity()')}
+    ${item('compass','Explore','Public builds to try',"location.hash='#/explore'")}
+    <hr>${item('palette','Design system','Laws, tokens, components',"location.hash='#/system'")}</div>`);
   document.querySelector('#menu button')?.focus();
 }
-document.addEventListener('click',e=>{ if(!e.target.closest('#menu')) document.getElementById('menu')?.remove(); const c=e.target.closest('[data-copy]'); if(c){navigator.clipboard?.writeText(c.dataset.copy).catch(()=>{});toast('Fingerprint copied');} });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeLayer(); document.getElementById('menu')?.remove(); } });
-function setRole(r){ D.role=r; document.getElementById('menu')?.remove(); const h=r==='dev'?'#/overview':'#/tester'; if(location.hash===h) render(); else location.hash=h; }
+function projectMenu(e){
+  e.stopPropagation(); const ex=document.getElementById('pmenu'); closeMenus(); if(ex) return;
+  const rc=e.currentTarget.getBoundingClientRect(), cur=route()[1];
+  document.body.insertAdjacentHTML('beforeend',`<div class="pmenu" id="pmenu" role="menu" style="left:${Math.max(16,Math.min(rc.left,innerWidth-336))}px;top:${rc.bottom+8}px">
+    <div class="eyebrow" style="padding:6px 10px">Your projects</div>
+    ${devProjects().map(p=>{const live=envIds(p).filter(i=>p.envs[i].rollout.state==='active').length;return `<button role="menuitem" class="${p.id===cur?'cur':''}" onclick="closeMenus();location.hash='#/p/${p.id}/overview'">${sq(p)}<span style="flex:1"><div class="t">${esc(p.owner)}/${esc(p.name)}</div><div class="s">${live?plural(live,'live build'):'Nothing live'}</div></span>${attention(p).length?`<span class="badge" style="font:500 10px var(--mono);background:var(--copper2);color:#1a0d08;border-radius:10px;padding:1px 6px">${attention(p).length}</span>`:''}</button>`;}).join('')}
+    <hr><button role="menuitem" onclick="closeMenus();location.hash='#/home'">${ic('home','copper')}<span class="t">All projects</span></button><button role="menuitem" onclick="closeMenus();newProject()">${ic('plus','copper')}<span class="t">New project</span></button></div>`);
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('#menu,#pmenu')) closeMenus(); const c=e.target.closest('[data-copy]'); if(c){navigator.clipboard?.writeText(c.dataset.copy).catch(()=>{});toast('Copied');} });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeLayer(); closeMenus(); } });
 const foot=()=>`<footer class="foot"><span>Remote Env · design prototype · data mocked</span><a href="#/system">Design system ↗</a></footer>`;
 
 /* ======================= building blocks ======================= */
 const kicker=(t,cls='',style='')=>`<div class="kicker" style="${style}"><span class="ring ${cls}"></span><span class="eyebrow" style="color:var(--text)">${t}</span></div>`;
-const cta=(kind,small,label,act)=>`<button class="cta ${kind}" onclick="${act}"><span><small>${small}</small><b>${label}</b></span><span class="arr">${ic(kind==='primary'?'arrow':'term')}</span></button>`;
+const cta=(kind,small,label,act,icon)=>`<button class="cta ${kind}" onclick="${act}"><span><small>${small}</small><b>${label}</b></span><span class="arr">${ic(icon||(kind==='primary'?'arrow':'term'))}</span></button>`;
 const stat=(label,n,unit,d)=>`<div class="stat"><div class="eyebrow">${label}</div><div class="n">${n}<small>${unit}</small></div>${d?`<div class="d">${d}</div>`:''}</div>`;
 const stepper=steps=>`<div class="stepper">${steps.map(([l,s],i)=>`<div class="step ${s}"><span class="dot">${s==='done'?ic('check'):String(i+1).padStart(2,'0')}</span>${l}</div>`).join('')}</div>`;
-const stCls=s=>s==='active'?'live':s==='paused'?'paused':'';
+const envSeg=(p,cur,onpick)=>`<div class="seg" role="group" aria-label="Environment">${envIds(p).map(k=>`<button class="${k===cur?'on':''}" onclick="${onpick}('${k}')">${k}</button>`).join('')}${isDev(p)?`<button onclick="newEnvModal('${p.id}')" aria-label="New environment" title="New environment">${ic('plus')}</button>`:''}</div>`;
+function pickEnv(k){ const p=P(route()[1]); D.sel[p.id]=k; D.allEv=false; render(); }
 
-/* ======================= OVERVIEW ======================= */
-function vOverview(){
-  const e=E('playtest'), r=e.rollout, g=D.groups[r.group], live=e.versions.find(v=>v.n===r.live), nv=newest('playtest'), open=openFb().length;
-  const head = r.state==='active'?[`v${r.live} is live`,`for ${g.people} testers.`]:r.state==='paused'?['Paused',`on v${r.live}.`]:['Closed.','Nothing is live.'];
-  const primary = nv>r.live&&r.state!=='closed' ? cta('primary','Ready to ship',`Release v${nv}`,`releaseModal('playtest',${nv})`)
-    : open ? cta('primary','Testers are waiting',`Review ${open} report${open>1?'s':''}`,"location.hash='#/feedback'")
-    : cta('primary','Next build','Compose a new version',"composeModal('playtest')");
-  const steps=[['Publish','done'],['Compose','done'],['Release',nv>r.live?'cur':'done'],['Test',r.state==='active'?'done':'cur'],['Feedback',open?'cur':'done']];
+function projectCard(p){
+  const a=attention(p), ids=envIds(p);
+  return `<button class="pcard" onclick="location.hash='#/p/${p.id}/overview'">${a.length?`<span class="attn">${a.length} TO DO</span>`:''}
+    <div class="row" style="gap:12px">${sq(p)}<span><div class="eyebrow" style="font-size:10px">${esc(p.owner)} · ${p.kind}</div><div class="pt">${esc(p.name)}</div></span></div>
+    <div class="pd">${esc(p.desc)}</div>
+    <div class="pf">${ids.map(id=>{const e=p.envs[id];return `<span class="envrow"><span class="dot ${stCls(e.rollout.state)}"></span>${id}${e.rollout.live?' v'+e.rollout.live:''}</span>`;}).join('')}</div></button>`;
+}
+function exploreCard(p,id){
+  const e=p.envs[id];
+  const btn = e.access==='request' ? (e.my==='requested'?chip('','Requested'):e.my==='approved'?`<span class="btn solid sm">${ic('play')}Open</span>`:`<span class="btn sm">${ic('hand')}Ask to join</span>`) : `<span class="btn solid sm">${ic('play')}Open</span>`;
+  return `<button class="pcard" onclick="exploreOpen('${p.id}','${id}')">
+    <div class="row" style="gap:12px">${sq(p)}<span><div class="eyebrow" style="font-size:10px">${p.kind} · ${esc(id)}</div><div class="pt">${esc(p.name)}</div></span></div>
+    <div class="pd">${esc(p.desc)}</div>
+    <div class="pf"><span class="envrow">${av(p.owner)}${esc(p.owner)}</span><span class="envrow">${peopleN(e)?ic('users')+fmt(peopleN(e)):'<span class="chip live">New</span>'}</span><span class="spacer"></span>${btn}</div></button>`;
+}
+
+/* ======================= HOME ======================= */
+function vHome(){
+  const mine=devProjects(), live=mine.reduce((n,p)=>n+envIds(p).filter(i=>p.envs[i].rollout.state==='active').length,0);
+  const todo=mine.flatMap(p=>attention(p).map(a=>({...a,p})));
+  const invites=testingList().filter(x=>x.e.my==='invited'&&x.e.rollout.state==='active'&&!D.unlocked[x.p.id+'/'+x.id]);
+  const all=[...todo, ...invites.map(x=>({t:`Test ${x.p.owner}/${x.p.name}`,go:`unlock('${x.p.id}','${x.id}')`,p:x.p}))];
+  const first=all[0];
+  const explore=D.projects.filter(p=>!isDev(p)).flatMap(p=>envIds(p).filter(id=>['public','request'].includes(p.envs[id].access)).map(id=>[p,id])).slice(0,3);
+  return `<div class="page"><section style="padding-top:20px">${kicker('Workspace · '+D.me, live?'live':'')}
+    <h1 class="display">${plural(live,'build')} live.<br><span class="acc">${all.length?plural(all.length,'thing')+' need'+(all.length===1?'s':'')+' you.':'Nothing needs you.'}</span></h1>
+    <p class="lede">${all.length?`Next up: <b>${esc(first.t)}</b> in ${esc(first.p.name)}.`:'Start something new, or try what others are building.'}</p>
+    <div class="ctas">${first?cta('primary','Next up · '+esc(first.p.name),esc(first.t),first.go):cta('primary','Start fresh','New project','newProject()','plus')}${first?cta('secondary','Start fresh','New project','newProject()','plus'):cta('secondary','Try something','Explore builds',"location.hash='#/explore'",'compass')}</div>
+    ${all.length>1?`<div class="list" style="max-width:560px;margin-top:22px">${all.slice(1,4).map(a=>`<button class="item" onclick="${a.go}">${sq(a.p)}<span style="flex:1"><div class="it">${esc(a.t)}</div><div class="is">${esc(a.p.owner)}/${esc(a.p.name)}</div></span><span class="dim">${ic('arrow')}</span></button>`).join('')}</div>`:''}
+  </section>
+  <div class="sect"><h2>Your projects</h2><span class="eyebrow">${mine.length}</span><button class="textlink" onclick="newProject()">+ New project</button></div>
+  <div class="cards">${mine.map(projectCard).join('')}</div>
+  <div class="sect"><h2>Testing for others</h2><span class="eyebrow">${testingList().length}</span><a class="textlink" href="#/testing">See all ${ic('arrow')}</a></div>
+  <div class="cards">${testingList().slice(0,3).map(({p,id,e})=>testingCard(p,id,e)).join('')||`<div class="empty">Nothing shared with you yet.</div>`}</div>
+  <div class="sect"><h2>On Explore</h2><a class="textlink" href="#/explore">Explore all ${ic('arrow')}</a></div>
+  <div class="cards">${explore.map(([p,id])=>exploreCard(p,id)).join('')}</div>
+  </div>${foot()}`;
+}
+
+/* ======================= EXPLORE ======================= */
+function vExplore(){
+  const items=D.projects.flatMap(p=>envIds(p).filter(id=>['public','request'].includes(p.envs[id].access)&&p.envs[id].rollout.state==='active').map(id=>[p,id]))
+    .filter(([p])=>D.exKind==='All'||p.kind===D.exKind).filter(([p])=>!D.exQ||(p.name+p.desc+p.owner).toLowerCase().includes(D.exQ.toLowerCase()))
+    .sort((a,b)=>peopleN(b[0].envs[b[1]])-peopleN(a[0].envs[a[1]]));
+  return `<div class="page"><section style="padding-top:20px">${kicker('Explore')}
+    <h1 class="page-h">Builds people <span class="acc">want tested.</span></h1>
+    <p class="lede">Open one and play. Your reports go straight to the people who made it.</p></section>
+    <div class="row" style="margin-bottom:18px"><div class="kinds" role="group" aria-label="Kind">${['All',...KINDS].map(k=>`<button class="${D.exKind===k?'on':''}" onclick="D.exKind='${k}';render()">${k}</button>`).join('')}</div><span class="spacer"></span>
+      <label class="search"><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">Search</span>${ic('search','muted')}<input class="input" id="exq" placeholder="Search builds" value="${esc(D.exQ)}" oninput="D.exQ=this.value;clearTimeout(window.__q);window.__q=setTimeout(()=>{render();const i=document.getElementById('exq');i.focus();i.setSelectionRange(i.value.length,i.value.length)},200)"></label></div>
+    <div class="cards">${items.map(([p,id])=>exploreCard(p,id)).join('')||`<div class="empty"><h3>Nothing matches.</h3>Try another word or kind.</div>`}</div>
+  </div>${foot()}`;
+}
+function exploreOpen(pid,id){
+  const p=P(pid), e=p.envs[id];
+  if(isDev(p)){ location.hash=`#/p/${pid}/overview`; return; }
+  if(e.access==='request'&&e.my!=='approved'){
+    if(e.my==='requested'){ toast(`Still waiting on ${p.owner}`); return; }
+    modal('Ask to join',`${p.owner}/${p.name}`,`<p class="muted" style="margin-top:0">${esc(p.owner)} approves each tester. You'll get a notification when you're in.</p><label class="f" for="rq">Say hello <span class="dim">· optional</span></label><textarea class="input" id="rq" rows="2" placeholder="What you'd like to test"></textarea>`,
+      `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="P('${pid}').envs['${id}'].my='requested';closeLayer();toast('Request sent to ${p.owner}');render()">Send request</button>`);
+    return;
+  }
+  unlock(pid,id);
+}
+
+/* ======================= TESTING ======================= */
+function testingCard(p,id,e){
+  const st = e.my==='revoked'?'revoked':e.my==='requested'?'requested':e.rollout.state;
+  const label={active:'Ready',paused:'Paused',closed:'Closed',revoked:'Access removed',requested:'Requested'}[st];
+  const act = st==='active'&&canOpen(e) ? `<span class="btn solid sm">${ic('play')}Open</span>` : chip(st==='active'?'':st==='revoked'?'revoked':st==='paused'?'paused':'',label);
+  return `<button class="pcard" onclick="testingOpen('${p.id}','${id}')">
+    <div class="row" style="gap:12px">${sq(p)}<span><div class="eyebrow" style="font-size:10px">${esc(p.owner)} · ${esc(id)}</div><div class="pt">${esc(p.name)}</div></span></div>
+    <div class="pd">${e.note?`“${esc(e.note)}”`:esc(p.desc)}</div>
+    <div class="pf"><span class="envrow">${e.from?`${av(e.from)}from ${esc(e.from)}`:e.my==='requested'?ic('hand')+'Waiting on '+esc(p.owner):ic('globe')+'Public'}</span><span class="spacer"></span>${act}</div></button>`;
+}
+function testingOpen(pid,id){
+  const p=P(pid), e=p.envs[id];
+  if(e.my==='revoked') return modal('Access',`Can't open ${p.name}`,refusal('Access removed',{what:`${esc(e.from||p.owner)} removed your access to ${esc(p.name)}.`,need:'A new invite.',fix:`Ask ${esc(e.from||p.owner)} if this is a mistake. Copies you already opened stay on your device.`,code:'access.revoked'}),`<button class="btn" onclick="closeLayer()">OK</button>`);
+  if(e.my==='requested') return toast(`Waiting on ${p.owner} to approve you`);
+  if(e.rollout.state!=='active') return modal('Not available',`${p.name} is ${e.rollout.state}`,refusal('Not available right now',{what:`${esc(p.owner)} ${e.rollout.state} this build.`,need:'The developer to turn it back on.',fix:"You'll get a notification when it's back.",code:'rollout.'+e.rollout.state},true),`<button class="btn" onclick="closeLayer()">OK</button>`);
+  unlock(pid,id);
+}
+function vTesting(){
+  const L=testingList(), ready=L.filter(x=>x.e.rollout.state==='active'&&canOpen(x.e)).length;
+  const mine=D.projects.flatMap(p=>p.feedback.filter(f=>f.by===D.me).map(f=>({p,f})));
+  return `<div class="page"><section style="padding-top:20px">${kicker('Testing', ready?'live':'')}
+    <h1 class="page-h">${ready?plural(ready,'build')+' '+(ready===1?'is':'are'):'Nothing is'} <span class="acc">ready for you.</span></h1>
+    <p class="lede">Builds other people shared with you, and ones you opened from Explore.</p></section>
+    <div class="cards">${L.map(({p,id,e})=>testingCard(p,id,e)).join('')}</div>
+    <div class="sect"><h2>Your reports</h2><span class="eyebrow">${mine.length}</span></div>
+    <div class="panel pad"><div class="list">${mine.map(({p,f})=>`<div class="item">${sq(p)}<span style="flex:1;min-width:0"><div class="it">${esc(f.title)}</div><div class="is">${esc(p.owner)}/${esc(p.name)} · ${f.env} v${f.v} · ${f.st}${f.thread.some(t=>t.k==='reply'&&t.by!==D.me)?' · developer replied':''}</div></span></div>`).join('')||'<div class="muted" style="padding:8px 4px">No reports yet. Open a build and tell them what you find.</div>'}</div></div>
+  </div>${foot()}`;
+}
+
+/* ======================= PROJECT · OVERVIEW ======================= */
+function vOverview(p){
+  if(!isDev(p)) { location.hash='#/testing'; return ''; }
+  const eid=selEnv(p), e=p.envs[eid], r=e.rollout, nv=newest(e), live=e.versions.find(v=>v.n===r.live), open=openFb(p).length;
+  let head, lede, primary;
+  if(!p.modules.length){ head=[`${p.name} is`,'empty.']; lede='Publish your first module. Then pin it as a version and choose who can open it.'; primary=cta('primary','Step 1 of 3','Publish first module',`publishModal('${p.id}')`,'upload'); }
+  else if(!nv){ head=['Pieces ready.','Compose v1.']; lede=`${plural(p.modules.length,'module')} published. Pin exact versions together to make the first build.`; primary=cta('primary','Step 2 of 3','Compose v1',`composeModal('${p.id}','${eid}')`); }
+  else if(r.state==='draft'){ head=[`v${nv} is ready`,'to release.']; lede=`Nobody can open ${eid} yet. Releasing makes it available to ${audience(e)}.`; primary=cta('primary','Step 3 of 3',`Release v${nv}`,`releaseModal('${p.id}','${eid}',${nv})`); }
+  else if(r.state==='active'){ const ppl=e.access==='public'?'anyone on Explore.':e.access==='link'?'anyone with the link.':`${plural(e.group.people,'tester')}.`; head=[`v${r.live} is live`,`for ${ppl}`];
+    lede = nv>r.live?`<b>v${nv} is composed and ready.</b>`:open?`<b>${plural(open,'report')} waiting for you.</b>`:e.group.people===0&&e.access==='invite'?'<b>Nobody is invited yet.</b>':'Nothing needs you right now.';
+    lede='Every tester gets the same exact build. '+lede;
+    primary = nv>r.live?cta('primary','Ready to ship',`Release v${nv}`,`releaseModal('${p.id}','${eid}',${nv})`)
+      : open?cta('primary','Testers are waiting',`Review ${plural(open,'report')}`,`location.hash='#/p/${p.id}/feedback'`)
+      : e.access==='invite'&&e.group.people===0?cta('primary','Nobody yet','Invite testers',`inviteModal('${p.id}','${eid}')`,'users')
+      : cta('primary','Next build',`Compose v${nv+1}`,`composeModal('${p.id}','${eid}')`); }
+  else if(r.state==='paused'){ head=['Paused',`on v${r.live}.`]; lede=`${eid} is paused. Testers can't open it until you resume.`; primary=cta('primary','Back on',`Resume v${r.live}`,`act('${p.id}','${eid}','resume')`); }
+  else { head=['Closed.','Nothing is live.']; lede='History and feedback stay readable.'; primary=cta('primary','Start again','New environment',`newEnvModal('${p.id}')`,'plus'); }
+  const steps=[['Publish',p.modules.length?'done':'cur'],['Compose',nv?'done':p.modules.length?'cur':''],['Release',r.live&&nv===r.live?'done':nv?'cur':''],['Test',r.state==='active'?'done':r.live?'cur':''],['Feedback',r.live?(open?'cur':'done'):'']];
+  const panel = live ? `<div class="inner" style="padding:18px"><div class="diagram">
+      <svg class="wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${Object.keys(live.mods).slice(0,3).map((m,i,a)=>{const y=[16,47,78][i];return `<path class="wire ${r.state==='active'?'flow':''}" vector-effect="non-scaling-stroke" d="M17 ${y} C 28 ${y}, 28 46, 38 46" style="animation-delay:${i*.3}s"/>`;}).join('')}</svg>
+      <div class="nodes">${Object.keys(live.mods).slice(0,3).map((m,i)=>`<div class="node ${i===0?'hot':''}"><span class="c">${ic(mod(p,m)?.icon||'cube')}</span><span>${esc(mod(p,m)?.name||m)}</span></div>`).join('')}</div>
+      <div class="entry"><div class="row"><span class="eyebrow" style="color:var(--text)">${esc(eid)}</span><span class="spacer"></span><span class="eyebrow">v${r.live} / ${nv}</span></div>
+        <div class="big">#${hash('view:'+p.id+':'+eid+':'+r.live).slice(0,4)}</div>
+        <div class="mono muted" style="font-size:12px">↳ ${live.n>1?'follows v'+(live.n-1):'first version'} · ${plural(Object.keys(live.mods).length,'module')}</div>
+        <span class="okc ${r.state==='active'?'':'p'}">${ic(r.state==='active'?'check':'pause')}</span>
+        <div class="checks"><span class="eyebrow" style="margin-right:6px">Checks</span>${[['S','Signed'],['E','Encrypted'],['A','Access checked'],['B','Sandboxed']].map(([a,t])=>`<span class="ck" title="${t}" aria-label="${t}">${a}</span>`).join('')}</div></div></div>
+      <p class="quote">“${e.access==='invite'?esc(e.group.name)+' get':audience(e)+' gets'} ${Object.entries(live.mods).map(([m,v])=>(mod(p,m)?.name||m).toLowerCase()+' '+v).join(', ')}.”</p></div>`
+    : `<div class="empty frame"><span class="ti">${ic(p.modules.length?'layers':'upload')}</span><h3>${p.modules.length?'No build yet':'Nothing here yet'}</h3>${p.modules.length?'Compose a version to see it here.':'Your live build will appear here once it exists.'}</div>`;
   return `<div class="page"><section class="hero">
-    <div>${kicker(`${D.project} · playtest`, stCls(r.state))}
-      <h1 class="display">${head[0]}<br><span class="acc">${head[1]}</span></h1>
-      <p class="lede">Every tester gets the same exact build, and every report comes back tied to it. ${nv>r.live?`<b>v${nv} is composed and ready.</b>`:open?`<b>${open} report${open>1?'s are':' is'} waiting for you.</b>`:'Nothing needs you right now.'}</p>
-      <div class="ctas">${primary}${cta('secondary','See it like they do','Open as tester',"setRole('tester')")}</div>
-      <button class="textlink" onclick="openCompare('playtest',${r.live})">What changed in v${r.live} ${ic('ne')}</button>
+    <div>${kicker(`${p.name} · ${eid}`, stCls(r.state))}
+      <h1 class="display">${esc(head[0])}<br><span class="acc">${esc(head[1])}</span></h1>
+      <p class="lede">${lede}</p>
+      <div class="ctas">${primary}${r.state==='active'?cta('secondary','See it like they do','Open as tester',`unlock('${p.id}','${eid}')`):''}</div>
+      ${live?`<button class="textlink" onclick="openCompare('${p.id}','${eid}',${r.live})">What changed in v${r.live} ${ic('ne')}</button>`:''}
     </div>
-    <div class="panel pad accent-top">
-      <div class="eyebrow">The live build</div><h2>Every tester gets exactly this.</h2>
-      <div class="inner" style="padding:18px">
-        <div class="diagram">
-          <svg class="wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            ${[16,47,78].map((y,i)=>`<path class="wire ${r.state==='active'?'flow':''}" vector-effect="non-scaling-stroke" d="M17 ${y} C 28 ${y}, 28 46, 38 46" style="animation-delay:${i*.3}s"/>`).join('')}
-          </svg>
-          <div class="nodes">${D.modules.map((m,i)=>`<div class="node ${i===1?'hot':''}"><span class="c">${ic(m.icon)}</span><span>${m.name}</span></div>`).join('')}</div>
-          <div class="entry"><div class="row"><span class="eyebrow" style="color:var(--text)">Playtest</span><span class="spacer"></span><span class="eyebrow">v${r.live} / ${nv}</span></div>
-            <div class="big">#${hash('view:playtest:'+r.live).slice(0,4)}</div>
-            <div class="mono muted" style="font-size:12px">↳ ${live.n>1?'follows v'+(live.n-1):'first version'} · ${Object.keys(live.mods).length} modules</div>
-            <span class="okc ${r.state==='active'?'':'p'}" title="${r.state==='active'?'Live':'Not live'}">${ic(r.state==='active'?'check':'pause')}</span>
-            <div class="checks"><span class="eyebrow" style="margin-right:6px">Checks</span>${[['S','Signed'],['E','Encrypted'],['A','Access checked'],['B','Sandboxed']].map(([a,t])=>`<span class="ck" title="${t}" aria-label="${t}">${a}</span>`).join('')}</div>
-          </div>
-        </div>
-        <p class="quote">“${esc(g.name)} get ${Object.entries(live.mods).map(([m,v])=>mod(m).name.toLowerCase()+' '+v).join(', ')}.”</p>
-      </div>
-      ${stepper(steps)}
-    </div></section>
+    <div class="panel pad accent-top"><div class="row"><span class="eyebrow">The live build</span><span class="spacer"></span>${envSeg(p,eid,'pickEnv')}</div><h2>${live?'Every tester gets exactly this.':'Three steps to your first build.'}</h2>${panel}${stepper(steps)}</div></section>
     <div class="stats">
-      ${stat('Live · playtest','v'+r.live,`of ${nv}`, r.state==='active'?'Released '+r.events.filter(x=>x.a==='release'||x.a==='rollback').at(-1).at:'Not serving')}
-      ${stat('Testers',g.people,'people',g.name)}
-      ${stat('Open feedback',open,'reports',open?'Newest '+openFb()[0].at:'All clear')}
-      ${stat('Modules',D.modules.length,'pinned','Exact versions only')}
-      ${stat('Rollbacks',r.events.filter(x=>x.a==='rollback').length,'total','History kept in full')}
+      ${stat('Live · '+esc(eid),r.live?'v'+r.live:'—',r.live?`of ${nv}`:'',STATE_TXT[r.state])}
+      ${stat('Who can open',e.access==='invite'?e.group.people:'∞',e.access==='invite'?'people':'',ACCESS[e.access].label)}
+      ${stat('Open feedback',open,'reports',open?'Newest '+openFb(p)[0].at:'All clear')}
+      ${stat('Environments',envIds(p).length,'total',envIds(p).filter(i=>p.envs[i].rollout.state==='active').length+' live')}
+      ${stat('Modules',p.modules.length,'published','Exact versions only')}
     </div></div>${foot()}`;
 }
 
-/* ======================= BUILD ======================= */
-function vBuild(){
-  const env=D.buildEnv, e=E(env), live=e.rollout.live;
-  return `<div class="page"><section style="padding-top:20px">
-    ${kicker('Build · '+D.project)}
-    <h1 class="page-h">${D.modules.length} modules. <span class="acc">One exact build.</span></h1>
+/* ======================= PROJECT · BUILD ======================= */
+function vBuild(p){
+  const eid=selEnv(p), e=p.envs[eid], live=e.rollout.live;
+  return `<div class="page"><section style="padding-top:20px">${kicker('Build · '+p.name)}
+    <h1 class="page-h">${p.modules.length?plural(p.modules.length,'module')+'.':'No modules yet.'} <span class="acc">${p.modules.length?'One exact build.':'Start with one.'}</span></h1>
     <p class="lede">Publish modules, then pin them together as a version. Nothing reaches testers until you release it.</p>
-    <div class="ctas">${cta('primary','Next version',`Compose v${newest(env)+1}`,`composeModal('${env}')`)}${cta('secondary','New file','Publish a module',"publishModal()")}</div></section>
+    <div class="ctas">${p.modules.length?cta('primary','Next version',`Compose ${eid} v${newest(e)+1}`,`composeModal('${p.id}','${eid}')`)+cta('secondary','New file','Publish a module',`publishModal('${p.id}')`,'upload'):cta('primary','Step 1','Publish first module',`publishModal('${p.id}')`,'upload')}</div></section>
   <div class="split">
     <div class="panel pad accent-top"><div class="eyebrow">Modules</div><h2>The pieces</h2>
-      <div class="tiles">${D.modules.map(m=>{const nv=m.versions.filter(v=>v.st!=='revoked').at(-1);return `<button class="tile" onclick="openModule('${m.id}')"><span class="ti">${ic(m.icon)}</span><span><div class="tt">${m.name}</div><div class="ts">${m.id} · v${nv.v} · ${nv.size}</div></span><span class="go">${ic('arrow')}</span></button>`;}).join('')}</div></div>
-    <div class="panel pad accent-top"><div class="row"><span class="eyebrow">Versions</span><span class="spacer"></span><div class="seg" role="group" aria-label="Environment">${Object.keys(D.envs).map(k=>`<button class="${k===env?'on':''}" onclick="D.buildEnv='${k}';render()">${k}</button>`).join('')}</div></div><h2>${env}</h2>
-      <div class="list">${e.versions.slice().reverse().map(v=>`<button class="item" onclick="openCompare('${env}',${v.n})"><span class="vbig">v${v.n}</span><span style="flex:1;min-width:0"><div class="it">${esc(v.note)}</div><div class="is">${v.by} · ${v.at} · ${Object.keys(v.mods).length} modules</div></span>${v.n===live?chip(stCls(e.rollout.state),e.rollout.state==='active'?'Live':e.rollout.state):''}<span class="dim">${ic('arrow')}</span></button>`).join('')}</div></div>
+      ${p.modules.length?`<div class="tiles">${p.modules.map(m=>{const nv=m.versions.filter(v=>v.st!=='revoked').at(-1);return `<button class="tile" onclick="openModule('${p.id}','${m.id}')"><span class="ti">${ic(m.icon)}</span><span><div class="tt">${esc(m.name)}</div><div class="ts">${esc(m.id)} · ${nv?'v'+esc(nv.v):'no version'}${nv&&nv.size!=='—'?' · '+nv.size:''}</div></span><span class="go">${ic('arrow')}</span></button>`;}).join('')}</div>`
+        :`<div class="empty"><span class="ti">${ic('upload')}</span><h3>No modules</h3>A module is one part of your build: an app shell, an engine, a data pack.</div>`}</div>
+    <div class="panel pad accent-top"><div class="row"><span class="eyebrow">Versions</span><span class="spacer"></span>${envSeg(p,eid,'pickEnv')}</div><h2>${esc(eid)}</h2>
+      ${e.versions.length?`<div class="list">${e.versions.slice().reverse().map(v=>`<button class="item" onclick="openCompare('${p.id}','${eid}',${v.n})"><span class="vbig">v${v.n}</span><span style="flex:1;min-width:0"><div class="it">${esc(v.note)}</div><div class="is">${esc(v.by)} · ${v.at} · ${plural(Object.keys(v.mods).length,'module')}</div></span>${v.n===live?chip(stCls(e.rollout.state),STATE_TXT[e.rollout.state]):''}<span class="dim">${ic('arrow')}</span></button>`).join('')}</div>`
+        :`<div class="empty"><span class="ti">${ic('layers')}</span><h3>No versions</h3>${p.modules.length?`<button class="btn solid sm" style="margin-top:10px" onclick="composeModal('${p.id}','${eid}')">Compose v1</button>`:'Publish a module first.'}</div>`}</div>
   </div></div>${foot()}`;
 }
-function diffTable(a,b){
+function diffTable(p,a,b){
   const ids=[...new Set([...Object.keys(a||{}),...Object.keys(b)])];
   return `<div class="tbl"><table class="t"><tr><th>Module</th><th>Before</th><th>After</th></tr>${ids.map(id=>{const o=a?.[id],n=b[id],k=!o?'add':!n?'del':o!==n?'chg':'same';
-    return `<tr class="d-${k}"><td>${mod(id).name}</td><td class="mono ${k==='same'?'dim':''}">${o||'—'}</td><td class="mono">${n||'<span class="red">removed</span>'}${k!=='same'?` <span class="chip ${k==='add'?'live':k==='del'?'revoked':'paused'}" style="margin-left:6px">${{add:'new',chg:'changed',del:'removed'}[k]}</span>`:''}</td></tr>`;}).join('')}</table></div>`;
+    return `<tr class="d-${k}"><td>${esc(mod(p,id)?.name||id)}</td><td class="mono ${k==='same'?'dim':''}">${o||'—'}</td><td class="mono">${n||'<span class="red">removed</span>'}${k!=='same'?` <span class="chip ${k==='add'?'live':k==='del'?'revoked':'paused'}" style="margin-left:6px">${{add:'new',chg:'changed',del:'removed'}[k]}</span>`:''}</td></tr>`;}).join('')}</table></div>`;
 }
-function openCompare(env,n){
-  const e=E(env), v=e.versions.find(x=>x.n===n), p=e.versions.find(x=>x.n===n-1), r=e.rollout;
-  drawer(`${env} · v${n}`,esc(v.note),`
-    <div class="row" style="margin-bottom:18px">${n===r.live?chip(stCls(r.state),r.state==='active'?'Live now':'Live · '+r.state):chip('','Not live')}<span class="muted" style="font-size:13px">${v.by} · ${v.at}</span><span class="spacer"></span>${fp('view:'+env+':'+n)}</div>
-    <div class="eyebrow" style="margin-bottom:8px">${p?'Compared with v'+p.n:'First version'}</div>${diffTable(p?.mods,v.mods)}`,
-    n>r.live&&r.state!=='closed'?`<button class="btn solid" onclick="releaseModal('${env}',${n})">${ic('play')}Release v${n}</button>`:n<r.live&&r.state!=='closed'?`<button class="btn" onclick="rollbackModal('${env}',${n})">${ic('undo')}Roll back to v${n}</button>`:'');
+function openCompare(pid,eid,n){
+  const p=P(pid), e=p.envs[eid], v=e.versions.find(x=>x.n===n), pv=e.versions.find(x=>x.n===n-1), r=e.rollout;
+  drawer(`${eid} · v${n}`,esc(v.note),`
+    <div class="row" style="margin-bottom:18px">${n===r.live?chip(stCls(r.state),r.state==='active'?'Live now':'Live · '+r.state):chip('','Not live')}<span class="muted" style="font-size:13px">${esc(v.by)} · ${v.at}</span><span class="spacer"></span>${fp('view:'+pid+':'+eid+':'+n)}</div>
+    <div class="eyebrow" style="margin-bottom:8px">${pv?'Compared with v'+pv.n:'First version'}</div>${diffTable(p,pv?.mods,v.mods)}`,
+    n>r.live&&r.state!=='closed'?`<button class="btn solid" onclick="releaseModal('${pid}','${eid}',${n})">${ic('play')}Release v${n}</button>`:n<r.live&&r.state!=='closed'?`<button class="btn" onclick="rollbackModal('${pid}','${eid}',${n})">${ic('undo')}Roll back to v${n}</button>`:'');
 }
-function openModule(id){
-  const m=mod(id);
-  drawer(m.name,`${m.id} · ${m.kind}`,`<div class="list">${m.versions.slice().reverse().map(v=>`<div class="item"><span class="vbig" style="width:76px;font-size:18px">${v.v}</span><span style="flex:1;min-width:0"><div class="it">${esc(v.notes)}</div><div class="is">${v.by} · ${v.at} · ${v.size}</div></span>
-      ${v.st!=='active'?chip(v.st,v.st):`<button class="btn ghost sm" onclick="revokeModal('${m.id}','${v.v}')">Revoke</button>`}</div>`).join('')}</div>
+function openModule(pid,id){
+  const p=P(pid), m=mod(p,id);
+  drawer(m.name,`${m.id}`,`<div class="list">${m.versions.slice().reverse().map(v=>`<div class="item"><span class="vbig" style="width:76px;font-size:18px">${esc(v.v)}</span><span style="flex:1;min-width:0"><div class="it">${esc(v.notes)}</div><div class="is">${esc(v.by)} · ${v.at} · ${v.size}</div></span>
+      ${v.st!=='active'?chip(v.st,v.st):`<button class="btn ghost sm" onclick="revokeModal('${pid}','${m.id}','${esc(v.v)}')">Revoke</button>`}</div>`).join('')}</div>
     <p class="hint" style="margin-top:16px">${ic('lock')} Versions never change once published. Publish a new one to fix something.</p>`,
-    `<button class="btn solid" onclick="publishModal('${m.id}')">${ic('upload')}Publish new version</button>`);
+    `<button class="btn solid" onclick="publishModal('${pid}','${m.id}')">${ic('upload')}Publish new version</button>`);
 }
 
-/* ======================= RELEASE ======================= */
+/* ======================= PROJECT · RELEASE ======================= */
 const EVT={release:['released','g'],pause:['paused','a'],resume:['resumed','g'],rollback:['rolled back to','r'],close:['closed','']};
-function vRelease(){
-  const env=D.relEnv, e=E(env), r=e.rollout, g=D.groups[r.group], nv=newest(env);
-  const head = r.state==='active'?[`v${r.live} is`,'live.']:r.state==='paused'?['Paused','on v'+r.live+'.']:['Closed.','Nothing is live.'];
+function vRelease(p){
+  const eid=selEnv(p), e=p.envs[eid], r=e.rollout, nv=newest(e);
+  const head = r.state==='active'?[`v${r.live} is`,'live.']:r.state==='paused'?['Paused',`on v${r.live}.`]:r.state==='draft'?[nv?`v${nv} is ready.`:'Nothing yet.',nv?'Not live yet.':'Compose v1 first.']:['Closed.','Nothing is live.'];
   let primary;
-  if(r.state==='closed') primary=cta('primary','Start again','New rollout',"toast('A new rollout can start from any version')");
-  else if(nv>r.live) primary=cta('primary','Ready to ship',`Release v${nv}`,`releaseModal('${env}',${nv})`);
-  else if(r.state==='paused') primary=cta('primary','Back on',`Resume v${r.live}`,`act('${env}','resume')`);
-  else primary=cta('secondary','Stop new sessions','Pause',`act('${env}','pause')`);
+  if(r.state==='closed') primary=cta('primary','Start again','New environment',`newEnvModal('${p.id}')`,'plus');
+  else if(!nv) primary=cta('primary','First build','Compose v1',`composeModal('${p.id}','${eid}')`);
+  else if(nv>r.live) primary=cta('primary',r.state==='draft'?'Go live':'Ready to ship',`Release v${nv}`,`releaseModal('${p.id}','${eid}',${nv})`);
+  else if(r.state==='paused') primary=cta('primary','Back on',`Resume v${r.live}`,`act('${p.id}','${eid}','resume')`);
+  else primary=cta('secondary','Stop new sessions','Pause',`act('${p.id}','${eid}','pause')`,'pause');
   const evs=r.events.slice().reverse();
   return `<div class="page"><section class="hero">
-    <div><div class="row" style="margin-bottom:22px">${kicker('Release',stCls(r.state),'margin:0')}<span class="spacer"></span><div class="seg" role="group" aria-label="Environment">${Object.keys(D.envs).map(k=>`<button class="${k===env?'on':''}" onclick="D.relEnv='${k}';D.allEv=false;render()">${k}</button>`).join('')}</div></div>
-      <h1 class="display">${head[0]}<br><span class="acc">${head[1]}</span></h1>
-      <p class="lede">${r.state==='closed'?'Feedback and history stay readable.':`<b>${esc(g.name)}</b> · ${esc(g.rule)} · ${g.people} people. Anyone mid-session finishes first.`}</p>
+    <div><div class="row" style="margin-bottom:22px">${kicker('Release',stCls(r.state),'margin:0')}<span class="spacer"></span>${envSeg(p,eid,'pickEnv')}</div>
+      <h1 class="display">${esc(head[0])}<br><span class="acc">${esc(head[1])}</span></h1>
+      <p class="lede">${r.state==='closed'?'Feedback and history stay readable.':`Who can open it: <b>${audience(e)}</b>. Anyone mid-session finishes first.`}</p>
       <div class="ctas">${primary}</div>
-      ${r.state!=='closed'?`<div class="row" style="margin-top:22px">${r.live>1?`<button class="btn" onclick="rollbackModal('${env}')">${ic('undo')}Roll back</button>`:''}${r.state==='active'&&nv>r.live?`<button class="btn" onclick="act('${env}','pause')">${ic('pause')}Pause</button>`:''}<button class="btn ghost" onclick="closeRollout('${env}')">Close rollout</button></div>`:''}
+      ${r.state!=='closed'?`<div class="row" style="margin-top:22px">
+        <button class="btn" onclick="accessModal('${p.id}','${eid}')">${ic(ACCESS[e.access].icon)}${ACCESS[e.access].label}</button>
+        ${e.access==='invite'?`<button class="btn" onclick="inviteModal('${p.id}','${eid}')">${ic('users')}Invite</button>`:e.access==='link'?`<button class="btn" onclick="linkModal('${p.id}','${eid}')">${ic('link')}Copy link</button>`:''}
+        ${r.live>1?`<button class="btn" onclick="rollbackModal('${p.id}','${eid}')">${ic('undo')}Roll back</button>`:''}
+        ${r.state==='active'&&nv>r.live?`<button class="btn" onclick="act('${p.id}','${eid}','pause')">${ic('pause')}Pause</button>`:''}
+        ${r.state!=='draft'?`<button class="btn ghost" onclick="closeRollout('${p.id}','${eid}')">Close</button>`:''}</div>`:''}
     </div>
-    <div class="panel pad accent-top"><div class="eyebrow">Timeline · ${env}</div><h2>Every change, kept.</h2>
-      <div class="tl">${evs.slice(0,D.allEv?99:4).map(ev=>`<div class="ev ${EVT[ev.a][1]}"><div>${av(ev.by)} <b>${ev.by}</b> ${EVT[ev.a][0]} ${ev.a==='close'?'the rollout':'<b>v'+ev.v+'</b>'}</div>${ev.reason?`<div class="muted" style="font-size:14px;margin:2px 0">“${esc(ev.reason)}”</div>`:''}<div class="when">${ev.at}</div></div>`).join('')}</div>
-      ${evs.length>4?`<button class="textlink" style="margin-top:14px" onclick="D.allEv=!D.allEv;render()">${D.allEv?'Show less':'Show all '+evs.length}</button>`:''}
+    <div class="panel pad accent-top"><div class="eyebrow">Timeline · ${esc(eid)}</div><h2>Every change, kept.</h2>
+      ${evs.length?`<div class="tl">${evs.slice(0,D.allEv?99:4).map(ev=>`<div class="ev ${EVT[ev.a][1]}"><div>${av(ev.by)} <b>${esc(ev.by)}</b> ${EVT[ev.a][0]} ${ev.a==='close'?'the rollout':'<b>v'+ev.v+'</b>'}</div>${ev.reason?`<div class="muted" style="font-size:14px;margin:2px 0">“${esc(ev.reason)}”</div>`:''}<div class="when">${ev.at}</div></div>`).join('')}</div>
+      ${evs.length>4?`<button class="textlink" style="margin-top:14px" onclick="D.allEv=!D.allEv;render()">${D.allEv?'Show less':'Show all '+evs.length}</button>`:''}`
+      :`<div class="empty">Nothing released yet. The first release starts the timeline.</div>`}
     </div></section>
-    <div class="stats">${stat('Live version','v'+r.live,`of ${nv}`,r.state==='active'?'Serving':'Not serving')}${stat('Audience',g.people,'people',esc(g.name))}${stat('Fingerprint','#'+hash('view:'+env+':'+r.live).slice(0,4),'','What testers see')}${stat('Releases',r.events.filter(x=>x.a==='release').length,'total','')}${stat('Rollbacks',r.events.filter(x=>x.a==='rollback').length,'total','')}</div>
+    <div class="stats">${stat('Live version',r.live?'v'+r.live:'—',r.live?`of ${nv}`:'',STATE_TXT[r.state])}${stat('Who can open',e.access==='invite'?e.group.people:'∞',e.access==='invite'?'people':'',ACCESS[e.access].label)}${stat('Fingerprint',r.live?'#'+hash('view:'+p.id+':'+eid+':'+r.live).slice(0,4):'—','','What testers see')}${stat('Releases',r.events.filter(x=>x.a==='release').length,'total','')}${stat('Rollbacks',r.events.filter(x=>x.a==='rollback').length,'total','')}</div>
   </div>${foot()}`;
 }
-function act(env,a,extra={}){
-  const r=E(env).rollout, v=extra.v??r.live;
+function act(pid,eid,a,extra={}){
+  const p=P(pid), r=p.envs[eid].rollout, v=extra.v??r.live;
   r.events.push({a,v,by:D.me,at:'just now',reason:extra.reason});
   if(a==='pause')r.state='paused'; if(['resume','release','rollback'].includes(a))r.state='active'; if(a==='close')r.state='closed'; if(a==='release'||a==='rollback')r.live=v;
-  log('release',`${EVT[a][0]} ${env}${a==='close'?'':' v'+v}`);
-  closeLayer(); toast({pause:`${env} paused`,resume:`${env} v${v} is back on`,release:`${env} v${v} is live`,rollback:`${env} is back on v${v}`,close:`${env} rollout closed`}[a]); render();
+  log(pid,'release',`${EVT[a][0]} ${eid}${a==='close'?'':' v'+v}`);
+  closeLayer(); toast({pause:`${eid} paused`,resume:`${eid} v${v} is back on`,release:`${eid} v${v} is live`,rollback:`${eid} is back on v${v}`,close:`${eid} closed`}[a]); render();
 }
-function releaseModal(env,n){
-  const e=E(env), r=e.rollout, g=D.groups[r.group];
-  modal('Ship it',`Release ${env} v${n}?`,`<p class="muted" style="margin-top:0">${esc(g.name)} (${g.people} people) get it on their next session.</p>${diffTable(e.versions.find(x=>x.n===r.live).mods,e.versions.find(x=>x.n===n).mods)}`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="act('${env}','release',{v:${n}})">${ic('play')}Release v${n}</button>`);
+function releaseModal(pid,eid,n){
+  const p=P(pid), e=p.envs[eid], r=e.rollout;
+  modal('Ship it',`Release ${eid} v${n}?`,`<p class="muted" style="margin-top:0">${audience(e)} can open it${r.live?' on their next session':''}.</p>${diffTable(p,r.live?e.versions.find(x=>x.n===r.live).mods:null,e.versions.find(x=>x.n===n).mods)}
+    ${e.access==='invite'&&e.group.people===0?refusal('Nobody invited yet',{what:'This environment is invite only and has no testers.',need:'At least one invited person.',fix:'Release now and invite people next, or change who can open it.'},true):''}`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="act('${pid}','${eid}','release',{v:${n}})">${ic('play')}Release v${n}</button>`);
 }
-function rollbackModal(env,pre){
-  const e=E(env), r=e.rollout, opts=e.versions.filter(x=>x.n<r.live).reverse();
-  modal('Roll back',`Return ${env} to an earlier version`,`<label class="f" for="rbV" style="margin-top:4px">Version</label><select class="input" id="rbV">${opts.map(x=>`<option value="${x.n}" ${x.n===pre?'selected':''}>v${x.n} · ${esc(x.note)}</option>`).join('')}</select>
+function rollbackModal(pid,eid,pre){
+  const e=P(pid).envs[eid], r=e.rollout, opts=e.versions.filter(x=>x.n<r.live).reverse();
+  modal('Roll back',`Return ${eid} to an earlier version`,`<label class="f" for="rbV" style="margin-top:4px">Version</label><select class="input" id="rbV">${opts.map(x=>`<option value="${x.n}" ${x.n===pre?'selected':''}>v${x.n} · ${esc(x.note)}</option>`).join('')}</select>
     <label class="f" for="rbR">Why? · shown in the timeline</label><input class="input" id="rbR" placeholder="e.g. Level 4 crashes after reload"><div id="rbMsg"></div>
     <p class="hint">Nothing is deleted. You can release v${r.live} again any time.</p>`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="doRollback('${env}')">${ic('undo')}Roll back</button>`);
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="doRollback('${pid}','${eid}')">${ic('undo')}Roll back</button>`);
 }
-function doRollback(env){const reason=document.getElementById('rbR').value.trim(); if(!reason){document.getElementById('rbMsg').innerHTML=refusal('Reason needed',{what:'Rollbacks without a reason are refused.',need:'One line your team and testers can read.',fix:'Say what went wrong.',code:'rollout.reason-required'});return;} act(env,'rollback',{v:+document.getElementById('rbV').value,reason});}
-function closeRollout(env){
-  modal('Final step',`Close the ${env} rollout?`,`<p class="muted" style="margin-top:0">Nobody can open ${env} after this. Feedback and history stay.</p><label class="f" for="clC">Type ${env} to confirm</label><input class="input" id="clC" autocomplete="off"><div id="clMsg"></div>`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="confirmClose('${env}')">Close rollout</button>`);
+function doRollback(pid,eid){const reason=document.getElementById('rbR').value.trim(); if(!reason){document.getElementById('rbMsg').innerHTML=refusal('Reason needed',{what:'Rollbacks without a reason are refused.',need:'One line your team and testers can read.',fix:'Say what went wrong.',code:'rollout.reason-required'});return;} act(pid,eid,'rollback',{v:+document.getElementById('rbV').value,reason});}
+function closeRollout(pid,eid){
+  modal('Final step',`Close ${eid}?`,`<p class="muted" style="margin-top:0">Nobody can open ${eid} after this. Feedback and history stay.</p><label class="f" for="clC">Type ${eid} to confirm</label><input class="input" id="clC" autocomplete="off"><div id="clMsg"></div>`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="confirmClose('${pid}','${eid}')">Close</button>`);
 }
-function confirmClose(env){ if(document.getElementById('clC').value===env) act(env,'close'); else document.getElementById('clMsg').innerHTML=refusal('Not confirmed',{what:"The name doesn't match.",need:'The environment name, exactly.',fix:`Type ${env}.`,code:'confirm.mismatch'}); }
+function confirmClose(pid,eid){ if(document.getElementById('clC').value===eid) act(pid,eid,'close'); else document.getElementById('clMsg').innerHTML=refusal('Not confirmed',{what:"The name doesn't match.",need:'The environment name, exactly.',fix:`Type ${eid}.`,code:'confirm.mismatch'}); }
+
+/* ======================= ACCESS · INVITE · LINK ======================= */
+const optList=(name,cur)=>`<div class="opts" role="radiogroup">${Object.entries(ACCESS).map(([k,a])=>`<button type="button" role="radio" aria-checked="${k===cur}" class="opt ${k===cur?'on':''}" data-v="${k}" onclick="pickOpt(this)"><span class="radio"></span>${ic(a.icon,'copper')}<span><div class="ob">${a.label}</div><div class="os">${a.sub}</div></span></button>`).join('')}</div>`;
+function pickOpt(b){ b.parentNode.querySelectorAll('.opt').forEach(o=>{o.classList.remove('on');o.setAttribute('aria-checked','false');}); b.classList.add('on'); b.setAttribute('aria-checked','true'); }
+const optVal=sel=>document.querySelector(sel+' .opt.on')?.dataset.v;
+function accessModal(pid,eid){
+  const e=P(pid).envs[eid];
+  modal('Who can open it',eid,`<div id="acc">${optList('acc',e.access)}</div><p class="hint">${ic('shield')} Every open is still checked by Flux Access, whatever you choose.</p>`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="setAccess('${pid}','${eid}')">Save</button>`);
+}
+function setAccess(pid,eid){ const e=P(pid).envs[eid], v=optVal('#acc'); e.access=v; if(v==='public') e.group={name:'Everyone',people:e.group.people}; if(v==='link') e.group={name:'Anyone with the link',people:e.group.people};
+  log(pid,'access',`set ${eid} to ${ACCESS[v].label.toLowerCase()}`); closeLayer(); toast(v==='public'||v==='request'?`${eid} is now on Explore`:`Saved: ${ACCESS[v].label}`); render(); }
+function inviteModal(pid,eid){
+  modal('Invite testers',eid,`<label class="f" for="invW" style="margin-top:4px">Emails or handles</label><textarea class="input" id="invW" rows="3" placeholder="alex@example.com, tester-31"></textarea><div id="invMsg"></div>
+    <p class="hint">${ic('lock')} They confirm who they are the first time they open it.</p>`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="doInvite('${pid}','${eid}')">Send invites</button>`);
+}
+function doInvite(pid,eid){ const raw=document.getElementById('invW').value.split(/[\s,]+/).filter(Boolean);
+  if(!raw.length){document.getElementById('invMsg').innerHTML=refusal('Nobody to invite',{what:'The list is empty.',need:'At least one email or handle.',fix:'Add the people you want to test.',code:'invite.empty'});return;}
+  const e=P(pid).envs[eid]; e.group.people+=raw.length; if(e.group.name==='Invited people') e.group.rule='Named people'; log(pid,'access',`invited ${plural(raw.length,'person').replace('persons','people')} to ${eid}`); closeLayer(); toast(`${plural(raw.length,'invite')} sent`); render(); }
+function linkModal(pid,eid){ const l=`remote.defxn.com/t/${hash(pid+eid).slice(0,8)}`;
+  modal('Share',`Link to ${eid}`,`<div class="linkbox">${l}<span class="spacer"></span><button class="fp" data-copy="https://${l}" style="color:var(--teal)">Copy${ic('copy')}</button></div><p class="hint">Anyone with this link can open ${eid}. Change who can open it to stop the link.</p>`,`<button class="btn" onclick="closeLayer()">Done</button>`); }
+
+/* ======================= CREATE: PROJECT · ENVIRONMENT ======================= */
+const SLUG=/^[a-z0-9][a-z0-9-]{1,30}$/;
+let W=null;
+function newProject(){ closeMenus(); W={step:0,owner:D.me,name:'',kind:'Game',desc:'',env:'preview',access:'invite'}; wizard(); }
+function wizard(msg=''){
+  const s=W.step, steps=[['Name',s>0?'done':'cur'],['Who can open',s>1?'done':s===1?'cur':''],['Create',s===2?'cur':'']];
+  let body='';
+  if(s===0) body=`<label class="f" for="wOwner" style="margin-top:4px">Owner</label><select class="input" id="wOwner"><option value="${D.me}" ${W.owner===D.me?'selected':''}>${D.me} (you)</option><option value="defxn" ${W.owner==='defxn'?'selected':''}>defxn (team)</option></select>
+    <label class="f" for="wName">Project name</label><input class="input" id="wName" value="${esc(W.name)}" placeholder="my-game" autocomplete="off"><div class="hint">Lowercase letters, numbers and dashes.</div>
+    <label class="f">Kind</label><div class="kinds" id="wKind">${KINDS.map(k=>`<button type="button" class="${W.kind===k?'on':''}" onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));this.classList.add('on')">${k}</button>`).join('')}</div>
+    <label class="f" for="wDesc">In one line <span class="dim">· optional</span></label><input class="input" id="wDesc" value="${esc(W.desc)}" placeholder="What is it?">`;
+  if(s===1) body=`<label class="f" for="wEnv" style="margin-top:4px">First environment</label><input class="input" id="wEnv" value="${esc(W.env)}" autocomplete="off"><div class="hint">A place testers open, like preview, beta or playtest.</div>
+    <label class="f">Who can open it</label><div id="wAcc">${optList('w',W.access)}</div>`;
+  if(s===2) body=`<div class="list">${[['Project',`${W.owner}/${W.name}`],['Kind',W.kind],['Environment',W.env],['Who can open',ACCESS[W.access].label]].map(([k,v])=>`<div class="item"><span class="eyebrow" style="width:130px">${k}</span><span class="it">${esc(v)}</span></div>`).join('')}</div>
+    <p class="hint">${ic('lock')} Encryption keys are created on your device. You can change everything later.</p>`;
+  modal(`New project · ${s+1} / 3`,['Name it','Who can open it?','Ready to create'][s],`<div style="margin-bottom:10px">${stepper(steps)}</div>`+body+msg,
+    `${s?`<button class="btn ghost" onclick="wizBack()">Back</button>`:`<button class="btn ghost" onclick="closeLayer()">Cancel</button>`}<button class="btn solid" onclick="wizNext()">${s===2?ic('plus')+'Create project':'Continue'}</button>`);
+}
+function wizSave(){ const g=id=>document.getElementById(id); if(W.step===0){W.owner=g('wOwner').value;W.name=g('wName').value.trim().toLowerCase();W.kind=document.querySelector('#wKind .on')?.textContent||'Game';W.desc=g('wDesc').value.trim();} if(W.step===1){W.env=g('wEnv').value.trim().toLowerCase();W.access=optVal('#wAcc');} }
+function wizBack(){ wizSave(); W.step--; wizard(); }
+function wizNext(){
+  wizSave();
+  if(W.step===0){ if(!SLUG.test(W.name)) return wizard(refusal('Name not usable',{what:W.name?`“${esc(W.name)}” has characters we can't use in a link.`:'No name entered.',need:'2–31 lowercase letters, numbers or dashes.',fix:'Try something like my-game.',code:'project.invalid-name'}));
+    if(D.projects.some(p=>p.owner===W.owner&&p.name===W.name)) return wizard(refusal('Name taken',{what:`${esc(W.owner)}/${esc(W.name)} already exists.`,need:'A name you haven\'t used.',fix:`Try ${esc(W.name)}-2.`,code:'project.exists'})); }
+  if(W.step===1&&!SLUG.test(W.env)) return wizard(refusal('Environment name not usable',{what:W.env?`“${esc(W.env)}” can't be used.`:'No name entered.',need:'Lowercase letters, numbers or dashes.',fix:'Try preview or beta.',code:'environment.invalid-name'}));
+  if(W.step<2){ W.step++; return wizard(); }
+  let id=W.name; if(P(id)) id=W.owner+'-'+W.name;
+  const grp=W.access==='public'?{name:'Everyone',people:0}:W.access==='link'?{name:'Anyone with the link',people:0}:{name:W.access==='request'?'Approved testers':'Invited people',people:0};
+  D.projects.unshift({id,owner:W.owner,name:W.name,kind:W.kind,desc:W.desc||`A new ${W.kind.toLowerCase()}.`,role:'owner',members:[{u:D.me,r:'Owner'}],keys:[{n:1,at:'just now',why:'Project created'}],modules:[],envs:{[W.env]:env({access:W.access,group:grp})},feedback:[]});
+  log(id,'build','created the project'); closeLayer(); toast(`${W.owner}/${W.name} created`); location.hash=`#/p/${id}/overview`;
+}
+function newEnvModal(pid){
+  const p=P(pid);
+  modal('New environment',p.name,`<label class="f" for="neN" style="margin-top:4px">Name</label><input class="input" id="neN" placeholder="beta" autocomplete="off"><div class="hint">Each environment has its own versions, testers and timeline.</div>
+    <label class="f">Who can open it</label><div id="neA">${optList('ne','invite')}</div><div id="neMsg"></div>`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="doNewEnv('${pid}')">${ic('plus')}Create</button>`);
+}
+function doNewEnv(pid){
+  const p=P(pid), n=document.getElementById('neN').value.trim().toLowerCase(), a=optVal('#neA'), out=document.getElementById('neMsg');
+  if(!SLUG.test(n)){out.innerHTML=refusal('Name not usable',{what:n?`“${esc(n)}” can't be used.`:'No name entered.',need:'Lowercase letters, numbers or dashes.',fix:'Try beta or staging.',code:'environment.invalid-name'});return;}
+  if(p.envs[n]){out.innerHTML=refusal('Already exists',{what:`${esc(p.name)} already has ${esc(n)}.`,need:'A new name.',fix:`Pick another name, or open ${esc(n)}.`,code:'environment.exists'});return;}
+  p.envs[n]=env({access:a,group:a==='public'?{name:'Everyone',people:0}:a==='link'?{name:'Anyone with the link',people:0}:{name:'Invited people',people:0}});
+  D.sel[pid]=n; log(pid,'release',`created environment ${n}`); closeLayer(); toast(`${n} created`); render();
+}
 
 /* ======================= COMPOSE / PUBLISH / REVOKE ======================= */
-function composeModal(env){
-  const cur=E(env).versions.at(-1);
-  modal(`Compose · ${env}`,`Version ${cur.n+1}`,`<p class="muted" style="margin-top:0">Pick one exact version of each module.</p>
-    ${D.modules.map(m=>`<label class="f" for="cm-${m.id}">${m.name}</label><select class="input cm" id="cm-${m.id}" data-m="${m.id}"><option value="">Leave out</option>${m.versions.slice().reverse().map(v=>`<option value="${v.v}" ${cur.mods[m.id]===v.v?'selected':''} ${v.st==='revoked'?'disabled':''}>${v.v}${v.st==='revoked'?' · revoked':''}</option>`).join('')}</select>`).join('')}
+function composeModal(pid,eid){
+  const p=P(pid), e=p.envs[eid], cur=e.versions.at(-1)||{n:0,mods:{}};
+  if(!p.modules.length) return publishModal(pid);
+  const base=cur.n?cur.mods:Object.fromEntries(p.modules.map(m=>[m.id,m.versions.filter(v=>v.st!=='revoked').at(-1)?.v]).filter(x=>x[1]));
+  modal(`Compose · ${eid}`,`Version ${cur.n+1}`,`<p class="muted" style="margin-top:0">Pick one exact version of each module.</p>
+    ${p.modules.map(m=>`<label class="f" for="cm-${m.id}">${esc(m.name)}</label><select class="input cm" id="cm-${m.id}" data-m="${m.id}"><option value="">Leave out</option>${m.versions.slice().reverse().map(v=>`<option value="${esc(v.v)}" ${base[m.id]===v.v?'selected':''} ${v.st==='revoked'?'disabled':''}>${esc(v.v)}${v.st==='revoked'?' · revoked':''}</option>`).join('')}</select>`).join('')}
     <label class="f" for="cmN">What changed?</label><input class="input" id="cmN" placeholder="One line"><div id="cmMsg"></div>`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="doCompose('${env}')">Save v${cur.n+1}</button>`);
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="doCompose('${pid}','${eid}')">Save v${cur.n+1}</button>`);
 }
-function doCompose(env){
-  const e=E(env), cur=e.versions.at(-1), mods={}; document.querySelectorAll('.cm').forEach(s=>{if(s.value)mods[s.dataset.m]=s.value;});
+function doCompose(pid,eid){
+  const e=P(pid).envs[eid], cur=e.versions.at(-1), mods={}; document.querySelectorAll('.cm').forEach(s=>{if(s.value)mods[s.dataset.m]=s.value;});
   const out=document.getElementById('cmMsg');
   if(!Object.keys(mods).length){out.innerHTML=refusal('Empty version',{what:'No modules are selected.',need:'At least one module.',fix:'Pick a version for a module.',code:'environment.empty'});return;}
-  if(JSON.stringify(Object.entries(mods).sort())===JSON.stringify(Object.entries(cur.mods).sort())){out.innerHTML=refusal('Nothing changed',{what:`This is the same as v${cur.n}.`,need:'At least one different module version.',fix:`Change a version, or release v${cur.n} as it is.`,code:'environment.identical'});return;}
-  e.versions.push({n:cur.n+1,mods,by:D.me,at:'just now',note:document.getElementById('cmN').value.trim()||'Updated modules'}); log('build',`composed ${env} v${cur.n+1}`);
-  closeLayer(); toast(`${env} v${cur.n+1} saved. Release it when you're ready.`); render();
+  if(cur&&JSON.stringify(Object.entries(mods).sort())===JSON.stringify(Object.entries(cur.mods).sort())){out.innerHTML=refusal('Nothing changed',{what:`This is the same as v${cur.n}.`,need:'At least one different module version.',fix:`Change a version, or release v${cur.n} as it is.`,code:'environment.identical'});return;}
+  const n=(cur?.n||0)+1; e.versions.push({n,mods,by:D.me,at:'just now',note:document.getElementById('cmN').value.trim()||(n===1?'First build':'Updated modules')}); log(pid,'build',`composed ${eid} v${n}`);
+  closeLayer(); toast(`${eid} v${n} saved. Release it when you're ready.`); render();
 }
-function publishModal(pre){
-  modal('Publish','New module version',`<label class="f" for="pmM" style="margin-top:4px">Module</label><select class="input" id="pmM">${D.modules.map(m=>`<option value="${m.id}" ${m.id===pre?'selected':''}>${m.name} · ${m.id}</option>`).join('')}</select>
-    <label class="f" for="pmV">Version</label><input class="input" id="pmV" placeholder="1.2.0" style="max-width:200px">
+function publishModal(pid,pre){
+  const p=P(pid);
+  modal('Publish',p.modules.length?'New module version':'Your first module',`<label class="f" for="pmM" style="margin-top:4px">Module</label><select class="input" id="pmM" onchange="document.getElementById('pmNew').hidden=this.value!=='__new'">${p.modules.map(m=>`<option value="${m.id}" ${m.id===pre?'selected':''}>${esc(m.name)} · ${m.id}</option>`).join('')}<option value="__new" ${p.modules.length?'':'selected'}>+ New module</option></select>
+    <div id="pmNew" ${p.modules.length?'hidden':''}><label class="f" for="pmName">Module name</label><input class="input" id="pmName" placeholder="app" autocomplete="off"></div>
+    <label class="f" for="pmV">Version</label><input class="input" id="pmV" placeholder="1.0.0" style="max-width:200px">
     <label class="f">File</label><button class="tile" id="pmF" onclick="pickFile(this)"><span class="ti">${ic('upload')}</span><span><div class="tt">Choose a file</div><div class="ts">Encrypted on your device first</div></span></button>
     <div id="pmMsg"></div>`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="doPublish()">${ic('upload')}Publish</button>`);
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="doPublish('${pid}')">${ic('upload')}Publish</button>`);
 }
-function pickFile(el){ el.dataset.ok=1; el.querySelector('.tt').textContent='build.wasm'; el.querySelector('.ts').textContent='191 KB · ready'; }
-function doPublish(){
-  const id=document.getElementById('pmM').value, v=document.getElementById('pmV').value.trim(), out=document.getElementById('pmMsg'), m=mod(id);
-  if(!/^\d+\.\d+\.\d+$/.test(v)){out.innerHTML=refusal("Can't publish this version",{what:v?`“${esc(v)}” isn't an exact version.`:'No version entered.',need:'An exact number like 1.2.0.',fix:'Words like “latest” and ranges like “^1.2” can change later, so they can\'t be published.',code:'module.mutable-version'});return;}
-  if(m.versions.some(x=>x.v===v)){out.innerHTML=refusal('Version already used',{what:`${id} ${v} exists.`,need:'A new number.',fix:'Published versions never change. Try '+v.replace(/(\d+)$/,d=>+d+1)+'.',code:'module.version-reuse'});return;}
+function pickFile(el){ el.dataset.ok=1; el.querySelector('.tt').textContent='build.zip'; el.querySelector('.ts').textContent='1.4 MB · ready'; }
+function doPublish(pid){
+  const p=P(pid), sel=document.getElementById('pmM').value, v=document.getElementById('pmV').value.trim(), out=document.getElementById('pmMsg');
+  let m=null, newId=null;
+  if(sel==='__new'){ newId=document.getElementById('pmName').value.trim().toLowerCase(); if(!SLUG.test(newId)){out.innerHTML=refusal('Module name not usable',{what:newId?`“${esc(newId)}” can't be used.`:'No module name.',need:'Lowercase letters, numbers or dashes.',fix:'Try app, engine or assets.',code:'module.invalid-name'});return;}
+    if(mod(p,newId)){out.innerHTML=refusal('Module exists',{what:`${esc(newId)} is already in this project.`,need:'A new name, or pick it from the list.',fix:'Choose it above to add a version.',code:'module.exists'});return;} }
+  else m=mod(p,sel);
+  if(!/^\d+\.\d+\.\d+$/.test(v)){out.innerHTML=refusal("Can't publish this version",{what:v?`“${esc(v)}” isn't an exact version.`:'No version entered.',need:'An exact number like 1.0.0.',fix:'Words like “latest” and ranges like “^1.2” can change later, so they can\'t be published.',code:'module.mutable-version'});return;}
+  if(m&&m.versions.some(x=>x.v===v)){out.innerHTML=refusal('Version already used',{what:`${esc(m.id)} ${esc(v)} exists.`,need:'A new number.',fix:'Published versions never change. Try '+esc(v.replace(/(\d+)$/,d=>+d+1))+'.',code:'module.version-reuse'});return;}
   if(!document.getElementById('pmF').dataset.ok){out.innerHTML=refusal('No file',{what:'Nothing is attached.',need:'The built file.',fix:'Choose the file for this version.',code:'artifact.missing'});return;}
-  m.versions.push({v,size:'191 KB',by:D.me,at:'just now',st:'active',notes:'New version'}); log('build',`published ${id} ${v}`); closeLayer(); toast(`${m.name} ${v} published`); render();
+  if(!m){ m={id:newId,name:newId[0].toUpperCase()+newId.slice(1),icon:KIND_ICON[p.kind]||'cube',versions:[]}; p.modules.push(m); }
+  m.versions.push({v,size:'1.4 MB',by:D.me,at:'just now',st:'active',notes:p.modules.length===1&&m.versions.length===0?'First version':'New version'}); log(pid,'build',`published ${m.id} ${v}`); closeLayer(); toast(`${esc(m.name)} ${esc(v)} published`); render();
 }
-function revokeModal(id,v){
+function revokeModal(pid,id,v){
   modal('Permanent',`Revoke ${id} ${v}?`,`<p class="muted" style="margin-top:0">It can't be added to new versions or downloaded again.</p>${refusal("Copies already downloaded stay",{what:'Testers who opened it keep their copy.',need:'Nothing from you here.',fix:'If it held a secret, rotate that secret.'},true)}
     <label class="f" for="rvR">Why?</label><input class="input" id="rvR" placeholder="e.g. Unlicensed audio"><div id="rvMsg"></div>`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="doRevoke('${id}','${v}')">Revoke</button>`);
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="doRevoke('${pid}','${id}','${v}')">Revoke</button>`);
 }
-function doRevoke(id,v){ if(!document.getElementById('rvR').value.trim()){document.getElementById('rvMsg').innerHTML=refusal('Reason needed',{what:'Revokes without a reason are refused.',need:'One line for the history.',fix:'Say why it is being revoked.',code:'module.reason-required'});return;}
-  mod(id).versions.find(x=>x.v===v).st='revoked'; log('access',`revoked ${id} ${v}`); closeLayer(); toast(`${id} ${v} revoked`); render(); }
+function doRevoke(pid,id,v){ if(!document.getElementById('rvR').value.trim()){document.getElementById('rvMsg').innerHTML=refusal('Reason needed',{what:'Revokes without a reason are refused.',need:'One line for the history.',fix:'Say why it is being revoked.',code:'module.reason-required'});return;}
+  mod(P(pid),id).versions.find(x=>x.v===v).st='revoked'; log(pid,'access',`revoked ${id} ${v}`); closeLayer(); toast(`${id} ${v} revoked`); render(); }
 
-/* ======================= FEEDBACK ======================= */
-function vFeedback(){
-  const open=openFb(), list=D.fbTab==='open'?open:D.feedback.filter(f=>f.st!=='open');
-  return `<div class="page"><section style="padding-top:20px">${kicker('Feedback · playtest')}
-    <h1 class="page-h">${open.length?`${open.length} report${open.length>1?'s':''} <span class="acc">need${open.length>1?'':'s'} you.</span>`:`All clear. <span class="acc">Nothing waiting.</span>`}</h1>
+/* ======================= PROJECT · FEEDBACK ======================= */
+function vFeedback(p){
+  const open=openFb(p), list=D.fbTab==='open'?open:p.feedback.filter(f=>f.st!=='open');
+  return `<div class="page"><section style="padding-top:20px">${kicker('Feedback · '+p.name)}
+    <h1 class="page-h">${open.length?`${plural(open.length,'report')} <span class="acc">need${open.length>1?'':'s'} you.</span>`:`All clear. <span class="acc">Nothing waiting.</span>`}</h1>
     <p class="lede">Every report is tied to the exact version the tester had open.</p></section>
-  <div class="panel pad accent-top"><div class="row" style="margin-bottom:6px"><div class="seg" role="group" aria-label="Filter"><button class="${D.fbTab==='open'?'on':''}" onclick="D.fbTab='open';render()">Open · ${open.length}</button><button class="${D.fbTab==='done'?'on':''}" onclick="D.fbTab='done';render()">Done · ${D.feedback.length-open.length}</button></div></div>
-    <div class="list">${list.map(f=>`<button class="item" onclick="openReport(${f.n})">${av(f.by)}<span style="flex:1;min-width:0"><div class="it">${esc(f.title)}</div><div class="is">#${f.n} · ${f.at} · ${f.env} v${f.v}${f.vis!=='Public'?' · '+f.vis:''}</div></span><span class="hide-sm">${ver(f.mod,f.mv)}</span>${f.thread.some(t=>t.k==='reply')?`<span class="dim" title="You replied">${ic('msg')}</span>`:''}<span class="dim">${ic('arrow')}</span></button>`).join('')||`<div class="muted" style="padding:28px 4px">Nothing here.</div>`}</div>
+  <div class="panel pad accent-top"><div class="row" style="margin-bottom:6px"><div class="seg" role="group" aria-label="Filter"><button class="${D.fbTab==='open'?'on':''}" onclick="D.fbTab='open';render()">Open · ${open.length}</button><button class="${D.fbTab==='done'?'on':''}" onclick="D.fbTab='done';render()">Done · ${p.feedback.length-open.length}</button></div></div>
+    <div class="list">${list.map(f=>`<button class="item" onclick="openReport('${p.id}',${f.n})">${av(f.by)}<span style="flex:1;min-width:0"><div class="it">${esc(f.title)}</div><div class="is">#${f.n} · ${f.at} · ${esc(f.env)} v${f.v}${f.vis!=='Public'?' · '+f.vis:''}</div></span><span class="hide-sm">${ver(f.mod,f.mv)}</span><span class="dim">${ic('arrow')}</span></button>`).join('')||`<div class="muted" style="padding:28px 4px">${p.feedback.length?'Nothing here.':'No reports yet. They arrive once testers open a live build.'}</div>`}</div>
   </div></div>${foot()}`;
 }
-function openReport(n){
-  const f=D.feedback.find(x=>x.n===n);
-  drawer(f.title,`Report #${f.n} · ${f.env} v${f.v}`,`
-    <div class="row" style="margin-bottom:16px">${chip(f.st==='open'?'live':'',f.st==='open'?'Open':'Done')}${ver(f.mod,f.mv)}<span class="muted" style="font-size:13px">${f.vis}</span><span class="spacer"></span>${fp('view:'+f.env+':'+f.v)}</div>
-    <div class="card orig frame"><div class="ch">${av(f.by)}<b>${f.by}</b><span class="muted">${f.at}</span><span class="spacer"></span><span class="eyebrow" style="font-size:9.5px;display:flex;gap:4px;align-items:center">${ic('lock')} Original</span></div><div class="cb">${esc(f.body)}</div></div>
-    ${f.thread.map(t=>t.k==='status'?`<div class="eyebrow" style="margin:10px 0 12px 4px">${t.by} marked it ${t.to==='done'?'done':'open'} · ${t.at}</div>`:`<div class="card"><div class="ch">${av(t.by)}<b>${t.by}</b><span class="muted">${t.at}</span>${t.k==='correction'?'<span class="chip paused" style="margin-left:auto">Correction</span>':''}</div><div class="cb">${esc(t.body)}</div></div>`).join('')}
+function openReport(pid,n){
+  const p=P(pid), f=p.feedback.find(x=>x.n===n);
+  drawer(f.title,`Report #${f.n} · ${esc(f.env)} v${f.v}`,`
+    <div class="row" style="margin-bottom:16px">${chip(f.st==='open'?'live':'',f.st==='open'?'Open':'Done')}${ver(f.mod,f.mv)}<span class="muted" style="font-size:13px">${f.vis}</span><span class="spacer"></span>${fp('view:'+pid+':'+f.env+':'+f.v)}</div>
+    <div class="card orig frame"><div class="ch">${av(f.by)}<b>${esc(f.by)}</b><span class="muted">${f.at}</span><span class="spacer"></span><span class="eyebrow" style="font-size:9.5px;display:flex;gap:4px;align-items:center">${ic('lock')} Original</span></div><div class="cb">${esc(f.body)}</div></div>
+    ${f.thread.map(t=>t.k==='status'?`<div class="eyebrow" style="margin:10px 0 12px 4px">${esc(t.by)} marked it ${t.to==='done'?'done':'open'} · ${t.at}</div>`:`<div class="card"><div class="ch">${av(t.by)}<b>${esc(t.by)}</b><span class="muted">${t.at}</span>${t.k==='correction'?'<span class="chip paused" style="margin-left:auto">Correction</span>':''}</div><div class="cb">${esc(t.body)}</div></div>`).join('')}
     <label class="f" for="rp">Reply</label><textarea class="input" id="rp" rows="3" placeholder="Ask, thank, or say what's fixed"></textarea>`,
-    `${f.st==='open'?`<button class="btn" onclick="setFb(${n},'done')">${ic('check')}Mark done</button>`:`<button class="btn" onclick="setFb(${n},'open')">Reopen</button>`}<button class="btn solid" onclick="reply(${n})">Send reply</button>`);
+    `${f.st==='open'?`<button class="btn" onclick="setFb('${pid}',${n},'done')">${ic('check')}Mark done</button>`:`<button class="btn" onclick="setFb('${pid}',${n},'open')">Reopen</button>`}<button class="btn solid" onclick="reply('${pid}',${n})">Send reply</button>`);
 }
-function setFb(n,s){const f=D.feedback.find(x=>x.n===n);f.st=s;f.thread.push({k:'status',by:D.me,at:'just now',to:s});log('feedback',`marked #${n} ${s}`);closeLayer();toast(`#${n} ${s==='done'?'marked done':'reopened'}`);render();}
-function reply(n){const t=document.getElementById('rp').value.trim();if(!t){document.getElementById('rp').focus();toast('Write a reply first');return;}D.feedback.find(x=>x.n===n).thread.push({k:'reply',by:D.me,at:'just now',body:t});openReport(n);toast('Reply sent');render();}
+function setFb(pid,n,s){const f=P(pid).feedback.find(x=>x.n===n);f.st=s;f.thread.push({k:'status',by:D.me,at:'just now',to:s});log(pid,'feedback',`marked #${n} ${s}`);closeLayer();toast(`#${n} ${s==='done'?'marked done':'reopened'}`);render();}
+function reply(pid,n){const t=document.getElementById('rp').value.trim();if(!t){document.getElementById('rp').focus();toast('Write a reply first');return;}P(pid).feedback.find(x=>x.n===n).thread.push({k:'reply',by:D.me,at:'just now',body:t});openReport(pid,n);toast('Reply sent');render();}
 
 /* ======================= MENU DRAWERS ======================= */
-function openActivity(){
-  document.getElementById('menu')?.remove();
-  drawer('Activity','Everything that happened · permanent',`<div class="tl">${D.activity.map(a=>`<div class="ev ${a.k==='release'?'g':a.k==='access'?'a':''}"><div>${av(a.who)} <b>${a.who}</b> ${esc(a.t)}</div><div class="when">${a.at} · ${a.k}</div></div>`).join('')}</div>`,'');
+function openActivity(pid){
+  const list=D.activity.filter(a=>!pid||a.p===pid);
+  drawer('Activity',pid?`Everything in ${esc(P(pid).name)} · permanent`:'Across your projects · permanent',`<div class="tl">${list.map(a=>`<div class="ev ${a.k==='release'?'g':a.k==='access'?'a':''}"><div>${av(a.who)} <b>${esc(a.who)}</b> ${esc(a.t)}${pid?'':` <span class="muted">· ${esc(P(a.p)?.name||a.p)}</span>`}</div><div class="when">${a.at} · ${a.k}</div></div>`).join('')||'<div class="muted">Nothing yet.</div>'}</div>`,'');
 }
-function openPeople(){
-  document.getElementById('menu')?.remove();
-  drawer('People & keys','Who can work on '+D.project,`<div class="list">${D.members.map(m=>`<div class="item">${av(m.u)}<span style="flex:1"><div class="it">${m.u}</div><div class="is">${m.r}</div></span>${m.r!=='Owner'?`<button class="btn ghost sm" onclick="removeMember('${m.u}')">Remove</button>`:''}</div>`).join('')}</div>
+function openPeople(pid){
+  const p=P(pid);
+  drawer('People & keys',`Who can work on ${esc(p.name)}`,`<div class="list">${p.members.map(m=>`<div class="item">${av(m.u)}<span style="flex:1"><div class="it">${esc(m.u)}</div><div class="is">${m.r}</div></span>${m.r!=='Owner'?`<button class="btn ghost sm" onclick="removeMember('${pid}','${m.u}')">Remove</button>`:''}</div>`).join('')}</div>
+    <button class="btn sm" style="margin-top:12px" onclick="addMember('${pid}')">${ic('plus')}Add a developer</button>
     <div class="eyebrow" style="margin:26px 0 10px">Encryption key</div>
-    <div class="row"><div class="stat"><div class="n" style="margin:0">v${D.keys[0].n}<small>current</small></div></div><span class="spacer"></span><button class="btn sm" onclick="rotateKey()">Rotate now</button></div>
-    <p class="hint">${esc(D.keys[0].why)} · ${D.keys[0].at}. Rotates by itself when someone loses access.</p>
+    <div class="row"><div class="stat"><div class="n" style="margin:0">v${p.keys[0].n}<small>current</small></div></div><span class="spacer"></span><button class="btn sm" onclick="rotateKey('${pid}')">Rotate now</button></div>
+    <p class="hint">${esc(p.keys[0].why)} · ${p.keys[0].at}. Rotates by itself when someone loses access.</p>
     <p class="hint">${ic('shield')} Access is decided by Flux Access. If it can't be reached, actions are refused, not allowed.</p>`,'');
 }
-function rotateKey(){ D.keys.unshift({n:D.keys[0].n+1,at:'just now',why:'Manual rotation'}); log('access','rotated the encryption key'); openPeople(); toast('Key rotated'); }
-function removeMember(u){
-  modal('Remove access',`Remove ${u}?`,`<p class="muted" style="margin-top:0">${u} loses access now and the key rotates.</p>${refusal("Some things can't be taken back",{what:`Anything ${u} already downloaded stays with them.`,need:'Nothing from you here.',fix:'Rotate any secrets they could see.'},true)}`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="doRemove('${u}')">Remove ${u}</button>`);
+function addMember(pid){ modal('Team','Add a developer',`<label class="f" for="amU" style="margin-top:4px">Handle</label><input class="input" id="amU" placeholder="devon"><label class="f" for="amR">Role</label><select class="input" id="amR"><option>Developer</option><option>Maintainer</option></select>`,
+  `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="const u=document.getElementById('amU').value.trim();if(!u){toast('Add a handle');return;}P('${pid}').members.push({u,r:document.getElementById('amR').value});log('${pid}','access','added '+u);closeLayer();openPeople('${pid}');toast('Invite sent to '+esc(u))">Add</button>`); }
+function rotateKey(pid){ const p=P(pid); p.keys.unshift({n:p.keys[0].n+1,at:'just now',why:'Manual rotation'}); log(pid,'access','rotated the encryption key'); openPeople(pid); toast('Key rotated'); }
+function removeMember(pid,u){
+  modal('Remove access',`Remove ${u}?`,`<p class="muted" style="margin-top:0">${esc(u)} loses access now and the key rotates.</p>${refusal("Some things can't be taken back",{what:`Anything ${esc(u)} already downloaded stays with them.`,need:'Nothing from you here.',fix:'Rotate any secrets they could see.'},true)}`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn danger" onclick="doRemove('${pid}','${u}')">Remove ${esc(u)}</button>`);
 }
-function doRemove(u){ D.members=D.members.filter(m=>m.u!==u); D.keys.unshift({n:D.keys[0].n+1,at:'just now',why:`${u} removed`}); log('access',`removed ${u}`); closeLayer(); toast(`${u} removed · key rotated`); }
+function doRemove(pid,u){ const p=P(pid); p.members=p.members.filter(m=>m.u!==u); p.keys.unshift({n:p.keys[0].n+1,at:'just now',why:`${u} removed`}); log(pid,'access',`removed ${u}`); closeLayer(); toast(`${u} removed · key rotated`); }
 
-/* ======================= TESTER ======================= */
-function vInbox(){
-  const live=D.inbox.filter(i=>i.st==='live').length;
-  return `<div class="page" style="max-width:1040px"><section style="padding-top:20px">${kicker('Tester inbox','live')}
-    <h1 class="page-h">${live===1?'One build is':live+' builds are'} <span class="acc">waiting for you.</span></h1>
-    <p class="lede">Open it, play, and report what you find. We attach the exact version for you.</p></section>
-  <div class="panel pad accent-top"><div class="list">${D.inbox.map((b,i)=>`<div class="item" style="padding:18px 4px"><span class="ti">${ic('cube')}</span>
-      <span style="flex:1;min-width:0"><div class="it" style="font-size:17px">${b.proj} <span class="muted" style="font-weight:400">· ${b.env}</span></div><div class="is">from ${b.from}${b.st==='live'?'':' · '+(b.st==='paused'?'paused':'access removed')}</div>${b.note?`<div class="muted" style="font-size:14px;margin-top:6px">“${esc(b.note)}”</div>`:''}</span>
-      ${b.st==='live'?`<button class="btn solid" onclick="unlock(${i})">${ic('play')}Open</button>`:b.st==='paused'?chip('paused','Paused'):`<button class="btn ghost sm" onclick="whyRevoked(${i})">Why?</button>`}</div>`).join('')}</div></div>
-  <div class="panel pad" style="margin-top:16px"><div class="eyebrow">Your reports</div><div class="list" style="margin-top:8px">${D.feedback.filter(f=>f.by==='tester-07').slice(0,3).map(f=>`<div class="item"><span style="flex:1"><div class="it">${esc(f.title)}</div><div class="is">${f.env} v${f.v} · ${f.st==='open'?'open':'done'}${f.thread.some(t=>t.k==='reply')?' · developer replied':''}</div></span></div>`).join('')}</div></div></div>${foot()}`;
-}
-function whyRevoked(i){const b=D.inbox[i];modal('Access',`Can't open ${b.proj}`,refusal('Access removed',{what:`${b.from} removed your access to ${b.proj}.`,need:'A new invite.',fix:`Ask ${b.from} if this is a mistake.`,code:'access.revoked'}),`<button class="btn" onclick="closeLayer()">OK</button>`);}
-function unlock(i){
-  const b=D.inbox[i], v=E('playtest').rollout.live;
-  modal('Opening',`${b.proj} · ${b.env}`,`<div class="stepper" id="ust">${["Confirm it's you",'Check access','Unlock v'+v].map((l,k)=>`<div class="step ${k===0?'cur':''}" data-k="${k}"><span class="dot">${String(k+1).padStart(2,'0')}</span>${l}</div>`).join('')}</div>
+/* ======================= OPEN & RUN ======================= */
+function unlock(pid,eid){
+  closeMenus(); const p=P(pid), e=p.envs[eid], key=pid+'/'+eid;
+  if(D.unlocked[key]){ location.hash=`#/run/${pid}/${eid}`; return; }
+  modal('Opening',`${p.owner}/${p.name} · ${eid}`,`<div class="stepper" id="ust">${["Confirm it's you",'Check access','Unlock v'+e.rollout.live].map((l,k)=>`<div class="step ${k===0?'cur':''}" data-k="${k}"><span class="dot">${String(k+1).padStart(2,'0')}</span>${l}</div>`).join('')}</div>
     <p class="hint" style="justify-content:center;margin-top:18px">${ic('lock')} Approve in your signer app. Your keys never leave it.</p>`,`<button class="btn ghost" onclick="closeLayer()">Cancel</button>`);
-  let k=0; const tick=()=>{const s=document.querySelector(`#ust .step[data-k="${k}"]`); if(!s) return; s.className='step done'; s.querySelector('.dot').innerHTML=ic('check'); k++; const n=document.querySelector(`#ust .step[data-k="${k}"]`); if(n){n.className='step cur'; setTimeout(tick,650);} else setTimeout(()=>{closeLayer();D.unlocked=true;location.hash='#/tester/run';},400);};
-  setTimeout(tick,850);
+  let k=0; const tick=()=>{const s=document.querySelector(`#ust .step[data-k="${k}"]`); if(!s) return; s.className='step done'; s.querySelector('.dot').innerHTML=ic('check'); k++; const n=document.querySelector(`#ust .step[data-k="${k}"]`); if(n){n.className='step cur'; setTimeout(tick,600);} else setTimeout(()=>{closeLayer();D.unlocked[key]=true;if(!isDev(p)&&!e.my&&!D.recent.includes(key))D.recent.push(key);location.hash=`#/run/${pid}/${eid}`;},350);};
+  setTimeout(tick,800);
 }
 let anim;
-function vRun(){
-  const e=E('playtest'), r=e.rollout, v=e.versions.find(x=>x.n===r.live);
-  if(r.state!=='active') return `<div class="page" style="max-width:760px">${refusal('Not available',{what:`playtest is ${r.state}.`,need:'The developer to turn it back on.',fix:"You'll be notified when it's back.",code:'rollout.'+r.state},true)}<a class="btn" href="#/tester">Back to inbox</a></div>`;
-  if(!D.unlocked) return `<div class="page" style="max-width:760px">${refusal('Not unlocked',{what:"You haven't opened this build yet.",need:'A quick identity check.',fix:'Open it from your inbox.',code:'session.missing'},true)}<a class="btn" href="#/tester">Back to inbox</a></div>`;
-  return `<div class="page"><div class="row" style="margin-bottom:16px"><a class="eyebrow" href="#/tester">← Inbox</a><span class="spacer"></span><button class="btn solid" onclick="reportModal()">${ic('msg')}Report an issue</button></div>
-    <div class="stage frame"><div class="bar"><span class="kicker" style="margin:0"><span class="ring live"></span></span><b>playtest v${v.n}</b>${Object.entries(v.mods).map(([m,x])=>ver(m,x)).join('')}<span class="spacer"></span>${fp('view:playtest:'+v.n)}</div><canvas id="game" aria-label="Game preview"></canvas></div>
-    <p class="hint">${ic('shield')} Each piece runs in its own sandbox.</p></div>`;
+function vRun(p,eid){
+  const e=p?.envs[eid]; if(!e) return `<div class="page">${refusal('Not found',{what:'This build does not exist.',need:'A valid link.',fix:'Go back home.',code:'environment.unknown'})}<a class="btn" href="#/home">Home</a></div>`;
+  const r=e.rollout, v=e.versions.find(x=>x.n===r.live), back=isDev(p)?`#/p/${p.id}/overview`:'#/testing';
+  if(r.state!=='active') return `<div class="page" style="max-width:760px">${refusal('Not available',{what:`${esc(eid)} is ${r.state}.`,need:'The developer to turn it back on.',fix:"You'll be notified when it's back.",code:'rollout.'+r.state},true)}<a class="btn" href="${back}">Back</a></div>`;
+  if(!D.unlocked[p.id+'/'+eid]) return `<div class="page" style="max-width:760px">${refusal('Not unlocked',{what:"You haven't opened this build yet.",need:'A quick identity check.',fix:'Open it again to confirm it\'s you.',code:'session.missing'},true)}<button class="btn solid" onclick="unlock('${p.id}','${eid}')">Open</button></div>`;
+  return `<div class="page"><div class="row" style="margin-bottom:16px"><a class="eyebrow" href="${back}">← ${isDev(p)?esc(p.name):'Testing'}</a><span class="spacer"></span>${isDev(p)?'':`<span class="envrow">${av(p.owner)}by ${esc(p.owner)}</span>`}<button class="btn solid" onclick="reportModal('${p.id}','${eid}')">${ic('msg')}Report an issue</button></div>
+    <div class="stage frame"><div class="bar"><span class="kicker" style="margin:0"><span class="ring live"></span></span><b>${esc(p.name)} · ${esc(eid)} v${v.n}</b><span class="hide-sm row" style="gap:6px">${Object.entries(v.mods).map(([m,x])=>ver(m,x)).join('')}</span><span class="spacer"></span>${fp('view:'+p.id+':'+eid+':'+v.n)}</div><canvas id="game" data-kind="${p.kind}" aria-label="${esc(p.name)} preview"></canvas></div>
+    <p class="hint">${ic('shield')} Each piece runs in its own sandbox and can only use what it declared.</p></div>`;
 }
 function startGame(){
-  const c=document.getElementById('game'); if(!c) return; const x=c.getContext('2d'); let t=0;
+  const c=document.getElementById('game'); if(!c) return; const x=c.getContext('2d'), kind=c.dataset.kind; let t=0;
   const draw=()=>{ if(!document.getElementById('game')) return; const w=c.width=c.clientWidth, h=c.height=c.clientHeight;
-    x.fillStyle='#080504'; x.fillRect(0,0,w,h); x.strokeStyle='rgba(233,161,132,.07)'; for(let i=0;i<w;i+=22){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke();} for(let j=0;j<h;j+=22){x.beginPath();x.moveTo(0,j);x.lineTo(w,j);x.stroke();}
-    x.fillStyle='#231915'; x.fillRect(0,h-56,w,56); [[.18,.6],[.42,.45],[.68,.55]].forEach(([a,b])=>{x.fillStyle='#3a2a23';x.fillRect(a*w,b*h,130,12);});
-    const px=(t*2.2)%(w+40)-20, py=h-56-26-Math.abs(Math.sin(t/20))*100; x.shadowColor='#e9a184'; x.shadowBlur=18; x.fillStyle='#e9a184'; x.fillRect(px,py,26,26); x.shadowBlur=0;
-    x.fillStyle='#a69389'; x.font='11px JetBrains Mono, monospace'; x.fillText('LEVEL 04 · SCORE '+(1200+Math.floor(t/3)),18,26);
+    x.fillStyle='#080504'; x.fillRect(0,0,w,h); x.strokeStyle='rgba(233,161,132,.06)'; for(let i=0;i<w;i+=22){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke();} for(let j=0;j<h;j+=22){x.beginPath();x.moveTo(0,j);x.lineTo(w,j);x.stroke();}
+    if(kind==='Game'){ x.fillStyle='#231915'; x.fillRect(0,h-56,w,56); [[.18,.6],[.42,.45],[.68,.55]].forEach(([a,b])=>{x.fillStyle='#3a2a23';x.fillRect(a*w,b*h,130,12);});
+      const px=(t*2.2)%(w+40)-20, py=h-56-26-Math.abs(Math.sin(t/20))*100; x.shadowColor='#e9a184'; x.shadowBlur=18; x.fillStyle='#e9a184'; x.fillRect(px,py,26,26); x.shadowBlur=0;
+      x.fillStyle='#a69389'; x.font='11px JetBrains Mono, monospace'; x.fillText('LEVEL 04 · SCORE '+(1200+Math.floor(t/3)),18,26); }
+    else if(kind==='Media'){ x.strokeStyle='#e9a184'; x.lineWidth=2; x.beginPath(); for(let i=0;i<w;i+=3){const y=h/2+Math.sin((i+t*4)/40)*60*Math.sin(t/60+i/300);i?x.lineTo(i,y):x.moveTo(i,y);} x.stroke(); x.lineWidth=1; }
+    else { x.fillStyle='#1a1210'; x.fillRect(20,20,w*.22,h-40); x.fillStyle='#231915'; for(let i=0;i<6;i++) x.fillRect(32,40+i*34,w*.22-24,20); x.fillStyle='#1a1210'; x.fillRect(w*.22+36,20,w*.78-56,h-40);
+      x.fillStyle='rgba(98,214,202,.85)'; x.fillRect(w*.22+56,44,120,28); x.fillStyle='#2b201b'; for(let i=0;i<5;i++) x.fillRect(w*.22+56,96+i*40,(w*.78-96)*(0.5+((i*37+Math.floor(t/90))%5)/10),14); }
     t++; anim=requestAnimationFrame(draw); };
   cancelAnimationFrame(anim); draw(); if(matchMedia('(prefers-reduced-motion: reduce)').matches) cancelAnimationFrame(anim);
 }
-function reportModal(){
-  const v=E('playtest').versions.find(x=>x.n===E('playtest').rollout.live);
-  modal('Report','What did you find?',`<label class="f" for="rT" style="margin-top:4px">In one line</label><input class="input" id="rT" placeholder="e.g. Jump clips through ledge">
+function reportModal(pid,eid){
+  const p=P(pid), e=p.envs[eid], v=e.versions.find(x=>x.n===e.rollout.live);
+  modal('Report',`What did you find?`,`<label class="f" for="rT" style="margin-top:4px">In one line</label><input class="input" id="rT" placeholder="e.g. Button does nothing on second tap">
     <label class="f" for="rB">What happened</label><textarea class="input" id="rB" rows="3" placeholder="What you did, what you expected, what you saw"></textarea>
-    <label class="f">Who can see it</label><div class="seg" id="rV" role="group" aria-label="Who can see it">${['Public','Team only'].map((o,i)=>`<button type="button" class="${i===0?'on':''}" onclick="pickSeg(this)">${o}</button>`).join('')}</div>
-    <p class="hint">playtest v${v.n} is attached automatically. You can add a correction later.</p><div id="rMsg"></div>`,
-    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="sendReport()">Send report</button>`);
+    <label class="f">Who can see it</label><div class="seg" id="rV" role="group" aria-label="Who can see it">${['Public','Team only'].map((o,i)=>`<button type="button" class="${i===0?'on':''}" onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));this.classList.add('on')">${o}</button>`).join('')}</div>
+    <p class="hint">${esc(eid)} v${v.n} is attached automatically. You can add a correction later.</p><div id="rMsg"></div>`,
+    `<button class="btn ghost" onclick="closeLayer()">Cancel</button><button class="btn solid" onclick="sendReport('${pid}','${eid}')">Send to ${esc(p.owner)}</button>`);
 }
-function pickSeg(b){ b.parentNode.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); }
-function sendReport(){
+function sendReport(pid,eid){
   const t=document.getElementById('rT').value.trim(), b=document.getElementById('rB').value.trim(), vis=document.querySelector('#rV .on').textContent;
   if(!t||!b){document.getElementById('rMsg').innerHTML=refusal('A little more, please',{what:'The report is missing details.',need:'A title and what happened.',fix:'Fill in both so the developer can reproduce it.',code:'feedback.empty'});return;}
-  const r=E('playtest').rollout, v=E('playtest').versions.find(x=>x.n===r.live), n=Math.max(...D.feedback.map(f=>f.n))+1, [m,mv]=Object.entries(v.mods)[0];
-  D.feedback.unshift({n,title:t,env:'playtest',v:r.live,mod:m,mv,by:'tester-07',vis,st:'open',at:'just now',body:b,thread:[]});
-  D.activity.unshift({k:'feedback',who:'tester-07',at:'just now',t:`reported #${n} on playtest v${r.live}`});
-  closeLayer(); toast(`Thanks. Report #${n} sent.`);
+  const p=P(pid), e=p.envs[eid], r=e.rollout, v=e.versions.find(x=>x.n===r.live), n=Math.max(0,...D.projects.flatMap(q=>q.feedback.map(f=>f.n)))+1, [m,mv]=Object.entries(v.mods)[0];
+  p.feedback.unshift({n,title:t,env:eid,v:r.live,mod:m,mv,by:D.me,vis,st:'open',at:'just now',body:b,thread:[]});
+  if(isDev(p)) log(pid,'feedback',`reported #${n} on ${eid} v${r.live}`);
+  closeLayer(); toast(`Thanks. Report #${n} sent to ${esc(p.owner)}.`); render();
 }
 
 /* ======================= DESIGN SYSTEM ======================= */
 function vSystem(){
-  const laws=[['One answer per screen','The headline is the answer. Read only that and you know where things stand.'],['One next step','A single primary action: the thing to do now. Everything else is quieter or tucked away.'],['Details on demand','Lists stay short. Depth opens in a drawer, never a maze of pages.'],['We do the hard work','Never ask people to compare, compute or remember. Show the diff, the count, the fingerprint.'],['Numbers carry units','“82 people”, “3 reports”. A bare number is a question.'],["Say what can't be undone",'Only where it matters, in one sentence, before it happens.'],['Refusals explain themselves',"What happened, what's needed, how to fix. Always all three."],['Plain words, exact IDs nearby','Fingerprints show four characters and copy the full value.']];
-  const terms=[['Environment version','environment head'],['Module version','module record'],['Tester group','cohort'],['Release · Pause · Resume · Roll back · Close','rollout events'],['Report · Correction','feedback · supersession'],['Fingerprint','environment-view CID'],["Confirm it's you",'signed challenge'],['Access checked','global resolver → node power'],['Encryption key vN','key epoch'],['Not available yet','notBuilt']];
+  const laws=[['One answer per screen','The headline is the answer. Read only that and you know where things stand.'],['One next step','A single primary action: the thing to do now, chosen from state.'],['Details on demand','Lists stay short. Depth opens in a drawer, never a maze of pages.'],['We do the hard work','Never ask people to compare, compute or remember. Show the diff, the count, the fingerprint.'],['Numbers carry units','“82 people”, “3 reports”. A bare number is a question.'],["Say what can't be undone",'Only where it matters, in one sentence, before it happens.'],['Refusals explain themselves',"What happened, what's needed, how to fix. Always all three."],['Empty is a starting point','Every empty screen says what goes here and offers the one action that fills it.']];
+  const terms=[['Project','flux.remote-project'],['Environment','environment (per project)'],['Environment version','environment head'],['Module version','module record'],['Who can open it','access policy → Flux Access resolver'],['Invited people · tester group','cohort'],['Release · Pause · Resume · Roll back · Close','rollout events'],['Report · Correction','feedback · supersession'],['Fingerprint','environment-view CID'],["Confirm it's you",'signed challenge'],['Encryption key vN','key epoch'],['Not available yet','notBuilt']];
   return `<div class="page"><section style="padding-top:20px">${kicker('Design system')}<h1 class="page-h">Less on screen. <span class="acc">More understood.</span></h1>
     <p class="lede">We do the hard work so people don't have to think about it. These laws decide what earns a place on screen.</p></section>
   <div class="laws">${laws.map(([h,p],i)=>`<div class="law frame"><div class="num">${String(i+1).padStart(2,'0')} / ${String(laws.length).padStart(2,'0')}</div><h4>${h}</h4><p>${p}</p></div>`).join('')}</div>
   <div class="split" style="margin-top:16px">
+    <div class="panel pad accent-top"><div class="eyebrow">Structure</div><h2>Two levels, nothing deeper</h2>
+      <div class="list">${[['Workspace','Home · Explore · Testing','Everything across projects and people'],['Project','Overview · Build · Release · Feedback','One project, switch environments inline'],['Drawer','Versions · diffs · reports · people','Detail without leaving the page'],['Dialog','Create · publish · release · invite','One decision at a time']].map(([a,b,c])=>`<div class="item"><span class="eyebrow" style="width:96px;color:var(--copper)">${a}</span><span style="flex:1"><div class="it">${b}</div><div class="is">${c}</div></span></div>`).join('')}</div></div>
     <div class="panel pad accent-top"><div class="eyebrow">Color</div><h2>Warm dark, few signals</h2>
-      <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[['#110b09','Ground'],['#1a1210','Panel'],['#e9a184','Copper · emphasis'],['#62d6ca','Teal · primary action'],['#0d1d29','Navy · secondary'],['#8fdc9f','Green · live, verified'],['#ebbd6a','Amber · paused'],['#f2836f','Red · refused'],['#a69389','Muted text']].map(([c,l])=>`<div><div class="sw" style="background:${c}"></div><div class="eyebrow" style="margin-top:6px;font-size:9.5px">${l}</div><div class="mono dim" style="font-size:11px">${c}</div></div>`).join('')}</div></div>
-    <div class="panel pad accent-top"><div class="eyebrow">Type</div><h2>Three voices</h2>
-      <div style="font:600 46px/1 var(--display);letter-spacing:-.055em">Headline <span class="acc">answers.</span></div><div class="mono dim" style="font-size:11px;margin:6px 0 18px">INTER TIGHT 600 · −5.5% TRACKING</div>
-      <div style="font-size:17px">Body explains in one or two calm sentences.</div><div class="mono dim" style="font-size:11px;margin:6px 0 18px">INTER 400 · 15–17 PX</div>
-      <div class="eyebrow" style="color:var(--text)">Labels, units and IDs</div><div class="mono dim" style="font-size:11px;margin-top:6px">JETBRAINS MONO · UPPERCASE · +14% TRACKING</div></div>
+      <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[['#110b09','Ground'],['#e9a184','Copper · emphasis'],['#62d6ca','Teal · primary'],['#0d1d29','Navy · secondary'],['#8fdc9f','Green · live'],['#ebbd6a','Amber · paused'],['#f2836f','Red · refused'],['#a69389','Muted'],['#1a1210','Panel']].map(([c,l])=>`<div><div class="sw" style="background:${c}"></div><div class="eyebrow" style="margin-top:6px;font-size:9.5px">${l}</div></div>`).join('')}</div></div>
   </div>
   <div class="panel pad accent-top" style="margin-top:16px"><div class="eyebrow">Components</div><h2>The kit</h2>
-    <div class="ctas">${cta('primary','Ready to ship','Release v4',"toast('Primary: one per screen')")}${cta('secondary','See it like they do','Open as tester',"toast('Secondary')")}</div>
-    <div class="row" style="margin-top:18px">${chip('live','Live')}${chip('paused','Paused')}${chip('','Closed')}${chip('revoked','Revoked')}${chip('deprecated','Deprecated')}${chip('notyet','Not available yet')}${ver('physics','2.3.1')}${fp('demo')}<button class="btn solid sm">Solid</button><button class="btn sm">Default</button><button class="btn danger sm">Danger</button><button class="btn ghost sm">Ghost</button></div>
-    ${stepper([['Publish','done'],['Compose','done'],['Release','cur'],['Test',''],['Feedback','']])}
-    ${refusal("Can't publish this version",{what:'“latest” isn\'t an exact version.',need:'An exact number like 1.2.0.',fix:'Enter the exact number.',code:'module.mutable-version'})}
-    <div class="stats" style="margin-top:20px">${stat('Testers',82,'people','Number, unit, one line')}${stat('Open feedback',3,'reports','')}${stat('Live','v3','of 4','')}${stat('Key','v4','current','')}${stat('Rollbacks',0,'total','')}</div></div>
+    <div class="ctas">${cta('primary','Ready to ship','Release v4',"toast('Primary: one per screen')")}${cta('secondary','Start fresh','New project',"toast('Secondary')",'plus')}</div>
+    <div class="row" style="margin-top:18px">${chip('live','Live')}${chip('paused','Paused')}${chip('','Closed')}${chip('revoked','Revoked')}${chip('notyet','Not available yet')}${ver('physics','2.3.1')}${fp('demo')}<button class="btn solid sm">Solid</button><button class="btn sm">Default</button><button class="btn danger sm">Danger</button><button class="btn ghost sm">Ghost</button></div>
+    <div class="cards" style="margin-top:18px">${projectCard(D.projects[0])}${exploreCard(P('synth-lab'),'open')}${testingCard(P('cafe-pos'),'staging',P('cafe-pos').envs.staging)}</div>
+    ${refusal("Can't publish this version",{what:'“latest” isn\'t an exact version.',need:'An exact number like 1.2.0.',fix:'Enter the exact number.',code:'module.mutable-version'})}</div>
   <div class="panel pad accent-top" style="margin-top:16px"><div class="eyebrow">Handoff</div><h2>Words on screen → protocol</h2><div class="tbl"><table class="t"><tr><th>Users see</th><th>Engineering term</th></tr>${terms.map(([a,b])=>`<tr><td>${a}</td><td class="mono muted" style="font-size:12.5px">${b}</td></tr>`).join('')}</table></div></div>
   </div>${foot()}`;
 }
@@ -696,9 +976,9 @@ function drawer(title,sub,body,foot){
   setTimeout(()=>document.querySelector('.drawer .xbtn')?.focus(),0);
 }
 function modal(eyebrow,title,body,foot){
-  lastFocus=document.activeElement;
+  if(!document.getElementById('layer').innerHTML) lastFocus=document.activeElement;
   document.getElementById('layer').innerHTML=`<div class="scrim"></div><div class="modalw" onclick="if(event.target===this)closeLayer()"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="lt"><div class="mh"><div class="row"><span class="eyebrow">${eyebrow}</span><button class="xbtn" aria-label="Close" onclick="closeLayer()">${ic('x')}</button></div><h3 id="lt">${esc(title)}</h3></div><div class="mb">${body}</div><div class="mf">${foot}</div></div></div>`;
-  setTimeout(()=>(document.querySelector('.modal input,.modal select,.modal textarea')||document.querySelector('.modal .mf .btn:last-child'))?.focus(),0);
+  setTimeout(()=>(document.querySelector('.modal .refusal')?null:(document.querySelector('.modal input,.modal select,.modal textarea')||document.querySelector('.modal .mf .btn:last-child')))?.focus(),0);
 }
 function closeLayer(){ if(!document.getElementById('layer').innerHTML) return; document.getElementById('layer').innerHTML=''; if(lastFocus&&document.contains(lastFocus)) lastFocus.focus(); }
 
@@ -716,14 +996,18 @@ addEventListener('resize',()=>{clearTimeout(texture.t);texture.t=setTimeout(text
 /* ======================= RENDER ======================= */
 function render(){
   const r=route(); let body;
-  if(r[0]==='tester'){ D.role='tester'; body=r[1]==='run'?vRun():vInbox(); }
-  else if(r[0]==='system'){ body=vSystem(); }
-  else { D.role='dev'; body=({overview:vOverview,build:vBuild,release:vRelease,feedback:vFeedback}[r[0]]||vOverview)(); }
+  if(r[0]==='p'){ const p=P(r[1]); if(!p){ location.hash='#/home'; return; } body=({overview:vOverview,build:vBuild,release:vRelease,feedback:vFeedback}[r[2]||'overview']||vOverview)(p); if(!isDev(p)) return; }
+  else if(r[0]==='run') body=vRun(P(r[1]),r[2]);
+  else if(r[0]==='explore') body=vExplore();
+  else if(r[0]==='testing') body=vTesting();
+  else if(r[0]==='system') body=vSystem();
+  else body=vHome();
   document.getElementById('app').innerHTML=topBar()+body;
-  if(r[0]==='tester'&&r[1]==='run') startGame();
+  if(r[0]==='run') startGame();
 }
-addEventListener('hashchange',()=>{ closeLayer(); render(); scrollTo(0,0); });
+addEventListener('hashchange',()=>{ closeLayer(); closeMenus(); render(); scrollTo(0,0); });
 texture(); render();
+
 </script>
 </body>
 </html>
