@@ -7,7 +7,7 @@
 <meta name="description" content="Pulse: a realtime video streaming platform with a console-style home and a live watch room.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Doto:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#07080c;
@@ -26,6 +26,9 @@
   --radius:18px;
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
   --display:"Space Grotesk","Inter",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --dots:"Doto","JetBrains Mono",ui-monospace,monospace;
+  --amber:#f2b84b;
   color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -50,7 +53,7 @@ input{font:inherit;color:inherit}
 .embers{position:fixed;inset:0;z-index:1;pointer-events:none}
 
 /* ---------- top bar ---------- */
-.top{position:fixed;top:0;left:0;right:0;z-index:20;display:grid;grid-template-columns:1fr auto 1fr;
+.top{position:fixed;top:0;left:0;right:0;z-index:35;display:grid;grid-template-columns:1fr auto 1fr;
   align-items:center;padding:22px 40px;gap:16px}
 .me{display:flex;align-items:center;gap:12px}
 .avatar{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;
@@ -71,7 +74,46 @@ input{font:inherit;color:inherit}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 0 0 rgba(255,59,78,.6);animation:ping 1.8s infinite}
 .dot.ok{background:var(--ok);box-shadow:0 0 0 0 rgba(43,214,123,.5)}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,59,78,.55)}80%,100%{box-shadow:0 0 0 7px rgba(255,59,78,0)}}
-.clock{font-variant-numeric:tabular-nums;color:#fff;font-weight:500}
+.clock{white-space:nowrap;font-family:var(--mono);font-variant-numeric:tabular-nums;color:#fff;font-weight:500}
+
+/* ---------- signal language: mono labels, spec chips, dot-matrix ---------- */
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.onair{color:var(--live);display:inline-flex;align-items:center;gap:7px}
+.onair::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--live);animation:blink 1.4s steps(2,start) infinite}
+.ch{color:var(--ink);background:rgba(255,255,255,.1);padding:2px 7px;border-radius:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);
+  padding:5px 9px;border:1px solid var(--line-2);border-radius:6px;background:rgba(0,0,0,.35);backdrop-filter:blur(8px);white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip.hi{background:rgba(255,255,255,.92);color:#000;border-color:transparent;font-weight:600}
+.lt{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lt::before{content:"";width:6px;height:6px;border-radius:1px;background:var(--ok)}
+.lt.mid::before{background:var(--amber)}
+.lt.bad::before{background:var(--live)}
+.dm{font-family:var(--dots);font-weight:900;letter-spacing:.02em}
+.dotmeter{display:block;width:100%;height:100%}
+.scan::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+
+/* node status: this device is part of the mesh that relays streams */
+.node{position:relative}
+.node>button{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-2);padding:6px 10px;border:1px solid var(--line-2);border-radius:8px;background:rgba(0,0,0,.3);backdrop-filter:blur(10px)}
+.node>button:hover{color:#fff}
+.node .pop{position:absolute;right:0;top:calc(100% + 8px);width:250px;padding:14px;border-radius:12px;background:rgba(12,14,20,.94);
+  border:1px solid var(--line-2);backdrop-filter:blur(18px);font-family:var(--mono);font-size:12px;display:none;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.node.open .pop{display:block}
+.pop .hd{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.12em;color:var(--ink-3);margin-bottom:10px}
+.pop .hd b{color:var(--ok);font-weight:500;display:flex;align-items:center;gap:6px}
+.pop dl{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-variant-numeric:tabular-nums}
+.pop dt{color:var(--ink-3)}.pop dd{color:var(--ink);text-align:right}
+.pop .pid{margin-top:12px;padding:7px 9px;border:1px dashed var(--line-2);border-radius:7px;color:var(--ink-3);font-size:11px}
+.pop canvas{width:100%;height:26px;margin-top:10px;display:block}
+
+/* tuning: a short burst of static when switching channels */
+.tuning{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .25s}
+.tuning.on{opacity:1}
+.tuning span{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:#fff;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:6px}
 
 /* ---------- toasts ---------- */
 .toasts{position:fixed;top:88px;right:40px;z-index:30;display:flex;flex-direction:column;gap:8px;width:300px}
@@ -102,7 +144,7 @@ body.watching .toasts{top:96px;right:auto;left:50%;transform:translateX(-50%)}
 .pill-live{background:var(--live);color:#fff;font-size:10px;font-weight:700;letter-spacing:.08em;padding:3px 7px;border-radius:5px;display:inline-flex;align-items:center;gap:5px}
 .pill-live::before{content:"";width:5px;height:5px;border-radius:50%;background:#fff;animation:blink 1.2s infinite}
 @keyframes blink{50%{opacity:.25}}
-.pill-glass{background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:600;padding:3px 7px;border-radius:5px;font-variant-numeric:tabular-nums}
+.pill-glass{font-family:var(--mono);background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:600;padding:3px 7px;border-radius:5px;font-variant-numeric:tabular-nums}
 .tile.focus{width:236px;height:236px;box-shadow:0 0 0 3px #fff,0 0 0 7px rgba(61,123,255,.55),0 25px 60px rgba(0,0,0,.6)}
 .tile.focus .t-title{font-size:26px;bottom:16px;left:16px}
 .tile.past{opacity:0}
@@ -120,11 +162,13 @@ body.watching .toasts{top:96px;right:auto;left:50%;transform:translateX(-50%)}
 .tile.promo .p-copy{font-weight:600;font-size:15px}
 
 .info{margin-top:6px;padding-right:40px;display:grid;grid-template-columns:1fr auto;align-items:end;gap:20px}
-.info h1{font-family:var(--display);font-size:46px;font-weight:700;letter-spacing:-.01em;line-height:1;margin-bottom:14px}
-.info .by{color:var(--ink-2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.info h1{font-family:var(--dots);font-size:64px;font-weight:900;letter-spacing:.01em;line-height:.95;margin:10px 0 12px;text-transform:uppercase}
+.info .chips{margin-bottom:18px}
+.info .meter{width:150px;height:22px}
+.info .by{color:var(--ink-2);font-size:13px;font-family:var(--mono);margin-bottom:12px;display:flex;align-items:center;gap:10px}
 .stats{display:flex;gap:44px;flex-wrap:wrap}
-.stat .k{color:var(--ink-3);font-size:12px;margin-bottom:4px}
-.stat .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+.stat .k{color:var(--ink-3);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.stat .v{font-family:var(--mono);font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
 .hype{width:120px;height:6px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden}
 .hype i{display:block;height:100%;background:linear-gradient(90deg,var(--warm),#ffd76a);border-radius:9px;transition:width .8s}
 .hints{display:flex;gap:22px;color:var(--ink-2);font-size:13px}
@@ -164,15 +208,17 @@ body.watching .toasts{top:96px;right:auto;left:50%;transform:translateX(-50%)}
 svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 .main{min-width:0;padding:16px 18px 16px;display:grid;grid-template-rows:1fr auto auto;gap:14px;overflow:hidden}
-.player{position:relative;border-radius:18px;overflow:hidden;background:#000;min-height:0}
-.player canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.player{position:relative;border-radius:18px;isolation:isolate;overflow:hidden;background:#000;min-height:0}
+.player #stage{position:absolute;inset:0;width:100%;height:100%;display:block}
 .player .shade{position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 60%,rgba(0,0,0,.7) 100%),
   linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,0) 40%,rgba(0,0,0,0) 65%,rgba(0,0,0,.45))}
 .p-head{position:absolute;left:22px;top:18px;right:22px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
 .uptime{display:flex;align-items:center;gap:12px}
-.uptime .big{font-family:var(--display);font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1}
-.p-meta{display:flex;gap:16px;color:var(--ink-2);font-size:12px;margin-top:8px;font-variant-numeric:tabular-nums}
+.uptime .big{font-family:var(--dots);font-size:46px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.uptime .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink-3);display:block;margin-bottom:4px}
+.p-chips{margin-top:12px}
+.p-meta{display:flex;gap:16px;color:var(--ink-2);font-size:12px;margin-top:8px;font-family:var(--mono)}
 .p-meta span{display:flex;align-items:center;gap:5px}
 .p-title{font-weight:700;font-size:18px;margin-top:14px;max-width:420px}
 .streamer{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(10px);border:1px solid var(--line)}
@@ -210,7 +256,7 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 @keyframes rise{to{transform:translate(var(--dx),-240px) scale(1.2);opacity:0}}
 
 .controls{position:absolute;left:0;right:0;bottom:0;padding:0 16px 12px}
-.activity{height:30px;display:flex;align-items:flex-end;gap:2px;margin-bottom:8px;cursor:pointer}
+.activity{height:34px;margin-bottom:8px}
 .activity i{flex:1;background:rgba(43,214,123,.5);border-radius:2px 2px 0 0;min-height:2px;transition:height .5s}
 .activity i.hot{background:var(--ok)}
 .activity i:last-child{background:#fff}
@@ -234,7 +280,7 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 .rec .th .pill-glass{position:absolute;right:7px;bottom:7px;font-size:9px}
 .rec .rb{display:flex;gap:8px;margin-top:8px;align-items:flex-start}
 .rec .rt{font-size:12px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rec .rm{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .rm{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rec .rb>div{min-width:0}
 
 .creators{display:flex;gap:10px;overflow:auto;scrollbar-width:none}
@@ -242,7 +288,7 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 .cr{flex:none;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);cursor:pointer;transition:.2s}
 .cr:hover{background:rgba(255,255,255,.09)}
 .cr .nm{font-size:12px;font-weight:600}
-.cr .vv{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;display:flex;gap:5px;align-items:center}
+.cr .vv{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;display:flex;gap:5px;align-items:center}
 .cr .vv i{width:6px;height:6px;border-radius:50%;background:var(--live)}
 .cr .tg{font-size:11px;color:var(--ink-3);margin-left:6px}
 
@@ -294,6 +340,12 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
   .streamer .nm,.streamer .sub{display:none}
   .crow .lat,.crow .q{display:none}
   .recs{grid-template-columns:repeat(2,1fr)}.recs .rec:nth-child(n+3){display:none}
+  .node .nl,.p-chips{display:none}
+  .node .pop{right:-60px}
+  .me .name{white-space:nowrap}
+  .chat{height:38%}
+  body.watching .toasts{left:16px;right:16px;transform:none;top:118px}
+  .info .chips .chip:nth-child(n+4){display:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
@@ -321,7 +373,22 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
     <span class="bump">RB</span>
   </nav>
   <div class="status">
-    <span class="net"><span class="dot"></span><span id="globalViewers">0</span> watching live</span>
+    <span class="net mono"><span class="dot"></span><span id="globalViewers">0</span> watching</span>
+    <div class="node" id="node">
+      <button aria-expanded="false" aria-controls="nodePop"><span class="dot ok"></span><span class="nl">Node ·</span> <span id="nPeers2">30</span> peers</button>
+      <div class="pop" id="nodePop" role="dialog" aria-label="Your node">
+        <div class="hd"><span>NODE</span><b><span class="dot ok"></span>ONLINE</b></div>
+        <dl>
+          <dt>peers</dt><dd id="nPeers">30</dd>
+          <dt>relaying</dt><dd id="nRelay">3 streams</dd>
+          <dt>uplink</dt><dd id="nUp">454 kb/s</dd>
+          <dt>downlink</dt><dd id="nDown">6.1 Mb/s</dd>
+          <dt>nat</dt><dd>open</dd>
+        </dl>
+        <canvas id="nMeter"></canvas>
+        <div class="pid">12D3KooW…7f3a c9e1</div>
+      </div>
+    </div>
     <span class="clock" id="clock">--:--</span>
   </div>
 </header>
@@ -333,12 +400,14 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
   <div class="rail-wrap"><div class="rail" id="rail"></div></div>
   <section class="info">
     <div>
+      <div class="eyebrow" id="hEye"></div>
       <h1 id="hTitle">—</h1>
       <div class="by" id="hBy"></div>
+      <div class="chips" id="hChips"></div>
       <div class="stats">
         <div class="stat"><div class="k">Live for</div><div class="v" id="hUp">—</div></div>
         <div class="stat"><div class="k">Watching now</div><div class="v" id="hViewers">—</div></div>
-        <div class="stat"><div class="k">Category</div><div class="v" id="hCat">—</div></div>
+        <div class="stat"><div class="k">Chat signal</div><div class="v"><canvas class="meter" id="hMeter"></canvas></div></div>
         <div class="stat"><div class="k">Hype train</div><div class="v"><span class="hype"><i id="hHype"></i></span><span id="hHypeN">—</span></div></div>
       </div>
     </div>
@@ -364,17 +433,20 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
     </aside>
 
     <div class="main">
-      <div class="player" id="player">
+      <div class="player scan" id="player">
         <canvas id="stage"></canvas>
+        <div class="tuning" id="tuning"><span id="tuneTxt">TUNING…</span></div>
         <div class="shade"></div>
         <div class="p-head">
           <div>
-            <div class="uptime"><span class="big" id="wUp">00:00:00</span><span class="pill-live">LIVE</span></div>
+            <div class="eyebrow" id="wEye" style="margin-bottom:10px"></div>
+            <div class="uptime"><div><span class="k">UPTIME</span><span class="big" id="wUp">0h00m00s</span></div></div>
             <div class="p-meta">
               <span><svg class="i" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><b id="wViewers">0</b></span>
               <span><svg class="i" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg><b id="wLikes">0</b></span>
             </div>
             <div class="p-title" id="wTitle">—</div>
+            <div class="chips p-chips" id="wChips"></div>
           </div>
           <div class="streamer">
             <div class="avatar sm" id="wAv"></div>
@@ -395,11 +467,11 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
         </div>
 
         <div class="controls">
-          <div class="activity" id="activity" title="Chat activity, last 60s"></div>
+          <div class="activity" title="Chat activity, last 60s"><canvas class="dotmeter" id="activity"></canvas></div>
           <div class="crow">
             <button id="playBtn" aria-label="Pause"><svg class="i" viewBox="0 0 24 24" id="playIc"><path d="M8 5v14M16 5v14"/></svg></button>
             <button id="volBtn" aria-label="Mute"><svg class="i" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path id="volWave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
-            <span class="lat"><span class="dot ok"></span><span id="lat">Latency 1.4s</span></span>
+            <span class="lat mono"><span class="lt" id="lat">-1.4s behind live</span></span>
             <span class="spacer"></span>
             <span class="react-bar" id="reactBar">
               <button aria-label="Fire">🔥</button><button aria-label="Love">💜</button><button aria-label="Laugh">😂</button><button aria-label="Clap">👏</button>
@@ -437,7 +509,7 @@ const $ = s => document.querySelector(s);
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+"M" : n >= 1e4 ? (n/1e3).toFixed(1)+"K" : n.toLocaleString("en-US");
 const pad = n => String(n).padStart(2,"0");
 const hms = s => `${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(Math.floor(s%60))}`;
-const hm = s => `${Math.floor(s/3600)}h ${pad(Math.floor(s/60)%60)}m`;
+const hm = s => `${Math.floor(s/3600)}h${pad(Math.floor(s/60)%60)}m${pad(Math.floor(s%60))}s`;
 const rand = (a,b) => a + Math.random()*(b-a);
 const pick = a => a[Math.floor(Math.random()*a.length)];
 
@@ -456,7 +528,25 @@ const STREAMS = [
   {id:"frontier", title:"Starfront",        line:"Exploring every planet",          user:"Cass Vale",   h:"cassvale",   cat:"Gaming", tag:"Space",      viewers:15540, up:6500,  pal:["#04060d","#f2f4ff","#ff9d2e"], kind:"space"},
   {id:"debate",   title:"Late Debate",      line:"Hot takes, warm tea",             user:"Omar Haddad", h:"omarh",      cat:"Talk",   tag:"Talk show",  viewers:3990,  up:4100,  pal:["#0a1324","#3d7bff","#ff3b4e"], kind:"rings"},
 ];
-STREAMS.forEach((s,i) => { s.start = now - s.up; s.likes = Math.round(s.viewers*rand(1.3,2.6)); s.hype = rand(.2,.9); s.seed = i*97+13; s.subs = Math.round(s.viewers*rand(18,60)); });
+STREAMS.forEach((s,i) => { s.start = now - s.up; s.likes = Math.round(s.viewers*rand(1.3,2.6)); s.hype = rand(.2,.9); s.seed = i*97+13; s.subs = Math.round(s.viewers*rand(18,60));
+  s.ch = pad(i+1); s.peers = 2+Math.floor(rand(1,9)); s.lag = rand(.5,2.2); s.ping = Math.round(rand(12,110));
+  s.codec = pick(["AV1 · 6.2Mb/s","HEVC · 8.0Mb/s","AV1 · 4.8Mb/s","H.264 · 6.0Mb/s"]); s.fmt = s.cat==="Music" ? "48.0kHz · Stereo" : pick(["1080p60","1440p60","1080p30","2160p30"]);
+  s.act = Array.from({length:40}, () => rand(.1,.8)); });
+const latCls = ms => ms < 50 ? "" : ms < 90 ? "mid" : "bad";
+const behind = s => `-${s.lag.toFixed(1)}s behind`;
+const specChips = (s, hi) => [`<span class="chip${hi?" hi":""}">${s.viewers.toLocaleString("en-US")} watching</span>`,
+  `<span class="chip">via ${s.peers} peers</span>`, `<span class="chip">${behind(s)}</span>`, `<span class="chip">${s.codec}</span>`, `<span class="chip">${s.fmt}</span>`].join("");
+const eyebrow = s => `<span class="onair">ON AIR</span><span class="ch">CH ${s.ch}</span><span>${s.tag} · ${s.cat}</span>`;
+
+/* dot-matrix meter: columns of square-ish dots, lit from the bottom */
+function dots(cv, data, {rows=6, lit="#fff", dim="rgba(255,255,255,.09)", hot=null}={}){
+  const d = Math.min(devicePixelRatio,2), r = cv.getBoundingClientRect(); if(!r.width) return;
+  if(cv.width !== Math.round(r.width*d)){ cv.width = Math.round(r.width*d); cv.height = Math.round(r.height*d); }
+  const c = cv.getContext("2d"), W = cv.width, H = cv.height, cols = data.length, cw = W/cols, rh = H/rows, sz = Math.max(1.5*d, Math.min(cw, rh)*.62);
+  const max = Math.max(...data, .01); c.clearRect(0,0,W,H);
+  data.forEach((v,i) => { const n = Math.round(v/max*rows);
+    for(let k=0;k<rows;k++){ c.fillStyle = k < n ? (hot && i===cols-1 ? hot : lit) : dim; c.fillRect(i*cw+(cw-sz)/2, H-(k+1)*rh+(rh-sz)/2, sz, sz); } });
+}
 const byId = Object.fromEntries(STREAMS.map(s => [s.id,s]));
 
 /* ---------- procedural art (SVG) ---------- */
@@ -536,13 +626,13 @@ function setFocus(i, force){
   rail.style.transform = `translateX(${-x}px)`;
   const s = list[i];
   if(s){ paintInfo(s); setBackdrop(s); }
-  else if(i===list.length){ $("#hTitle").textContent = "More live"; $("#hBy").textContent = `${STREAMS.length} channels live right now`; }
-  else { $("#hTitle").textContent = "Pulse+"; $("#hBy").textContent = "Watch ad-free in 4K. Cancel anytime."; }
+  else if(i===list.length){ $("#hEye").innerHTML = `<span>Directory</span>`; $("#hChips").innerHTML = ""; $("#hTitle").textContent = "More live"; $("#hBy").textContent = `${STREAMS.length} channels live right now`; }
+  else { $("#hEye").innerHTML = `<span>Offer</span>`; $("#hChips").innerHTML = ""; $("#hTitle").textContent = "Pulse+"; $("#hBy").textContent = "Watch ad-free in 4K. Cancel anytime."; }
 }
 function paintInfo(s){
+  $("#hEye").innerHTML = eyebrow(s);
   $("#hTitle").textContent = s.title;
-  $("#hBy").innerHTML = `${avatar(s,"xs")}<span><b style="color:#fff;font-weight:600">${s.user}</b> · ${s.line}</span>`;
-  $("#hCat").innerHTML = `<span class="dot ok" style="animation:none"></span>${s.tag}`;
+  $("#hBy").innerHTML = `${avatar(s,"xs")}<span>hosted by <b style="color:#fff;font-weight:500">${s.h}</b> · ${s.line.toLowerCase()}</span>`;
   tickInfo();
 }
 function tickInfo(){
@@ -550,7 +640,9 @@ function tickInfo(){
   $("#hUp").textContent = hm(Date.now()/1000 - s.start);
   $("#hViewers").textContent = s.viewers.toLocaleString("en-US");
   $("#hHype").style.width = (s.hype*100).toFixed(0)+"%";
-  $("#hHypeN").textContent = "Level " + (1+Math.floor(s.hype*5));
+  $("#hHypeN").textContent = "LV " + (1+Math.floor(s.hype*5));
+  $("#hChips").innerHTML = specChips(s, true);
+  dots($("#hMeter"), s.act.slice(-22), {rows:5, hot:s.pal[1]});
 }
 rail.addEventListener("mouseover", e => { const t = e.target.closest(".tile"); if(t && view==="home") setFocus(+t.dataset.i); });
 rail.addEventListener("click", e => { const t = e.target.closest(".tile"); if(t) activate(+t.dataset.i); });
@@ -565,21 +657,22 @@ $("#hintSearch").onclick = openSearch;
 /* ---------- watch room ---------- */
 let view = "home", cur = null, playing = true, muted = false;
 function openWatch(s){
-  cur = s; view = "watch"; setBackdrop(s); document.body.classList.add("watching");
+  cur = s; view = "watch"; setBackdrop(s); document.body.classList.add("watching"); tune(s);
+  $("#wEye").innerHTML = eyebrow(s);
   $("#home").classList.add("dim"); const w = $("#watch"); w.classList.add("open"); w.setAttribute("aria-hidden","false");
   $("#wTitle").textContent = s.line; $("#wName").textContent = s.user; $("#wSubs").textContent = fmt(s.subs)+" followers";
   const av = $("#wAv"); av.style.background = avBg(s); av.textContent = initials(s.user);
   const f = $("#follow"); f.classList.remove("on"); f.textContent = "Follow";
   $("#feed").innerHTML = ""; for(let i=0;i<6;i++) chatMsg(true);
-  activity = Array.from({length:60}, () => rand(.15,.7));
+  activity = Array.from({length:72}, () => rand(.15,.7));
   const same = STREAMS.filter(x => x!==s && x.cat===s.cat), rest = STREAMS.filter(x => x!==s && x.cat!==s.cat);
   const recs = [...same, ...rest].slice(0,4);
   $("#recCat").textContent = same.length ? s.cat : "your feed";
   $("#recs").innerHTML = recs.map(x => `<div class="rec" data-id="${x.id}"><div class="th" style="background-image:${x.art}"><span class="pill-live">LIVE</span><span class="pill-glass" data-vc="${x.id}">${fmt(x.viewers)}</span></div>
-    <div class="rb">${avatar(x,"xs")}<div><div class="rt">${x.line}</div><div class="rm">${x.user} · ${x.tag}</div></div></div></div>`).join("");
+    <div class="rb">${avatar(x,"xs")}<div><div class="rt">${x.line}</div><div class="rm">${x.h} · <span class="lt ${latCls(x.ping)}">${x.ping} ms</span></div></div></div></div>`).join("");
   $("#upnext").innerHTML = [["Q&A with chat","in 25 min"],["Collab with "+pick(STREAMS.filter(x=>x!==s)).user,"in 1h 10m"],["Late-night chill","in 2h"]]
     .map(([t,m]) => `<div class="un"><div class="th" style="background-image:${s.art}"><b></b></div><div><div class="tt">${t}</div><div class="mm">${m}</div></div></div>`).join("");
-  $("#creators").innerHTML = STREAMS.filter(x=>x!==s).slice(0,8).map(x => `<div class="cr" data-id="${x.id}">${avatar(x)}<div><div class="nm">${x.user}</div><div class="vv"><i></i><span data-vc="${x.id}">${fmt(x.viewers)}</span></div></div><span class="tg">${x.tag}</span></div>`).join("");
+  $("#creators").innerHTML = STREAMS.filter(x=>x!==s).slice(0,8).map(x => `<div class="cr" data-id="${x.id}">${avatar(x)}<div><div class="nm">${x.user}</div><div class="vv"><i></i><span data-vc="${x.id}">${fmt(x.viewers)}</span></div></div><span class="tg lt ${latCls(x.ping)}">${x.ping}ms</span></div>`).join("");
   $("#favs").innerHTML = STREAMS.filter(x=>x!==s).slice(0,4).map(x => `<button class="fav" data-id="${x.id}" title="${x.user}">${avatar(x)}<i></i></button>`).join("");
   const sp = byId.podcast === s ? byId.aurora : byId.podcast;
   $("#spot").dataset.id = sp.id;
@@ -594,7 +687,8 @@ function closeWatch(){
 }
 function tickWatch(){
   if(!cur) return;
-  $("#wUp").textContent = hms(Date.now()/1000 - cur.start);
+  $("#wUp").textContent = hm(Date.now()/1000 - cur.start);
+  $("#wChips").innerHTML = specChips(cur, true);
   $("#wViewers").textContent = cur.viewers.toLocaleString("en-US");
   $("#wLikes").textContent = fmt(cur.likes);
 }
@@ -642,10 +736,9 @@ function floatReact(ch){
   if(view==="watch" && playing){ chatMsg(); if(Math.random()<.25) floatReact(pick(["🔥","💜","😂","👏","❤️"])); }
   setTimeout(chatLoop, rand(450, 1700));
 })();
-function paintActivity(){
-  const max = Math.max(...activity, .01);
-  $("#activity").innerHTML = activity.map(v => `<i class="${v/max>.75?"hot":""}" style="height:${Math.max(6,v/max*100).toFixed(0)}%"></i>`).join("");
-}
+function paintActivity(){ if(cur) dots($("#activity"), activity, {rows:7, lit:"rgba(255,255,255,.85)", hot:cur.pal[1]}); }
+let tuneUntil = 0;
+function tune(s){ tuneUntil = performance.now() + 650; $("#tuneTxt").textContent = `TUNING CH ${s.ch} · ${s.peers} PEERS`; $("#tuning").classList.add("on"); setTimeout(() => $("#tuning").classList.remove("on"), 650); setTimeout(paintActivity, 60); }
 
 /* ---------- player stage (canvas "live video") ---------- */
 const cv = $("#stage"), ctx = cv.getContext("2d"); let t0 = performance.now(), frame = 0;
@@ -671,6 +764,7 @@ function drawStage(t){
   ctx.fillStyle = "#fff";
   for(let i=0;i<70;i++){ const px = (r()*W + t*20*(r()+.2)*(W/800)) % W, py = (r()*H*.7 + Math.sin(t+i)*6); ctx.globalAlpha = .25+.5*Math.abs(Math.sin(t*.8+i)); ctx.fillRect(px,py,1.6*(W/800),1.6*(W/800)); }
   ctx.globalAlpha = 1;
+  if(performance.now() < tuneUntil){ const cell = 6*(W/800)+2; for(let y=0;y<H;y+=cell) for(let x=0;x<W;x+=cell){ const v = Math.random(); ctx.fillStyle = `rgba(255,255,255,${v*v*.9})`; ctx.fillRect(x,y,cell*.7,cell*.7); } }
   // scanlines + grain to sell "live feed"
   ctx.fillStyle = "rgba(0,0,0,.08)"; for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,1);
 }
@@ -748,17 +842,32 @@ addEventListener("keydown", e => {
   else if(e.key==="e") cycleTab(1);
 });
 
+/* ---------- node ---------- */
+const node = {peers:30, relay:3, up:454, down:6.1, hist:Array.from({length:36}, () => rand(.3,.8))};
+$("#node > button").onclick = e => { const n = $("#node"), on = n.classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded", on); if(on) paintNode(); };
+addEventListener("click", e => { if(!e.target.closest("#node")) $("#node").classList.remove("open"); });
+function paintNode(){
+  $("#nPeers").textContent = $("#nPeers2").textContent = node.peers; $("#nRelay").textContent = node.relay + " streams";
+  $("#nUp").textContent = Math.round(node.up) + " kb/s"; $("#nDown").textContent = node.down.toFixed(1) + " Mb/s";
+  if($("#node").classList.contains("open")) dots($("#nMeter"), node.hist, {rows:4, lit:"#2bd67b", dim:"rgba(43,214,123,.12)"});
+}
+
 /* ---------- realtime ticks ---------- */
 function clock(){ const d = new Date(); $("#clock").textContent = d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); }
 function drift(){
   STREAMS.forEach(s => { s.viewers = Math.max(120, Math.round(s.viewers * (1 + rand(-.012,.016)))); s.likes += Math.round(rand(0, s.viewers/900)); s.hype = Math.max(.05, Math.min(1, s.hype + rand(-.02,.03))); });
   document.querySelectorAll("[data-vc]").forEach(el => el.textContent = fmt(byId[el.dataset.vc].viewers));
   $("#globalViewers").textContent = STREAMS.reduce((n,s)=>n+s.viewers,0).toLocaleString("en-US");
+  STREAMS.forEach(s => { s.lag = Math.max(.4, Math.min(2.6, s.lag + rand(-.15,.15))); s.ping = Math.max(8, Math.round(s.ping + rand(-6,6))); });
+  node.peers = Math.max(12, node.peers + Math.round(rand(-2,2))); node.up = Math.max(180, node.up + rand(-40,40)); node.down = Math.max(2, node.down + rand(-.4,.4));
+  node.hist.push(node.up/700); node.hist.shift(); paintNode();
 }
 setInterval(() => {
-  clock(); tickInfo(); tickWatch();
+  clock();
+  STREAMS.forEach(s => { s.act.push(Math.min(1, rand(.05,.5) + (Math.random()<.15 ? .5 : 0))); s.act.shift(); });
+  tickInfo(); tickWatch();
   if(view==="watch"){ activity.push(Math.min(1, chatCount/4 + rand(0,.15))); activity.shift(); chatCount = 0; paintActivity();
-    $("#lat").textContent = `Latency ${rand(1.1,1.9).toFixed(1)}s`; }
+    $("#lat").textContent = `${behind(cur)} live · ${cur.ping} ms`; $("#lat").className = "lt " + latCls(cur.ping); }
 }, 1000);
 setInterval(drift, 2000);
 setInterval(randomToast, 9000);

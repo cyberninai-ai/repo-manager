@@ -45,7 +45,7 @@
 | [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | The cyber visual language: color tokens, type, components, motion |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phased delivery plan and open questions |
 | [`prototype/index.html`](prototype/index.html) | Clickable UI prototype (no build step: open in a browser) |
-| [`streaming/index.html`](streaming/index.html) | Pulse: realtime video streaming UI (console-style home + live watch room), single HTML file |
+| [`streaming/index.html`](streaming/index.html) | Pulse: realtime video streaming UI (console-style home + live watch room, dot-matrix "signal" feel), single HTML file |
 
 ## Remote Env product design (prototype)
 
