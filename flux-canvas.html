@@ -89,7 +89,7 @@ button{font:inherit;color:inherit}
 .ledger .top{display:flex;align-items:center;gap:7px;font-size:11px}
 .ledger .tag{font-size:10px;font-weight:700;padding:0 5px;border-radius:3px;border:1px solid currentColor}
 .t-DRAW{color:var(--cyan)} .t-SHAPE{color:var(--amber)} .t-TEXT{color:var(--ink)} .t-ARROW{color:var(--magenta)}
-.t-GROUP{color:var(--green)} .t-MOVE{color:var(--muted)} .t-neg{color:var(--red)}
+.t-IMAGE{color:var(--green)} .t-GROUP{color:var(--green)} .t-MOVE{color:var(--muted)} .t-neg{color:var(--red)}
 .ledger .meta{margin-left:auto;color:var(--muted);font-size:10px;white-space:nowrap}
 .ledger .raw{margin-top:4px;font-size:10px;color:var(--muted);word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ledger .row.x .raw{-webkit-line-clamp:unset;display:block;color:var(--ink)}
@@ -120,7 +120,7 @@ button{font:inherit;color:inherit}
 
 <div id="hint">
   draw freely · <kbd>shift</kbd> rect · <kbd>alt</kbd> circle · drag from an edge to connect · double-tap for text
-  <span class="wide">· <kbd>ctrl</kbd>-drag lasso</span> · <kbd>⌘K</kbd> commands
+  <span class="wide">· <kbd>ctrl</kbd>-drag lasso · drop or paste an image</span> · <kbd>⌘K</kbd> commands
 </div>
 
 <textarea id="ta" spellcheck="false"></textarea>
@@ -145,6 +145,7 @@ button{font:inherit;color:inherit}
     <tr><td>Alt + drag</td><td>Circle</td></tr>
     <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
     <tr><td>Double-tap</td><td>Text</td></tr>
+    <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Tap it to select, drag to move, corner handle to resize, Esc to draw on it</td></tr>
     <tr><td>Ctrl/⌘ + drag (or lasso mode)</td><td>Lasso select, then drag to move</td></tr>
     <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
     <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
@@ -159,6 +160,7 @@ button{font:inherit;color:inherit}
 
 <div id="toast"></div>
 <input type="file" id="file" accept=".flux,.txt,text/plain">
+<input type="file" id="imgFile" accept="image/*" style="display:none">
 
 <script>
 'use strict';
@@ -199,6 +201,8 @@ async function cidOf(bytes){
   const m = new Uint8Array(36); m.set([0x01, 0x55, 0x12, 0x20]); m.set(d, 4);
   return 'b' + b32(m);
 }
+function b64enc(bytes){ let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+function b64dec(s){ const b = atob(s), o = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o; }
 const encInt = n => n < 0 ? 'n' + (-n) : String(n);
 const decInt = s => { const v = s && s[0] === 'n' ? -parseInt(s.slice(1), 10) : parseInt(s, 10); if (!Number.isFinite(v)) throw Error('int'); return v; };
 const encTxt = s => encodeURIComponent(s).replace(/[-.!~*'()_]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
@@ -337,7 +341,7 @@ async function signed(action, pairs){
 /* =====================================================================
    State
    ===================================================================== */
-const ELEMENT = new Set(['DRAW', 'SHAPE', 'TEXT', 'ARROW']);
+const ELEMENT = new Set(['DRAW', 'SHAPE', 'TEXT', 'ARROW', 'IMAGE']);
 const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE']);
 // Canvas id lives in the URL hash when the host allows it; sandboxed frames (about:srcdoc) refuse
 // history changes, so fall back to the last canvas remembered in storage.
@@ -351,7 +355,7 @@ if (!canvasId){
 }
 try { localStorage.setItem('flux:lastCanvas', canvasId); } catch {}
 const S = {
-  me: null, records: new Map(), blobs: new Map(), geom: new Map(), lamport: 0,
+  me: null, records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0,
   view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 },
   color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: false,
   sel: new Set(), filter: null, showHidden: false, ledger: false, rejected: 0,
@@ -365,9 +369,24 @@ let bc = null;
 async function addBlob(cid, bytes){
   if (S.blobs.has(cid)) return true;
   if (await cidOf(bytes) !== cid) return false;
-  let pts; try { pts = decodePoints(bytes); } catch { return false; }
-  S.blobs.set(cid, bytes); S.geom.set(cid, geomOf(pts));
+  S.blobs.set(cid, bytes); dirty = true;
   return true;
+}
+// Blobs are opaque bytes addressed by CID; what they mean depends on the record that cites them.
+function strokeGeom(cid){
+  if (!S.geom.has(cid)){
+    const b = S.blobs.get(cid); if (!b) return null;
+    try { S.geom.set(cid, geomOf(decodePoints(b))); } catch { S.geom.set(cid, null); }
+  }
+  return S.geom.get(cid);
+}
+function imageOf(cid){
+  const c = S.imgs.get(cid);
+  if (c !== undefined) return c === 'loading' || c === 'error' ? null : c;
+  const b = S.blobs.get(cid); if (!b) return null;
+  S.imgs.set(cid, 'loading');
+  createImageBitmap(new Blob([b])).then(bmp => { S.imgs.set(cid, bmp); dirty = true; }, () => { S.imgs.set(cid, 'error'); dirty = true; });
+  return null;
 }
 function toRec(node, cid){
   const f = node.fields, r = { cid, raw: node.raw, type: node.action, f, author: f.I, z: decInt(f.Z), t: f.T ? +f.T : 0, neg: null, size: node.raw.length };
@@ -377,7 +396,8 @@ function toRec(node, cid){
     case 'SHAPE': r.k = f.K; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = decInt(f.W); r.bh = decInt(f.H); r.sw = Math.max(1, decInt(f.S)); break;
     case 'TEXT': r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); r.fs = Math.max(4, decInt(f.S)); break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
-    case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); if (!f.R) throw Error('move'); break;
+    case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move'); break;
+    case 'IMAGE': if (!f.R) throw Error('image'); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
     case 'GROUP': if (!Array.isArray(f.P)) throw Error('group'); break;
   }
   return r;
@@ -409,14 +429,14 @@ async function publish(raw, blobs = {}){
   for (const [c, b] of Object.entries(blobs)) await addBlob(c, b);
   const cid = await ingest(raw);
   if (cid && bc){
-    const wire = {}; for (const [c, b] of Object.entries(blobs)) wire[c] = b58enc(b);
+    const wire = {}; for (const [c, b] of Object.entries(blobs)) wire[c] = b64enc(b);
     bc.postMessage({ raw, blobs: wire });
   }
   return cid;
 }
 async function onWire({ data }){
   if (!data || typeof data.raw !== 'string') return;
-  for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b58dec(b)); } catch {}
+  for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
   await ingest(data.raw);
 }
 function openChannel(){
@@ -431,7 +451,7 @@ let saveT = 0;
 function lines(recs){
   const out = recs.map(r => r.raw);
   const seen = new Set();
-  for (const r of recs) if (r.type === 'DRAW' && r.neg === null && S.blobs.has(r.f.R) && !seen.has(r.f.R)){ seen.add(r.f.R); out.push('BLOB-R-' + r.f.R + '-B-' + b58enc(S.blobs.get(r.f.R))); }
+  for (const r of recs) if ((r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null && S.blobs.has(r.f.R) && !seen.has(r.f.R)){ seen.add(r.f.R); out.push('BLOB-R-' + r.f.R + '-B64-' + b64enc(S.blobs.get(r.f.R))); }
   return out;
 }
 function save(){
@@ -442,8 +462,8 @@ async function importText(text, persist = true){
   const ls = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   let added = 0, before = S.rejected;
   for (const l of ls) if (l.startsWith('BLOB-')){
-    const m = l.match(/^BLOB-R-([a-z2-7]+)-B-([1-9A-HJ-NP-Za-km-z]+)$/);
-    if (m) try { await addBlob(m[1], b58dec(m[2])); } catch {}
+    const m = l.match(/^BLOB-R-([a-z2-7]+)-(B|B64)-([A-Za-z0-9+/=]+)$/);
+    if (m) try { await addBlob(m[1], m[2] === 'B' ? b58dec(m[3]) : b64dec(m[3])); } catch {}
   }
   for (const l of ls){
     if (l.startsWith('BLOB-')) continue;
@@ -469,7 +489,7 @@ function derive(){
       const t = S.records.get(r.f.R);
       if (t && t.author === r.author && t.type === r.type && t.neg === null) negs.set(t.cid, r.neg); // latest z wins; only the author's own
     } else if (r.type === 'MOVE'){
-      const o = off.get(r.f.R) || { x: 0, y: 0 }; o.x += r.dx; o.y += r.dy; off.set(r.f.R, o);
+      const o = off.get(r.f.R) || { x: 0, y: 0, w: 0, h: 0 }; o.x += r.dx; o.y += r.dy; o.w += r.dw; o.h += r.dh; off.set(r.f.R, o);
     } else if (r.type === 'GROUP') groups.push(r);
     else els.push(r);
   }
@@ -509,8 +529,9 @@ function geomOf(pts){
 const mctx = document.createElement('canvas').getContext('2d');
 function baseBox(el){
   switch (el.type){
-    case 'DRAW': { const g = S.geom.get(el.f.R); if (!g) return null; const h = el.w / 2; return { x: g.box.x - h, y: g.box.y - h, w: g.box.w + el.w, h: g.box.h + el.w }; }
+    case 'DRAW': { const g = strokeGeom(el.f.R); if (!g) return null; const h = el.w / 2; return { x: g.box.x - h, y: g.box.y - h, w: g.box.w + el.w, h: g.box.h + el.w }; }
     case 'SHAPE': return { x: el.x, y: el.y, w: el.bw, h: el.bh };
+    case 'IMAGE': { const s = sizeOf(el); return { x: el.x, y: el.y, w: s.w, h: s.h }; }
     case 'TEXT': {
       if (!el._bb){
         mctx.font = `${el.fs}px ${FONTS[el.f.F] || FONTS.sans}`;
@@ -521,6 +542,12 @@ function baseBox(el){
     }
   }
   return null;
+}
+function sizeOf(el){
+  const o = S.D.off.get(el.cid);
+  let w = el.bw + (o ? o.w : 0), h = el.bh + (o ? o.h : 0);
+  if (G && G.kind === 'resize' && G.target === el.cid){ w += G.dw; h += G.dh; }
+  return { w: Math.max(8, w), h: Math.max(8, h) };
 }
 function offsetOf(cid){
   const D = S.D, a = D.off.get(cid), g = D.groupOf.get(cid), b = g && D.off.get(g);
@@ -613,8 +640,13 @@ function drawEl(el){
   }
   const o = offsetOf(el.cid); ctx.translate(o.x, o.y);
   if (el.type === 'DRAW'){
-    const g = S.geom.get(el.f.R);
+    const g = strokeGeom(el.f.R);
     if (g){ ctx.lineWidth = el.w; ctx.stroke(g.path); }
+  } else if (el.type === 'IMAGE'){
+    const s = sizeOf(el), bmp = imageOf(el.f.R);
+    if (bmp) ctx.drawImage(bmp, el.x, el.y, s.w, s.h);
+    else { ctx.save(); ctx.globalAlpha *= .35; ctx.lineWidth = 1 / S.view.zoom; ctx.setLineDash([6 / S.view.zoom, 6 / S.view.zoom]); ctx.strokeRect(el.x, el.y, s.w, s.h);
+      ctx.font = `${12 / S.view.zoom}px ${FONTS.mono}`; ctx.textBaseline = 'top'; ctx.fillText(S.blobs.has(el.f.R) ? 'loading image…' : 'image blob missing', el.x + 6 / S.view.zoom, el.y + 6 / S.view.zoom); ctx.restore(); }
   } else if (el.type === 'SHAPE'){
     ctx.lineWidth = el.sw; ctx.beginPath();
     if (el.k === 'circle') ctx.ellipse(el.x + el.bw / 2, el.y + el.bh / 2, Math.abs(el.bw / 2), Math.abs(el.bh / 2), 0, 0, Math.PI * 2);
@@ -685,6 +717,9 @@ function render(){
     for (const c of S.sel){ const el = S.records.get(c); const b = el && box(el); if (b) dashedBox(grow(b, 3 / z), accent, z); }
     const sb = selBox();
     if (sb && S.sel.size > 1){ ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z; ctx.strokeRect(sb.x - 8 / z, sb.y - 8 / z, sb.w + 16 / z, sb.h + 16 / z); ctx.restore(); }
+    const h = resizeHandle();
+    if (h){ ctx.save(); ctx.fillStyle = accent; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(); ctx.lineWidth = 2 / z;
+      ctx.beginPath(); ctx.rect(h.x - 6 / z, h.y - 6 / z, 12 / z, 12 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
   }
   paintInspector();
 }
@@ -722,8 +757,33 @@ async function commitText(w, text){
     ['F', S.font], ['S', S.textSize], ['C', S.color], ['Z', ++S.lamport], ['T', Date.now()]]);
   recordCreate(await publish(raw));
 }
-async function commitMove(target, dx, dy){
-  return publish(await signed('MOVE', [['I', S.me.id], ['R', target], ['DX', encInt(dx)], ['DY', encInt(dy)], ['Z', ++S.lamport], ['T', Date.now()]]));
+async function commitMove(target, dx, dy, dw = 0, dh = 0){
+  const size = dw || dh ? [['DW', encInt(dw)], ['DH', encInt(dh)]] : [];
+  return publish(await signed('MOVE', [['I', S.me.id], ['R', target], ['DX', encInt(dx)], ['DY', encInt(dy)], ...size, ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+// Images are re-encoded (max 1600px, WebP or JPEG) so a photo stays a reasonable blob to sign, sync and store.
+const IMG_MAX = 1600;
+async function insertImage(file, at){
+  if (!S.me) return;
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch { toast('That file is not an image this browser can read.'); return; }
+  const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const enc = t => new Promise(res => c.toBlob(res, t, 0.85));
+  let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
+  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < 4e6 && k === 1) out = file;   // keep a small original when it's already smaller
+  const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
+  // place it at a comfortable on-screen size, centred on the drop point
+  const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));
+  const w = Math.max(8, Math.round(c.width * fit)), h = Math.max(8, Math.round(c.height * fit));
+  const p = at || toWorld(innerWidth / 2, innerHeight / 2), x = Math.round(p.x - w / 2), y = Math.round(p.y - h / 2);
+  S.imgs.set(R, bmp.width === c.width ? bmp : await createImageBitmap(c));
+  const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h], ['Z', ++S.lamport], ['T', Date.now()]]);
+  const cid = await publish(raw, { [R]: bytes });
+  recordCreate(cid);
+  if (cid){ S.sel = new Set([cid]); dirty = true; }
+  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · drag to move, corner to resize, Esc to draw on it`);
 }
 async function setNeg(cid, on){
   const r = S.records.get(cid);
@@ -741,14 +801,14 @@ async function undo(){
   const h = S.hist.pop(); if (!h){ toast('Nothing of yours to undo.'); return; }
   if (h.kind === 'create') await setNeg(h.cid, true);
   else if (h.kind === 'revoke') for (const c of h.cids) await setNeg(c, false);
-  else if (h.kind === 'move') for (const t of h.targets) await commitMove(t, -h.dx, -h.dy);
+  else if (h.kind === 'move') for (const t of h.targets) await commitMove(t, -h.dx, -h.dy, -(h.dw || 0), -(h.dh || 0));
   S.redo.push(h);
 }
 async function redo(){
   const h = S.redo.pop(); if (!h) return;
   if (h.kind === 'create') await setNeg(h.cid, false);
   else if (h.kind === 'revoke') for (const c of h.cids) await setNeg(c, true);
-  else if (h.kind === 'move') for (const t of h.targets) await commitMove(t, h.dx, h.dy);
+  else if (h.kind === 'move') for (const t of h.targets) await commitMove(t, h.dx, h.dy, h.dw || 0, h.dh || 0);
   S.hist.push(h);
 }
 async function revokeSelection(){
@@ -810,10 +870,17 @@ function elementAt(w, except){
   }
   return null;
 }
-function setCursor(){
-  cv.style.cursor = spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'move' ? 'move' : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
+function resizeHandle(){
+  if (S.sel.size !== 1) return null;
+  const el = S.records.get([...S.sel][0]);
+  if (!el || el.type !== 'IMAGE' || S.D.hidden.has(el.cid)) return null;
+  const b = box(el); return b && { x: b.x + b.w, y: b.y + b.h, el };
 }
-let hoverSel = false;
+function onHandle(w){ const h = resizeHandle(); return h && Math.hypot(w.x - h.x, w.y - h.y) < 12 / S.view.zoom ? h : null; }
+function setCursor(){
+  cv.style.cursor = spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move' : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
+}
+let hoverSel = false, hoverHandle = false;
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
   if (taOpen()){ finishText(true); return; }
@@ -830,6 +897,8 @@ cv.addEventListener('pointerdown', e => {
   if (e.button === 1 || e.button === 2 || spaceDown){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
   if (e.button !== 0) return;
   if (S.sel.size){
+    const hd = onHandle(w);
+    if (hd){ const b = box(hd.el); G = { kind: 'resize', target: hd.el.cid, start: w, aspect: b.w / b.h, dw: 0, dh: 0 }; setCursor(); return; }
     const sb = selBox();
     if (sb && inside(w, grow(sb, 10 / S.view.zoom))){ G = { kind: 'move', start: w, dx: 0, dy: 0, targets: moveTargets() }; setCursor(); return; }
     if (!(e.ctrlKey || e.metaKey || S.lassoMode)){ S.sel.clear(); dirty = true; G = { kind: 'none' }; return; }
@@ -847,8 +916,8 @@ cv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (!G){
     const h = taOpen() ? null : edgeHit(e.clientX, e.clientY);
-    const sb = S.sel.size && selBox(); const hs = !!(sb && inside(toWorld(e.clientX, e.clientY), grow(sb, 10 / S.view.zoom)));
-    if (h !== hoverEdge || hs !== hoverSel){ hoverEdge = hs ? null : h; hoverSel = hs; dirty = true; setCursor(); }
+    const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = !!onHandle(wp);
+    if (h !== hoverEdge || hs !== hoverSel || hh !== hoverHandle){ hoverEdge = hs || hh ? null : h; hoverSel = hs; hoverHandle = hh; dirty = true; setCursor(); }
     return;
   }
   const w = toWorld(e.clientX, e.clientY);
@@ -860,6 +929,11 @@ cv.addEventListener('pointermove', e => {
     }
     case 'pan': S.view.x = G.vx - (e.clientX - G.sx) / S.view.zoom; S.view.y = G.vy - (e.clientY - G.sy) / S.view.zoom; break;
     case 'move': G.dx = Math.round(w.x - G.start.x); G.dy = Math.round(w.y - G.start.y); break;
+    case 'resize': {   // proportional, from the bottom-right corner
+      const el = S.records.get(G.target), base = el.bw + (S.D.off.get(el.cid)?.w || 0);
+      const dw = Math.max(w.x - G.start.x, (w.y - G.start.y) * G.aspect, 16 - base);
+      G.dw = Math.round(dw); G.dh = Math.round(dw / G.aspect); break;
+    }
     case 'rect': case 'circle': G.b = w; break;
     case 'lasso': G.pts.push(w); break;
     case 'stroke': case 'arrow': {
@@ -895,7 +969,13 @@ function endPointer(e, cancelled){
         }
         const pts = g.pts.slice(0, 1), t0 = g.t0, color = S.color, width = S.width;
         const cancel = ghost({ pts, color, width });
-        lastTap = { time: now, x: e.clientX, y: e.clientY, cancel, timer: setTimeout(() => { cancel(); lastTap = null; commitStroke(pts, t0, color, width); }, 350) };
+        // a single tap on an image selects it (so it can be moved); anywhere else it's a dot
+        const hit = S.D.els.slice().reverse().find(el => el.type === 'IMAGE' && visible(el) && !S.D.hidden.has(el.cid) && inside(pts[0], box(el) || { x: 0, y: 0, w: -1, h: -1 }));
+        lastTap = { time: now, x: e.clientX, y: e.clientY, cancel, timer: setTimeout(() => {
+          cancel(); lastTap = null;
+          if (hit && hit.type === 'IMAGE'){ S.sel = new Set([hit.cid]); expandSel(); dirty = true; }
+          else commitStroke(pts, t0, color, width);
+        }, 350) };
         return;
       }
       commitStroke(g.pts, g.t0); return;
@@ -914,6 +994,11 @@ function endPointer(e, cancelled){
         if (b && pointInPoly(center(b), g.pts)) S.sel.add(el.cid);
       }
       expandSel(); dirty = true; return;
+    }
+    case 'resize': {
+      if (!g.dw && !g.dh) return;
+      (async () => { await commitMove(g.target, 0, 0, g.dw, g.dh); S.hist.push({ kind: 'move', targets: [g.target], dx: 0, dy: 0, dw: g.dw, dh: g.dh }); S.redo = []; })();
+      return;
     }
     case 'move': {
       if (!g.dx && !g.dy) return;
@@ -996,7 +1081,7 @@ function paintAuthors(){
     box.appendChild(b);
   }
 }
-function recBytes(r){ return r.size + (r.type === 'DRAW' && r.neg === null && S.blobs.has(r.f.R) ? S.blobs.get(r.f.R).length : 0); }
+function recBytes(r){ return r.size + ((r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null && S.blobs.has(r.f.R) ? S.blobs.get(r.f.R).length : 0); }
 function paintInspector(){
   const el = $('insp');
   if (!S.sel.size || G?.kind === 'move'){ el.style.display = 'none'; return; }
@@ -1007,10 +1092,10 @@ function paintInspector(){
     const r = S.records.get([...S.sel][0]);
     const g = S.D.groupOf.get(r.cid);
     const kind = r.type === 'SHAPE' ? r.k : r.type.toLowerCase();
-    const pts = r.type === 'DRAW' ? S.geom.get(r.f.R)?.pts.length : null;
+    const pts = r.type === 'DRAW' ? strokeGeom(r.f.R)?.pts.length : null;
     html = `<div class="who"><span class="dot" style="background:${authorColor(r.author)}"></span><b>${esc(kind)}</b>
       by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ signed</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">revoked</span>' : ''}</div>
-      <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}<br>${recBytes(r)} B${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
+      <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · drag to move · corner resizes · Esc, then draw on it' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
       <div class="acts"><button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button>
       ${r.author === S.me.id ? `<button class="btn danger" data-a="${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}">${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}</button>` : ''}</div>`;
   } else {
@@ -1092,6 +1177,7 @@ function commands(){
   add('proof', 'Verify every signature', verifyAll);
   add('share', S.filter ? 'Export visible sub-canvas (.flux)' : 'Export canvas (.flux)', () => exportCanvas(true));
   add('share', 'Copy canvas pattern', async () => copy(await canvasText(true), 'Signed CANVAS pattern copied'));
+  add('insert', 'Insert image…', () => $('imgFile').click(), { k: 'drop / paste' });
   add('share', 'Import .flux file', () => $('file').click());
   const hex = $('palIn').value.match(/\b#?([0-9a-f]{6})\b/i);
   if (hex) add('color', `Use #${hex[1]}`, () => { S.color = hex[1].toLowerCase(); }, { sw: hex[1] });
@@ -1173,11 +1259,19 @@ async function importAndReport(text){
 }
 $('file').addEventListener('change', async e => { const f = e.target.files[0]; if (f) await importAndReport(await f.text()); e.target.value = ''; });
 addEventListener('dragover', e => e.preventDefault());
-addEventListener('drop', async e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) await importAndReport(await f.text()); });
+$('imgFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await insertImage(f); });
+addEventListener('drop', async e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  if (f.type.startsWith('image/')) await insertImage(f, toWorld(e.clientX, e.clientY));
+  else await importAndReport(await f.text());
+});
 addEventListener('paste', async e => {
   if (taOpen() || document.activeElement === $('palIn')) return;
+  const img = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith('image/'));
+  if (img){ e.preventDefault(); await insertImage(img); return; }
   const t = e.clipboardData?.getData('text') || '';
-  if (/^(CANVAS|DRAW|SHAPE|TEXT|ARROW|GROUP|MOVE|BLOB)-/m.test(t.trim())){ e.preventDefault(); await importAndReport(t); }
+  if (/^(CANVAS|DRAW|SHAPE|TEXT|ARROW|IMAGE|GROUP|MOVE|BLOB)-/m.test(t.trim())){ e.preventDefault(); await importAndReport(t); }
   else if (t.trim() && S.me){ e.preventDefault(); const c = toWorld(innerWidth / 2, innerHeight / 2); await commitText(c, t.trim().slice(0, 2000)); }
 });
 
@@ -1205,7 +1299,7 @@ async function switchCanvas(id){
   clearTimeout(saveT);
   canvasId = id; setHash(id);
   try { localStorage.setItem('flux:lastCanvas', id); } catch {}
-  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0,
+  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0,
     view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
   openChannel();
   const saved = store.get('flux:canvas:' + id);
