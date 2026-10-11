@@ -339,8 +339,17 @@ async function signed(action, pairs){
    ===================================================================== */
 const ELEMENT = new Set(['DRAW', 'SHAPE', 'TEXT', 'ARROW']);
 const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE']);
+// Canvas id lives in the URL hash when the host allows it; sandboxed frames (about:srcdoc) refuse
+// history changes, so fall back to the last canvas remembered in storage.
+const newCanvasId = () => b32(crypto.getRandomValues(new Uint8Array(8)));
+function setHash(id){ try { history.replaceState(null, '', '#' + id); return location.hash === '#' + id; } catch { return false; } }
 let canvasId = (location.hash.match(/^#([a-z0-9]{6,32})$/) || [])[1];
-if (!canvasId){ canvasId = b32(crypto.getRandomValues(new Uint8Array(8))); history.replaceState(null, '', '#' + canvasId); }
+if (!canvasId){
+  try { canvasId = (localStorage.getItem('flux:lastCanvas') || '').match(/^[a-z0-9]{6,32}$/)?.[0]; } catch {}
+  canvasId = canvasId || newCanvasId();
+  setHash(canvasId);
+}
+try { localStorage.setItem('flux:lastCanvas', canvasId); } catch {}
 const S = {
   me: null, records: new Map(), blobs: new Map(), geom: new Map(), lamport: 0,
   view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 },
@@ -349,8 +358,8 @@ const S = {
   hist: [], redo: [], ghosts: [], D: { els: [], hidden: new Set(), off: new Map(), groupOf: new Map(), groups: [] },
 };
 const byZ = (a, b) => a.z - b.z || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0);
-const channelName = `canvas.${canvasId}.strokes`;
-let bc = null; try { bc = new BroadcastChannel(channelName); } catch {}
+let channelName = `canvas.${canvasId}.strokes`;
+let bc = null;
 
 /* ---------- ingest: verify, address, union-merge ---------- */
 async function addBlob(cid, bytes){
@@ -405,11 +414,17 @@ async function publish(raw, blobs = {}){
   }
   return cid;
 }
-if (bc) bc.onmessage = async ({ data }) => {
+async function onWire({ data }){
   if (!data || typeof data.raw !== 'string') return;
   for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b58dec(b)); } catch {}
   await ingest(data.raw);
-};
+}
+function openChannel(){
+  try { bc?.close(); } catch {}
+  channelName = `canvas.${canvasId}.strokes`;
+  try { bc = new BroadcastChannel(channelName); bc.onmessage = onWire; } catch { bc = null; }
+}
+openChannel();
 
 /* ---------- persistence: the stored form is the export form, one record per line ---------- */
 let saveT = 0;
@@ -1054,7 +1069,7 @@ function commands(){
   const L = [];
   const add = (g, t, run, o = {}) => L.push({ g, t, run, ...o });
   for (const c of Object.keys(COLORS)) add('color', c[0].toUpperCase() + c.slice(1), () => { S.color = c; }, { sw: c, on: S.color === c });
-  add('color', 'Custom hex…', () => { const v = prompt('Hex color (e.g. 0b7285)', ''); if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); });
+  add('color', 'Custom hex…', () => { let v = null; try { v = prompt('Hex color (e.g. 0b7285)', ''); } catch { toast('Type the hex into the palette instead: "hex 0b7285"'); } if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); });
   for (const [n, w] of [['Fine', 2], ['Medium', 4], ['Bold', 8], ['Marker', 16]]) add('width', `${n} · ${w}`, () => { S.width = w; }, { on: S.width === w });
   for (const [n, s] of [['Small', 16], ['Medium', 24], ['Large', 40], ['Title', 64]]) add('text', `${n} text · ${s}`, () => { S.textSize = s; }, { on: S.textSize === s });
   for (const f of Object.keys(FONTS)) add('text', `Font · ${f}`, () => { S.font = f; }, { on: S.font === f });
@@ -1078,8 +1093,12 @@ function commands(){
   add('share', S.filter ? 'Export visible sub-canvas (.flux)' : 'Export canvas (.flux)', () => exportCanvas(true));
   add('share', 'Copy canvas pattern', async () => copy(await canvasText(true), 'Signed CANVAS pattern copied'));
   add('share', 'Import .flux file', () => $('file').click());
-  add('share', 'Copy canvas link', () => copy(location.href, 'Link copied. Open it in another tab to draw together.'));
-  add('canvas', 'New canvas', () => { location.hash = b32(crypto.getRandomValues(new Uint8Array(8))); });
+  const hex = $('palIn').value.match(/\b#?([0-9a-f]{6})\b/i);
+  if (hex) add('color', `Use #${hex[1]}`, () => { S.color = hex[1].toLowerCase(); }, { sw: hex[1] });
+  if (/^https?:/.test(location.href)) add('share', 'Copy canvas link', () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Open it in another tab to draw together.'));
+  add('share', 'Copy canvas id', () => copy(canvasId, 'Canvas id copied'));
+  add('canvas', 'New canvas', () => switchCanvas(newCanvasId()));
+  add('canvas', 'Open canvas by id…', () => { let v = null; try { v = prompt('Canvas id', ''); } catch {} v = (v || '').trim().replace(/^.*#/, ''); if (/^[a-z0-9]{6,32}$/.test(v)) switchCanvas(v); else if (v) toast('Not a canvas id.'); });
   add('identity', 'Copy my public key', () => copy(S.me.id, 'Public key copied'));
   add('identity', 'New identity for this tab', async () => {
     const me = await newIdentity(); store.set('flux:identity', JSON.stringify({ alg: me.alg, id: me.id, jwk: me.jwk }), true);
@@ -1180,7 +1199,20 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { if (e.key === ' '){ spaceDown = false; setCursor(); } });
 addEventListener('blur', () => { spaceDown = false; });
-addEventListener('hashchange', () => location.reload());
+addEventListener('hashchange', () => { const m = location.hash.match(/^#([a-z0-9]{6,32})$/); if (m && m[1] !== canvasId) switchCanvas(m[1]); });
+// Swap canvases in place: no reload, so it also works where the URL can't change.
+async function switchCanvas(id){
+  clearTimeout(saveT);
+  canvasId = id; setHash(id);
+  try { localStorage.setItem('flux:lastCanvas', id); } catch {}
+  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0,
+    view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
+  openChannel();
+  const saved = store.get('flux:canvas:' + id);
+  if (saved) await importText(saved, false);
+  derive(); paintAuthors(); paintLedger(); dirty = true;
+  toast(`Canvas ${id}${saved ? '' : ' · empty'}`);
+}
 
 /* =====================================================================
    Boot
