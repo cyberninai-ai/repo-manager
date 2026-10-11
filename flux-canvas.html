@@ -114,10 +114,10 @@ button{font:inherit;color:inherit}
   cursor:pointer;font-size:11px;color:var(--muted);box-shadow:var(--shadow)}
 .pill:hover,.pill[aria-pressed="true"]{color:var(--ink);border-color:var(--cyan)}
 #ask{position:fixed;inset:0;z-index:30;display:none;background:color-mix(in srgb,var(--paper) 50%,transparent)}
-#ask form{position:absolute;left:50%;top:22vh;transform:translateX(-50%);width:min(420px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);
+#ask .dlg{position:absolute;left:50%;top:22vh;transform:translateX(-50%);width:min(420px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);
   border-radius:10px;box-shadow:var(--shadow);padding:14px}
 #ask label{display:block;margin-bottom:8px;font-weight:600}
-#askImg{display:block;max-width:100%;max-height:200px;margin:0 auto 12px;border-radius:6px;border:1px solid var(--line);object-fit:contain;background:var(--paper)}
+#askImg{display:block;max-width:100%;max-height:200px;margin:0 auto 12px;border-radius:6px;border:1px solid var(--line);background:var(--paper)}
 #askImg[hidden]{display:none}
 #ask .why{color:var(--muted);font-size:11px;margin:-4px 0 8px}
 #ask input{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink)}
@@ -156,10 +156,10 @@ button{font:inherit;color:inherit}
 <div id="pal"><div class="box" role="dialog" aria-modal="true" aria-label="Command palette">
   <input id="palIn" placeholder="Type a command…" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" aria-label="Command">
   <ul id="palList" role="listbox" aria-label="Commands"></ul></div></div>
-<div id="ask"><form role="dialog" aria-modal="true" aria-labelledby="askT">
-  <img id="askImg" alt="" hidden>
+<div id="ask"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="askT">
+  <canvas id="askImg" aria-hidden="true" hidden></canvas>
   <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off">
-  <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="submit" class="btn">OK</button></div></form></div>
+  <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="button" class="btn" id="askOk">OK</button></div></div></div>
 
 <aside class="ledger" id="ledger" aria-label="Ledger of signed records">
   <header>
@@ -442,16 +442,19 @@ function sniffImage(b){
 // Decode with createImageBitmap, falling back to an <img> element (SVG, and formats some browsers only decode that way).
 async function decodeImage(blob){
   try { const bmp = await createImageBitmap(blob); if (bmp.width && bmp.height) return bmp; } catch {}
-  const url = URL.createObjectURL(blob);
-  try {
-    const img = new Image(); img.decoding = 'async'; img.src = url;
+  const viaImg = async src => {
+    const img = new Image(); img.decoding = 'async'; img.src = src;
     await img.decode();
     let w = img.naturalWidth, h = img.naturalHeight;
-    if (!w || !h){ w = 800; h = 600; img.width = w; img.height = h; }   // SVG without intrinsic size
+    if (!w || !h){ w = 800; h = 600; }   // SVG without intrinsic size
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     c.getContext('2d').drawImage(img, 0, 0, w, h);
     return c;
-  } finally { URL.revokeObjectURL(url); }
+  };
+  const url = URL.createObjectURL(blob);
+  try { return await viaImg(url); } catch {} finally { URL.revokeObjectURL(url); }
+  const data = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
+  return viaImg(data);
 }
 const typedBlob = (bytes, hint = '') => new Blob([bytes], { type: sniffImage(bytes) || hint });
 function imageOf(cid){
@@ -852,10 +855,8 @@ async function insertImage(file, at){
   // a name that is just a hash or a generic camera/clipboard name makes poor alt text
   const base = (file.name || '').replace(/\.[a-z0-9]+$/i, '');
   const guess = /^[0-9a-f]{16,}$/i.test(base) || /^(image|img|photo|screenshot|pasted|dsc|pxl)[\s_-]*[\d_-]*$/i.test(base) ? '' : base.replace(/[-_]+/g, ' ').trim();
-  const url = URL.createObjectURL(typed);
   const alt = await ask('Describe this image', guess,
-    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', url);
-  URL.revokeObjectURL(url);
+    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', bmp);
   if (alt === null) return;
   file = typed;
   const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
@@ -1054,7 +1055,12 @@ let askRes = null, askFocus = null;
 function ask(label, value = '', why = '', preview = null){
   if (askRes) askRes(null);
   askFocus = document.activeElement;
-  const pi = $('askImg'); if (preview){ pi.src = preview; pi.hidden = false; } else { pi.hidden = true; pi.removeAttribute('src'); }
+  const pi = $('askImg');
+  if (preview){
+    const k = Math.min(1, 440 / preview.width, 200 / preview.height);
+    pi.width = Math.max(1, Math.round(preview.width * k)); pi.height = Math.max(1, Math.round(preview.height * k));
+    pi.getContext('2d').drawImage(preview, 0, 0, pi.width, pi.height); pi.hidden = false;
+  } else pi.hidden = true;
   $('askT').textContent = label; $('askWhy').textContent = why; $('askWhy').style.display = why ? 'block' : 'none';
   $('askIn').value = value; $('ask').style.display = 'block'; setTimeout(() => { $('askIn').focus(); $('askIn').select(); }, 0);
   return new Promise(res => { askRes = res; });
@@ -1455,7 +1461,8 @@ $('palList').addEventListener('click', e => { const li = e.target.closest('li[da
 $('pal').addEventListener('pointerdown', e => { if (e.target.id === 'pal') closePalette(); });
 function toggleHelp(force){ const on = force ?? $('help').style.display !== 'block'; $('help').style.display = on ? 'block' : 'none'; if (on) $('helpClose').focus(); else cv.focus({ preventScroll: true }); }
 $('helpClose').onclick = () => toggleHelp(false);
-$('ask').querySelector('form').addEventListener('submit', e => { e.preventDefault(); closeAsk($('askIn').value); });
+$('askOk').onclick = () => closeAsk($('askIn').value);
+$('askIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); closeAsk($('askIn').value); } });
 $('askNo').onclick = () => closeAsk(null);
 $('ask').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeAsk(null); });
 $('ask').addEventListener('pointerdown', e => { if (e.target.id === 'ask') closeAsk(null); });
