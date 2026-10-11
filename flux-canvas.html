@@ -106,7 +106,7 @@ button{font:inherit;color:inherit}
 .ledger .top{display:flex;align-items:center;gap:7px;font-size:11px}
 .ledger .tag{font-size:10px;font-weight:700;padding:0 5px;border-radius:3px;border:1px solid currentColor}
 .t-DRAW{color:var(--cyan)} .t-SHAPE{color:var(--amber)} .t-TEXT{color:var(--ink)} .t-ARROW{color:var(--magenta)}
-.t-COMMENT{color:var(--amber)} .t-RESOLVE{color:var(--amber)} .t-IMAGE{color:var(--green)} .t-GROUP{color:var(--green)} .t-MOVE{color:var(--muted)} .t-neg{color:var(--red)}
+.t-STYLE{color:var(--cyan)} .t-COMMENT{color:var(--amber)} .t-RESOLVE{color:var(--amber)} .t-IMAGE{color:var(--green)} .t-GROUP{color:var(--green)} .t-MOVE{color:var(--muted)} .t-neg{color:var(--red)}
 .ledger .meta{margin-left:auto;color:var(--muted);font-size:10px;white-space:nowrap}
 .ledger .raw{margin-top:4px;font-size:10px;color:var(--muted);word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ledger .row.x .raw{-webkit-line-clamp:unset;display:block;color:var(--ink)}
@@ -198,15 +198,16 @@ button{font:inherit;color:inherit}
   <span class="sep" aria-hidden="true"></span>
   <div class="grp">
     <label class="lbl2" for="brush">Brush</label>
-    <input type="range" id="brush" min="1" max="40" step="1" aria-describedby="brushHint">
+    <input type="range" id="brush" min="1" max="80" step="1" aria-describedby="brushHint">
     <span class="pre" aria-hidden="true" id="brushPre"><i></i></span>
     <span class="val" id="brushVal" aria-hidden="true"></span>
-    <span class="sr" id="brushHint">Shortcut: open and close square brackets</span>
+    <span class="tgt" id="brushTgt"></span>
+    <span class="sr" id="brushHint">Shortcut: open and close square brackets. Also restyles the selected lines you drew</span>
   </div>
   <span class="sep" aria-hidden="true"></span>
   <div class="grp">
     <label class="lbl2" for="tsize">Text</label>
-    <input type="range" id="tsize" min="10" max="120" step="2" aria-describedby="tsizeHint">
+    <input type="range" id="tsize" min="10" max="400" step="2" aria-describedby="tsizeHint">
     <span class="pre" aria-hidden="true" id="tsizePre"><b>Aa</b></span>
     <span class="val" id="tsizeVal" aria-hidden="true"></span>
     <span class="tgt" id="tsizeTgt"></span>
@@ -280,8 +281,9 @@ button{font:inherit;color:inherit}
     <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
     <tr><td>Drag a comment pin · “move pin” in its thread</td><td>Move the pin (arrow keys after “move pin”, Enter when done). A pin on an element keeps following it</td></tr>
     <tr><td>M · Enter</td><td>Comment on the selection (or the centre) · edit the selected text if it's yours</td></tr>
-    <tr><td>[ · ]</td><td>Brush smaller · bigger (also the slider in the bottom bar)</td></tr>
-    <tr><td>{ · }</td><td>Text smaller · bigger: resizes your selected text, otherwise new text</td></tr>
+    <tr><td>[ · ]</td><td>Brush thinner · thicker (bottom bar slider, 1–80). With your lines selected, restyles them too</td></tr>
+    <tr><td>{ · }</td><td>Text smaller · bigger (10–400): resizes your selected text, otherwise new text</td></tr>
+    <tr><td>Colour swatch</td><td>Colour for new work; also recolours your selected strokes, shapes, arrows and text</td></tr>
     <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
   </table>
   <p style="margin:12px 0 0">Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
@@ -471,7 +473,7 @@ async function signed(action, pairs){
    State
    ===================================================================== */
 const ELEMENT = new Set(['DRAW', 'SHAPE', 'TEXT', 'ARROW', 'IMAGE']);
-const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE', 'COMMENT', 'RESOLVE']);
+const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE', 'COMMENT', 'RESOLVE', 'STYLE']);
 // Canvas id lives in the URL hash when the host allows it; sandboxed frames (about:srcdoc) refuse
 // history changes, so fall back to the last canvas remembered in storage.
 const newCanvasId = () => b32(crypto.getRandomValues(new Uint8Array(8)));
@@ -558,6 +560,7 @@ function toRec(node, cid){
     case 'TEXT': r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); r.fs = Math.max(4, decInt(f.S)); r.edits = f.E || null; break;
     case 'COMMENT': r.on = f.ON && f.ON !== '0' ? f.ON : null; r.re = f.RE && f.RE !== '0' ? f.RE : null; r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); break;
     case 'RESOLVE': if (!f.R) throw Error('resolve'); r.state = f.S === '1'; break;
+    case 'STYLE': if (!f.R) throw Error('style'); r.sw2 = f.W ? Math.max(1, decInt(f.W)) : null; r.sc = f.C || null; break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
     case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move'); break;
     case 'IMAGE': if (!f.R) throw Error('image'); r.alt = decTxt(f.M || ''); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
@@ -646,7 +649,7 @@ async function importText(text, persist = true){
 /* ---------- derived view of the union ---------- */
 function derive(){
   const recs = [...S.records.values()].sort(byZ);
-  const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map();
+  const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map(), styles = new Map();
   for (const r of recs){
     if (r.neg !== null){
       const t = S.records.get(r.f.R);
@@ -656,9 +659,15 @@ function derive(){
     } else if (r.type === 'GROUP') groups.push(r);
     else if (r.type === 'COMMENT') comments.push(r);
     else if (r.type === 'RESOLVE') resolves.set(r.f.R, r);   // latest z wins; anyone may resolve or reopen
+    else if (r.type === 'STYLE'){
+      // restyle: the author's own element only; latest z wins per property
+      const t = S.records.get(r.f.R);
+      if (t && t.author === r.author){ const o = styles.get(t.cid) || {}; if (r.sw2 != null) o.W = r.sw2; if (r.sc) o.C = r.sc; styles.set(t.cid, o); }
+    }
     else els.push(r);
   }
   const hidden = new Set(); for (const [k, v] of negs) if (v) hidden.add(k);
+  for (const el of els){ const o = styles.get(el.cid) || {}; el.ew = o.W ?? (el.type === 'DRAW' ? el.w : el.sw); el.ec = o.C ?? el.f.C; }
   // text edits: an author's TEXT with -E-{cid} supersedes that earlier version (unless the edit itself is revoked)
   const next = new Map(), superseded = new Set();
   for (const r of els) if (r.type === 'TEXT' && r.edits && !hidden.has(r.cid)){
@@ -702,9 +711,12 @@ function geomOf(pts){
   return { pts, path: pathOf(pts), box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } };
 }
 const mctx = document.createElement('canvas').getContext('2d');
+// effective line width and colour: the record's own, a STYLE override, or a live slider preview
+const lw = el => el._pw ?? el.ew ?? (el.type === 'DRAW' ? el.w : el.sw);
+const ecol = el => el.ec ?? el.f.C;
 function baseBox(el){
   switch (el.type){
-    case 'DRAW': { const g = strokeGeom(el.f.R); if (!g) return null; const h = el.w / 2; return { x: g.box.x - h, y: g.box.y - h, w: g.box.w + el.w, h: g.box.h + el.w }; }
+    case 'DRAW': { const g = strokeGeom(el.f.R); if (!g) return null; const lwv = lw(el), h = lwv / 2; return { x: g.box.x - h, y: g.box.y - h, w: g.box.w + lwv, h: g.box.h + lwv }; }
     case 'SHAPE': return { x: el.x, y: el.y, w: el.bw, h: el.bh };
     case 'IMAGE': { const s = sizeOf(el); return { x: el.x, y: el.y, w: s.w, h: s.h }; }
     case 'TEXT': {
@@ -803,13 +815,13 @@ function drawEl(el){
   ctx.save();
   if (S.D.hidden.has(el.cid)){ ctx.globalAlpha = 0.18; ctx.setLineDash([6, 6]); }
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const col = colorOf(el.f.C);
+  const col = colorOf(ecol(el));
   ctx.strokeStyle = col; ctx.fillStyle = col;
   if (el.type === 'ARROW'){
     const g = arrowGeom(el); if (!g){ ctx.restore(); return; }
-    ctx.lineWidth = el.sw;
+    ctx.lineWidth = lw(el);
     ctx.beginPath(); ctx.moveTo(g.a.x, g.a.y); ctx.lineTo(g.b.x, g.b.y); ctx.stroke();
-    drawArrowHead(g.a, g.b, 8 + el.sw * 2);
+    drawArrowHead(g.a, g.b, 8 + lw(el) * 2);
     if (el.label){
       const m = { x: (g.a.x + g.b.x) / 2, y: (g.a.y + g.b.y) / 2 };
       ctx.font = `14px ${FONTS.sans}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -820,18 +832,18 @@ function drawEl(el){
   const o = offsetOf(el.cid); ctx.translate(o.x, o.y);
   if (el.type === 'DRAW'){
     const g = strokeGeom(el.f.R);
-    if (g){ ctx.lineWidth = el.w; ctx.stroke(g.path); }
+    if (g){ ctx.lineWidth = lw(el); ctx.stroke(g.path); }
   } else if (el.type === 'IMAGE'){
     const s = sizeOf(el), bmp = imageOf(el.f.R);
     if (bmp) ctx.drawImage(bmp, el.x, el.y, s.w, s.h);
     else { ctx.save(); ctx.globalAlpha *= .35; ctx.lineWidth = 1 / S.view.zoom; ctx.setLineDash([6 / S.view.zoom, 6 / S.view.zoom]); ctx.strokeRect(el.x, el.y, s.w, s.h);
       ctx.font = `${12 / S.view.zoom}px ${FONTS.mono}`; ctx.textBaseline = 'top'; ctx.fillText(!S.blobs.has(el.f.R) ? 'image blob missing' : S.imgs.get(el.f.R) === 'error' ? 'this browser cannot decode this image' : 'loading image…', el.x + 6 / S.view.zoom, el.y + 6 / S.view.zoom); ctx.restore(); }
   } else if (el.type === 'SHAPE'){
-    ctx.lineWidth = el.sw; ctx.beginPath();
+    ctx.lineWidth = lw(el); ctx.beginPath();
     if (el.k === 'circle') ctx.ellipse(el.x + el.bw / 2, el.y + el.bh / 2, Math.abs(el.bw / 2), Math.abs(el.bh / 2), 0, 0, Math.PI * 2);
     else if (el.k === 'line'){ ctx.moveTo(el.x, el.y); ctx.lineTo(el.x + el.bw, el.y + el.bh); }
     else ctx.rect(el.x, el.y, el.bw, el.bh);
-    if (el.f.F && el.f.F !== 'none'){ ctx.save(); ctx.globalAlpha *= 0.16; ctx.fillStyle = colorOf(el.f.F); ctx.fill(); ctx.restore(); }
+    if (el.f.F && el.f.F !== 'none'){ ctx.save(); ctx.globalAlpha *= 0.16; ctx.fillStyle = colorOf(el.ec && el.ec !== el.f.C ? el.ec : el.f.F); ctx.fill(); ctx.restore(); }
     ctx.stroke();
   } else if (el.type === 'TEXT'){
     const fs = el._previewFs || el.fs;
@@ -937,7 +949,7 @@ async function commitArrow(from, to, label = ''){
 }
 async function commitText(w, text, orig = null, style = null){
   // an edit is a new signed TEXT that names the version it replaces; it keeps that version's style and current position
-  const st = { ...(orig ? { F: orig.f.F, S: orig.fs, C: orig.f.C } : { F: S.font, S: S.textSize, C: S.color }), ...(style || {}) };
+  const st = { ...(orig ? { F: orig.f.F, S: orig.fs, C: ecol(orig) } : { F: S.font, S: S.textSize, C: S.color }), ...(style || {}) };
   const raw = await signed('TEXT', [['I', S.me.id], ['X', encInt(Math.round(w.x))], ['Y', encInt(Math.round(w.y))], ['M', encTxt(text)],
     ['F', st.F], ['S', st.S], ['C', st.C], ...(orig ? [['E', orig.cid]] : []), ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid);
@@ -948,6 +960,12 @@ async function commitComment({ on = null, x, y, text, re = null }){
   const raw = await signed('COMMENT', [['I', S.me.id], ['ON', on || '0'], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))],
     ['M', encTxt(text)], ['RE', re || '0'], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
+}
+async function commitStyle(cid, { W = null, C = null }){
+  const pairs = [['I', S.me.id], ['R', cid]];
+  if (W != null) pairs.push(['W', Math.max(1, Math.round(W))]);
+  if (C) pairs.push(['C', C]);
+  return publish(await signed('STYLE', [...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 async function commitResolve(root, state){
   return publish(await signed('RESOLVE', [['I', S.me.id], ['R', root], ['S', state ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
@@ -1013,6 +1031,7 @@ async function undo(){
   if (h.kind === 'create') await setNeg(h.cid, true);
   else if (h.kind === 'revoke') for (const c of h.cids) await setNeg(c, false);
   else if (h.kind === 'move') for (const t of h.targets) await commitMove(t, -h.dx, -h.dy, -(h.dw || 0), -(h.dh || 0));
+  else if (h.kind === 'style') for (const it of h.items) await commitStyle(it.cid, it.before);
   S.redo.push(h);
 }
 async function redo(){
@@ -1020,6 +1039,7 @@ async function redo(){
   if (h.kind === 'create') await setNeg(h.cid, false);
   else if (h.kind === 'revoke') for (const c of h.cids) await setNeg(c, true);
   else if (h.kind === 'move') for (const t of h.targets) await commitMove(t, h.dx, h.dy, h.dw || 0, h.dh || 0);
+  else if (h.kind === 'style') for (const it of h.items) await commitStyle(it.cid, it.after);
   S.hist.push(h);
 }
 async function revokeSelection(){
@@ -1091,15 +1111,15 @@ function hitTest(w){
     const b = box(el); if (!b || !inside(w, grow(b, tol))) continue;
     if (el.type === 'DRAW'){
       const g = strokeGeom(el.f.R); if (!g) continue;
-      const o = offsetOf(el.cid), p = { x: w.x - o.x, y: w.y - o.y }, pts = g.pts, lim = el.w / 2 + tol;
+      const o = offsetOf(el.cid), p = { x: w.x - o.x, y: w.y - o.y }, pts = g.pts, lim = lw(el) / 2 + tol;
       if (pts.length === 1 ? Math.hypot(p.x - pts[0].x, p.y - pts[0].y) < lim : pts.some((q, j) => j && distToSeg(p, pts[j - 1], q) < lim)) return el;
     } else if (el.type === 'ARROW'){
-      const a = arrowGeom(el); if (a && distToSeg(w, a.a, a.b) < el.sw / 2 + tol) return el;
+      const a = arrowGeom(el); if (a && distToSeg(w, a.a, a.b) < lw(el) / 2 + tol) return el;
     } else if (el.type === 'SHAPE' && (!el.f.F || el.f.F === 'none')){
       if (el.k === 'circle'){
         const c = center(b), rx = b.w / 2, ry = b.h / 2, d = Math.hypot((w.x - c.x) / (rx || 1), (w.y - c.y) / (ry || 1));
-        if (Math.abs(d - 1) * Math.min(rx, ry) < el.sw / 2 + tol) return el;
-      } else if (!inside(w, grow(b, -(el.sw / 2 + tol)))) return el;
+        if (Math.abs(d - 1) * Math.min(rx, ry) < lw(el) / 2 + tol) return el;
+      } else if (!inside(w, grow(b, -(lw(el) / 2 + tol)))) return el;
     } else return el;
   }
   return null;
@@ -1483,7 +1503,7 @@ function openText(w, orig = null){
   setPlacing(null);
   if (orig){ const b = box(orig); w = { x: b.x, y: b.y }; editingCid = orig.cid; dirty = true; }
   taAt = w; taOrig = orig; const s = toScreen(w.x, w.y), z = S.view.zoom;
-  const fs = orig ? orig.fs : S.textSize, font = FONTS[orig ? orig.f.F : S.font] || FONTS.sans, col = colorOf(orig ? orig.f.C : S.color);
+  const fs = orig ? orig.fs : S.textSize, font = FONTS[orig ? orig.f.F : S.font] || FONTS.sans, col = colorOf(orig ? ecol(orig) : S.color);
   Object.assign(ta.style, { display: 'block', left: s.x + 'px', top: s.y + 'px', font: `${fs * z}px ${font}`, color: col, lineHeight: '1.25' });
   ta.value = orig ? orig.text : ''; sizeTa(); setTimeout(() => { ta.focus(); if (orig) ta.select(); }, 0);
   say(orig ? 'Editing your text. Enter signs the new version, Escape cancels.' : 'Type your text. Enter signs it, Shift+Enter adds a line, Escape cancels.');
@@ -1616,12 +1636,15 @@ async function copy(text, msg){ try { await navigator.clipboard.writeText(text);
 /* floating bar: colour, brush size, text size */
 const barH = () => { const b = $('bar'); return b && !b.classList.contains('min') ? b.offsetHeight + 12 : 0; };
 const COLOR_NAMES = { ink: 'Ink', red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', violet: 'Violet', pink: 'Pink' };
-// the selected text the size slider acts on (only your own; others' text is theirs to change)
-function sizeTarget(){
-  if (S.sel.size !== 1) return null;
-  const el = current([...S.sel][0]);
-  return el && el.type === 'TEXT' && el.author === S.me?.id && !S.D.hidden.has(el.cid) ? el : null;
-}
+// What the bar acts on: your own selected elements (others' are theirs to change); otherwise new ones.
+const selOwn = types => [...S.sel].map(c => current(c)).filter(el => el && types.includes(el.type) && el.author === S.me?.id && !S.D.hidden.has(el.cid));
+const selOthers = types => [...S.sel].map(c => current(c)).filter(el => el && types.includes(el.type) && el.author !== S.me?.id).length;
+const textTargets = () => selOwn(['TEXT']);
+const lineTargets = () => selOwn(['DRAW', 'SHAPE', 'ARROW']);
+function sizeTarget(){ const t = textTargets(); return t.length ? t[0] : null; }
+// brush value <-> element width: strokes use it as is; shape outlines and arrows use half (as when drawn)
+const brushOf = el => el.type === 'DRAW' ? lw(el) : lw(el) * 2;
+const widthFor = (el, b) => el.type === 'DRAW' ? b : Math.max(1, Math.round(b / 2));
 let barShown = '';
 function paintBar(){
   const cols = $('barColors');
@@ -1629,7 +1652,7 @@ function paintBar(){
     for (const c of Object.keys(COLORS)){
       const b = document.createElement('button'); b.className = 'sw2'; b.dataset.c = c;
       b.setAttribute('role', 'radio'); b.setAttribute('aria-label', COLOR_NAMES[c] || c); b.title = COLOR_NAMES[c] || c;
-      b.onclick = () => { S.color = c; paintBar(); say(`Colour ${COLOR_NAMES[c] || c}`); };
+      b.onclick = () => setColor(c);
       cols.appendChild(b);
     }
     // arrow keys move between swatches, as a radio group should
@@ -1641,35 +1664,81 @@ function paintBar(){
   }
   const ink = colorOf(S.color);
   for (const b of cols.children){ b.style.background = colorOf(b.dataset.c); const on = b.dataset.c === S.color; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
-  const t = sizeTarget(), ts = t ? t.fs : S.textSize;
-  const key = [S.color, S.width, ts, t?.cid, ink].join('|');
+  const tt = textTargets(), t = tt[0], ts = t ? (t._previewFs || t.fs) : S.textSize;
+  const lt = lineTargets(), bw = lt.length ? Math.round(brushOf(lt[0])) : S.width;
+  const key = [S.color, S.width, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
   if (key === barShown) return; barShown = key;
-  $('brush').value = S.width; $('brushVal').textContent = S.width;
-  $('brush').setAttribute('aria-valuetext', `${S.width} pixel brush`);
-  const dot = $('brushPre').firstElementChild, dd = Math.min(30, S.width); Object.assign(dot.style, { width: dd + 'px', height: dd + 'px', color: ink, background: ink });
+  $('brush').value = bw; $('brushVal').textContent = bw;
+  $('brush').setAttribute('aria-valuetext', `${bw} pixel brush${lt.length ? `, ${lt.length} selected line${lt.length > 1 ? 's' : ''}` : ''}`);
+  $('brushTgt').textContent = lt.length ? `${lt.length} selected line${lt.length > 1 ? 's' : ''}` : '';
+  const dot = $('brushPre').firstElementChild, dd = Math.min(30, bw); Object.assign(dot.style, { width: dd + 'px', height: dd + 'px', color: ink, background: ink });
   $('tsize').value = ts; $('tsizeVal').textContent = ts;
-  $('tsize').setAttribute('aria-valuetext', `${ts} pixel text${t ? ', selected text' : ''}`);
-  Object.assign($('tsizePre').firstElementChild.style, { fontSize: Math.min(30, Math.max(9, ts * 0.45)) + 'px', color: t ? colorOf(t.f.C) : ink });
-  $('tsizeTgt').textContent = t ? 'selected text' : '';
+  $('tsize').setAttribute('aria-valuetext', `${ts} pixel text${tt.length ? `, ${tt.length} selected text${tt.length > 1 ? 's' : ''}` : ''}`);
+  Object.assign($('tsizePre').firstElementChild.style, { fontSize: Math.min(30, Math.max(9, ts * 0.3)) + 'px', color: t ? colorOf(ecol(t)) : ink });
+  $('tsizeTgt').textContent = tt.length ? `${tt.length > 1 ? tt.length + ' ' : ''}selected text${tt.length > 1 ? 's' : ''}` : '';
 }
-function setBrush(w){ S.width = Math.max(1, Math.min(40, Math.round(w))); paintBar(); }
-let tsizeT = 0;
-function setTextSize(v, announce){
-  v = Math.max(10, Math.min(120, Math.round(v)));
-  const t = sizeTarget();
-  if (!t){ S.textSize = v; paintBar(); if (announce) say(`New text size ${v}`); if (taOpen() && !taOrig){ ta.style.fontSize = (v * S.view.zoom) + 'px'; sizeTa(); } return; }
-  // live preview while dragging; one signed edit once the value settles
-  S.textSize = v; $('tsizeVal').textContent = v; t._previewFs = v; t._bb = null; dirty = true;
-  clearTimeout(tsizeT);
-  tsizeT = setTimeout(async () => {
-    const cur = current(t.cid); delete t._previewFs; t._bb = null;
-    if (!cur || cur.fs === v){ dirty = true; return; }
-    const b = box(cur); await commitText({ x: b.x, y: b.y }, cur.text, cur, { S: v });
-    say(`Text resized to ${v}. Signed as an edit.`);
+let brushT = 0, othersWarned = '';
+function warnOthers(types, what){
+  const n = selOthers(types), key = [...S.sel].join();
+  if (n && othersWarned !== key){ othersWarned = key; toast(`${n} ${what} by other authors left as they are. Only their authors can restyle them.`); }
+}
+// Brush: sets the width for new strokes and restyles your selected lines (live preview, one signed STYLE each once it settles).
+function setBrush(w, announce){
+  w = Math.max(1, Math.min(80, Math.round(w)));
+  S.width = w;
+  const lt = lineTargets();
+  warnOthers(['DRAW', 'SHAPE', 'ARROW'], 'lines');
+  if (!lt.length){ paintBar(); if (announce) say(`Brush ${w}`); return; }
+  for (const el of lt){ el._pw = widthFor(el, w); el._bb = null; }
+  $('brushVal').textContent = w; dirty = true;
+  clearTimeout(brushT);
+  brushT = setTimeout(async () => {
+    const items = [];
+    for (const el of lt){
+      const to = el._pw; delete el._pw;
+      const from = el.ew ?? (el.type === 'DRAW' ? el.w : el.sw);
+      if (to !== from){ items.push({ cid: el.cid, before: { W: from }, after: { W: to } }); await commitStyle(el.cid, { W: to }); }
+    }
+    dirty = true; barShown = '';
+    if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(`${items.length} line${items.length > 1 ? 's' : ''} restyled to brush ${w}. Signed.`); }
   }, 450);
 }
-$('brush').addEventListener('input', e => setBrush(+e.target.value));
-$('brush').addEventListener('change', () => say(`Brush ${S.width}`));
+// Colour: sets the colour for new work and recolours your selected strokes, shapes, arrows and text.
+async function setColor(c){
+  S.color = c; barShown = ''; paintBar();
+  const els = selOwn(['DRAW', 'SHAPE', 'ARROW', 'TEXT']);
+  warnOthers(['DRAW', 'SHAPE', 'ARROW', 'TEXT'], 'elements');
+  if (!els.length){ say(`Colour ${COLOR_NAMES[c] || c}`); return; }
+  const items = [];
+  for (const el of els){ const from = ecol(el); if (from !== c){ items.push({ cid: el.cid, before: { C: from }, after: { C: c } }); await commitStyle(el.cid, { C: c }); } }
+  if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
+  say(`${items.length} element${items.length === 1 ? '' : 's'} recoloured ${COLOR_NAMES[c] || c}. Signed.`);
+}
+let tsizeT = 0;
+function setTextSize(v, announce){
+  v = Math.max(10, Math.min(400, Math.round(v)));
+  const tt = textTargets();
+  warnOthers(['TEXT'], 'texts');
+  if (!tt.length){ S.textSize = v; paintBar(); if (announce) say(`New text size ${v}`); if (taOpen() && !taOrig){ ta.style.fontSize = (v * S.view.zoom) + 'px'; sizeTa(); } return; }
+  // live preview while dragging; one signed edit per text once the value settles
+  S.textSize = v; $('tsizeVal').textContent = v;
+  for (const t of tt){ t._previewFs = v; t._bb = null; }
+  dirty = true;
+  clearTimeout(tsizeT);
+  tsizeT = setTimeout(async () => {
+    const keep = [...S.sel].filter(c => !tt.some(t => t.cid === current(c)?.cid)), made = [];
+    for (const t of tt){
+      const cur = current(t.cid); delete t._previewFs; t._bb = null;
+      if (!cur || cur.fs === v){ if (cur) made.push(cur.cid); continue; }
+      const b = box(cur), nc = await commitText({ x: b.x, y: b.y }, cur.text, cur, { S: v });
+      made.push(nc || cur.cid);
+    }
+    S.sel = new Set([...keep, ...made]); dirty = true; barShown = '';
+    say(`${tt.length} text${tt.length > 1 ? 's' : ''} resized to ${v}. Signed as ${tt.length > 1 ? 'edits' : 'an edit'}.`);
+  }, 450);
+}
+$('brush').addEventListener('input', e => setBrush(+e.target.value, false));
+$('brush').addEventListener('change', () => { if (!lineTargets().length) say(`Brush ${S.width}`); });
 $('tsize').addEventListener('input', e => setTextSize(+e.target.value, false));
 $('tsize').addEventListener('change', e => { if (!sizeTarget()) say(`New text size ${+e.target.value}`); });
 for (const id of ['brush', 'tsize']) $(id).addEventListener('keydown', e => e.stopPropagation());   // arrows adjust the slider, not the canvas
@@ -1853,7 +1922,7 @@ const SW = c => `<span class="sw" style="background:${colorOf(c)}"></span>`;
 function commands(){
   const L = [];
   const add = (g, t, run, o = {}) => L.push({ g, t, run, ...o });
-  for (const c of Object.keys(COLORS)) add('color', c[0].toUpperCase() + c.slice(1), () => { S.color = c; }, { sw: c, on: S.color === c });
+  for (const c of Object.keys(COLORS)) add('color', c[0].toUpperCase() + c.slice(1), () => setColor(c), { sw: c, on: S.color === c });
   add('color', 'Custom hex…', async () => { const v = await ask('Hex colour', '', 'Six hex digits, e.g. 0b7285'); if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); else if (v) toast('Not a hex colour.'); });
   for (const [n, w] of [['Fine', 2], ['Medium', 4], ['Bold', 8], ['Marker', 16]]) add('width', `${n} · ${w}`, () => { S.width = w; }, { on: S.width === w });
   for (const [n, s] of [['Small', 16], ['Medium', 24], ['Large', 40], ['Title', 64]]) add('text', `${n} text · ${s}`, () => { S.textSize = s; }, { on: S.textSize === s });
@@ -2026,8 +2095,8 @@ addEventListener('keydown', e => {
       if (k === 'c'){ connectSel(); return; }
       if (pinMove && e.key === 'Enter'){ e.preventDefault(); endPinMove(); return; }
       if (k === 'm'){ e.preventDefault(); commentOnSelection(); return; }
-      if (e.key === '[' || e.key === ']'){ e.preventDefault(); setBrush(S.width + (e.key === ']' ? (S.width >= 10 ? 2 : 1) : (S.width > 10 ? -2 : -1))); say(`Brush ${S.width}`); return; }
-      if (e.key === '{' || e.key === '}'){ e.preventDefault(); const t = sizeTarget(); setTextSize((t ? t.fs : S.textSize) + (e.key === '}' ? 4 : -4), true); return; }
+      if (e.key === '[' || e.key === ']'){ e.preventDefault(); const lt = lineTargets(), cur = lt.length ? brushOf(lt[0]) : S.width, st = Math.max(1, Math.round(cur * 0.15)); setBrush(cur + (e.key === ']' ? st : -st), true); return; }
+      if (e.key === '{' || e.key === '}'){ e.preventDefault(); const t = sizeTarget(), cur = t ? (t._previewFs || t.fs) : S.textSize, st = Math.max(4, Math.round(cur * 0.12)); setTextSize(cur + (e.key === '}' ? st : -st), true); return; }
       if (e.key === 'Enter' && S.sel.size === 1){ const el = S.records.get([...S.sel][0]); if (el?.type === 'TEXT'){ e.preventDefault(); editText(el); return; } }
     }
   }
