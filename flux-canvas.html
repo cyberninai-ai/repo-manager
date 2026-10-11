@@ -7,7 +7,7 @@
 <style>
 :root{
   --paper:#f7f6f2; --ink:#14181f; --muted:#5b6775; --line:#d9dee5; --panel:#ffffff;
-  --cyan:#007c8c; --green:#0a8a45; --amber:#9a6200; --red:#c4183a; --magenta:#b00f95;
+  --cyan:#007c8c; --green:#08703a; --amber:#9a6200; --red:#c4183a; --magenta:#b00f95;
   --shadow:0 8px 30px -10px rgba(0,0,0,.25); color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -107,28 +107,58 @@ button{font:inherit;color:inherit}
   border-radius:8px;padding:7px 12px;font-size:12px;box-shadow:var(--shadow);opacity:0;transition:.2s;pointer-events:none;z-index:20;max-width:calc(100% - 32px)}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #file{display:none}
-@media (max-width:600px){ #hint .wide{display:none} }
+.sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+#c:focus-visible{outline:2px solid var(--cyan);outline-offset:-4px}
+.pill{display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--line);background:var(--panel);
+  cursor:pointer;font-size:11px;color:var(--muted);box-shadow:var(--shadow)}
+.pill:hover,.pill[aria-pressed="true"]{color:var(--ink);border-color:var(--cyan)}
+#ask{position:fixed;inset:0;z-index:30;display:none;background:color-mix(in srgb,var(--paper) 50%,transparent)}
+#ask form{position:absolute;left:50%;top:22vh;transform:translateX(-50%);width:min(420px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;box-shadow:var(--shadow);padding:14px}
+#ask label{display:block;margin-bottom:8px;font-weight:600}
+#ask .why{color:var(--muted);font-size:11px;margin:-4px 0 8px}
+#ask input{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink)}
+#ask .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+#help .close{position:absolute;top:12px;right:12px}
+#help h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 4px}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+@media (max-width:600px){ #hint .wide{display:none} .pill .lbl{display:none} }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<main>
+<h1 class="sr">Flux Canvas</h1>
+<canvas id="c" tabindex="0" role="application" aria-roledescription="drawing canvas" aria-describedby="summary"
+  aria-label="Flux Canvas. Draw with a pointer. Keyboard: Tab steps through elements, arrow keys move the selection, Delete revokes it, R rectangle, O circle, T text, I image, C connects two selected elements, V select mode, question mark lists every shortcut."></canvas>
+<p id="summary" class="sr">Empty canvas.</p>
+<div id="sr" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<div id="corner">
-  <div id="authors"></div>
-  <button id="auth" title="Auth Kit · click for the ledger"><i></i><span id="authTxt">locked</span></button>
+<div id="corner" role="toolbar" aria-label="Canvas tools">
+  <button class="pill" id="mode" aria-pressed="false" title="Pen mode · V for select"><span aria-hidden="true">✎</span><span class="lbl">pen</span></button>
+  <button class="pill" id="addImg" title="Insert image (I)" aria-label="Insert image"><span aria-hidden="true">＋</span><span class="lbl">image</span></button>
+  <button class="pill" id="cmdBtn" title="Commands (⌘K or /)" aria-label="⌘K commands"><span aria-hidden="true">⌘K</span></button>
+  <div id="authors" role="group" aria-label="Authors, filter by author"></div>
+  <button id="auth" title="Auth Kit signing status · opens the ledger"><i aria-hidden="true"></i><span id="authTxt">locked</span></button>
 </div>
+</main>
 
-<div id="hint">
+<div id="hint" aria-hidden="true">
   draw freely · <kbd>shift</kbd> rect · <kbd>alt</kbd> circle · drag from an edge to connect · double-tap for text
   <span class="wide">· <kbd>ctrl</kbd>-drag lasso · drop or paste an image</span> · <kbd>⌘K</kbd> commands
 </div>
 
-<textarea id="ta" spellcheck="false"></textarea>
-<div id="insp"></div>
+<textarea id="ta" spellcheck="false" aria-label="Text to place on the canvas. Enter to sign, Shift+Enter for a new line, Escape to cancel"></textarea>
+<div id="insp" role="region" aria-label="Selection"></div>
 
-<div id="pal"><div class="box"><input id="palIn" placeholder="Type a command…" autocomplete="off"><ul id="palList"></ul></div></div>
+<div id="pal"><div class="box" role="dialog" aria-modal="true" aria-label="Command palette">
+  <input id="palIn" placeholder="Type a command…" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" aria-label="Command">
+  <ul id="palList" role="listbox" aria-label="Commands"></ul></div></div>
+<div id="ask"><form role="dialog" aria-modal="true" aria-labelledby="askT">
+  <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off">
+  <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="submit" class="btn">OK</button></div></form></div>
 
-<aside class="ledger" id="ledger">
+<aside class="ledger" id="ledger" aria-label="Ledger of signed records">
   <header>
     <h2><span>Ledger</span><button class="btn" id="ledgerClose">close</button></h2>
     <div class="stats" id="ledgerStats"></div>
@@ -136,8 +166,9 @@ button{font:inherit;color:inherit}
   <div class="list" id="ledgerList"></div>
 </aside>
 
-<div id="help">
-  <h1>Flux Canvas</h1>
+<div id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" tabindex="-1">
+  <button class="btn close" id="helpClose">close</button>
+  <h1 id="helpT">Flux Canvas</h1>
   <p>Every stroke is a signed pattern. The canvas is the union of its records. Nothing here is a file until you export it.</p>
   <table>
     <tr><td>Pen down + move</td><td>Freehand stroke</td></tr>
@@ -146,7 +177,8 @@ button{font:inherit;color:inherit}
     <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
     <tr><td>Double-tap</td><td>Text</td></tr>
     <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Tap it to select, drag to move, corner handle to resize, Esc to draw on it</td></tr>
-    <tr><td>Ctrl/⌘ + drag (or lasso mode)</td><td>Lasso select, then drag to move</td></tr>
+    <tr><td>V · select mode (or the pen/select button)</td><td>Tap any element to select it, shift-tap to add, drag it to move, drag on empty paper to lasso. P returns to the pen</td></tr>
+    <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode</td></tr>
     <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
     <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
     <tr><td>Delete</td><td>Revoke selection (<span class="kbd">-N-1</span>, only your own)</td></tr>
@@ -155,10 +187,20 @@ button{font:inherit;color:inherit}
     <tr><td>` (backtick)</td><td>Ledger</td></tr>
     <tr><td>⌘K or /</td><td>Command palette</td></tr>
   </table>
+  <h2>Keyboard only</h2>
+  <table>
+    <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
+    <tr><td>Arrow keys (Shift = ×10)</td><td>Move the selection, or pan when nothing is selected</td></tr>
+    <tr><td>Delete / Backspace</td><td>Revoke the selection</td></tr>
+    <tr><td>+ / −</td><td>Resize a selected image, otherwise zoom</td></tr>
+    <tr><td>R · O · T · I</td><td>Insert rectangle · circle · text · image at the centre</td></tr>
+    <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
+    <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
+  </table>
   <p style="margin:12px 0 0">Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
 </div>
 
-<div id="toast"></div>
+<div id="toast" aria-hidden="true"></div>
 <input type="file" id="file" accept=".flux,.txt,text/plain">
 <input type="file" id="imgFile" accept="image/*" style="display:none">
 
@@ -397,7 +439,7 @@ function toRec(node, cid){
     case 'TEXT': r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); r.fs = Math.max(4, decInt(f.S)); break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
     case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move'); break;
-    case 'IMAGE': if (!f.R) throw Error('image'); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
+    case 'IMAGE': if (!f.R) throw Error('image'); r.alt = decTxt(f.M || ''); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
     case 'GROUP': if (!Array.isArray(f.P)) throw Error('group'); break;
   }
   return r;
@@ -745,17 +787,17 @@ async function commitShape(kind, a, b){
   const R = await cidOf(te.encode([kind, x, y, w, h, t].join('_')));
   const raw = await signed('SHAPE', [['I', S.me.id], ['R', R], ['K', kind], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h],
     ['C', S.color], ['S', Math.max(1, Math.round(S.width / 2))], ['F', S.fill ? S.color : 'none'], ['Z', ++S.lamport], ['T', t]]);
-  recordCreate(await publish(raw));
+  const cid = await publish(raw); recordCreate(cid); return cid;
 }
 async function commitArrow(from, to, label = ''){
   const raw = await signed('ARROW', [['I', S.me.id], ['FROM', from.cid], ['TO', to.cid], ['C', S.color], ['S', Math.max(1, Math.round(S.width / 2))],
     ['M', encTxt(label)], ['Z', ++S.lamport], ['T', Date.now()]]);
-  recordCreate(await publish(raw));
+  const cid = await publish(raw); recordCreate(cid); return cid;
 }
 async function commitText(w, text){
   const raw = await signed('TEXT', [['I', S.me.id], ['X', encInt(Math.round(w.x))], ['Y', encInt(Math.round(w.y))], ['M', encTxt(text)],
     ['F', S.font], ['S', S.textSize], ['C', S.color], ['Z', ++S.lamport], ['T', Date.now()]]);
-  recordCreate(await publish(raw));
+  const cid = await publish(raw); recordCreate(cid); return cid;
 }
 async function commitMove(target, dx, dy, dw = 0, dh = 0){
   const size = dw || dh ? [['DW', encInt(dw)], ['DH', encInt(dh)]] : [];
@@ -765,6 +807,9 @@ async function commitMove(target, dx, dy, dw = 0, dh = 0){
 const IMG_MAX = 1600;
 async function insertImage(file, at){
   if (!S.me) return;
+  const alt = await ask('Describe this image', (file.name || '').replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '),
+    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.');
+  if (alt === null) return;
   let bmp;
   try { bmp = await createImageBitmap(file); } catch { toast('That file is not an image this browser can read.'); return; }
   const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
@@ -779,7 +824,7 @@ async function insertImage(file, at){
   const w = Math.max(8, Math.round(c.width * fit)), h = Math.max(8, Math.round(c.height * fit));
   const p = at || toWorld(innerWidth / 2, innerHeight / 2), x = Math.round(p.x - w / 2), y = Math.round(p.y - h / 2);
   S.imgs.set(R, bmp.width === c.width ? bmp : await createImageBitmap(c));
-  const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h], ['Z', ++S.lamport], ['T', Date.now()]]);
+  const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h], ['M', encTxt(alt.trim())], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw, { [R]: bytes });
   recordCreate(cid);
   if (cid){ S.sel = new Set([cid]); dirty = true; }
@@ -798,6 +843,7 @@ function moveTargets(){
   return t;
 }
 async function undo(){
+  commitKb();
   const h = S.hist.pop(); if (!h){ toast('Nothing of yours to undo.'); return; }
   if (h.kind === 'create') await setNeg(h.cid, true);
   else if (h.kind === 'revoke') for (const c of h.cids) await setNeg(c, false);
@@ -812,6 +858,7 @@ async function redo(){
   S.hist.push(h);
 }
 async function revokeSelection(){
+  commitKb();
   if (!S.sel.size){ toast('Select something first (ctrl-drag to lasso).'); return; }
   const mine = [...S.sel].filter(c => S.records.get(c)?.author === S.me.id && !S.D.hidden.has(c));
   const others = S.sel.size - mine.length;
@@ -870,6 +917,105 @@ function elementAt(w, except){
   }
   return null;
 }
+// Precise hit test: strokes and arrows by distance to their path, shapes by outline (or body when filled), text and images by box.
+function hitTest(w){
+  const tol = 6 / S.view.zoom, els = S.D.els;
+  for (let i = els.length - 1; i >= 0; i--){
+    const el = els[i];
+    if (!visible(el)) continue;
+    const b = box(el); if (!b || !inside(w, grow(b, tol))) continue;
+    if (el.type === 'DRAW'){
+      const g = strokeGeom(el.f.R); if (!g) continue;
+      const o = offsetOf(el.cid), p = { x: w.x - o.x, y: w.y - o.y }, pts = g.pts, lim = el.w / 2 + tol;
+      if (pts.length === 1 ? Math.hypot(p.x - pts[0].x, p.y - pts[0].y) < lim : pts.some((q, j) => j && distToSeg(p, pts[j - 1], q) < lim)) return el;
+    } else if (el.type === 'ARROW'){
+      const a = arrowGeom(el); if (a && distToSeg(w, a.a, a.b) < el.sw / 2 + tol) return el;
+    } else if (el.type === 'SHAPE' && (!el.f.F || el.f.F === 'none')){
+      if (el.k === 'circle'){
+        const c = center(b), rx = b.w / 2, ry = b.h / 2, d = Math.hypot((w.x - c.x) / (rx || 1), (w.y - c.y) / (ry || 1));
+        if (Math.abs(d - 1) * Math.min(rx, ry) < el.sw / 2 + tol) return el;
+      } else if (!inside(w, grow(b, -(el.sw / 2 + tol)))) return el;
+    } else return el;
+  }
+  return null;
+}
+function setMode(select){
+  S.lassoMode = select;
+  const m = $('mode'); m.setAttribute('aria-pressed', String(select));
+  m.querySelector('.lbl').textContent = select ? 'select' : 'pen'; m.firstElementChild.textContent = select ? '⬚' : '✎';
+  m.title = select ? 'Select mode · P for pen' : 'Pen mode · V for select';
+  setCursor();
+  say(select ? 'Select mode. Tap an element to select it, drag to move it, drag on empty space to lasso.' : 'Pen mode. Drag to draw.');
+}
+function ensureVisible(el){
+  const b = box(el); if (!b) return;
+  const vw = innerWidth / S.view.zoom, vh = innerHeight / S.view.zoom;
+  if (b.x < S.view.x || b.y < S.view.y || b.x + b.w > S.view.x + vw || b.y + b.h > S.view.y + vh){ const c = center(b); S.view.x = c.x - vw / 2; S.view.y = c.y - vh / 2; }
+}
+function cycleSel(dir){
+  commitKb();
+  const els = S.D.els.filter(el => visible(el) && !S.D.hidden.has(el.cid));
+  if (!els.length){ say('The canvas is empty.'); return false; }
+  const cur = S.sel.size === 1 ? els.findIndex(e => S.sel.has(e.cid)) : -1;
+  const i = cur < 0 ? (dir > 0 ? 0 : els.length - 1) : cur + dir;
+  if (i < 0 || i >= els.length){ S.sel.clear(); dirty = true; return false; }
+  S.sel = new Set([els[i].cid]); ensureVisible(els[i]); dirty = true;
+  say(`${describe(els[i])}, ${i + 1} of ${els.length}. Arrow keys move, Delete revokes.`);
+  return true;
+}
+// Arrow-key moves preview live and settle into one signed MOVE per target after a short pause.
+let kbT = 0;
+function kbMove(dx, dy){
+  if (G && !G.keyboard) return;
+  if (!G){ G = { kind: 'move', keyboard: true, targets: moveTargets(), dx: 0, dy: 0 }; }
+  if (!G.targets.size){ G = null; say('Arrows follow their endpoints; move what they connect.'); return; }
+  G.dx += dx; G.dy += dy; dirty = true;
+  clearTimeout(kbT); kbT = setTimeout(commitKb, 450);
+}
+function commitKb(){
+  clearTimeout(kbT);
+  const g = G; if (!g || !g.keyboard) return;
+  G = null; dirty = true;
+  if (!g.dx && !g.dy) return;
+  (async () => { for (const t of g.targets) await commitMove(t, g.dx, g.dy); S.hist.push({ kind: 'move', targets: [...g.targets], dx: g.dx, dy: g.dy }); S.redo = []; })();
+  const n = g.targets.size, parts = [];
+  if (g.dx) parts.push(`${Math.abs(g.dx)} ${g.dx < 0 ? 'left' : 'right'}`);
+  if (g.dy) parts.push(`${Math.abs(g.dy)} ${g.dy < 0 ? 'up' : 'down'}`);
+  say(`Moved ${n} element${n > 1 ? 's' : ''} ${parts.join(' and ')}. Signed.`);
+}
+async function kbResize(f){
+  const h = resizeHandle(); if (!h) return false;
+  const b = box(h.el), dw = Math.round(b.w * f) - b.w, dh = Math.round(b.h * f) - b.h;
+  if (b.w + dw < 16) return true;
+  await commitMove(h.el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [h.el.cid], dx: 0, dy: 0, dw, dh }); S.redo = [];
+  say(`Image resized to ${b.w + dw} by ${b.h + dh}.`); return true;
+}
+const viewCenter = () => toWorld(innerWidth / 2, innerHeight / 2);
+async function kbInsert(kind){
+  const c = viewCenter(); let cid;
+  if (kind === 'rect') cid = await commitShape('rect', { x: c.x - 80, y: c.y - 50 }, { x: c.x + 80, y: c.y + 50 });
+  if (kind === 'circle') cid = await commitShape('circle', { x: c.x - 60, y: c.y - 60 }, { x: c.x + 60, y: c.y + 60 });
+  if (cid){ S.sel = new Set([cid]); dirty = true; say(`${kind === 'rect' ? 'Rectangle' : 'Circle'} signed and selected. Arrow keys move it.`); }
+}
+async function connectSel(){
+  const els = [...S.sel].map(c => S.records.get(c)).filter(el => el && el.type !== 'ARROW');
+  if (els.length !== 2){ toast('Select exactly two elements to connect (first → second).'); return; }
+  const cid = await commitArrow(els[0], els[1]);
+  if (cid) say(`Arrow signed from ${describe(els[0])} to ${describe(els[1])}.`);
+}
+// Accessible stand-in for prompt(): also works in sandboxed frames.
+let askRes = null, askFocus = null;
+function ask(label, value = '', why = ''){
+  if (askRes) askRes(null);
+  askFocus = document.activeElement;
+  $('askT').textContent = label; $('askWhy').textContent = why; $('askWhy').style.display = why ? 'block' : 'none';
+  $('askIn').value = value; $('ask').style.display = 'block'; setTimeout(() => { $('askIn').focus(); $('askIn').select(); }, 0);
+  return new Promise(res => { askRes = res; });
+}
+function closeAsk(v){
+  $('ask').style.display = 'none'; const r = askRes; askRes = null; r && r(v);
+  const back = askFocus && document.contains(askFocus) && askFocus !== document.body ? askFocus : cv; back.focus({ preventScroll: true });
+}
 function resizeHandle(){
   if (S.sel.size !== 1) return null;
   const el = S.records.get([...S.sel][0]);
@@ -878,12 +1024,15 @@ function resizeHandle(){
 }
 function onHandle(w){ const h = resizeHandle(); return h && Math.hypot(w.x - h.x, w.y - h.y) < 12 / S.view.zoom ? h : null; }
 function setCursor(){
-  cv.style.cursor = spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move' : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
+  cv.style.cursor = spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
+    : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
 }
-let hoverSel = false, hoverHandle = false;
+let hoverSel = false, hoverHandle = false, hoverPick = false;
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
   if (taOpen()){ finishText(true); return; }
+  commitKb();
+  cv.focus({ preventScroll: true });
   cv.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   document.getElementById('hint').classList.add('gone');
@@ -896,6 +1045,16 @@ cv.addEventListener('pointerdown', e => {
   const w = toWorld(e.clientX, e.clientY);
   if (e.button === 1 || e.button === 2 || spaceDown){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
   if (e.button !== 0) return;
+  if (S.lassoMode && !e.ctrlKey && !e.metaKey && !onHandle(w)){
+    const hit = hitTest(w);
+    if (hit){
+      if (e.shiftKey){ S.sel.has(hit.cid) ? S.sel.delete(hit.cid) : S.sel.add(hit.cid); expandSel(); dirty = true; announceSel(); G = { kind: 'none' }; return; }
+      if (!S.sel.has(hit.cid)){ S.sel = new Set([hit.cid]); expandSel(); announceSel(); }
+      G = { kind: 'move', start: w, dx: 0, dy: 0, targets: moveTargets() }; dirty = true; setCursor(); return;
+    }
+    if (!e.shiftKey && S.sel.size){ S.sel.clear(); announceSel(); }
+    G = { kind: 'lasso', pts: [w] }; dirty = true; return;
+  }
   if (S.sel.size){
     const hd = onHandle(w);
     if (hd){ const b = box(hd.el); G = { kind: 'resize', target: hd.el.cid, start: w, aspect: b.w / b.h, dw: 0, dh: 0 }; setCursor(); return; }
@@ -915,11 +1074,14 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (!G){
-    const h = taOpen() ? null : edgeHit(e.clientX, e.clientY);
+    const h = taOpen() || S.lassoMode ? null : edgeHit(e.clientX, e.clientY);
+    const hp = S.lassoMode && !!hitTest(toWorld(e.clientX, e.clientY));
+    if (hp !== hoverPick){ hoverPick = hp; setCursor(); }
     const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = !!onHandle(wp);
     if (h !== hoverEdge || hs !== hoverSel || hh !== hoverHandle){ hoverEdge = hs || hh ? null : h; hoverSel = hs; hoverHandle = hh; dirty = true; setCursor(); }
     return;
   }
+  if (G.keyboard) return;
   const w = toWorld(e.clientX, e.clientY);
   switch (G.kind){
     case 'pinch': {
@@ -954,7 +1116,7 @@ cv.addEventListener('pointermove', e => {
 function endPointer(e, cancelled){
   pointers.delete(e.pointerId);
   const g = G;
-  if (!g) return;
+  if (!g || g.keyboard) return;
   if (g.kind === 'pinch'){ if (pointers.size === 0) G = null; return; }
   G = null; dirty = true; setCursor();
   if (cancelled) return;
@@ -973,7 +1135,7 @@ function endPointer(e, cancelled){
         const hit = S.D.els.slice().reverse().find(el => el.type === 'IMAGE' && visible(el) && !S.D.hidden.has(el.cid) && inside(pts[0], box(el) || { x: 0, y: 0, w: -1, h: -1 }));
         lastTap = { time: now, x: e.clientX, y: e.clientY, cancel, timer: setTimeout(() => {
           cancel(); lastTap = null;
-          if (hit && hit.type === 'IMAGE'){ S.sel = new Set([hit.cid]); expandSel(); dirty = true; }
+          if (hit && hit.type === 'IMAGE'){ S.sel = new Set([hit.cid]); expandSel(); dirty = true; announceSel(); }
           else commitStroke(pts, t0, color, width);
         }, 350) };
         return;
@@ -993,7 +1155,7 @@ function endPointer(e, cancelled){
         if (!visible(el)) continue; const b = box(el);
         if (b && pointInPoly(center(b), g.pts)) S.sel.add(el.cid);
       }
-      expandSel(); dirty = true; return;
+      expandSel(); dirty = true; announceSel(); return;
     }
     case 'resize': {
       if (!g.dw && !g.dh) return;
@@ -1051,7 +1213,21 @@ ta.addEventListener('blur', () => finishText(true));
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let toastT = 0;
-function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+let sayT = 0;
+function say(msg){ const n = $('sr'); n.textContent = ''; clearTimeout(sayT); sayT = setTimeout(() => { n.textContent = msg; }, 30); }
+const KIND = el => el.type === 'SHAPE' ? (el.k === 'circle' ? 'circle' : el.k) : el.type === 'DRAW' ? 'stroke' : el.type.toLowerCase();
+function describe(el){
+  if (!el) return '';
+  const who = el.author === S.me?.id ? 'you' : 'author ' + short(el.author);
+  const what = el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
+  return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', revoked' : ''}`;
+}
+function announceSel(){
+  if (!S.sel.size){ say('Selection cleared'); return; }
+  if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete revokes.');
+  else say(`${S.sel.size} elements selected. Arrow keys move, Delete revokes yours.`);
+}
+function toast(msg){ say(msg); const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 let authShown = '';
 function paintAuth(){
   if (!S.me) return;
@@ -1062,7 +1238,13 @@ function paintAuth(){
 }
 function paintAuthTick(){ paintAuth(); }
 $('auth').onclick = () => toggleLedger();
+function paintSummary(){
+  const c = {}; let n = 0;
+  for (const el of S.D.els) if (visible(el) && !S.D.hidden.has(el.cid)){ n++; const k = KIND(el); c[k] = (c[k] || 0) + 1; }
+  $('summary').textContent = n ? `Canvas has ${n} element${n > 1 ? 's' : ''}: ` + Object.entries(c).map(([k, v]) => `${v} ${k}${v > 1 ? 's' : ''}`).join(', ') + '.' : 'Empty canvas.';
+}
 function paintAuthors(){
+  paintSummary();
   const counts = new Map();
   for (const el of S.D.els) if (!S.D.hidden.has(el.cid)) counts.set(el.author, (counts.get(el.author) || 0) + 1);
   if (S.me && !counts.has(S.me.id)) counts.set(S.me.id, 0);
@@ -1070,6 +1252,8 @@ function paintAuthors(){
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
     b.style.background = authorColor(id); b.textContent = id.slice(2, 4);
+    b.setAttribute('aria-label', `${id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
+    b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.title = `${id === S.me?.id ? 'you · ' : ''}${short(id)} · ${n} element${n === 1 ? '' : 's'}\nclick: show only this author · shift-click: add/remove`;
     if (S.filter){ b.classList.toggle('off', !S.filter.has(id)); b.classList.toggle('solo', S.filter.has(id)); }
     b.onclick = e => {
@@ -1095,7 +1279,7 @@ function paintInspector(){
     const pts = r.type === 'DRAW' ? strokeGeom(r.f.R)?.pts.length : null;
     html = `<div class="who"><span class="dot" style="background:${authorColor(r.author)}"></span><b>${esc(kind)}</b>
       by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ signed</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">revoked</span>' : ''}</div>
-      <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · drag to move · corner resizes · Esc, then draw on it' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
+      <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}${r.type === 'IMAGE' ? `<br>alt: ${r.alt ? '“' + esc(r.alt) + '”' : '<span class="bad">none</span>'}` : ''}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · drag or arrow keys to move · corner or +/− resizes · Esc, then draw on it' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
       <div class="acts"><button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button>
       ${r.author === S.me.id ? `<button class="btn danger" data-a="${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}">${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}</button>` : ''}</div>`;
   } else {
@@ -1123,7 +1307,7 @@ $('insp').addEventListener('click', async e => {
 async function copy(text, msg){ try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Clipboard blocked by the browser.'); } }
 
 /* ledger */
-function toggleLedger(force){ S.ledger = force ?? !S.ledger; $('ledger').style.display = S.ledger ? 'flex' : 'none'; paintLedger(); }
+function toggleLedger(force){ S.ledger = force ?? !S.ledger; $('ledger').style.display = S.ledger ? 'flex' : 'none'; paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
 $('ledgerClose').onclick = () => toggleLedger(false);
 function paintLedger(){
   if (!S.ledger) return;
@@ -1135,17 +1319,18 @@ function paintLedger(){
   $('ledgerList').innerHTML = recs.slice(0, 500).map(r => {
     const tag = r.neg !== null ? `<span class="tag t-neg">${r.type} N-${r.neg ? 1 : 0}</span>` : `<span class="tag t-${r.type}">${r.type}</span>`;
     const target = r.neg !== null || r.type === 'MOVE' ? r.f.R : r.cid;
-    return `<div class="row${S.sel.has(target) ? ' sel' : ''}" data-t="${esc(target)}">
+    return `<div class="row${S.sel.has(target) ? ' sel' : ''}" data-t="${esc(target)}" role="button" tabindex="0">
       <div class="top">${tag}<span class="dot" style="background:${authorColor(r.author)}"></span>${r.author === S.me?.id ? 'you' : esc(short(r.author))}
       <span class="meta">z ${r.z} · ${recBytes(r)} B · <span class="ok">✓</span></span></div><div class="raw">${esc(r.raw)}</div></div>`;
   }).join('') + (recs.length > 500 ? `<div class="row meta">… ${recs.length - 500} older records</div>` : '') +
   (recs.length ? '' : '<div class="row meta">No records yet. Draw something.</div>');
 }
+$('ledgerList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('row')){ e.preventDefault(); e.target.click(); } });
 $('ledgerList').addEventListener('click', e => {
   const row = e.target.closest('.row'); if (!row || !row.dataset.t) return;
   row.classList.toggle('x');
   const r = S.records.get(row.dataset.t);
-  if (r && ELEMENT.has(r.type)){ S.sel = new Set([r.cid]); expandSel(); const b = box(r); if (b){ const c = center(b); S.view.x = c.x - innerWidth / 2 / S.view.zoom; S.view.y = c.y - innerHeight / 2 / S.view.zoom; } dirty = true; }
+  if (r && ELEMENT.has(r.type)){ S.sel = new Set([r.cid]); expandSel(); announceSel(); const b = box(r); if (b){ const c = center(b); S.view.x = c.x - innerWidth / 2 / S.view.zoom; S.view.y = c.y - innerHeight / 2 / S.view.zoom; } dirty = true; }
 });
 
 /* palette */
@@ -1154,12 +1339,17 @@ function commands(){
   const L = [];
   const add = (g, t, run, o = {}) => L.push({ g, t, run, ...o });
   for (const c of Object.keys(COLORS)) add('color', c[0].toUpperCase() + c.slice(1), () => { S.color = c; }, { sw: c, on: S.color === c });
-  add('color', 'Custom hex…', () => { let v = null; try { v = prompt('Hex color (e.g. 0b7285)', ''); } catch { toast('Type the hex into the palette instead: "hex 0b7285"'); } if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); });
+  add('color', 'Custom hex…', async () => { const v = await ask('Hex colour', '', 'Six hex digits, e.g. 0b7285'); if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); else if (v) toast('Not a hex colour.'); });
   for (const [n, w] of [['Fine', 2], ['Medium', 4], ['Bold', 8], ['Marker', 16]]) add('width', `${n} · ${w}`, () => { S.width = w; }, { on: S.width === w });
   for (const [n, s] of [['Small', 16], ['Medium', 24], ['Large', 40], ['Title', 64]]) add('text', `${n} text · ${s}`, () => { S.textSize = s; }, { on: S.textSize === s });
   for (const f of Object.keys(FONTS)) add('text', `Font · ${f}`, () => { S.font = f; }, { on: S.font === f });
   add('shape', 'Fill shapes', () => { S.fill = !S.fill; }, { on: S.fill });
-  add('tool', 'Lasso mode (for touch)', () => { S.lassoMode = !S.lassoMode; toast(S.lassoMode ? 'Lasso mode on: drag to select' : 'Lasso mode off'); }, { on: S.lassoMode });
+  add('tool', 'Select mode (tap to select, drag to move)', () => setMode(!S.lassoMode), { on: S.lassoMode, k: 'V / P' });
+  add('insert', 'Rectangle at centre', () => kbInsert('rect'), { k: 'R' });
+  add('insert', 'Circle at centre', () => kbInsert('circle'), { k: 'O' });
+  add('insert', 'Text at centre', () => openText(viewCenter()), { k: 'T' });
+  add('edit', 'Connect two selected elements', connectSel, { k: 'C' });
+  add('edit', 'Select next element', () => { cycleSel(1); }, { k: 'Tab' });
   add('edit', 'Undo', undo, { k: '⌘Z' });
   add('edit', 'Redo', redo, { k: '⇧⌘Z' });
   add('edit', 'Select all', selectAll, { k: '⌘A' });
@@ -1184,24 +1374,25 @@ function commands(){
   if (/^https?:/.test(location.href)) add('share', 'Copy canvas link', () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Open it in another tab to draw together.'));
   add('share', 'Copy canvas id', () => copy(canvasId, 'Canvas id copied'));
   add('canvas', 'New canvas', () => switchCanvas(newCanvasId()));
-  add('canvas', 'Open canvas by id…', () => { let v = null; try { v = prompt('Canvas id', ''); } catch {} v = (v || '').trim().replace(/^.*#/, ''); if (/^[a-z0-9]{6,32}$/.test(v)) switchCanvas(v); else if (v) toast('Not a canvas id.'); });
+  add('canvas', 'Open canvas by id…', async () => { let v = await ask('Canvas id'); v = (v || '').trim().replace(/^.*#/, ''); if (/^[a-z0-9]{6,32}$/.test(v)) switchCanvas(v); else if (v) toast('Not a canvas id.'); });
   add('identity', 'Copy my public key', () => copy(S.me.id, 'Public key copied'));
   add('identity', 'New identity for this tab', async () => {
     const me = await newIdentity(); store.set('flux:identity', JSON.stringify({ alg: me.alg, id: me.id, jwk: me.jwk }), true);
     S.me = me; S.hist = []; S.redo = []; paintAuthors(); toast(`Now drawing as ${short(me.id)} in this tab (${me.alg === 'ed' ? 'Ed25519' : 'ECDSA P-256'}).`);
   });
-  add('help', 'Gestures & help', () => { $('help').style.display = 'block'; }, { k: '?' });
+  add('help', 'Gestures, keyboard & help', () => toggleHelp(true), { k: '?' });
   return L;
 }
 let palItems = [], palIdx = 0;
 function openPalette(){ $('pal').style.display = 'block'; $('palIn').value = ''; paintPalette(); $('palIn').focus(); }
-function closePalette(){ $('pal').style.display = 'none'; }
+function closePalette(){ $('pal').style.display = 'none'; cv.focus({ preventScroll: true }); }
 function paintPalette(){
   const q = $('palIn').value.toLowerCase().split(/\s+/).filter(Boolean);
   palItems = commands().filter(c => q.every(w => (c.g + ' ' + c.t).toLowerCase().includes(w)));
   palIdx = Math.min(palIdx, Math.max(0, palItems.length - 1));
-  $('palList').innerHTML = palItems.map((c, i) => `<li class="${i === palIdx ? 'on' : ''}" data-i="${i}"><span class="chk">${c.on ? '✓' : ''}</span><span class="g">${c.g}</span>${c.sw ? SW(c.sw) : ''}<span>${esc(c.t)}</span>${c.k ? `<span class="k">${c.k}</span>` : ''}</li>`).join('')
-    || '<li><span class="g"></span>No command</li>';
+  $('palList').innerHTML = palItems.map((c, i) => `<li class="${i === palIdx ? 'on' : ''}" data-i="${i}" id="pal-${i}" role="option" aria-selected="${i === palIdx}" aria-checked="${c.on ? 'true' : 'false'}"><span class="chk" aria-hidden="true">${c.on ? '✓' : ''}</span><span class="g">${c.g}</span>${c.sw ? SW(c.sw) : ''}<span>${esc(c.t)}</span>${c.k ? `<span class="k">${c.k}</span>` : ''}</li>`).join('')
+    || '<li role="option" aria-disabled="true"><span class="g"></span>No command</li>';
+  $('palIn').setAttribute('aria-activedescendant', palItems.length ? 'pal-' + palIdx : '');
   $('palList').querySelector('.on')?.scrollIntoView({ block: 'nearest' });
 }
 async function runPal(i){ const c = palItems[i]; if (!c) return; closePalette(); await c.run(); dirty = true; }
@@ -1215,7 +1406,15 @@ $('palIn').addEventListener('keydown', e => {
 });
 $('palList').addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) runPal(+li.dataset.i); });
 $('pal').addEventListener('pointerdown', e => { if (e.target.id === 'pal') closePalette(); });
-$('help').addEventListener('click', () => { $('help').style.display = 'none'; });
+function toggleHelp(force){ const on = force ?? $('help').style.display !== 'block'; $('help').style.display = on ? 'block' : 'none'; if (on) $('helpClose').focus(); else cv.focus({ preventScroll: true }); }
+$('helpClose').onclick = () => toggleHelp(false);
+$('ask').querySelector('form').addEventListener('submit', e => { e.preventDefault(); closeAsk($('askIn').value); });
+$('askNo').onclick = () => closeAsk(null);
+$('ask').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeAsk(null); });
+$('ask').addEventListener('pointerdown', e => { if (e.target.id === 'ask') closeAsk(null); });
+$('mode').onclick = () => setMode(!S.lassoMode);
+$('addImg').onclick = () => $('imgFile').click();
+$('cmdBtn').onclick = () => openPalette();
 
 /* actions */
 function selectAll(){ S.sel = new Set(S.D.els.filter(visible).map(e => e.cid)); dirty = true; }
@@ -1277,18 +1476,49 @@ addEventListener('paste', async e => {
 
 /* keyboard */
 addEventListener('keydown', e => {
-  if (e.target === ta || e.target === $('palIn')) return;
+  if (e.target === ta || e.target === $('palIn') || e.target.closest?.('#ask')) return;
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  // canvas keys apply when the canvas (or nothing) has focus; buttons and ledger rows keep their own keys
+  const onCanvas = e.target === cv || e.target === document.body;
+  if (onCanvas && !mod){
+    if (e.key === 'Tab'){ if (cycleSel(e.shiftKey ? -1 : 1)) e.preventDefault(); return; }
+    if (e.key.startsWith('Arrow')){
+      e.preventDefault();
+      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (S.sel.size){ const st = (e.shiftKey ? 10 : 1) * Math.max(1, Math.round(1 / S.view.zoom)); kbMove(d[0] * st, d[1] * st); }
+      else { S.view.x += d[0] * 60 / S.view.zoom; S.view.y += d[1] * 60 / S.view.zoom; dirty = true; }
+      return;
+    }
+    if (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_'){
+      e.preventDefault(); const up = e.key === '+' || e.key === '=';
+      kbResize(up ? 1.1 : 1 / 1.1).then(done => { if (!done){ const c = viewCenter(), z = clampZ(S.view.zoom * (up ? 1.2 : 1 / 1.2)); S.view = { zoom: z, x: c.x - innerWidth / 2 / z, y: c.y - innerHeight / 2 / z }; dirty = true; say(`Zoom ${Math.round(z * 100)} percent`); } });
+      return;
+    }
+    if (!e.altKey){
+      if (k === 'v'){ setMode(true); return; }
+      if (k === 'p'){ setMode(false); return; }
+      if (k === 'r'){ kbInsert('rect'); return; }
+      if (k === 'o'){ kbInsert('circle'); return; }
+      if (k === 't'){ e.preventDefault(); openText(viewCenter()); return; }
+      if (k === 'i'){ $('imgFile').click(); return; }
+      if (k === 'c'){ connectSel(); return; }
+    }
+  }
   if ((mod && k === 'k') || (!mod && e.key === '/')){ e.preventDefault(); openPalette(); return; }
-  if (e.key === 'Escape'){ $('help').style.display = 'none'; if (S.ledger) toggleLedger(false); S.sel.clear(); dirty = true; return; }
+  if (e.key === 'Escape'){
+    if ($('help').style.display === 'block'){ toggleHelp(false); return; }
+    if (S.ledger){ toggleLedger(false); return; }
+    commitKb(); if (S.sel.size){ S.sel.clear(); announceSel(); } dirty = true; return;
+  }
+  if (!onCanvas) return;
   if (e.key === ' ' && !spaceDown){ spaceDown = true; setCursor(); e.preventDefault(); return; }
   if (mod && k === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && k === 'y'){ e.preventDefault(); redo(); return; }
-  if (mod && k === 'a'){ e.preventDefault(); selectAll(); return; }
+  if (mod && k === 'a'){ e.preventDefault(); selectAll(); announceSel(); return; }
   if (mod && k === 'g'){ e.preventDefault(); e.shiftKey ? ungroupSelection() : groupSelection(); return; }
   if (!mod && (e.key === 'Delete' || e.key === 'Backspace') && S.sel.size){ e.preventDefault(); revokeSelection(); return; }
   if (!mod && e.key === '`'){ toggleLedger(); return; }
-  if (!mod && e.key === '?'){ $('help').style.display = $('help').style.display === 'block' ? 'none' : 'block'; return; }
+  if (!mod && e.key === '?'){ toggleHelp(); return; }
   if (!mod && e.key === '0'){ zoomFit(); dirty = true; return; }
 });
 addEventListener('keyup', e => { if (e.key === ' '){ spaceDown = false; setCursor(); } });
