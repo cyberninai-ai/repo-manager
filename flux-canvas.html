@@ -31,6 +31,7 @@ button{font:inherit;color:inherit}
 /* corner cluster: the only standing chrome */
 #corner{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;align-items:center;z-index:5}
 #authors{display:flex;gap:4px}
+@media (min-width:820px){ body.drawer #corner{right:412px} }
 #authors button{width:22px;height:22px;border-radius:50%;border:2px solid var(--paper);padding:0;cursor:pointer;
   font-size:9px;font-weight:700;color:#fff;box-shadow:0 0 0 1px var(--line);opacity:.95}
 #authors button.off{opacity:.25}
@@ -89,7 +90,7 @@ button{font:inherit;color:inherit}
 .ledger .top{display:flex;align-items:center;gap:7px;font-size:11px}
 .ledger .tag{font-size:10px;font-weight:700;padding:0 5px;border-radius:3px;border:1px solid currentColor}
 .t-DRAW{color:var(--cyan)} .t-SHAPE{color:var(--amber)} .t-TEXT{color:var(--ink)} .t-ARROW{color:var(--magenta)}
-.t-IMAGE{color:var(--green)} .t-GROUP{color:var(--green)} .t-MOVE{color:var(--muted)} .t-neg{color:var(--red)}
+.t-COMMENT{color:var(--amber)} .t-RESOLVE{color:var(--amber)} .t-IMAGE{color:var(--green)} .t-GROUP{color:var(--green)} .t-MOVE{color:var(--muted)} .t-neg{color:var(--red)}
 .ledger .meta{margin-left:auto;color:var(--muted);font-size:10px;white-space:nowrap}
 .ledger .raw{margin-top:4px;font-size:10px;color:var(--muted);word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ledger .row.x .raw{-webkit-line-clamp:unset;display:block;color:var(--ink)}
@@ -123,6 +124,25 @@ button{font:inherit;color:inherit}
 #ask input{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink)}
 #ask .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 #help .close{position:absolute;top:12px;right:12px}
+.pill.on{color:var(--ink);border-color:var(--amber)}
+.pill .n{min-width:14px;text-align:center;font-weight:700;color:var(--amber)}
+.cm .list{padding:8px}
+.cm .empty{color:var(--muted);padding:10px 6px}
+.thread{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.thread.active{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber)}
+.thread.done{border-style:dashed}
+.thread .on{font-size:10px;color:var(--muted);margin-bottom:6px;display:flex;gap:6px;align-items:center}
+.thread .on .st{margin-left:auto;font-weight:700}
+.msg{padding:5px 0;border-top:1px dashed var(--line)}
+.msg:first-of-type{border-top:0}
+.msg .by{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--muted)}
+.msg .by b{color:var(--ink);font-weight:600}
+.msg .by .x{margin-left:auto;padding:0 5px;font-size:10px}
+.msg .tx{white-space:pre-wrap;word-break:break-word;margin-top:2px;font-size:12px}
+.cm textarea{width:100%;min-height:52px;resize:vertical;font:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);margin-top:6px}
+.cm .row2{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.cm .compose{border:1px solid var(--amber);border-radius:8px;padding:8px 10px;margin-bottom:10px}
+.cm label{font-size:11px;color:var(--muted)}
 #help h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 4px}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 @media (max-width:600px){ #hint .wide{display:none} .pill .lbl{display:none} }
@@ -139,6 +159,9 @@ button{font:inherit;color:inherit}
 <div id="corner" role="toolbar" aria-label="Canvas tools">
   <button class="pill" id="mode" aria-pressed="false" title="Pen mode · V for select"><span aria-hidden="true">✎</span><span class="lbl">pen</span></button>
   <button class="pill" id="addImg" title="Insert image (I)" aria-label="Insert image"><span aria-hidden="true">＋</span><span class="lbl">image</span></button>
+  <button class="pill" id="textBtn" title="Text tool (T): click where it goes" aria-pressed="false"><span aria-hidden="true">T</span><span class="lbl">text</span><span class="sr"> tool</span></button>
+  <button class="pill" id="cmtBtn" title="Comment (M): click an element or a spot" aria-label="Comment tool" aria-pressed="false"><span aria-hidden="true">💬</span><span class="lbl">comment</span></button>
+  <button class="pill" id="cmtList" title="Comments panel" aria-expanded="false"><span class="lbl">comments</span> <span class="n" id="cmtN">0</span><span class="sr"> open</span></button>
   <button class="pill" id="cmdBtn" title="Commands (⌘K or /)" aria-label="⌘K commands"><span aria-hidden="true">⌘K</span></button>
   <div id="authors" role="group" aria-label="Authors, filter by author"></div>
   <button id="auth" title="Auth Kit signing status · opens the ledger"><i aria-hidden="true"></i><span id="authTxt">locked</span></button>
@@ -161,6 +184,13 @@ button{font:inherit;color:inherit}
   <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off">
   <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="button" class="btn" id="askOk">OK</button></div></div></div>
 
+<aside class="ledger cm" id="comments" aria-label="Comments">
+  <header>
+    <h2><span>Comments</span><button class="btn" id="cmClose">close</button></h2>
+    <div class="stats"><label><input type="checkbox" id="cmShowDone"> show resolved</label> · every comment and reply is a signed record</div>
+  </header>
+  <div class="list" id="cmList"></div>
+</aside>
 <aside class="ledger" id="ledger" aria-label="Ledger of signed records">
   <header>
     <h2><span>Ledger</span><button class="btn" id="ledgerClose">close</button></h2>
@@ -178,7 +208,8 @@ button{font:inherit;color:inherit}
     <tr><td>Shift + drag</td><td>Rectangle</td></tr>
     <tr><td>Alt + drag</td><td>Circle</td></tr>
     <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
-    <tr><td>Double-tap</td><td>Text</td></tr>
+    <tr><td>Double-tap · T · the T button</td><td>Text. Double-tap your own text (or Enter on it) to edit it</td></tr>
+    <tr><td>M · the 💬 button</td><td>Comment: click an element to pin it there (it follows the element) or empty space. Threads, replies and resolve live in the comments panel</td></tr>
     <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Draw on it right away with the pen. To move or resize it, switch to select mode (V), drag it, or pull the corner handle</td></tr>
     <tr><td>V · select mode (or the pen/select button)</td><td>Tap any element to select it, shift-tap to add, drag it to move, drag on empty paper to lasso. P returns to the pen</td></tr>
     <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode; Ctrl/⌘-drag inside the selection moves it</td></tr>
@@ -198,6 +229,7 @@ button{font:inherit;color:inherit}
     <tr><td>+ / −</td><td>Resize a selected image, otherwise zoom</td></tr>
     <tr><td>R · O · T · I</td><td>Insert rectangle · circle · text · image at the centre</td></tr>
     <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
+    <tr><td>M · Enter</td><td>Comment on the selection (or the centre) · edit the selected text if it's yours</td></tr>
     <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
   </table>
   <p style="margin:12px 0 0">Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
@@ -387,7 +419,7 @@ async function signed(action, pairs){
    State
    ===================================================================== */
 const ELEMENT = new Set(['DRAW', 'SHAPE', 'TEXT', 'ARROW', 'IMAGE']);
-const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE']);
+const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE', 'COMMENT', 'RESOLVE']);
 // Canvas id lives in the URL hash when the host allows it; sandboxed frames (about:srcdoc) refuse
 // history changes, so fall back to the last canvas remembered in storage.
 const newCanvasId = () => b32(crypto.getRandomValues(new Uint8Array(8)));
@@ -404,7 +436,7 @@ const S = {
   view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 },
   color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: false,
   sel: new Set(), filter: null, showHidden: false, ledger: false, rejected: 0,
-  hist: [], redo: [], ghosts: [], D: { els: [], hidden: new Set(), off: new Map(), groupOf: new Map(), groups: [] },
+  hist: [], redo: [], ghosts: [], D: { els: [], hidden: new Set(), off: new Map(), groupOf: new Map(), groups: [], next: new Map(), superseded: new Set(), threads: new Map() },
 };
 const byZ = (a, b) => a.z - b.z || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0);
 let channelName = `canvas.${canvasId}.strokes`;
@@ -471,7 +503,9 @@ function toRec(node, cid){
   switch (r.type){
     case 'DRAW': if (!f.R || !f.C) throw Error('draw'); r.w = Math.max(1, decInt(f.W)); break;
     case 'SHAPE': r.k = f.K; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = decInt(f.W); r.bh = decInt(f.H); r.sw = Math.max(1, decInt(f.S)); break;
-    case 'TEXT': r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); r.fs = Math.max(4, decInt(f.S)); break;
+    case 'TEXT': r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); r.fs = Math.max(4, decInt(f.S)); r.edits = f.E || null; break;
+    case 'COMMENT': r.on = f.ON && f.ON !== '0' ? f.ON : null; r.re = f.RE && f.RE !== '0' ? f.RE : null; r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); break;
+    case 'RESOLVE': if (!f.R) throw Error('resolve'); r.state = f.S === '1'; break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
     case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move'); break;
     case 'IMAGE': if (!f.R) throw Error('image'); r.alt = decTxt(f.M || ''); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
@@ -560,7 +594,7 @@ async function importText(text, persist = true){
 /* ---------- derived view of the union ---------- */
 function derive(){
   const recs = [...S.records.values()].sort(byZ);
-  const els = [], negs = new Map(), off = new Map(), groups = [];
+  const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map();
   for (const r of recs){
     if (r.neg !== null){
       const t = S.records.get(r.f.R);
@@ -568,16 +602,28 @@ function derive(){
     } else if (r.type === 'MOVE'){
       const o = off.get(r.f.R) || { x: 0, y: 0, w: 0, h: 0 }; o.x += r.dx; o.y += r.dy; o.w += r.dw; o.h += r.dh; off.set(r.f.R, o);
     } else if (r.type === 'GROUP') groups.push(r);
+    else if (r.type === 'COMMENT') comments.push(r);
+    else if (r.type === 'RESOLVE') resolves.set(r.f.R, r);   // latest z wins; anyone may resolve or reopen
     else els.push(r);
   }
   const hidden = new Set(); for (const [k, v] of negs) if (v) hidden.add(k);
+  // text edits: an author's TEXT with -E-{cid} supersedes that earlier version (unless the edit itself is revoked)
+  const next = new Map(), superseded = new Set();
+  for (const r of els) if (r.type === 'TEXT' && r.edits && !hidden.has(r.cid)){
+    const o = S.records.get(r.edits);
+    if (o && o.type === 'TEXT' && o.author === r.author){ next.set(o.cid, r.cid); superseded.add(o.cid); }
+  }
+  // comment threads: a root plus replies (RE), resolved state from the latest RESOLVE
+  const threads = new Map();
+  for (const c of comments) if (!c.re) threads.set(c.cid, { root: c, replies: [], resolved: !!resolves.get(c.cid)?.state, by: resolves.get(c.cid)?.author });
+  for (const c of comments) if (c.re && threads.has(c.re)) threads.get(c.re).replies.push(c);
   const groupOf = new Map();
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
-  S.D = { els, hidden, off, groupOf, groups };
+  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads };
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
 let derivePending = false;
-function changed(){ if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); dirty = true; }); } }
+function changed(){ if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
 
 /* =====================================================================
    Geometry
@@ -648,18 +694,21 @@ function edgePoint(b, toward, pad){
   return { x: c.x + dx * t, y: c.y + dy * t };
 }
 function passes(el){ return !S.filter || S.filter.has(el.author); }
+// follow text edits to the current version, so arrows and comments stay attached when text is edited
+function current(cid){ let c = cid, n = 0; while (S.D.next.has(c) && n++ < 1000) c = S.D.next.get(c); return S.records.get(c); }
 function visible(el){
   if (!el || el.neg !== null || !ELEMENT.has(el.type)) return false;
+  if (S.D.superseded.has(el.cid) || el.cid === editingCid) return false;
   if (S.D.hidden.has(el.cid) && !S.showHidden) return false;
   if (!passes(el)) return false;
   if (el.type === 'ARROW'){
-    const a = S.records.get(el.f.FROM), b = S.records.get(el.f.TO);
+    const a = current(el.f.FROM), b = current(el.f.TO);
     return !!(a && b && a.type !== 'ARROW' && b.type !== 'ARROW' && visible(a) && visible(b));   // negatives propagate to connectors
   }
   return true;
 }
 function arrowGeom(el){
-  const A = S.records.get(el.f.FROM), B = S.records.get(el.f.TO);
+  const A = current(el.f.FROM), B = current(el.f.TO);
   if (!A || !B || A.type === 'ARROW' || B.type === 'ARROW') return null;
   const ba = box(A), bb = box(B); if (!ba || !bb) return null;
   return { a: edgePoint(ba, center(bb), 6), b: edgePoint(bb, center(ba), 6) };
@@ -798,6 +847,7 @@ function render(){
     if (h){ ctx.save(); ctx.fillStyle = accent; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(); ctx.lineWidth = 2 / z;
       ctx.beginPath(); ctx.rect(h.x - 6 / z, h.y - 6 / z, 12 / z, 12 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
   }
+  drawPins();
   paintInspector();
 }
 function loop(){ if (dirty) render(); paintAuthTick(); requestAnimationFrame(loop); }
@@ -829,10 +879,22 @@ async function commitArrow(from, to, label = ''){
     ['M', encTxt(label)], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
 }
-async function commitText(w, text){
+async function commitText(w, text, orig = null){
+  // an edit is a new signed TEXT that names the version it replaces; it keeps that version's style and current position
+  const st = orig ? { F: orig.f.F, S: orig.fs, C: orig.f.C } : { F: S.font, S: S.textSize, C: S.color };
   const raw = await signed('TEXT', [['I', S.me.id], ['X', encInt(Math.round(w.x))], ['Y', encInt(Math.round(w.y))], ['M', encTxt(text)],
-    ['F', S.font], ['S', S.textSize], ['C', S.color], ['Z', ++S.lamport], ['T', Date.now()]]);
+    ['F', st.F], ['S', st.S], ['C', st.C], ...(orig ? [['E', orig.cid]] : []), ['Z', ++S.lamport], ['T', Date.now()]]);
+  const cid = await publish(raw); recordCreate(cid);
+  if (orig && cid){ S.sel = new Set([cid]); dirty = true; say('Text edited and signed. The earlier version stays in the ledger.'); }
+  return cid;
+}
+async function commitComment({ on = null, x, y, text, re = null }){
+  const raw = await signed('COMMENT', [['I', S.me.id], ['ON', on || '0'], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))],
+    ['M', encTxt(text)], ['RE', re || '0'], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
+}
+async function commitResolve(root, state){
+  return publish(await signed('RESOLVE', [['I', S.me.id], ['R', root], ['S', state ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 async function commitMove(target, dx, dy, dw = 0, dh = 0){
   const size = dw || dh ? [['DW', encInt(dw)], ['DH', encInt(dh)]] : [];
@@ -1076,11 +1138,58 @@ function resizeHandle(){
   const b = box(el); return b && { x: b.x + b.w, y: b.y + b.h, el };
 }
 function onHandle(w){ const h = resizeHandle(); return h && Math.hypot(w.x - h.x, w.y - h.y) < 12 / S.view.zoom ? h : null; }
+// One-shot tools: the next click places a text or a comment, then the pen comes back.
+let placing = null;
+function setPlacing(kind){
+  placing = kind;
+  $('textBtn').setAttribute('aria-pressed', String(kind === 'text')); $('textBtn').classList.toggle('on', kind === 'text');
+  $('cmtBtn').setAttribute('aria-pressed', String(kind === 'comment')); $('cmtBtn').classList.toggle('on', kind === 'comment');
+  setCursor();
+  if (kind) say(kind === 'text' ? 'Text tool: click where the text goes.' : 'Comment tool: click an element to comment on it, or empty space. Escape cancels.');
+}
+// Pin position: comments on an element are stored relative to its box, so they follow it.
+function pinPos(c){
+  if (c.on){ const t = current(c.on), b = t && box(t); if (b) return { x: b.x + c.x, y: b.y + c.y }; }
+  return { x: c.x, y: c.y };
+}
+function pinAt(sx, sy){
+  for (const [id, t] of [...S.D.threads].reverse()){
+    if (!threadShown(t)) continue;
+    const p = pinPos(t.root), s = toScreen(p.x, p.y);
+    if (Math.hypot(sx - s.x, sy - s.y + 14) < 15) return id;
+  }
+  if (draft){ const s = toScreen(draft.px, draft.py); if (Math.hypot(sx - s.x, sy - s.y + 14) < 15) return 'draft'; }
+  return null;
+}
+const threadShown = t => !S.D.hidden.has(t.root.cid) && (!t.resolved || S.cmShowDone);
+function drawPins(){
+  const z = S.view.zoom;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const pin = (s, color, label, active, faded) => {
+    ctx.save(); ctx.globalAlpha = faded ? .5 : 1;
+    ctx.translate(s.x, s.y - 14);
+    ctx.beginPath(); ctx.moveTo(-5, 9); ctx.lineTo(0, 14); ctx.lineTo(5, 9); ctx.arc(0, 0, 11, Math.PI * 0.68, Math.PI * 2.32); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.lineWidth = active ? 3 : 2; ctx.strokeStyle = active ? getComputedStyle(document.documentElement).getPropertyValue('--amber').trim() : '#fff'; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = `bold 10px ${FONTS.mono}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 0, 0.5);
+    ctx.restore();
+  };
+  for (const [id, t] of S.D.threads){
+    if (!threadShown(t)) continue;
+    const p = pinPos(t.root), s = toScreen(p.x, p.y);
+    if (s.x < -20 || s.y < -20 || s.x > innerWidth + 20 || s.y > innerHeight + 40) continue;
+    const n = 1 + t.replies.filter(c => !S.D.hidden.has(c.cid)).length;
+    pin(s, t.resolved ? '#868e96' : authorColor(t.root.author), t.resolved ? '✓' : String(n), id === activeThread, t.resolved);
+  }
+  if (draft) pin(toScreen(draft.px, draft.py), authorColor(S.me.id), '+', true, false);
+  if (z) {}
+}
 function setCursor(){
-  cv.style.cursor = spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
+  cv.style.cursor = hoverPin ? 'pointer' : placing === 'text' ? 'text' : placing === 'comment' ? 'copy'
+    : spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
     : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
 }
-let hoverSel = false, hoverHandle = false, hoverPick = false;
+let hoverSel = false, hoverHandle = false, hoverPick = false, hoverPin = false;
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
   if (taOpen()){ finishText(true); return; }
@@ -1096,6 +1205,12 @@ cv.addEventListener('pointerdown', e => {
   }
   if (pointers.size > 2) return;
   const w = toWorld(e.clientX, e.clientY);
+  if (e.button === 0 && pointers.size === 1){
+    const pid = pinAt(e.clientX, e.clientY);
+    if (pid){ G = { kind: 'none' }; if (pid !== 'draft') openThread(pid); else toggleComments(true); return; }
+    if (placing === 'text'){ G = { kind: 'none' }; const t = hitTest(w); if (!(t && t.type === 'TEXT' && editText(t))) openText(w); return; }
+    if (placing === 'comment'){ G = { kind: 'none' }; startComment(w, hitTest(w)); setPlacing(null); return; }
+  }
   if (e.button === 1 || e.button === 2 || spaceDown){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
   if (e.button !== 0) return;
   if (S.lassoMode && !e.ctrlKey && !e.metaKey && !onHandle(w)){
@@ -1132,6 +1247,8 @@ cv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (!G){
     const h = taOpen() || S.lassoMode ? null : edgeHit(e.clientX, e.clientY);
+    const hpin = !!pinAt(e.clientX, e.clientY);
+    if (hpin !== hoverPin){ hoverPin = hpin; setCursor(); }
     const hp = S.lassoMode && !!hitTest(toWorld(e.clientX, e.clientY));
     if (hp !== hoverPick){ hoverPick = hp; setCursor(); }
     const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(S.lassoMode && sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = S.lassoMode && !!onHandle(wp);
@@ -1184,7 +1301,8 @@ function endPointer(e, cancelled){
       if (tap){
         const now = Date.now();
         if (lastTap && now - lastTap.time < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 24){
-          clearTimeout(lastTap.timer); lastTap.cancel(); lastTap = null; openText(g.pts[0]); return;
+          clearTimeout(lastTap.timer); lastTap.cancel(); lastTap = null;
+          const t = hitTest(g.pts[0]); if (!(t && t.type === 'TEXT' && editText(t))) openText(g.pts[0]); return;
         }
         const pts = g.pts.slice(0, 1), t0 = g.t0, color = S.color, width = S.width;
         const cancel = ghost({ pts, color, width });
@@ -1239,16 +1357,30 @@ cv.addEventListener('wheel', e => {
 const ta = document.getElementById('ta');
 let taAt = null;
 const taOpen = () => ta.style.display === 'block';
-function openText(w){
-  taAt = w; const s = toScreen(w.x, w.y), z = S.view.zoom;
-  Object.assign(ta.style, { display: 'block', left: s.x + 'px', top: s.y + 'px', font: `${S.textSize * z}px ${FONTS[S.font]}`, color: colorOf(S.color), lineHeight: '1.25' });
-  ta.value = ''; sizeTa(); setTimeout(() => ta.focus(), 0);
+let editingCid = null;
+function openText(w, orig = null){
+  setPlacing(null);
+  if (orig){ const b = box(orig); w = { x: b.x, y: b.y }; editingCid = orig.cid; dirty = true; }
+  taAt = w; taOrig = orig; const s = toScreen(w.x, w.y), z = S.view.zoom;
+  const fs = orig ? orig.fs : S.textSize, font = FONTS[orig ? orig.f.F : S.font] || FONTS.sans, col = colorOf(orig ? orig.f.C : S.color);
+  Object.assign(ta.style, { display: 'block', left: s.x + 'px', top: s.y + 'px', font: `${fs * z}px ${font}`, color: col, lineHeight: '1.25' });
+  ta.value = orig ? orig.text : ''; sizeTa(); setTimeout(() => { ta.focus(); if (orig) ta.select(); }, 0);
+  say(orig ? 'Editing your text. Enter signs the new version, Escape cancels.' : 'Type your text. Enter signs it, Shift+Enter adds a line, Escape cancels.');
+}
+let taOrig = null;
+function editText(el){
+  el = el && current(el.cid);
+  if (!el || el.type !== 'TEXT') return false;
+  if (el.author !== S.me.id){ toast('Only its author can edit this text. Add a comment instead (M).'); return true; }
+  openText(null, el); return true;
 }
 function sizeTa(){ ta.style.width = '2ch'; ta.style.height = 'auto'; ta.style.width = (ta.scrollWidth + 8) + 'px'; ta.style.height = ta.scrollHeight + 'px'; }
 function finishText(commit){
   if (!taOpen()) return;
-  const v = ta.value.replace(/\s+$/, ''); ta.style.display = 'none'; ta.blur();
-  if (commit && v.trim()) commitText(taAt, v);
+  const v = ta.value.replace(/\s+$/, ''), orig = taOrig; ta.style.display = 'none'; taOrig = null;
+  editingCid = null; dirty = true;
+  if (document.activeElement === ta) cv.focus({ preventScroll: true });
+  if (commit && v.trim() && (!orig || v !== orig.text)) commitText(taAt, v, orig);
 }
 ta.addEventListener('input', sizeTa);
 ta.addEventListener('keydown', e => {
@@ -1292,7 +1424,8 @@ $('auth').onclick = () => toggleLedger();
 function paintSummary(){
   const c = {}; let n = 0;
   for (const el of S.D.els) if (visible(el) && !S.D.hidden.has(el.cid)){ n++; const k = KIND(el); c[k] = (c[k] || 0) + 1; }
-  $('summary').textContent = n ? `Canvas has ${n} element${n > 1 ? 's' : ''}: ` + Object.entries(c).map(([k, v]) => `${v} ${k}${v > 1 ? 's' : ''}`).join(', ') + '.' : 'Empty canvas.';
+  const oc = [...S.D.threads.values()].filter(t => !S.D.hidden.has(t.root.cid) && !t.resolved).length;
+  $('summary').textContent = (oc ? `${oc} open comment thread${oc > 1 ? 's' : ''}. ` : '') + (n ? `Canvas has ${n} element${n > 1 ? 's' : ''}: ` + Object.entries(c).map(([k, v]) => `${v} ${k}${v > 1 ? 's' : ''}`).join(', ') + '.' : 'Empty canvas.');
 }
 function paintAuthors(){
   paintSummary();
@@ -1331,7 +1464,7 @@ function paintInspector(){
     html = `<div class="who"><span class="dot" style="background:${authorColor(r.author)}"></span><b>${esc(kind)}</b>
       by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ signed</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">revoked</span>' : ''}</div>
       <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}${r.type === 'IMAGE' ? `<br>alt: ${r.alt ? '“' + esc(r.alt) + '”' : '<span class="bad">none</span>'}` : ''}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · move: select mode (V) and drag, or arrow keys · resize: corner handle or +/−' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
-      <div class="acts"><button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button>
+      <div class="acts"><button class="btn" data-a="comment">comment</button>${r.type === 'TEXT' && r.author === S.me.id ? '<button class="btn" data-a="edit">edit</button>' : ''}<button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button>
       ${r.author === S.me.id ? `<button class="btn danger" data-a="${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}">${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}</button>` : ''}</div>`;
   } else {
     const rs = [...S.sel].map(c => S.records.get(c)), authors = new Set(rs.map(r => r.author)), mine = rs.filter(r => r.author === S.me.id).length;
@@ -1350,6 +1483,8 @@ $('insp').addEventListener('click', async e => {
   const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean);
   if (a === 'copy') copy(rs.map(r => r.raw).join('\n'), `${rs.length} signed pattern${rs.length > 1 ? 's' : ''} copied`);
   if (a === 'solo'){ S.filter = new Set([rs[0].author]); S.sel.clear(); paintAuthors(); }
+  if (a === 'comment') commentOnSelection();
+  if (a === 'edit') editText(rs[0]);
   if (a === 'revoke') await revokeSelection();
   if (a === 'restore'){ await setNeg(rs[0].cid, false); }
   if (a === 'group') await groupSelection();
@@ -1357,8 +1492,123 @@ $('insp').addEventListener('click', async e => {
 });
 async function copy(text, msg){ try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Clipboard blocked by the browser.'); } }
 
+/* comments */
+let activeThread = null, draft = null;
+S.cmShowDone = false;
+const drafts = {};   // unsent reply text per thread, kept across re-renders
+function toggleComments(force){
+  const on = force ?? $('comments').style.display !== 'flex';
+  $('comments').style.display = on ? 'flex' : 'none';
+  if (on && S.ledger) toggleLedger(false);
+  if (on) paintComments(); else { activeThread = null; draft = null; dirty = true; cv.focus({ preventScroll: true }); }
+  $('cmtList').setAttribute('aria-expanded', String(on));
+  document.body.classList.toggle('drawer', on || S.ledger);
+}
+function targetName(c){
+  if (!c.on) return 'the canvas';
+  const t = current(c.on);
+  return t ? describe(t) : 'an element not loaded here';
+}
+function startComment(w, target){
+  target = target && target.type !== 'ARROW' ? current(target.cid) : null;
+  const b = target && box(target);
+  draft = target && b ? { on: target.cid, x: w.x - b.x, y: w.y - b.y, px: w.x, py: w.y } : { on: null, x: w.x, y: w.y, px: w.x, py: w.y };
+  activeThread = null; dirty = true;
+  toggleComments(true);
+  setTimeout(() => $('cmNew')?.focus(), 0);
+}
+function commentOnSelection(){
+  const el = S.sel.size ? S.records.get([...S.sel][0]) : null, b = el && box(el);
+  if (b) startComment({ x: b.x + b.w, y: b.y }, el); else startComment(viewCenter(), null);
+}
+function openThread(id){
+  activeThread = id; draft = null;
+  const t = S.D.threads.get(id);
+  if (t && t.resolved && !S.cmShowDone){ S.cmShowDone = true; $('cmShowDone').checked = true; }
+  toggleComments(true);
+  if (t){
+    const p = pinPos(t.root), s = toScreen(p.x, p.y);
+    if (s.x < 0 || s.y < 0 || s.x > innerWidth - 420 || s.y > innerHeight){ S.view.x = p.x - (innerWidth - 400) / 2 / S.view.zoom; S.view.y = p.y - innerHeight / 2 / S.view.zoom; }
+    say(`Comment thread on ${targetName(t.root)}, ${1 + t.replies.length} message${t.replies.length ? 's' : ''}${t.resolved ? ', resolved' : ''}.`);
+  }
+  dirty = true;
+  setTimeout(() => { const el = document.querySelector(`.thread[data-id="${id}"]`); el?.scrollIntoView({ block: 'nearest' }); el?.querySelector('textarea')?.focus(); }, 0);
+}
+function msgHtml(c){
+  const mine = c.author === S.me?.id;
+  return `<div class="msg"><div class="by"><span class="dot" style="background:${authorColor(c.author)}" aria-hidden="true"></span><b>${mine ? 'you' : esc(short(c.author))}</b>
+    <span>${new Date(c.t).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span><span class="ok" title="signature verified">✓</span>
+    ${mine ? `<button class="btn x" data-a="del" data-c="${c.cid}" aria-label="Delete your comment">delete</button>` : ''}</div>
+    <div class="tx">${esc(c.text)}</div></div>`;
+}
+function paintComments(){
+  const open = [...S.D.threads.values()].filter(t => !S.D.hidden.has(t.root.cid) && !t.resolved).length;
+  $('cmtN').textContent = open;
+  if ($('comments').style.display !== 'flex') return;
+  // keep what's being typed (and the caret) when records arrive while someone writes
+  const ae = document.activeElement, keep = ae && ae.dataset && ae.dataset.k ? { k: ae.dataset.k, a: ae.selectionStart, b: ae.selectionEnd } : null;
+  document.querySelectorAll('#cmList textarea').forEach(t => { drafts[t.dataset.k] = t.value; });
+  const list = [...S.D.threads.entries()].filter(([, t]) => !S.D.hidden.has(t.root.cid) && (!t.resolved || S.cmShowDone))
+    .sort((a, b) => (a[1].resolved - b[1].resolved) || b[1].root.z - a[1].root.z);
+  let html = '';
+  if (draft) html += `<div class="compose" role="group" aria-label="New comment"><label for="cmNew">New comment on ${esc(draft.on ? targetName(draft) : 'the canvas')}</label>
+    <textarea id="cmNew" data-k="new" placeholder="Write a comment… (Enter posts, Shift+Enter new line)">${esc(drafts.new || '')}</textarea>
+    <div class="row2"><button class="btn" data-a="cancel">cancel</button><button class="btn" data-a="post">post</button></div></div>`;
+  html += list.map(([id, t]) => {
+    const msgs = [t.root, ...t.replies].filter(c => !S.D.hidden.has(c.cid));
+    return `<article class="thread${id === activeThread ? ' active' : ''}${t.resolved ? ' done' : ''}" data-id="${id}" aria-label="Thread on ${esc(targetName(t.root))}">
+      <div class="on"><span>on ${esc(targetName(t.root))}</span><span class="st ${t.resolved ? 'ok' : ''}">${t.resolved ? 'resolved' : 'open'}</span></div>
+      ${msgs.map(msgHtml).join('')}
+      <textarea data-k="${id}" aria-label="Reply" placeholder="Reply… (Enter posts)">${esc(drafts[id] || '')}</textarea>
+      <div class="row2"><button class="btn" data-a="show" data-id="${id}">show on canvas</button>
+        <button class="btn" data-a="${t.resolved ? 'reopen' : 'resolve'}" data-id="${id}">${t.resolved ? 'reopen' : 'resolve'}</button>
+        <button class="btn" data-a="reply" data-id="${id}">reply</button></div></article>`;
+  }).join('');
+  if (!html) html = '<div class="empty">No comments yet. Press M or use the 💬 button, then click an element or a spot.</div>';
+  $('cmList').innerHTML = html;
+  if (keep){ const t = document.querySelector(`#cmList textarea[data-k="${keep.k}"]`); if (t){ t.focus(); t.setSelectionRange(keep.a, keep.b); } }
+}
+async function postFrom(k){
+  const ta2 = document.querySelector(`#cmList textarea[data-k="${k}"]`), text = (ta2?.value || '').trim();
+  if (!text){ ta2?.focus(); return; }
+  delete drafts[k]; ta2.value = '';
+  if (k === 'new'){
+    const d = draft; draft = null;
+    const cid = await commitComment({ on: d.on, x: d.x, y: d.y, text });
+    if (cid){ activeThread = cid; say(`Comment posted on ${d.on ? targetName(d) : 'the canvas'}. Signed.`); }
+  } else {
+    const t = S.D.threads.get(k);
+    const cid = await commitComment({ on: t.root.on, x: t.root.x, y: t.root.y, text, re: k });
+    if (cid) say('Reply posted. Signed.');
+    activeThread = k;
+  }
+  paintComments(); dirty = true;
+  setTimeout(() => document.querySelector(`#cmList textarea[data-k="${activeThread}"]`)?.focus(), 0);
+}
+$('cmList').addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.target.tagName === 'TEXTAREA' && e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); postFrom(e.target.dataset.k); }
+  if (e.key === 'Escape'){ e.preventDefault(); if (draft){ draft = null; delete drafts.new; paintComments(); dirty = true; } else toggleComments(false); }
+});
+$('cmList').addEventListener('focusin', e => { const th = e.target.closest('.thread'); if (th && th.dataset.id !== activeThread){ activeThread = th.dataset.id; dirty = true; document.querySelectorAll('.thread.active').forEach(x => x.classList.remove('active')); th.classList.add('active'); } });
+$('cmList').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const a = b.dataset.a, id = b.dataset.id;
+  if (a === 'post') postFrom('new');
+  if (a === 'reply') postFrom(id);
+  if (a === 'cancel'){ draft = null; delete drafts.new; paintComments(); dirty = true; }
+  if (a === 'resolve' || a === 'reopen'){ await commitResolve(id, a === 'resolve'); say(a === 'resolve' ? 'Thread resolved.' : 'Thread reopened.'); }
+  if (a === 'show'){ openThread(id); const t = S.D.threads.get(id); if (t?.root.on){ const el = current(t.root.on); if (el && visible(el)){ S.sel = new Set([el.cid]); dirty = true; } } }
+  if (a === 'del'){ if (await setNeg(b.dataset.c, true)) say('Your comment was revoked. It stays in the ledger as a signed record.'); }
+});
+$('cmShowDone').addEventListener('change', e => { S.cmShowDone = e.target.checked; paintComments(); dirty = true; });
+$('cmClose').onclick = () => toggleComments(false);
+$('cmtList').onclick = () => toggleComments();
+$('textBtn').onclick = () => setPlacing(placing === 'text' ? null : 'text');
+$('cmtBtn').onclick = () => setPlacing(placing === 'comment' ? null : 'comment');
+
 /* ledger */
-function toggleLedger(force){ S.ledger = force ?? !S.ledger; $('ledger').style.display = S.ledger ? 'flex' : 'none'; paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
+function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
 $('ledgerClose').onclick = () => toggleLedger(false);
 function paintLedger(){
   if (!S.ledger) return;
@@ -1381,6 +1631,7 @@ $('ledgerList').addEventListener('click', e => {
   const row = e.target.closest('.row'); if (!row || !row.dataset.t) return;
   row.classList.toggle('x');
   const r = S.records.get(row.dataset.t);
+  if (r && r.type === 'COMMENT'){ openThread(r.re || r.cid); return; }
   if (r && ELEMENT.has(r.type)){ S.sel = new Set([r.cid]); expandSel(); announceSel(); const b = box(r); if (b){ const c = center(b); S.view.x = c.x - innerWidth / 2 / S.view.zoom; S.view.y = c.y - innerHeight / 2 / S.view.zoom; } dirty = true; }
 });
 
@@ -1399,6 +1650,10 @@ function commands(){
   add('insert', 'Rectangle at centre', () => kbInsert('rect'), { k: 'R' });
   add('insert', 'Circle at centre', () => kbInsert('circle'), { k: 'O' });
   add('insert', 'Text at centre', () => openText(viewCenter()), { k: 'T' });
+  add('insert', 'Text tool (click to place)', () => setPlacing('text'));
+  add('comment', 'Comment on selection / centre', commentOnSelection, { k: 'M' });
+  add('comment', 'Comment tool (click to pin)', () => setPlacing('comment'));
+  add('comment', 'Comments panel', () => toggleComments(), { on: $('comments').style.display === 'flex' });
   add('edit', 'Connect two selected elements', connectSel, { k: 'C' });
   add('edit', 'Select next element', () => { cycleSel(1); }, { k: 'Tab' });
   add('edit', 'Undo', undo, { k: '⌘Z' });
@@ -1522,7 +1777,7 @@ addEventListener('paste', async e => {
   const img = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith('image/'));
   if (img){ e.preventDefault(); await insertImage(img); return; }
   const t = e.clipboardData?.getData('text') || '';
-  if (/^(CANVAS|DRAW|SHAPE|TEXT|ARROW|IMAGE|GROUP|MOVE|BLOB)-/m.test(t.trim())){ e.preventDefault(); await importAndReport(t); }
+  if (/^(CANVAS|DRAW|SHAPE|TEXT|ARROW|IMAGE|GROUP|MOVE|COMMENT|RESOLVE|BLOB)-/m.test(t.trim())){ e.preventDefault(); await importAndReport(t); }
   else if (t.trim() && S.me){ e.preventDefault(); const c = toWorld(innerWidth / 2, innerHeight / 2); await commitText(c, t.trim().slice(0, 2000)); }
 });
 
@@ -1551,14 +1806,18 @@ addEventListener('keydown', e => {
       if (k === 'p'){ setMode(false); return; }
       if (k === 'r'){ kbInsert('rect'); return; }
       if (k === 'o'){ kbInsert('circle'); return; }
-      if (k === 't'){ e.preventDefault(); openText(viewCenter()); return; }
+      if (k === 't'){ e.preventDefault(); if (S.sel.size === 1 && S.records.get([...S.sel][0])?.type === 'TEXT') editText(S.records.get([...S.sel][0])); else openText(viewCenter()); return; }
       if (k === 'i'){ $('imgFile').click(); return; }
       if (k === 'c'){ connectSel(); return; }
+      if (k === 'm'){ e.preventDefault(); commentOnSelection(); return; }
+      if (e.key === 'Enter' && S.sel.size === 1){ const el = S.records.get([...S.sel][0]); if (el?.type === 'TEXT'){ e.preventDefault(); editText(el); return; } }
     }
   }
   if ((mod && k === 'k') || (!mod && e.key === '/')){ e.preventDefault(); openPalette(); return; }
   if (e.key === 'Escape'){
+    if (placing){ setPlacing(null); say('Cancelled.'); return; }
     if ($('help').style.display === 'block'){ toggleHelp(false); return; }
+    if ($('comments').style.display === 'flex'){ toggleComments(false); return; }
     if (S.ledger){ toggleLedger(false); return; }
     commitKb(); if (S.sel.size){ S.sel.clear(); announceSel(); } dirty = true; return;
   }
@@ -1583,7 +1842,7 @@ async function switchCanvas(id){
   try { localStorage.setItem('flux:lastCanvas', id); } catch {}
   Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0,
     view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
-  openChannel();
+  openChannel(); activeThread = null; draft = null;
   const saved = store.get('flux:canvas:' + id);
   if (saved) await importText(saved, false);
   derive(); paintAuthors(); paintLedger(); dirty = true;
