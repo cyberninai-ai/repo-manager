@@ -179,9 +179,9 @@ button{font:inherit;color:inherit}
     <tr><td>Alt + drag</td><td>Circle</td></tr>
     <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
     <tr><td>Double-tap</td><td>Text</td></tr>
-    <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Tap it to select, drag to move, corner handle to resize, Esc to draw on it</td></tr>
+    <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Draw on it right away with the pen. To move or resize it, switch to select mode (V), drag it, or pull the corner handle</td></tr>
     <tr><td>V · select mode (or the pen/select button)</td><td>Tap any element to select it, shift-tap to add, drag it to move, drag on empty paper to lasso. P returns to the pen</td></tr>
-    <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode</td></tr>
+    <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode; Ctrl/⌘-drag inside the selection moves it</td></tr>
     <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
     <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
     <tr><td>Delete</td><td>Revoke selection (<span class="kbd">-N-1</span>, only your own)</td></tr>
@@ -794,7 +794,7 @@ function render(){
     for (const c of S.sel){ const el = S.records.get(c); const b = el && box(el); if (b) dashedBox(grow(b, 3 / z), accent, z); }
     const sb = selBox();
     if (sb && S.sel.size > 1){ ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z; ctx.strokeRect(sb.x - 8 / z, sb.y - 8 / z, sb.w + 16 / z, sb.h + 16 / z); ctx.restore(); }
-    const h = resizeHandle();
+    const h = S.lassoMode && resizeHandle();
     if (h){ ctx.save(); ctx.fillStyle = accent; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(); ctx.lineWidth = 2 / z;
       ctx.beginPath(); ctx.rect(h.x - 6 / z, h.y - 6 / z, 12 / z, 12 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
   }
@@ -874,8 +874,8 @@ async function insertImage(file, at){
   const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h], ['M', encTxt(alt.trim())], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw, { [R]: bytes });
   recordCreate(cid);
-  if (cid){ S.sel = new Set([cid]); dirty = true; }
-  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · drag to move, corner to resize, Esc to draw on it`);
+  dirty = true;
+  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · draw on it now · select mode (V) to move or resize it`);
 }
 async function setNeg(cid, on){
   const r = S.records.get(cid);
@@ -945,7 +945,7 @@ function edgeHit(sx, sy){
   const w = toWorld(sx, sy), band = 8 / S.view.zoom, els = S.D.els;
   for (let i = els.length - 1; i >= 0; i--){
     const el = els[i];
-    if (el.type === 'ARROW' || !visible(el) || S.D.hidden.has(el.cid)) continue;
+    if (el.type === 'ARROW' || el.type === 'IMAGE' || !visible(el) || S.D.hidden.has(el.cid)) continue;
     const b = box(el); if (!b) continue;
     const big = b.w > 4 * band && b.h > 4 * band;
     if (el.type === 'DRAW' && !big) continue;
@@ -1105,15 +1105,19 @@ cv.addEventListener('pointerdown', e => {
       if (!S.sel.has(hit.cid)){ S.sel = new Set([hit.cid]); expandSel(); announceSel(); }
       G = { kind: 'move', start: w, dx: 0, dy: 0, targets: moveTargets() }; dirty = true; setCursor(); return;
     }
+    const sb = S.sel.size && selBox();
+    if (sb && !e.shiftKey && inside(w, grow(sb, 10 / S.view.zoom))){ G = { kind: 'move', start: w, dx: 0, dy: 0, targets: moveTargets() }; setCursor(); return; }
     if (!e.shiftKey && S.sel.size){ S.sel.clear(); announceSel(); }
     G = { kind: 'lasso', pts: [w] }; dirty = true; return;
   }
   if (S.sel.size){
-    const hd = onHandle(w);
-    if (hd){ const b = box(hd.el); G = { kind: 'resize', target: hd.el.cid, start: w, aspect: b.w / b.h, dw: 0, dh: 0 }; setCursor(); return; }
-    const sb = selBox();
-    if (sb && inside(w, grow(sb, 10 / S.view.zoom))){ G = { kind: 'move', start: w, dx: 0, dy: 0, targets: moveTargets() }; setCursor(); return; }
-    if (!(e.ctrlKey || e.metaKey || S.lassoMode)){ S.sel.clear(); dirty = true; G = { kind: 'none' }; return; }
+    if (S.lassoMode){
+      const hd = onHandle(w);
+      if (hd){ const b = box(hd.el); G = { kind: 'resize', target: hd.el.cid, start: w, aspect: b.w / b.h, dw: 0, dh: 0 }; setCursor(); return; }
+    } else if (e.ctrlKey || e.metaKey){   // pen mode: ⌘/Ctrl is a temporary select key, so ⌘-drag inside the selection moves it
+      const sb = selBox();
+      if (sb && inside(w, grow(sb, 10 / S.view.zoom))){ G = { kind: 'move', start: w, dx: 0, dy: 0, targets: moveTargets() }; setCursor(); return; }
+    } else { S.sel.clear(); announceSel(); dirty = true; }   // pen mode: the pen always draws, even over a selection
   }
   if (e.ctrlKey || e.metaKey || S.lassoMode){ G = { kind: 'lasso', pts: [w] }; return; }
   if (e.shiftKey){ G = { kind: 'rect', a: w, b: w }; return; }
@@ -1130,7 +1134,7 @@ cv.addEventListener('pointermove', e => {
     const h = taOpen() || S.lassoMode ? null : edgeHit(e.clientX, e.clientY);
     const hp = S.lassoMode && !!hitTest(toWorld(e.clientX, e.clientY));
     if (hp !== hoverPick){ hoverPick = hp; setCursor(); }
-    const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = !!onHandle(wp);
+    const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(S.lassoMode && sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = S.lassoMode && !!onHandle(wp);
     if (h !== hoverEdge || hs !== hoverSel || hh !== hoverHandle){ hoverEdge = hs || hh ? null : h; hoverSel = hs; hoverHandle = hh; dirty = true; setCursor(); }
     return;
   }
@@ -1184,13 +1188,7 @@ function endPointer(e, cancelled){
         }
         const pts = g.pts.slice(0, 1), t0 = g.t0, color = S.color, width = S.width;
         const cancel = ghost({ pts, color, width });
-        // a single tap on an image selects it (so it can be moved); anywhere else it's a dot
-        const hit = S.D.els.slice().reverse().find(el => el.type === 'IMAGE' && visible(el) && !S.D.hidden.has(el.cid) && inside(pts[0], box(el) || { x: 0, y: 0, w: -1, h: -1 }));
-        lastTap = { time: now, x: e.clientX, y: e.clientY, cancel, timer: setTimeout(() => {
-          cancel(); lastTap = null;
-          if (hit && hit.type === 'IMAGE'){ S.sel = new Set([hit.cid]); expandSel(); dirty = true; announceSel(); }
-          else commitStroke(pts, t0, color, width);
-        }, 350) };
+        lastTap = { time: now, x: e.clientX, y: e.clientY, cancel, timer: setTimeout(() => { cancel(); lastTap = null; commitStroke(pts, t0, color, width); }, 350) };
         return;
       }
       commitStroke(g.pts, g.t0); return;
@@ -1332,7 +1330,7 @@ function paintInspector(){
     const pts = r.type === 'DRAW' ? strokeGeom(r.f.R)?.pts.length : null;
     html = `<div class="who"><span class="dot" style="background:${authorColor(r.author)}"></span><b>${esc(kind)}</b>
       by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ signed</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">revoked</span>' : ''}</div>
-      <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}${r.type === 'IMAGE' ? `<br>alt: ${r.alt ? '“' + esc(r.alt) + '”' : '<span class="bad">none</span>'}` : ''}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · drag or arrow keys to move · corner or +/− resizes · Esc, then draw on it' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
+      <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}${r.type === 'IMAGE' ? `<br>alt: ${r.alt ? '“' + esc(r.alt) + '”' : '<span class="bad">none</span>'}` : ''}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · move: select mode (V) and drag, or arrow keys · resize: corner handle or +/−' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
       <div class="acts"><button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button>
       ${r.author === S.me.id ? `<button class="btn danger" data-a="${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}">${S.D.hidden.has(r.cid) ? 'restore' : 'revoke'}</button>` : ''}</div>`;
   } else {
