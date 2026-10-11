@@ -117,6 +117,8 @@ button{font:inherit;color:inherit}
 #ask form{position:absolute;left:50%;top:22vh;transform:translateX(-50%);width:min(420px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);
   border-radius:10px;box-shadow:var(--shadow);padding:14px}
 #ask label{display:block;margin-bottom:8px;font-weight:600}
+#askImg{display:block;max-width:100%;max-height:200px;margin:0 auto 12px;border-radius:6px;border:1px solid var(--line);object-fit:contain;background:var(--paper)}
+#askImg[hidden]{display:none}
 #ask .why{color:var(--muted);font-size:11px;margin:-4px 0 8px}
 #ask input{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink)}
 #ask .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
@@ -155,6 +157,7 @@ button{font:inherit;color:inherit}
   <input id="palIn" placeholder="Type a command…" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" aria-label="Command">
   <ul id="palList" role="listbox" aria-label="Commands"></ul></div></div>
 <div id="ask"><form role="dialog" aria-modal="true" aria-labelledby="askT">
+  <img id="askImg" alt="" hidden>
   <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off">
   <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="submit" class="btn">OK</button></div></form></div>
 
@@ -422,12 +425,41 @@ function strokeGeom(cid){
   }
   return S.geom.get(cid);
 }
+// Image format from the bytes themselves; file names and MIME types from hosts and messengers are often missing or wrong.
+function sniffImage(b){
+  const at = (i, ...v) => v.every((x, j) => b[i + j] === x), str = (i, n) => String.fromCharCode(...b.subarray(i, i + n));
+  if (at(0, 0x89, 0x50, 0x4e, 0x47)) return 'image/png';
+  if (at(0, 0xff, 0xd8, 0xff)) return 'image/jpeg';
+  if (at(0, 0x47, 0x49, 0x46, 0x38)) return 'image/gif';
+  if (str(0, 4) === 'RIFF' && str(8, 4) === 'WEBP') return 'image/webp';
+  if (at(0, 0x42, 0x4d)) return 'image/bmp';
+  if (at(0, 0, 0, 1, 0)) return 'image/x-icon';
+  if (str(4, 4) === 'ftyp'){ const brand = str(8, 4); if (/avi[fs]/.test(brand)) return 'image/avif'; if (/hei[cxms]|hev[cx]|mif1|msf1/.test(brand)) return 'image/heic'; }
+  const head = new TextDecoder().decode(b.subarray(0, 512)).trimStart().toLowerCase();
+  if (head.startsWith('<svg') || (head.startsWith('<?xml') && head.includes('<svg'))) return 'image/svg+xml';
+  return '';
+}
+// Decode with createImageBitmap, falling back to an <img> element (SVG, and formats some browsers only decode that way).
+async function decodeImage(blob){
+  try { const bmp = await createImageBitmap(blob); if (bmp.width && bmp.height) return bmp; } catch {}
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image(); img.decoding = 'async'; img.src = url;
+    await img.decode();
+    let w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h){ w = 800; h = 600; img.width = w; img.height = h; }   // SVG without intrinsic size
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    return c;
+  } finally { URL.revokeObjectURL(url); }
+}
+const typedBlob = (bytes, hint = '') => new Blob([bytes], { type: sniffImage(bytes) || hint });
 function imageOf(cid){
   const c = S.imgs.get(cid);
   if (c !== undefined) return c === 'loading' || c === 'error' ? null : c;
   const b = S.blobs.get(cid); if (!b) return null;
   S.imgs.set(cid, 'loading');
-  createImageBitmap(new Blob([b])).then(bmp => { S.imgs.set(cid, bmp); dirty = true; }, () => { S.imgs.set(cid, 'error'); dirty = true; });
+  decodeImage(typedBlob(b)).then(bmp => { S.imgs.set(cid, bmp); dirty = true; }, () => { S.imgs.set(cid, 'error'); dirty = true; });
   return null;
 }
 function toRec(node, cid){
@@ -688,7 +720,7 @@ function drawEl(el){
     const s = sizeOf(el), bmp = imageOf(el.f.R);
     if (bmp) ctx.drawImage(bmp, el.x, el.y, s.w, s.h);
     else { ctx.save(); ctx.globalAlpha *= .35; ctx.lineWidth = 1 / S.view.zoom; ctx.setLineDash([6 / S.view.zoom, 6 / S.view.zoom]); ctx.strokeRect(el.x, el.y, s.w, s.h);
-      ctx.font = `${12 / S.view.zoom}px ${FONTS.mono}`; ctx.textBaseline = 'top'; ctx.fillText(S.blobs.has(el.f.R) ? 'loading image…' : 'image blob missing', el.x + 6 / S.view.zoom, el.y + 6 / S.view.zoom); ctx.restore(); }
+      ctx.font = `${12 / S.view.zoom}px ${FONTS.mono}`; ctx.textBaseline = 'top'; ctx.fillText(!S.blobs.has(el.f.R) ? 'image blob missing' : S.imgs.get(el.f.R) === 'error' ? 'this browser cannot decode this image' : 'loading image…', el.x + 6 / S.view.zoom, el.y + 6 / S.view.zoom); ctx.restore(); }
   } else if (el.type === 'SHAPE'){
     ctx.lineWidth = el.sw; ctx.beginPath();
     if (el.k === 'circle') ctx.ellipse(el.x + el.bw / 2, el.y + el.bh / 2, Math.abs(el.bw / 2), Math.abs(el.bh / 2), 0, 0, Math.PI * 2);
@@ -807,11 +839,25 @@ async function commitMove(target, dx, dy, dw = 0, dh = 0){
 const IMG_MAX = 1600;
 async function insertImage(file, at){
   if (!S.me) return;
-  const alt = await ask('Describe this image', (file.name || '').replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '),
-    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.');
+  let raw0, typed, bmp;
+  try { raw0 = new Uint8Array(await file.arrayBuffer()); } catch { toast('Could not read that file.'); return; }
+  typed = typedBlob(raw0, file.type);
+  try { bmp = await decodeImage(typed); }
+  catch {
+    const t = typed.type || file.type || 'unknown type';
+    toast(/heic|heif/.test(t) ? 'HEIC photos only decode in Safari. Export it as JPEG or PNG and try again.'
+      : `This browser cannot read that image (${t}). Try a PNG, JPEG, WebP or GIF.`);
+    return;
+  }
+  // a name that is just a hash or a generic camera/clipboard name makes poor alt text
+  const base = (file.name || '').replace(/\.[a-z0-9]+$/i, '');
+  const guess = /^[0-9a-f]{16,}$/i.test(base) || /^(image|img|photo|screenshot|pasted|dsc|pxl)[\s_-]*[\d_-]*$/i.test(base) ? '' : base.replace(/[-_]+/g, ' ').trim();
+  const url = URL.createObjectURL(typed);
+  const alt = await ask('Describe this image', guess,
+    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', url);
+  URL.revokeObjectURL(url);
   if (alt === null) return;
-  let bmp;
-  try { bmp = await createImageBitmap(file); } catch { toast('That file is not an image this browser can read.'); return; }
+  file = typed;
   const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
@@ -1005,9 +1051,10 @@ async function connectSel(){
 }
 // Accessible stand-in for prompt(): also works in sandboxed frames.
 let askRes = null, askFocus = null;
-function ask(label, value = '', why = ''){
+function ask(label, value = '', why = '', preview = null){
   if (askRes) askRes(null);
   askFocus = document.activeElement;
+  const pi = $('askImg'); if (preview){ pi.src = preview; pi.hidden = false; } else { pi.hidden = true; pi.removeAttribute('src'); }
   $('askT').textContent = label; $('askWhy').textContent = why; $('askWhy').style.display = why ? 'block' : 'none';
   $('askIn').value = value; $('ask').style.display = 'block'; setTimeout(() => { $('askIn').focus(); $('askIn').select(); }, 0);
   return new Promise(res => { askRes = res; });
