@@ -98,6 +98,7 @@ button { cursor: pointer; }
 /* canvas */
 .canvas-wrap { min-width: 0; overflow: auto; position: relative; padding: 18px 16px 40px; max-height: calc(100vh - 90px); }
 .live .canvas-wrap { padding: 0; }
+.shell:not(.live) .canvas-wrap, .left, .bar { -webkit-user-select: none; user-select: none; }
 .live .devlabel { display: none; }
 .stage { position: relative; margin: 0 auto; transform-origin: top left; }
 .frame { background: var(--panel); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 30px rgba(0,0,0,.08); border-radius: 6px; overflow: hidden; }
@@ -111,6 +112,10 @@ button { cursor: pointer; }
 .ov-tag button { border: 0; background: transparent; color: inherit; padding: 3px 5px; display: grid; place-items: center; border-left: 1px solid rgba(255,255,255,.25); }
 .ov-tag button svg { width: 13px; height: 13px; }
 .live .ov-box, .live .ov-pad, .live .ov-tag { display: none; }
+.drop-line { position: absolute; background: var(--accent); z-index: 6; pointer-events: none; border-radius: 3px; box-shadow: 0 0 0 1px var(--panel); }
+.drop-zone { position: absolute; border: 2px dashed var(--accent); background: var(--accent-soft); z-index: 5; pointer-events: none; border-radius: 4px; }
+.drag-ghost { position: absolute; z-index: 7; pointer-events: none; background: var(--ink); color: var(--bg); font: 600 11.5px/1 var(--font-ui); padding: 6px 9px; border-radius: 6px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.2); transform-origin: left top; }
+.canvas-hint { color: var(--muted); font: 400 11.5px/1.3 var(--font-ui); }
 
 /* inspector */
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--panel); z-index: 2; }
@@ -163,6 +168,13 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
 .fontpairs button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .fontpairs b { font-size: 17px; font-weight: 700; line-height: 1.1; }
 .fontpairs small { color: var(--muted); }
+.anchor-wrap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.anchor { display: grid; grid-template-columns: repeat(3, 16px); gap: 3px; padding: 4px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sunk); }
+.anchor button { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--rule); background: var(--panel); padding: 0; }
+.anchor button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+.rngc { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 6px; align-items: center; }
+.rngc input { width: 100%; accent-color: var(--accent); }
+.rngc output { font: 500 11.5px/1 var(--font-data); text-align: right; }
 .rng { display: grid; grid-template-columns: 82px minmax(0, 1fr) 46px; gap: 6px; align-items: center; }
 .rng label { color: var(--muted); }
 .rng output { font: 500 11.5px/1 var(--font-data); text-align: right; }
@@ -225,18 +237,19 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
         <div class="adds" id="addElements"></div>
       </div>
       <div class="sect">
-        <h3>Layers <span class="hint" style="text-transform:none;letter-spacing:0">drag to reorder</span></h3>
+        <h3>Layers <span class="hint" style="text-transform:none;letter-spacing:0">drag here or on the canvas</span></h3>
         <ul class="layers" id="layers" role="tree" aria-label="Page layers"></ul>
       </div>
     </aside>
 
     <main class="canvas-wrap" id="canvasWrap">
-      <div class="devlabel" id="devLabel"><span id="devName">Desktop · 1280 px</span><span id="devScale"></span></div>
+      <div class="devlabel" id="devLabel"><span id="devName">Desktop · 1280 px</span><span class="canvas-hint">Drag anything to move it. Drop on an element's left or right edge to put them side by side.</span><span id="devScale"></span></div>
       <div class="stage" id="stage">
         <div class="frame" id="frame"></div>
         <div class="ov-pad" id="padT" hidden></div><div class="ov-pad" id="padR" hidden></div><div class="ov-pad" id="padB" hidden></div><div class="ov-pad" id="padL" hidden></div>
         <div class="ov-box hover" id="hoverBox" hidden></div>
         <div class="ov-box" id="selBox" hidden></div>
+        <div class="drop-zone" id="dropZone" hidden></div><div class="drop-line" id="dropLine" hidden></div><div class="drag-ghost" id="dragGhost" hidden></div>
         <div class="ov-tag" id="selTag" hidden>
           <span id="selName">Section</span>
           <button id="tagUp" title="Move up (Alt+↑)" aria-label="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -314,14 +327,14 @@ const FS_STEPS = 10;                                         // font-size scale 
 const PROPS = [
   // key, label, group, kind, options
   ['display', 'Layout', 'layout', 'enum', ['stack', 'row', 'grid', 'block', 'hide']],
-  ['cols', 'Columns', 'layout', 'enum', ['1', '2', '3', '4', '5', '6']],
+  ['cols', 'Columns', 'layout', 'enum', ['1', '2', '3', '4', '5', '6', 'auto']],
   ['gap', 'Gap', 'layout', 'space'],
   ['align', 'Align', 'layout', 'enum', ['stretch', 'start', 'center', 'end']],
   ['justify', 'Justify', 'layout', 'enum', ['start', 'center', 'end', 'between']],
   ['wrap', 'Wrap', 'layout', 'enum', ['no', 'yes']],
   ['pt', 'Padding top', 'spacing', 'space'], ['pr', 'Padding right', 'spacing', 'space'], ['pb', 'Padding bottom', 'spacing', 'space'], ['pl', 'Padding left', 'spacing', 'space'],
   ['mt', 'Margin top', 'spacing', 'space'], ['mb', 'Margin bottom', 'spacing', 'space'],
-  ['w', 'Width', 'size', 'enum', ['auto', 'full', 'fit']],
+  ['w', 'Width', 'size', 'enum', ['auto', 'full', 'fit', '25%', '33%', '50%', '66%', '75%']],
   ['maxw', 'Max width', 'size', 'enum', ['none', 'xs', 'sm', 'md', 'lg', 'xl']],
   ['minh', 'Min height', 'size', 'enum', ['none', 'sm', 'md', 'lg', 'xl']],
   ['ar', 'Aspect', 'size', 'enum', ['auto', '16:9', '4:3', '1:1', '3:4']],
@@ -339,6 +352,16 @@ const PROPS = [
   ['shadow', 'Shadow', 'fill', 'enum', ['none', 'sm', 'md', 'lg']],
   ['op', 'Opacity', 'fill', 'enum', ['100', '80', '60', '40']],
   ['lvl', 'Heading level', 'content', 'enum', ['H1', 'H2', 'H3', 'H4']],
+  ['h', 'Height', 'size', 'enum', ['auto', '120', '200', '320', '480', '640', '100%']],
+  ['pos', 'Position', 'position', 'enum', ['static', 'relative', 'absolute', 'sticky']],
+  ['anchor', 'Anchor', 'position', 'enum', ['free', 'top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right', 'fill']],
+  ['x', 'X', 'position', 'pct'],
+  ['y', 'Y', 'position', 'pct'],
+  ['inset', 'Inset', 'position', 'space'],
+  ['z', 'Layer order', 'position', 'enum', ['auto', '-1', '0', '1', '2', '5', '10', '50']],
+  ['rot', 'Rotate', 'effects', 'enum', ['0', '-12', '-6', '-3', '3', '6', '12', '45', '90']],
+  ['overflow', 'Overflow', 'effects', 'enum', ['visible', 'hidden', 'scroll']],
+  ['blend', 'Blend mode', 'effects', 'enum', ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity']],
 ];
 const NP = PROPS.length;
 const PI = Object.fromEntries(PROPS.map((p, i) => [p[0], i]));
@@ -455,12 +478,12 @@ function propCss(p, v, id, bp) {
   const key = PROPS[p][0];
   if (SPACE_CSS[key]) return `${SPACE_CSS[key]}:var(--s-${v});`;
   switch (key) {
-    case 'display': return ['display:flex;flex-direction:column;', 'display:flex;flex-direction:row;', 'display:grid;', 'display:block;', 'display:none;'][v];
-    case 'cols': return `grid-template-columns:repeat(${v + 1},minmax(0,1fr));`;
+    case 'display': return ['display:flex;flex-direction:column;gap:var(--s-4);', 'display:flex;flex-direction:row;flex-wrap:wrap;gap:var(--s-4);', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:var(--s-5);', 'display:block;', 'display:none;'][v];
+    case 'cols': return v === 6 ? 'grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));' : `grid-template-columns:repeat(${v + 1},minmax(0,1fr));`;
     case 'align': return `align-items:${['stretch', 'flex-start', 'center', 'flex-end'][v]};`;
     case 'justify': return `justify-content:${['flex-start', 'center', 'flex-end', 'space-between'][v]};`;
     case 'wrap': return `flex-wrap:${v ? 'wrap' : 'nowrap'};`;
-    case 'w': return ['width:auto;', 'width:100%;', 'width:fit-content;'][v];
+    case 'w': return v < 3 ? ['width:auto;', 'width:100%;', 'width:fit-content;'][v] : `width:${[25, 33.333, 50, 66.666, 75][v - 3]}%;flex:0 1 auto;`;
     case 'maxw': return v ? `max-width:${MAXW[v]};margin-inline:auto;width:100%;` : 'max-width:none;';
     case 'minh': return `min-height:${MINH[v]};`;
     case 'ar': return v ? `aspect-ratio:${['auto', '16/9', '4/3', '1/1', '3/4'][v]};` : 'aspect-ratio:auto;';
@@ -477,8 +500,36 @@ function propCss(p, v, id, bp) {
     case 'bc': return v ? `border-color:var(--c-${COLORS[v]});` : '';
     case 'shadow': return `box-shadow:${['none', 'var(--sh-sm)', 'var(--sh-md)', 'var(--sh-lg)'][v]};`;
     case 'op': return `opacity:${[1, 0.8, 0.6, 0.4][v]};`;
+    case 'h': return v === 6 ? 'height:100%;' : v ? `height:${PROPS[p][4][v]}px;` : 'height:auto;';
+    case 'z': return `z-index:${v ? PROPS[p][4][v] : 'auto'};`;
+    case 'overflow': return `overflow:${PROPS[p][4][v]};`;
+    case 'blend': return `mix-blend-mode:${PROPS[p][4][v]};`;
     default: return '';
   }
+}
+/* position, anchor, free x/y, inset and rotation compile together into one rule */
+const POSK = ['pos', 'anchor', 'x', 'y', 'inset', 'rot'].map((k) => PI[k]);
+function positionCss(id, bp) {
+  if (!POSK.some((p) => cell(id, p, bp) >= 0)) return '';
+  const pos = eff(id, PI.pos, bp), a = Math.max(0, eff(id, PI.anchor, bp)), ins = eff(id, PI.inset, bp), d = ins >= 0 ? `var(--s-${ins})` : '0px';
+  const rot = eff(id, PI.rot, bp), deg = rot > 0 ? +PROPS[PI.rot][4][rot] : 0, tf = [];
+  let s = '';
+  if (pos === 0) s += 'position:static;';
+  else if (pos === 1) s += 'position:relative;';
+  else if (pos === 3) s += `position:sticky;top:${d};${eff(id, PI.z, bp) < 0 ? 'z-index:5;' : ''}`;
+  else if (pos === 2) {
+    s += `position:absolute;margin:0;${eff(id, PI.w, bp) < 0 && a !== 10 ? 'width:max-content;max-width:100%;' : ''}`;
+    if (a === 0) { const x = Math.max(0, eff(id, PI.x, bp)), y = Math.max(0, eff(id, PI.y, bp)); s += `inset:auto;left:${x}%;top:${y}%;`; tf.push(`translate(-${x}%,-${y}%)`); }
+    else if (a === 10) s += `inset:${d};`;
+    else {
+      const col = (a - 1) % 3, row = Math.floor((a - 1) / 3);
+      s += 'inset:auto;';
+      s += col === 0 ? `left:${d};` : col === 2 ? `right:${d};` : 'left:50%;'; if (col === 1) tf.push('translateX(-50%)');
+      s += row === 0 ? `top:${d};` : row === 2 ? `bottom:${d};` : 'top:50%;'; if (row === 1) tf.push('translateY(-50%)');
+    }
+  }
+  if (deg) tf.push(`rotate(${deg}deg)`);
+  return s + `transform:${tf.length ? tf.join(' ') : 'none'};`;
 }
 const cssCache = [];
 const dirty = new Set();
@@ -487,8 +538,11 @@ function compileNode(id) {
   for (let bp = 0; bp < BPN; bp++) {
     let body = '';
     for (let p = 0; p < NP; p++) { const v = cell(id, p, bp); if (v >= 0) body += propCss(p, v, id, bp); }
+    body += positionCss(id, bp);
     if (!body) continue;
-    s += bp === 0 ? `.n${id}{${body}}` : `@container site (max-width:${bp === 1 ? 900 : 560}px){.n${id}{${body}}}`;
+    // rows without explicit justification share space: boxes, images and text grow and wrap
+    const grow = cell(id, PI.display, bp) === 1 && eff(id, PI.justify, bp) < 0 ? `.n${id}>.t-box,.n${id}>.t-image,.n${id}>.t-text{flex:1 1 200px}` : '';
+    s += bp === 0 ? `.n${id}{${body}}${grow}` : `@container site (max-width:${bp === 1 ? 900 : 560}px){.n${id}{${body}}${grow}}`;
   }
   cssCache[id] = s;
 }
@@ -504,9 +558,14 @@ const BASE_CSS = `
 .t-divider{border:0;border-top:1px solid var(--c-line);width:100%;height:0}
 .t-badge{display:inline-block;width:fit-content}
 .t-spacer{min-height:8px}
-.t-box,.t-section{min-height:12px}
+.t-box,.t-section{min-height:12px;position:relative}
 .t-page{display:flex;flex-direction:column}
 .edit [contenteditable]{outline:2px solid var(--c-accent);outline-offset:2px;cursor:text}
+.edit a,.edit [data-n]{-webkit-user-drag:none}
+.edit [contenteditable]{-webkit-user-select:text;user-select:text}
+.edit [data-n]:not(.t-page){cursor:grab}
+.dragging-site,.dragging-site *{cursor:grabbing!important;user-select:none}
+.is-dragging{opacity:.35;outline:2px dashed var(--c-accent);outline-offset:-2px}
 `;
 
 /* =========================================================================
@@ -600,6 +659,16 @@ function commit(op, label) {
   oplog.unshift([w, label || '']); if (oplog.length > 40) oplog.pop();
   schedule();
 }
+function commitSeq(steps, label) {
+  const ops = [], invs = [];
+  for (const mk of steps) { const op = mk(); if (!op) continue; ops.push(op); invs.push(apply(op)); }
+  if (!ops.length) return false;
+  const op = { k: 'grp', ops, label }, inv = { k: 'grp', ops: invs.reverse(), label };
+  undoStack.push({ op, inv }); if (undoStack.length > 500) undoStack.shift(); redoStack.length = 0;
+  const w = `GRP-${label.replace(/\W+/g, '_')}-${ops.map((o) => o.k.toUpperCase()).join('.')}`;
+  opsTotal++; opBytes += w.length; oplog.unshift([w, label]); if (oplog.length > 40) oplog.pop();
+  schedule(); return true;
+}
 function undo() { const e = undoStack.pop(); if (!e) return; e.op = apply(e.inv); redoStack.push(e); oplog.unshift(['UNDO ' + wire(e.inv), '']); clampSel(); schedule(); }
 function redo() { const e = redoStack.pop(); if (!e) return; e.inv = apply(e.op); undoStack.push(e); oplog.unshift(['REDO ' + wire(e.op), '']); clampSel(); schedule(); }
 function clampSel() { if (sel >= 0 && !alive[sel]) sel = 0; }
@@ -610,7 +679,7 @@ function clampSel() { if (sel >= 0 && !alive[sel]) sel = 0; }
 const N = (t, p, x, k, extra) => ({ t, p, x, k, ...(extra || {}) });
 const SECTION_PAD = { pt: 9, pb: 9, pl: 8, pr: 8, 'pl@t': 6, 'pr@t': 6, 'pl@p': 4, 'pr@p': 4, 'pt@p': 7, 'pb@p': 7 };
 const PRESETS = {
-  'Nav bar': () => N('section', { display: 'row', justify: 'between', align: 'center', pt: 4, pb: 4, pl: 8, pr: 8, 'pl@p': 4, 'pr@p': 4, gap: 5, border: 'none', bg: 'bg' }, null, [
+  'Nav bar': () => N('section', { display: 'row', justify: 'between', align: 'center', pt: 4, pb: 4, pl: 8, pr: 8, 'pl@p': 4, 'pr@p': 4, gap: 5, border: 'none', bg: 'bg', pos: 'sticky', z: '10' }, null, [
     N('heading', { lvl: 'H4', fs: 4, fw: '700' }, 'Kiln & Co.'),
     N('box', { display: 'row', gap: 6, align: 'center', 'display@p': 'hide' }, null, [N('link', { fs: 1 }, 'Workshops', null, { h: '#workshops' }), N('link', { fs: 1 }, 'Studio', null, { h: '#studio' }), N('link', { fs: 1 }, 'Gift cards', null, { h: '#gift' })]),
     N('button', { bg: 'brand', color: 'on-brand', pt: 2, pb: 2, pl: 5, pr: 5, radius: 'pill', fs: 1 }, 'Book a class', null, { h: '#book' }),
@@ -626,6 +695,7 @@ const PRESETS = {
       ]),
     ]),
     N('image', { ar: '4:3', radius: 'lg' }, 'Stoneware bowls drying on a wooden shelf'),
+    N('badge', { pos: 'absolute', anchor: 'free', x: 94, y: 84, rot: '6', z: '2', bg: 'accent', color: 'ink', fw: '700', fs: 1, pt: 2, pb: 2, pl: 4, pr: 4, radius: 'pill', shadow: 'md', 'display@p': 'hide' }, 'Kilns fire every Friday', null, { n: 'Sticker' }),
   ], { n: 'Hero' }),
   Features: () => N('section', { display: 'stack', gap: 7, bg: 'surface', ...SECTION_PAD }, null, [
     N('box', { display: 'stack', gap: 3 }, null, [N('heading', { lvl: 'H2', fs: 6 }, 'Everything is included'), N('text', { color: 'muted', fs: 3 }, 'You bring an apron you do not mind ruining. We bring the rest.')]),
@@ -666,7 +736,7 @@ const PRESETS = {
 };
 const ELEMENTS = {
   Box: () => N('box', { display: 'stack', gap: 4, pt: 5, pb: 5, pl: 5, pr: 5, border: 'thin', radius: 'md' }, null, [N('text', {}, 'A box holds other elements.')]),
-  Grid: () => N('box', { display: 'grid', cols: '3', 'cols@t': '2', 'cols@p': '1', gap: 5 }, null, [1, 2, 3].map((i) => N('box', { display: 'stack', gap: 2, pt: 5, pb: 5, pl: 5, pr: 5, bg: 'surface', radius: 'md' }, null, [N('heading', { lvl: 'H3', fs: 4 }, 'Column ' + i), N('text', { color: 'muted' }, 'Short supporting copy.')]))),
+  Grid: () => N('box', { display: 'grid', gap: 5 }, null, [1, 2, 3].map((i) => N('box', { display: 'stack', gap: 2, pt: 5, pb: 5, pl: 5, pr: 5, bg: 'surface', radius: 'md' }, null, [N('heading', { lvl: 'H3', fs: 4 }, 'Column ' + i), N('text', { color: 'muted' }, 'Short supporting copy.')]))),
   Heading: () => N('heading', { lvl: 'H2', fs: 6 }, 'New heading'),
   Text: () => N('text', {}, 'Write a sentence or two here. Double-click to edit it in place.'),
   Button: () => N('button', { bg: 'brand', color: 'on-brand', pt: 3, pb: 3, pl: 6, pr: 6, radius: 'md', w: 'fit' }, 'Button', null, { h: '#' }),
@@ -725,7 +795,7 @@ function put(box, r) { box.hidden = false; box.style.left = r.x + 'px'; box.styl
 function placeOverlays() {
   const sb = $('selBox'), hb = $('hoverBox'), tag = $('selTag');
   const pads = ['padT', 'padR', 'padB', 'padL'].map($);
-  if (live || sel < 0 || !elOf[sel] || !elOf[sel].isConnected) { sb.hidden = tag.hidden = true; pads.forEach((p) => (p.hidden = true)); }
+  if (live || drag.active || sel < 0 || !elOf[sel] || !elOf[sel].isConnected) { sb.hidden = tag.hidden = true; pads.forEach((p) => (p.hidden = true)); }
   else {
     const el = elOf[sel], r = rectOf(el);
     put(sb, r);
@@ -747,6 +817,7 @@ function nodeName(id) { return str.n[id] || (TEXTUAL.has(type[id]) && str.x[id] 
 function select(id) { sel = id; hover = -1; schedule(); }
 const nodeFromEvent = (e) => { const t = e.composedPath().find((n) => n.dataset && n.dataset.n !== undefined); return t ? +t.dataset.n : -1; };
 siteEl.addEventListener('click', (e) => {
+  if (drag.justDragged) { drag.justDragged = false; e.preventDefault(); return; }
   const a = e.composedPath().find((n) => n.tagName === 'A');
   if (live) { if (a && (a.getAttribute('href') || '').startsWith('#')) e.preventDefault(); return; }
   e.preventDefault();
@@ -774,6 +845,165 @@ siteEl.addEventListener('dblclick', (e) => {
   const onKey = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); done(false); } else if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); done(true); } ev.stopPropagation(); };
   el.addEventListener('blur', onBlur); el.addEventListener('keydown', onKey);
 });
+/* ---------- drag to move, with smart drops ---------- */
+const AUTO_ROW = 'Auto row';
+const drag = { id: -1, active: false, sx: 0, sy: 0, drop: null, justDragged: false, free: false, gx: 0, gy: 0, fx: undefined, fy: undefined };
+const flowOf = (id) => { if (id === 0) return 'col'; const d = eff(id, PI.display, device); return d === 1 ? 'row' : d === 2 ? 'grid' : 'col'; };
+function nodeAtPoint(x, y, exclude) {
+  const els = shadow.elementsFromPoint ? shadow.elementsFromPoint(x, y) : [];
+  for (const el of els) { const n = el.dataset && el.dataset.n; if (n === undefined) continue; const id = +n; if (exclude >= 0 && isAncestor(exclude, id)) continue; return id; }
+  return -1;
+}
+/* where in a container the pointer falls, following its flow (stacked, row, grid) */
+function insertIndex(cont, x, y) {
+  const all = children(cont), kids = all.filter((k) => k !== drag.id && elOf[k] && elOf[k].getClientRects().length);
+  const f = flowOf(cont);
+  for (const k of kids) {
+    const r = elOf[k].getBoundingClientRect();
+    const hit = f === 'col' ? y < r.top + r.height / 2 : y < r.top || (y < r.bottom && x < r.left + r.width / 2);
+    if (hit) return { index: all.indexOf(k), before: k, after: -1 };
+  }
+  return { index: all.length, before: -1, after: kids.length ? kids[kids.length - 1] : -1 };
+}
+function computeDrop(x, y) {
+  const d = drag.id;
+  let t = nodeAtPoint(x, y, d); if (t < 0) t = 0;
+  if (type[d] === T.section) {                         // sections stay at page level
+    let s = t; while (s > 0 && par[s] !== 0) s = par[s];
+    if (s <= 0) { const ii = insertIndex(0, x, y); return { kind: 'move', parent: 0, index: ii.index, ref: ii }; }
+    const r = elOf[s].getBoundingClientRect(), after = y > r.top + r.height / 2;
+    return { kind: 'move', parent: 0, index: indexOf(s) + (after ? 1 : 0), ref: after ? { before: -1, after: s } : { before: s, after: -1 } };
+  }
+  const r = elOf[t].getBoundingClientRect();
+  if (t === 0) { const ii = insertIndex(0, x, y); return { kind: 'section', index: ii.index, ref: ii }; }
+  if (CONTAINER.has(type[t])) {
+    const band = Math.min(12, r.height * 0.15, r.width * 0.15);
+    const inside = x > r.left + band && x < r.right - band && y > r.top + band && y < r.bottom - band;
+    if (inside) { const ii = insertIndex(t, x, y); return { kind: 'move', parent: t, index: ii.index, ref: ii }; }
+    if (type[t] === T.section) { const after = y > r.top + r.height / 2; return { kind: 'section', index: indexOf(t) + (after ? 1 : 0), ref: after ? { before: -1, after: t } : { before: t, after: -1 } }; }
+  }
+  const p = par[t], f = flowOf(p);
+  if (f === 'col' && r.width > 140) {                  // edge of an element in a stack: side by side
+    const e = Math.min(64, r.width * 0.2);
+    if (x < r.left + e) return { kind: 'row', target: t, side: 'left' };
+    if (x > r.right - e) return { kind: 'row', target: t, side: 'right' };
+  }
+  const after = f === 'col' ? y > r.top + r.height / 2 : x > r.left + r.width / 2;
+  return { kind: 'move', parent: p, index: indexOf(t) + (after ? 1 : 0), ref: after ? { before: -1, after: t } : { before: t, after: -1 } };
+}
+/* after a move: remove boxes left empty, unwrap automatic rows left with one item */
+function cleanupSteps(p) {
+  return [
+    () => { if (p <= 0 || !alive[p] || type[p] !== T.box) return null; const k = children(p); if (!k.length) return { k: 'del', id: p }; if (k.length === 1 && str.n[p] === AUTO_ROW) return { k: 'mov', id: k[0], parent: par[p], index: indexOf(p) }; return null; },
+    () => (p > 0 && alive[p] && type[p] === T.box && !children(p).length ? { k: 'del', id: p } : null),
+  ];
+}
+function doDrop(dr) {
+  const d = drag.id, old = par[d], steps = [];
+  let label = 'Move ' + TYPE_LABEL[type[d]].toLowerCase();
+  if (dr.kind === 'move') {
+    let idx = dr.index; if (dr.parent === old && indexOf(d) < idx) idx--;
+    if (dr.parent === old && idx === indexOf(d)) return false;
+    steps.push(() => ({ k: 'mov', id: d, parent: dr.parent, index: idx }));
+  } else if (dr.kind === 'row') {
+    let wid = -1; label = 'Side by side';
+    steps.push(() => { const sn = freshSnap(N('box', { display: 'row', align: 'start', 'display@p': 'stack' }, null, [], { n: AUTO_ROW })); wid = sn.id; return { k: 'ins', snap: sn, parent: par[dr.target], index: indexOf(dr.target) }; });
+    steps.push(() => ({ k: 'mov', id: dr.target, parent: wid, index: 0 }));
+    steps.push(() => ({ k: 'mov', id: d, parent: wid, index: dr.side === 'left' ? 0 : 1 }));
+  } else if (dr.kind === 'section') {
+    let sid = -1; label = 'New section';
+    steps.push(() => { const sn = freshSnap(N('section', { display: 'stack', gap: 5, ...SECTION_PAD }, null, [], { n: 'Section' })); sid = sn.id; return { k: 'ins', snap: sn, parent: 0, index: dr.index }; });
+    steps.push(() => ({ k: 'mov', id: d, parent: sid, index: 0 }));
+  }
+  steps.push(...cleanupSteps(old));
+  try { if (commitSeq(steps, label)) { sel = d; return true; } } catch (err) { toast(err.message); }
+  return false;
+}
+function lineAt(x, y, w, h) { const L = $('dropLine'); L.hidden = false; L.style.left = x + 'px'; L.style.top = y + 'px'; L.style.width = w + 'px'; L.style.height = h + 'px'; }
+function drawDrop(dr, e) {
+  const L = $('dropLine'), Z = $('dropZone'), G = $('dragGhost'); L.hidden = Z.hidden = true;
+  let label = 'No drop here';
+  if (dr && dr.kind === 'row') {
+    const r = rectOf(elOf[dr.target]); put(Z, r);
+    lineAt(dr.side === 'left' ? r.x - 2 : r.x + r.w - 2, r.y, 4, r.h);
+    label = `Side by side with ${nodeName(dr.target)} · stacks on phones`;
+  } else if (dr) {
+    const parent = dr.kind === 'section' ? 0 : dr.parent, f = flowOf(parent), ref = dr.ref || {};
+    if (parent > 0 && elOf[parent]) put(Z, rectOf(elOf[parent]));
+    const horiz = f === 'col';
+    if (ref.before >= 0 && elOf[ref.before]) { const r = rectOf(elOf[ref.before]); horiz ? lineAt(r.x, r.y - 2, r.w, 4) : lineAt(r.x - 3, r.y, 4, r.h); }
+    else if (ref.after >= 0 && elOf[ref.after]) { const r = rectOf(elOf[ref.after]); horiz ? lineAt(r.x, r.y + r.h - 2, r.w, 4) : lineAt(r.x + r.w - 1, r.y, 4, r.h); }
+    else if (elOf[parent]) { const r = rectOf(elOf[parent]); lineAt(r.x + 8, r.y + 8, Math.max(24, r.w - 16), 4); }
+    label = dr.kind === 'section' ? 'Into a new section' : parent === 0 ? 'Reorder sections' : `Into ${nodeName(parent)} · ${f === 'col' ? 'stacked' : f === 'row' ? 'in the row' : 'in the grid'}`;
+  }
+  const s = stage.getBoundingClientRect();
+  G.hidden = false; G.textContent = `${nodeName(drag.id)} → ${label}`;
+  G.style.left = (e.clientX - s.left) / scale + 14 + 'px'; G.style.top = (e.clientY - s.top) / scale + 14 + 'px';
+  G.style.transform = scale < 1 ? `scale(${1 / scale})` : '';
+}
+function endDrag() {
+  if (drag.id >= 0 && elOf[drag.id]) elOf[drag.id].classList.remove('is-dragging');
+  siteEl.classList.remove('dragging-site');
+  $('dropLine').hidden = $('dropZone').hidden = $('dragGhost').hidden = true;
+  drag.id = -1; drag.active = false; drag.drop = null;
+  placeOverlays();
+}
+siteEl.addEventListener('pointerdown', (e) => {
+  if (live || editing >= 0 || e.button !== 0) return;
+  const id = nodeFromEvent(e); if (id <= 0) return;
+  e.preventDefault();
+  drag.id = id; drag.active = false; drag.sx = e.clientX; drag.sy = e.clientY;
+  drag.free = eff(id, PI.pos, device) === 2;
+  if (drag.free) { const r = elOf[id].getBoundingClientRect(); drag.gx = e.clientX - r.left; drag.gy = e.clientY - r.top; }
+});
+function freeMove(e) {
+  const el = elOf[drag.id], host = el.offsetParent && el.offsetParent !== document.body ? el.offsetParent : elOf[par[drag.id]];
+  const er = el.getBoundingClientRect(), pr = host.getBoundingClientRect();
+  const snap = (v) => { for (const t of [0, 50, 100]) if (Math.abs(v - t) < 2.5) return [t, true]; return [Math.round(v), false]; };
+  const fx = pr.width - er.width > 0 ? ((e.clientX - drag.gx - pr.left) / (pr.width - er.width)) * 100 : 0;
+  const fy = pr.height - er.height > 0 ? ((e.clientY - drag.gy - pr.top) / (pr.height - er.height)) * 100 : 0;
+  const [x, sx] = snap(Math.max(0, Math.min(100, fx))), [y, sy] = snap(Math.max(0, Math.min(100, fy)));
+  drag.fx = x; drag.fy = y;
+  const rot = eff(drag.id, PI.rot, device), deg = rot > 0 ? +PROPS[PI.rot][4][rot] : 0;
+  Object.assign(el.style, { inset: 'auto', left: x + '%', top: y + '%', transform: `translate(-${x}%,-${y}%)${deg ? ` rotate(${deg}deg)` : ''}` });
+  const hr = rectOf(host); put($('dropZone'), hr);
+  const L = $('dropLine'); L.hidden = true;
+  if (sx || sy) { if (sx) lineAt(hr.x + (x / 100) * hr.w - 1, hr.y, 2, hr.h); else lineAt(hr.x, hr.y + (y / 100) * hr.h - 1, hr.w, 2); }
+  const s = stage.getBoundingClientRect(), G = $('dragGhost');
+  G.hidden = false; G.textContent = `${nodeName(drag.id)} · X ${x}% · Y ${y}%${sx || sy ? ' · snapped' : ''}`;
+  G.style.left = (e.clientX - s.left) / scale + 14 + 'px'; G.style.top = (e.clientY - s.top) / scale + 14 + 'px';
+  G.style.transform = scale < 1 ? `scale(${1 / scale})` : '';
+}
+window.addEventListener('pointermove', (e) => {
+  if (drag.id < 0) return;
+  if (!drag.active) {
+    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
+    drag.active = true; sel = drag.id; hover = -1;
+    if (!drag.free) elOf[drag.id].classList.add('is-dragging');
+    siteEl.classList.add('dragging-site');
+    $('selBox').hidden = $('selTag').hidden = $('hoverBox').hidden = true; ['padT', 'padR', 'padB', 'padL'].forEach((k) => ($(k).hidden = true));
+  }
+  if (drag.free) { freeMove(e); return; }
+  drag.drop = computeDrop(e.clientX, e.clientY); drawDrop(drag.drop, e);
+  const wr = wrap.getBoundingClientRect();
+  if (e.clientY < wr.top + 48) wrap.scrollBy(0, -16); else if (e.clientY > wr.bottom - 48) wrap.scrollBy(0, 16);
+});
+window.addEventListener('pointerup', () => {
+  if (drag.id < 0) return;
+  const was = drag.active, dr = drag.drop, id = drag.id;
+  if (was && drag.free && drag.fx !== undefined) {
+    elOf[id].removeAttribute('style'); if (type[id] === T.image && str.s[id]) elOf[id].style.backgroundImage = `url("${str.s[id]}")`;
+    const x = drag.fx, y = drag.fy;
+    commitSeq([() => (eff(id, PI.anchor, device) !== 0 ? { k: 'set', id, p: PI.anchor, bp: device, v: 0 } : null), () => ({ k: 'set', id, p: PI.x, bp: device, v: x }), () => ({ k: 'set', id, p: PI.y, bp: device, v: y })], 'Move freely');
+    drag.fx = drag.fy = undefined;
+  } else if (was && dr) doDrop(dr);
+  endDrag();
+  try { (shadow.getSelection ? shadow.getSelection() : window.getSelection()).removeAllRanges(); window.getSelection().removeAllRanges(); } catch (err) {}
+  if (was) { drag.justDragged = true; setTimeout(() => { drag.justDragged = false; }, 0); schedule(); }
+});
+window.addEventListener('pointercancel', endDrag);
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drag.active) { e.stopPropagation(); endDrag(); } }, true);
+
 new ResizeObserver(() => layoutStage()).observe(wrap);
 new ResizeObserver(() => { layoutStage(); }).observe(frame);
 wrap.addEventListener('scroll', () => placeOverlays(), { passive: true });
@@ -847,8 +1077,9 @@ function renderLayers() {
       if (pos === 'inside') { parent = id; index = children(id).length; }
       else { parent = par[id]; index = indexOf(id) + (pos === 'after' ? 1 : 0); }
       if (parent === par[d] && indexOf(d) < index) index--;
-      if (type[d] === T.section && parent !== 0 && !CONTAINER.has(type[parent])) return;
-      commit({ k: 'mov', id: d, parent, index }, 'Reorder'); sel = d;
+      if (type[d] === T.section && parent !== 0) return;
+      const old = par[d];
+      commitSeq([() => ({ k: 'mov', id: d, parent, index }), ...cleanupSteps(old)], 'Reorder'); sel = d;
     });
     li.addEventListener('dragend', () => { dragId = -1; for (const x of ul.children) x.className = ''; });
     ul.appendChild(li);
@@ -906,6 +1137,34 @@ function selectCtl(id, p, options) {
   return s;
 }
 const spaceOpts = () => SPACE.map((m, i) => [i, `${Math.round(m * theme.unit)}`]);
+/* 0–100 % slider: previews while dragging, commits one edit on release */
+function rangeCtl(id, p) {
+  const w = document.createElement('div'); w.className = 'rngc';
+  const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 100; i.step = 1; i.value = Math.max(0, eff(id, p, device)); i.id = 'pct-' + PROPS[p][0]; i.setAttribute('aria-label', PROPS[p][1] + ' percent');
+  const o = document.createElement('output'); o.textContent = i.value + '%';
+  let start = null;
+  i.addEventListener('input', () => { if (start === null) start = cell(id, p, device); setCell(id, p, device, +i.value); o.textContent = i.value + '%'; dirty.add(id); render(); });
+  i.addEventListener('change', () => { const v = +i.value; setCell(id, p, device, start ?? -1); start = null; commit({ k: 'set', id, p, bp: device, v }, PROPS[p][1]); });
+  w.append(i, o); return w;
+}
+/* switching to absolute keeps the element where it is on screen */
+function makeAbsolute(id) {
+  const el = elOf[id], host = elOf[par[id]];
+  let x = 0, y = 0;
+  if (el && host) {
+    const er = el.getBoundingClientRect(), pr = host.getBoundingClientRect();
+    x = pr.width - er.width > 0 ? Math.round(((er.left - pr.left) / (pr.width - er.width)) * 100) : 0;
+    y = pr.height - er.height > 0 ? Math.round(((er.top - pr.top) / (pr.height - er.height)) * 100) : 0;
+  }
+  const clamp = (v) => Math.max(0, Math.min(100, v));
+  commitSeq([
+    () => ({ k: 'set', id, p: PI.pos, bp: device, v: 2 }),
+    () => (eff(id, PI.anchor, device) < 0 ? { k: 'set', id, p: PI.anchor, bp: device, v: 0 } : null),
+    () => ({ k: 'set', id, p: PI.x, bp: device, v: clamp(x) }),
+    () => ({ k: 'set', id, p: PI.y, bp: device, v: clamp(y) }),
+    () => (eff(id, PI.z, device) < 0 ? { k: 'set', id, p: PI.z, bp: device, v: 4 } : null),
+  ], 'Make absolute');
+}
 function swatchCtl(id, p, allowNone) {
   const d = document.createElement('div'); d.className = 'swatches';
   const val = eff(id, p, device);
@@ -967,7 +1226,7 @@ function renderElementPane() {
   if (CONTAINER.has(t)) {
     const s = sect('Layout');
     s.appendChild(rowFor(id, PI.display, segCtl(id, PI.display, PROPS[PI.display][4], ['Stack', 'Row', 'Grid', 'Block', 'Hide'])));
-    if (shown(id, PI.cols)) s.appendChild(rowFor(id, PI.cols, segCtl(id, PI.cols, PROPS[PI.cols][4])));
+    if (shown(id, PI.cols)) s.appendChild(rowFor(id, PI.cols, segCtl(id, PI.cols, PROPS[PI.cols][4], ['1', '2', '3', '4', '5', '6', 'Auto'])));
     s.appendChild(rowFor(id, PI.gap, selectCtl(id, PI.gap, spaceOpts().map(([v, l]) => [v, l + ' px']))));
     if (shown(id, PI.align)) s.appendChild(rowFor(id, PI.align, segCtl(id, PI.align, PROPS[PI.align][4], ['Fill', 'Start', 'Mid', 'End'])));
     if (shown(id, PI.justify)) s.appendChild(rowFor(id, PI.justify, segCtl(id, PI.justify, PROPS[PI.justify][4], ['Start', 'Mid', 'End', 'Apart'])));
@@ -999,10 +1258,43 @@ function renderElementPane() {
   // size
   {
     const s = sect('Size');
-    s.appendChild(rowFor(id, PI.w, segCtl(id, PI.w, PROPS[PI.w][4], ['Auto', 'Full', 'Fit'])));
+    s.appendChild(rowFor(id, PI.w, selectCtl(id, PI.w, [[0, 'Auto'], [1, 'Full · 100%'], [2, 'Fit content'], [3, '¼ · 25%'], [4, '⅓ · 33%'], [5, '½ · 50%'], [6, '⅔ · 66%'], [7, '¾ · 75%']])));
+    s.appendChild(rowFor(id, PI.h, selectCtl(id, PI.h, PROPS[PI.h][4].map((v, i) => [i, i === 0 ? 'Auto' : i === 6 ? 'Fill parent · 100%' : v + ' px']))));
     s.appendChild(rowFor(id, PI.maxw, selectCtl(id, PI.maxw, MAXW.map((m, i) => [i, i ? `${PROPS[PI.maxw][4][i].toUpperCase()} · ${m}` : 'None']))));
     s.appendChild(rowFor(id, PI.minh, selectCtl(id, PI.minh, MINH.map((m, i) => [i, i ? `${PROPS[PI.minh][4][i].toUpperCase()} · ${m}` : 'None']))));
     if (shown(id, PI.ar)) s.appendChild(rowFor(id, PI.ar, segCtl(id, PI.ar, PROPS[PI.ar][4], ['Auto', '16:9', '4:3', '1:1', '3:4'])));
+    pane.appendChild(s);
+  }
+  // position
+  if (id !== 0) {
+    const s = sect('Position');
+    const pos = eff(id, PI.pos, device);
+    const seg = segCtl(id, PI.pos, PROPS[PI.pos][4], ['Static', 'Relative', 'Absolute', 'Sticky']);
+    seg.children[2].replaceWith(seg.children[2].cloneNode(true)); seg.children[2].addEventListener('click', () => makeAbsolute(id));
+    s.appendChild(rowFor(id, PI.pos, seg));
+    if (pos === 2) {
+      const a = Math.max(0, eff(id, PI.anchor, device));
+      const grid = document.createElement('div'); grid.className = 'anchor';
+      for (let i = 1; i <= 9; i++) { const b = document.createElement('button'); b.type = 'button'; b.title = PROPS[PI.anchor][4][i]; b.setAttribute('aria-label', 'Anchor ' + b.title); b.setAttribute('aria-pressed', String(a === i)); b.addEventListener('click', () => setProp(id, PI.anchor, i, 'Anchor')); grid.appendChild(b); }
+      const extra = document.createElement('div'); extra.className = 'ctl-seg';
+      [[0, 'Free'], [10, 'Fill']].forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.setAttribute('aria-pressed', String(a === v)); b.addEventListener('click', () => setProp(id, PI.anchor, v, 'Anchor')); extra.appendChild(b); });
+      const wrapA = document.createElement('div'); wrapA.className = 'anchor-wrap'; wrapA.append(grid, extra);
+      s.appendChild(rowFor(id, PI.anchor, wrapA));
+      if (a === 0) { s.appendChild(rowFor(id, PI.x, rangeCtl(id, PI.x))); s.appendChild(rowFor(id, PI.y, rangeCtl(id, PI.y))); }
+      else s.appendChild(rowFor(id, PI.inset, selectCtl(id, PI.inset, spaceOpts().map(([v, l]) => [v, l + ' px']))));
+    } else if (pos === 3) s.appendChild(rowFor(id, PI.inset, selectCtl(id, PI.inset, spaceOpts().map(([v, l]) => [v, l + ' px from top']))));
+    s.appendChild(rowFor(id, PI.z, selectCtl(id, PI.z, PROPS[PI.z][4].map((v, i) => [i, i ? v : 'Auto']))));
+    const h = document.createElement('p'); h.className = 'hint';
+    h.innerHTML = pos === 2 ? 'Placed inside the nearest section or box. <b>Drag it on the canvas</b> to move it freely; it snaps to the edges and the center.' : pos === 3 ? 'Sticks to the top of the screen while its section scrolls past.' : 'Static and relative elements flow with the layout. Choose Absolute to place this element anywhere inside its parent.';
+    s.appendChild(h);
+    pane.appendChild(s);
+  }
+  // effects
+  {
+    const s = sect('Effects');
+    s.appendChild(rowFor(id, PI.blend, selectCtl(id, PI.blend, PROPS[PI.blend][4].map((v, i) => [i, v[0].toUpperCase() + v.slice(1).replace('-', ' ')]))));
+    s.appendChild(rowFor(id, PI.rot, selectCtl(id, PI.rot, PROPS[PI.rot][4].map((v, i) => [i, v + '°']))));
+    s.appendChild(rowFor(id, PI.overflow, segCtl(id, PI.overflow, PROPS[PI.overflow][4], ['Visible', 'Clip', 'Scroll'])));
     pane.appendChild(s);
   }
   // type
@@ -1208,7 +1500,7 @@ function exportHtml() {
     return `${pad}<${tag}${attrs}>${TEXTUAL.has(t) ? esc(str.x[id]) : ''}</${tag}>`;
   };
   let nodeCss = ''; for (let i = 0; i < CAP; i++) if (alive[i]) { compileNode(i); nodeCss += cssCache[i] + '\n'; }
-  const css = (tokenCss('.site') + '\n' + tokenCssNarrow('.site *') + '\n' + BASE_CSS.replace('.edit [contenteditable]{outline:2px solid var(--c-accent);outline-offset:2px;cursor:text}', '') + nodeCss)
+  const css = (tokenCss('.site') + '\n' + tokenCssNarrow('.site *') + '\n' + BASE_CSS.split('\n').filter((l) => !/\.edit |dragging/.test(l)).join('\n') + nodeCss)
     .replace(/\}(?=\.)/g, '}\n');
   const title = esc(str.x[children(0).map((s) => children(s)).flat().find((c) => type[c] === T.heading)] || 'Site');
   return `<!doctype html>
@@ -1261,7 +1553,7 @@ function renderStatus() {
   lastDomMs = 0;
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('flux-studio-doc', JSON.stringify(docSnapshot())); } catch (e) {} }, 600); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('flux-studio-doc-v2', JSON.stringify(docSnapshot())); } catch (e) {} }, 600); }
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2400); }
 
 $('devices').addEventListener('click', (e) => {
@@ -1295,7 +1587,7 @@ window.addEventListener('resize', layoutStage);
 
 /* boot: the saved document if there is one, otherwise the sample site */
 let restored = false;
-try { const s = localStorage.getItem('flux-studio-doc'); if (s) { loadDoc(JSON.parse(s)); restored = true; } } catch (e) { restored = false; }
+try { const s = localStorage.getItem('flux-studio-doc-v2'); if (s) { loadDoc(JSON.parse(s)); restored = true; } } catch (e) { restored = false; }
 if (!restored) buildFresh(SAMPLE_ORDER.map((k) => PRESETS[k]()));
 sel = 0;
 buildAdds();
