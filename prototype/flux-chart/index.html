@@ -94,6 +94,7 @@ button:focus-visible, .chart:focus-visible { outline: 2px solid var(--line); out
 dl.kv { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; }
 dl.kv dt { color: var(--muted); }
 dl.kv dd { margin: 0; font: 500 12.5px/1.45 var(--font-data); text-align: right; font-variant-numeric: tabular-nums; }
+.seg button:disabled { opacity: .45; cursor: default; }
 .ok { color: var(--up); } .bad { color: var(--down); } .dim { color: var(--muted); }
 .bar { height: 4px; background: var(--raise); border-radius: 2px; overflow: hidden; margin-top: 8px; }
 .bar i { display: block; height: 100%; width: 0; background: var(--up); transition: width .3s; }
@@ -146,7 +147,13 @@ footer b { color: var(--fg); font-weight: 600; }
         <button data-tf="3600" aria-pressed="false">1h</button>
       </div>
     </div>
-    <div class="group"><span>Feed</span>
+    <div class="group"><span>Source</span>
+      <div class="seg" id="segSrc" role="group" aria-label="Data source">
+        <button data-src="live" aria-pressed="false">Binance</button>
+        <button data-src="sim" aria-pressed="false">Simulated</button>
+      </div>
+    </div>
+    <div class="group" id="grpRate"><span>Feed</span>
       <div class="seg" id="segRate" role="group" aria-label="Ticks per second, per market">
         <button data-rate="5" aria-pressed="false">5/s</button>
         <button data-rate="20" aria-pressed="true">20/s</button>
@@ -166,6 +173,7 @@ footer b { color: var(--fg); font-weight: 600; }
         <canvas id="cOver"></canvas>
       </div>
       <p class="hint">Drag to pan · wheel or pinch to zoom · double-click or press L to return to live · arrow keys and + / − work when the chart has focus</p>
+      <p class="hint" id="srcNote">Connecting to Binance…</p>
       <p class="sr" id="srSummary"></p>
     </section>
 
@@ -173,7 +181,8 @@ footer b { color: var(--fg); font-weight: 600; }
       <section class="card">
         <h2>Tick stream <em id="sTps">—</em></h2>
         <dl class="kv">
-          <dt>Wire in</dt><dd id="sWire">—</dd>
+          <dt id="sJsonL" hidden>Exchange JSON in</dt><dd id="sJson" hidden>—</dd>
+          <dt>Flux wire in</dt><dd id="sWire">—</dd>
           <dt>Bytes per tick</dt><dd id="sBpt">—</dd>
           <dt>Parse + verify per tick</dt><dd id="sParse" title="Measured once at startup over 50,000 signed ticks">—</dd>
           <dt>Signatures ok / rejected</dt><dd id="sSig">—</dd>
@@ -219,8 +228,9 @@ footer b { color: var(--fg); font-weight: 600; }
   </main>
 
   <footer>
+    <b>Data:</b> with the Binance source, history comes from public 1m and 1s klines (each 1m kline becomes four points: open, low/high in order of direction, close) and live ticks are real trades from the public trade stream; if Binance can't be reached the page falls back to synthetic prices.
     <b>What is real here:</b> the FLX binary blob (delta-encoded, quantized, column-oriented), its CIDv1 sha-256 address, gzip over the wire, the zero-allocation tick parser, signature checks, and the three-layer Canvas renderer with tail-only redraws.
-    <b>What is simulated:</b> market prices are synthetic; the tick feed runs in a Web Worker in place of a Gun subscription; IPFS is an in-memory pin store; signatures are keyed FNV-1a checksums standing in for Ed25519.
+    <b>What is simulated:</b> a Web Worker acts as the gateway in place of a Gun subscription (it receives the exchange's JSON and emits signed TICK patterns); IPFS is an in-memory pin store; signatures are keyed FNV-1a checksums standing in for Ed25519.
   </footer>
 </div>
 
@@ -236,6 +246,10 @@ const AUTHOR = 'flux.demo';
 const KEY = 0x5eed1234;          // stand-in signing key shared by publisher + feed
 const HIST_N = 100000;           // historical points per chart
 const LIVE_CAP = 400000;         // room for live ticks before the buffer compacts
+const REST = 'https://data-api.binance.vision/api/v3';
+const WSS = 'wss://data-stream.binance.vision/stream?streams=';
+const FORCE_SIM = location.hash === '#sim';
+let SOURCE = 'sim';
 const MARKETS = [
   { id: 'btcusdt', label: 'BTC/USDT', p0: 64250, vol: 0.00022, prec: 2, seed: 11 },
   { id: 'ethusdt', label: 'ETH/USDT', p0: 3125,  vol: 0.00028, prec: 2, seed: 23 },
@@ -344,7 +358,7 @@ function synth(m, endMs) {
   }
   const shift = endMs - tMs[n - 1];
   for (let i = 0; i < n; i++) tMs[i] = Math.round(tMs[i] + shift);
-  return { tMs, q, scale };
+  return { tMs, q, scale, n };
 }
 
 /* =========================================================================
@@ -414,7 +428,8 @@ function lowerBound(a, n, x) { let lo = 0, hi = n; while (lo < hi) { const mid =
    Tick wire: TICK-R-{chartId}-S-{seriesId}-T-{ts}-V-{quantized}-SIG-{hex}
    Parsed by scanning char codes. No split, no substrings, no objects.
    ========================================================================= */
-const stats = { ticks: 0, bytes: 0, ok: 0, bad: 0, parseMs: 0, parsed: 0 };
+const stats = { ticks: 0, bytes: 0, json: 0, ok: 0, bad: 0, parseMs: 0, parsed: 0 };
+let lastJson = 0, feedState = 'connecting';
 let tapeSrc = '', tapeA = 0, tapeB = 0, tapeOk = true, tapeFresh = false;
 
 function parseTick(s, a, b) {
@@ -482,9 +497,35 @@ function pump(){
   }
   if (out) postMessage(out.slice(0, -1));
 }
+// live gateway: exchange JSON in, signed TICK patterns out
+let liveOut = '', jsonBytes = 0;
+function connect(url) {
+  const ws = new WebSocket(url);
+  ws.onopen = () => postMessage({ status: 'open' });
+  ws.onmessage = (e) => {
+    jsonBytes += e.data.length;
+    const d = JSON.parse(e.data).data; if (!d || !d.s) return;
+    const s = syms.find(x => x.id === d.s.toLowerCase()); if (!s) return;
+    let ts = d.T; if (ts < s.lastTs) ts = s.lastTs; s.lastTs = ts;
+    s.q = Math.round(parseFloat(d.p) * s.scale);
+    const body = 'TICK-R-'+s.id+'-S-last-T-'+ts+'-V-'+s.q;
+    liveOut += body+'-SIG-'+sig(body)+'\\n';
+  };
+  ws.onclose = () => { postMessage({ status: 'closed' }); setTimeout(() => connect(url), 3000); };
+}
+function flush() {
+  while (forge.length) {
+    const s = syms.find(x => x.id === forge.pop()); if (!s) continue;
+    const body = 'TICK-R-'+s.id+'-S-last-T-'+s.lastTs+'-V-'+Math.round(s.q*1.08);
+    liveOut += body+'-SIG-0badf00d\\n';
+  }
+  if (!liveOut && !jsonBytes) return;
+  postMessage({ w: liveOut.slice(0, -1), j: jsonBytes }); liveOut = ''; jsonBytes = 0;
+}
 onmessage = (e) => {
   const m = e.data;
   if (m.type === 'init') { syms = m.syms.map(s => Object.assign({ lp: 0 }, s)); key = m.key; lastTs = m.lastTs; last = performance.now(); setInterval(pump, 16); }
+  else if (m.type === 'live') { syms = m.syms.map(s => Object.assign({ lastTs: m.lastTs, q: Math.round(s.p * s.scale) }, s)); key = m.key; connect(m.url); setInterval(flush, 16); }
   else if (m.type === 'rate') rate = m.rate;
   else if (m.type === 'forge') forge.push(m.id);
 };`;
@@ -758,7 +799,7 @@ function setFollow(on) {
   view.follow = on;
   $('btnLive').hidden = on;
   $('liveChip').classList.toggle('paused', !on);
-  $('liveText').textContent = on ? 'LIVE' : 'PAUSED VIEW';
+  $('liveText').textContent = on ? (SOURCE === 'live' ? (feedState === 'open' ? 'LIVE · BINANCE' : 'BINANCE · ' + feedState.toUpperCase()) : 'LIVE · SIMULATED') : 'PAUSED VIEW';
 }
 function goLive() {
   if (!active) return;
@@ -825,6 +866,16 @@ chartEl.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 $('btnLive').addEventListener('click', goLive);
+function setFeedStatus(st) {
+  feedState = st;
+  if (SOURCE === 'live') $('srcNote').textContent = st === 'open' ? 'Real prices: Binance spot klines for history, public trade stream for live ticks.' : 'Binance trade stream ' + st + '; reconnecting…';
+  setFollow(view.follow);
+}
+$('segSrc').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || b.dataset.src === SOURCE) return;
+  location.hash = b.dataset.src === 'sim' ? 'sim' : '';
+  location.reload();
+});
 
 $('segKind').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -905,6 +956,7 @@ function updateStats() {
   const dT = stats.ticks - lastTicks, dB = stats.bytes - lastBytes, dP = stats.parseMs - lastParse;
   $('sTps').textContent = fmt(dT / dt, 0) + ' ticks/s';
   $('sWire').textContent = fmtBytes(dB / dt) + '/s';
+  if (SOURCE === 'live') { const dJ = stats.json - lastJson; lastJson = stats.json; $('sJson').textContent = fmtBytes(dJ / dt) + '/s' + (dB ? ' · ' + fmt(dJ / dB, 1) + '×' : ''); }
   $('sBpt').textContent = dT ? fmt(dB / dT, 1) + ' B' : '—';
   $('sSig').innerHTML = '<span class="ok">' + fmt(stats.ok, 0) + '</span> / <span class="' + (stats.bad ? 'bad' : 'dim') + '">' + fmt(stats.bad, 0) + '</span>';
   $('sPts').textContent = fmt(s.n, 0) + ' · ' + fmtBytes(s.n * 12);
@@ -951,24 +1003,64 @@ setInterval(() => {
 /* =========================================================================
    Boot: publish three charts, resolve BTC, paint, then stream.
    ========================================================================= */
-async function publish(m, endMs) {
-  const { tMs, q } = synth(m, endMs);
-  const raw = encodeLine(tMs, q, HIST_N, m.prec);
+async function getJSON(url) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 8000);
+  try { const r = await fetch(url, { signal: ac.signal }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+/* Real history: last 24h of 1m klines (4 points each) + last ~16 min of 1s klines (close each second). */
+async function loadBinance(m) {
+  const sym = m.id.toUpperCase(), scale = 10 ** m.prec;
+  const recent = await getJSON(`${REST}/klines?symbol=${sym}&interval=1m&limit=1000`);
+  const older = await getJSON(`${REST}/klines?symbol=${sym}&interval=1m&limit=440&endTime=${recent[0][0] - 1}`);
+  const secs = await getJSON(`${REST}/klines?symbol=${sym}&interval=1s&limit=1000`);
+  const cut = secs.length ? secs[0][0] : Infinity;
+  const T = [], Q = [];
+  const push = (t, v) => { T.push(t); Q.push(Math.round(parseFloat(v) * scale)); };
+  for (const k of older.concat(recent)) {
+    if (k[0] >= cut) break;
+    const up = parseFloat(k[4]) >= parseFloat(k[1]);
+    push(k[0], k[1]);
+    push(k[0] + 20000, up ? k[3] : k[2]);
+    push(k[0] + 40000, up ? k[2] : k[3]);
+    push(k[0] + 59999, k[4]);
+  }
+  for (const k of secs) push(k[0] + 999, k[4]);
+  // the blob stores u16 ms deltas: keep only the part after the last gap that would overflow
+  let start = 0;
+  for (let i = T.length - 1; i > 0; i--) if (T[i] - T[i - 1] > 65000 || T[i] < T[i - 1]) { start = i; break; }
+  const n = T.length - start;
+  if (n < 10) throw new Error('not enough history');
+  return { tMs: Float64Array.from(T.slice(start)), q: Int32Array.from(Q.slice(start)), n };
+}
+
+async function publish(m, data) {
+  const { tMs, q, n } = data;
+  const raw = encodeLine(tMs, q, n, m.prec);
   const [gz, cid] = await Promise.all([gzip(raw), cidOf(raw)]);
   pinStore.set(cid, gz);
   const axT = await cidOf(new TextEncoder().encode('axis:time:utc:s'));
   const axP = await cidOf(new TextEncoder().encode('axis:price:usdt:' + m.prec));
-  const t0 = Math.floor(tMs[0] / 1000), t1 = Math.ceil(tMs[HIST_N - 1] / 1000);
+  const t0 = Math.floor(tMs[0] / 1000), t1 = Math.ceil(tMs[n - 1] / 1000);
   const body = `CHART-I-${AUTHOR}-R-${m.id}-K-line-AX-${axT}.${axP}-D-${cid}-T-${t0}-T-${t1}`;
   registry.set('chart.' + m.id, body + '-SIG-' + sign(body));
-  return { raw, gz, tMs, q, t0 };
+  return { raw, gz, tMs, q, t0, n };
 }
 
 async function boot() {
   readTheme(); resize();
-  const endMs = Date.now() - 400;
+  let endMs = Date.now() - 400;
   const pubs = {};
-  for (const m of MARKETS) pubs[m.id] = await publish(m, endMs);
+  let hist = null;
+  if (!FORCE_SIM) {
+    try { hist = await Promise.all(MARKETS.map(loadBinance)); SOURCE = 'live'; }
+    catch (err) { console.warn('Binance unreachable, using simulated data:', err); $('srcNote').textContent = 'Binance could not be reached from this page (' + (err.message || err) + '), so prices are simulated.'; }
+  } else $('srcNote').textContent = 'Simulated prices. Choose Binance to load real market data.';
+  for (const [i, m] of MARKETS.entries()) pubs[m.id] = await publish(m, hist ? hist[i] : synth(m, endMs));
+  if (hist) endMs = Math.max(...hist.map((h) => h.tMs[h.n - 1]));
+  for (const b of $('segSrc').children) b.setAttribute('aria-pressed', String(b.dataset.src === SOURCE));
+  for (const b of $('segRate').children) b.disabled = SOURCE === 'live';
+  $('sJsonL').hidden = $('sJson').hidden = SOURCE !== 'live';
 
   // client: name -> record -> CID -> blob -> typed arrays -> first frame
   const tc = performance.now();
@@ -983,8 +1075,15 @@ async function boot() {
 
   // stream
   worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
-  worker.onmessage = (e) => onWire(e.data);
-  worker.postMessage({ type: 'init', key: KEY, lastTs: endMs, syms: MARKETS.map((m) => { const s = series.get(m.id); return { id: m.id, p: s.base + s.ys[s.n - 1], vol: m.vol, scale: 10 ** m.prec }; }) });
+  worker.onmessage = (e) => {
+    const d = e.data;
+    if (typeof d === 'string') onWire(d);
+    else if (d.status) setFeedStatus(d.status);
+    else { stats.json += d.j; if (d.w) onWire(d.w); }
+  };
+  const syms = MARKETS.map((m) => { const s = series.get(m.id); return { id: m.id, p: s.base + s.ys[s.n - 1], vol: m.vol, scale: 10 ** m.prec }; });
+  if (SOURCE === 'live') worker.postMessage({ type: 'live', key: KEY, lastTs: endMs, syms, url: WSS + MARKETS.map((m) => m.id + '@trade').join('/') });
+  else worker.postMessage({ type: 'init', key: KEY, lastTs: endMs, syms });
 
   // parser benchmark: 50k signed ticks for an unsubscribed chart (verified, then dropped)
   {
@@ -998,8 +1097,8 @@ async function boot() {
   // cold-load comparison against the equivalent JSON payload
   setTimeout(async () => {
     const p = pubs.btcusdt, sc = 10 ** MARKETS[0].prec;
-    const rows = new Array(HIST_N);
-    for (let i = 0; i < HIST_N; i++) rows[i] = { t: p.tMs[i], p: p.q[i] / sc };
+    const rows = new Array(p.n);
+    for (let i = 0; i < p.n; i++) rows[i] = { t: p.tMs[i], p: p.q[i] / sc };
     const json = JSON.stringify(rows);
     const jbytes = new TextEncoder().encode(json);
     const jgz = await gzip(jbytes);
@@ -1010,7 +1109,7 @@ async function boot() {
     a = performance.now();
     const raw = await gunzip(p.gz); decodeLine(raw);
     const flxMs = performance.now() - a;
-    $('bTitle').textContent = 'BTC/USDT · ' + fmt(HIST_N, 0) + ' pts';
+    $('bTitle').textContent = 'BTC/USDT · ' + fmt(p.n, 0) + ' pts';
     $('bJsonRaw').textContent = fmtBytes(jbytes.byteLength);
     $('bFlxRaw').textContent = fmtBytes(p.raw.byteLength);
     $('bJsonGz').textContent = hasCS ? fmtBytes(jgz.byteLength) : 'n/a';
@@ -1018,7 +1117,7 @@ async function boot() {
     $('bJsonMs').textContent = fmt(jsonMs, 1) + ' ms';
     $('bFlxMs').textContent = fmt(flxMs, 1) + ' ms';
     $('bPaint').textContent = fmt(firstFrame, 1) + ' ms';
-    if (pts.length !== HIST_N) console.warn('json check');
+    if (pts.length !== p.n) console.warn('json check');
   }, 600);
 }
 boot().catch((err) => { console.error(err); $('rTrace').textContent = 'Boot failed: ' + err.message; });
