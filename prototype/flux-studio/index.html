@@ -25,6 +25,7 @@
   --ok: #1d7a4a;
   --warn: #a8640b;
   --danger: #b8382a;
+  --comp: #7a3fd1;
   --font-ui: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
@@ -32,13 +33,13 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg: #111411; --panel: #171b17; --sunk: #0d100d; --rule: #283028; --ink: #e6ebe4; --muted: #949e91;
-    --accent: #7b93ff; --accent-ink: #0b0f1f; --accent-soft: rgba(123, 147, 255, 0.14); --override: #f0904a; --ok: #4cc58a; --warn: #e4a54a; --danger: #f07563;
+    --accent: #7b93ff; --accent-ink: #0b0f1f; --accent-soft: rgba(123, 147, 255, 0.14); --override: #f0904a; --ok: #4cc58a; --warn: #e4a54a; --danger: #f07563; --comp: #b590ff;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #111411; --panel: #171b17; --sunk: #0d100d; --rule: #283028; --ink: #e6ebe4; --muted: #949e91;
-  --accent: #7b93ff; --accent-ink: #0b0f1f; --accent-soft: rgba(123, 147, 255, 0.14); --override: #f0904a; --ok: #4cc58a; --warn: #e4a54a; --danger: #f07563;
+  --accent: #7b93ff; --accent-ink: #0b0f1f; --accent-soft: rgba(123, 147, 255, 0.14); --override: #f0904a; --ok: #4cc58a; --warn: #e4a54a; --danger: #f07563; --comp: #b590ff;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -174,6 +175,32 @@ button { cursor: pointer; }
 .row.set .rst::after { background: var(--accent); }
 .row.set.bpset .rst::after { background: var(--override); }
 .row.set .rst:hover::after { background: var(--danger); }
+.row.ovr > label { color: var(--comp); }
+.row.ovr .rst::after { background: var(--comp) !important; }
+.list li.inst .nm, .list li.inst .ic { color: var(--comp); }
+.list li.inst-in .nm { color: var(--muted); }
+.compbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 auto 10px; padding: 7px 10px; border-radius: 8px; background: var(--comp); color: #fff; font-weight: 600; }
+.compbar .spacer { flex: 1; }
+.compbar .btn { background: #fff; color: var(--comp); border-color: #fff; }
+.compnote { display: grid; gap: 6px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--comp); background: color-mix(in srgb, var(--comp) 8%, transparent); }
+.compnote p { margin: 0; font-size: 12px; }
+.compnote .acts { display: flex; gap: 5px; flex-wrap: wrap; }
+.libsec { padding: 8px 10px; display: grid; gap: 8px; }
+.libsec h4 { margin: 4px 2px 0; font: 600 11px/1 var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.libtile { border: 1px solid var(--rule); border-radius: 9px; background: var(--panel); overflow: hidden; cursor: grab; display: grid; }
+.libtile:hover { border-color: var(--comp); }
+.libtile .thumb { height: 96px; overflow: hidden; position: relative; background: var(--sunk); border-bottom: 1px solid var(--rule); pointer-events: none; }
+.libtile .meta { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 8px; min-width: 0; }
+.libtile .meta .ic { color: var(--comp); }
+.libtile .meta span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.libtile .meta small { color: var(--muted); margin-left: auto; white-space: nowrap; }
+.myrow { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border: 1px solid var(--rule); border-radius: 7px; }
+.myrow span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.myrow small { color: var(--muted); }
+.pop .field { display: grid; gap: 4px; margin-bottom: 8px; }
+.pop .field input, .pop textarea { border: 1px solid var(--rule); border-radius: 7px; padding: 6px 8px; background: var(--panel); }
+.pop textarea { width: 100%; min-height: 120px; font: 400 11px/1.4 var(--font-data); }
+.pop .row2 { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
 .ctl-seg { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; min-width: 0; }
 .ctl-seg button { flex: 1 1 auto; min-width: 0; border: 0; border-right: 1px solid var(--rule); background: var(--panel); padding: 4px 1px; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; justify-content: center; align-items: center; gap: 3px; }
 .ctl-seg button:last-child { border-right: 0; }
@@ -334,6 +361,7 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
   <symbol id="i-ext" viewBox="0 0 16 16"><path d="M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v4h-9v-9h4"/></symbol>
   <symbol id="i-eye" viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></symbol>
   <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.5v3.5M8 5v.1"/></symbol>
+  <symbol id="i-comp" viewBox="0 0 16 16"><path d="M8 1.5 10.75 4.25 8 7 5.25 4.25zM4.25 5.25 7 8 4.25 10.75 1.5 8zM11.75 5.25 14.5 8 11.75 10.75 9 8zM8 9 10.75 11.75 8 14.5 5.25 11.75z"/></symbol>
   <symbol id="i-wand" viewBox="0 0 16 16"><path d="M2.5 13.5l8-8M9 4l1.5 1.5M12 2v2M13.5 3.5h-3M12.5 7.5v1.5M13.25 8.25h-1.5"/></symbol>
 </svg>
 
@@ -369,8 +397,10 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
       <div class="tabs" role="tablist">
         <button role="tab" id="tabLayers" aria-selected="true"><svg class="ic"><use href="#i-layers"/></svg>Layers</button>
         <button role="tab" id="tabPages" aria-selected="false"><svg class="ic"><use href="#i-page"/></svg>Pages</button>
+        <button role="tab" id="tabLib" aria-selected="false"><svg class="ic"><use href="#i-comp"/></svg>Library</button>
       </div>
       <ul class="list" id="layers" role="tree" aria-label="Page layers"></ul>
+      <div id="libPane" hidden></div>
       <div id="pagesPane" hidden>
         <ul class="list" id="pages" aria-label="Pages"></ul>
         <div class="railfoot"><button class="btn small" id="btnNewPage"><svg class="ic sm"><use href="#i-page"/></svg>New page</button><button class="btn small" id="btnNewArticle"><svg class="ic sm"><use href="#i-article"/></svg>New article</button></div>
@@ -380,6 +410,7 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
     <main class="canvas-wrap" id="canvasWrap">
       <div id="designView">
         <div class="devlabel"><span id="devName">Desktop · 1280 px</span><span id="devScale"></span></div>
+        <div class="compbar" id="compBar" hidden><svg class="ic"><use href="#i-comp"/></svg><span id="compBarText"></span><span class="spacer"></span><button class="btn small" id="compDone">Done</button></div>
         <div class="stage" id="stage">
           <div class="frame" id="frame"></div>
           <div class="ov-pad" id="padT" hidden></div><div class="ov-pad" id="padR" hidden></div><div class="ov-pad" id="padB" hidden></div><div class="ov-pad" id="padL" hidden></div>
@@ -446,11 +477,11 @@ const ic = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use h
    children are pages. Edits are small op records with exact inverses.
    ========================================================================= */
 const CAP = 2048, BPN = 3;
-const TYPES = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'site', 'list', 'field'];
+const TYPES = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'site', 'list', 'field', 'lib'];
 const T = Object.fromEntries(TYPES.map((t, i) => [t, i]));
-const TYPE_LABEL = ['Page', 'Section', 'Box', 'Heading', 'Text', 'Button', 'Image', 'Divider', 'Spacer', 'Link', 'Badge', 'Site', 'Article list', 'Field'];
-const TYPE_ICON = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'sitemap', 'list', 'field'];
-const CONTAINER = new Set([T.page, T.section, T.box, T.site]);
+const TYPE_LABEL = ['Page', 'Section', 'Box', 'Heading', 'Text', 'Button', 'Image', 'Divider', 'Spacer', 'Link', 'Badge', 'Site', 'Article list', 'Field', 'Library'];
+const TYPE_ICON = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'sitemap', 'list', 'field', 'comp'];
+const CONTAINER = new Set([T.page, T.section, T.box, T.site, T.lib]);
 const TEXTUAL = new Set([T.heading, T.text, T.button, T.link, T.badge]);
 const LINKY = new Set([T.button, T.link]);
 
@@ -503,7 +534,7 @@ const PI = Object.fromEntries(PROPS.map((p, i) => [p[0], i]));
 const type = new Uint8Array(CAP), alive = new Uint8Array(CAP);
 const par = new Int16Array(CAP).fill(-1), first = new Int16Array(CAP).fill(-1), next = new Int16Array(CAP).fill(-1);
 const cells = new Int8Array(CAP * NP * BPN).fill(-1);
-const SF = ['x', 'h', 's', 'n', 'k', 'd'];              // text, href/slug, image, name/title, page kind, date
+const SF = ['x', 'h', 's', 'n', 'k', 'd', 'm', 'o', 'c'];  // text, href/slug, image, name/title, page kind, date, main node, overrides, component
 const str = Object.fromEntries(SF.map((k) => [k, []]));
 const cell = (id, p, bp) => cells[(id * NP + p) * BPN + bp];
 const setCell = (id, p, bp, v) => { cells[(id * NP + p) * BPN + bp] = v; };
@@ -540,7 +571,7 @@ function fromSpec(spec) {
     if (val < 0) throw new Error('bad value ' + k + '=' + v);
     c[p * BPN + bp] = val;
   }
-  return { id: -1, t: T[spec.t], c, f: [spec.x, spec.h, undefined, spec.n, spec.kind, spec.date], k: (spec.k || []).map(fromSpec) };
+  return { id: -1, t: T[spec.t], c, f: [spec.x, spec.h, undefined, spec.n, spec.kind, spec.date, undefined, undefined, undefined], k: (spec.k || []).map(fromSpec) };
 }
 function assignIds(sn, used = new Set()) { let id = 1; while (alive[id] || used.has(id)) id++; if (id >= CAP) throw new Error('The site is full. Remove some elements first.'); used.add(id); sn.id = id; sn.k.forEach((k) => assignIds(k, used)); return sn; }
 const freshSnap = (spec) => assignIds(fromSpec(spec));
@@ -688,6 +719,8 @@ const BASE_CSS = `
 .edit .t-field{pointer-events:none}
 .dragging-site,.dragging-site *{cursor:grabbing!important;user-select:none}
 .is-dragging{opacity:.35;outline:2px dashed var(--c-accent);outline-offset:-2px}
+.comp-board{padding:56px 48px;min-height:440px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;background-image:radial-gradient(var(--c-line) 1.2px,transparent 1.2px);background-size:18px 18px}
+.comp-board.fit{align-items:center}.comp-board.card>*{width:min(100%,440px);align-self:center}
 `;
 
 /* =========================================================================
@@ -695,7 +728,7 @@ const BASE_CSS = `
    (a section on that page) or a full https:// address.
    ========================================================================= */
 let curPage = -1;
-const pages = () => children(0);
+const pages = () => children(0).filter((c) => type[c] === T.page);
 const pageBySlug = (slug) => pages().find((p) => str.h[p] === slug) ?? -1;
 const homePage = () => pageBySlug('/') >= 0 ? pageBySlug('/') : pages()[0];
 const isArticle = (p) => str.k[p] === 'article';
@@ -751,7 +784,7 @@ function listCards(id, exportMode) {
   return items.map((pg) => `<a class="al-card" ${exportMode ? `href="${slugFile(str.h[pg])}"` : `href="#" data-href="page:${esc(str.h[pg])}"`}><div class="al-img"${firstImage(pg) ? ` style="background-image:url('${firstImage(pg)}')"` : ''}></div><span class="al-meta">${esc(fmtDate(str.d[pg]))} · ${readMinutes(pg)} min read</span><span class="al-title">${esc(str.n[pg])}</span><span class="al-ex">${esc(str.x[pg] || '')}</span><span class="al-more">Read the article →</span></a>`).join('');
 }
 function firstImage(pg) { for (const n of subtree(pg)) if (type[n] === T.image && str.s[n]) return str.s[n]; return ''; }
-function buildEl(id) {
+function buildEl(id, reg = true) {
   const t = type[id], el = document.createElement(TAGS(id));
   el.className = `t-${TYPES[t]} n${id}`; el.dataset.n = id;
   if (TEXTUAL.has(t)) el.textContent = str.x[id] ?? '';
@@ -760,10 +793,13 @@ function buildEl(id) {
   if (t === T.field) { el.placeholder = str.x[id] || ''; el.setAttribute('aria-label', str.x[id] || 'Field'); el.tabIndex = live ? 0 : -1; }
   if (t === T.list) el.innerHTML = listCards(id, false);
   if (t === T.section) el.id = 'n' + id;
-  elOf[id] = el;
-  if (CONTAINER.has(t)) for (const c of children(id)) el.appendChild(buildEl(c));
+  if (reg) elOf[id] = el;
+  if (CONTAINER.has(t)) for (const c of children(id)) el.appendChild(buildEl(c, reg));
   return el;
 }
+/* how a component sits on its board and thumbnail: sections full width, inline pieces at their own size, the rest card width */
+function compFit(M) { return type[M] === T.section ? '' : (type[M] === T.button || type[M] === T.badge || type[M] === T.link) ? 'fit' : 'card'; }
+function buildBoard(M) { const el = document.createElement('div'); el.className = 'comp-board ' + compFit(M); el.appendChild(buildEl(M)); return el; }
 function buildPage(pg) {
   const el = document.createElement('div'); el.className = `t-page n${pg}`; el.dataset.n = pg; elOf[pg] = el;
   for (const s of pageSections(pg)) el.appendChild(buildEl(s));
@@ -773,7 +809,7 @@ let structDirty = true, tokensDirty = true, lastStyleMs = 0, lastDomMs = 0;
 function render() {
   const t0 = performance.now();
   if (tokensDirty) { stTokens.textContent = tokenCss('.site') + tokenCssNarrow('.site *'); tokensDirty = false; ensureFonts([theme.display, theme.body]); }
-  if (structDirty) { const td = performance.now(); siteEl.replaceChildren(buildPage(curPage)); structDirty = false; lastDomMs = performance.now() - td; }
+  if (structDirty) { const td = performance.now(); siteEl.replaceChildren(editingComp >= 0 && alive[editingComp] ? buildBoard(editingComp) : buildPage(curPage)); structDirty = false; lastDomMs = performance.now() - td; }
   if (dirty.size) {
     for (const id of dirty) if (alive[id]) compileNode(id);
     dirty.clear();
@@ -786,7 +822,7 @@ function render() {
 let rafQueued = false;
 function schedule() {
   if (rafQueued) return; rafQueued = true;
-  requestAnimationFrame(() => { rafQueued = false; if (!alive[curPage] || type[curPage] !== T.page) { curPage = homePage(); structDirty = true; } render(); renderLayers(); renderPages(); renderInspector(); renderPageBtn(); if (view === 'map') renderSitemap(); renderStatus(); save(); queueCheck(); refreshPop(); });
+  requestAnimationFrame(() => { rafQueued = false; if (!alive[curPage] || type[curPage] !== T.page) { curPage = homePage(); structDirty = true; } if (editingComp >= 0 && !alive[editingComp]) { editingComp = -1; structDirty = true; } render(); renderCompBar(); renderLayers(); renderPages(); renderLibrary(); renderInspector(); renderPageBtn(); if (view === 'map') renderSitemap(); renderStatus(); save(); queueCheck(); refreshPop(); });
 }
 
 /* =========================================================================
@@ -832,18 +868,201 @@ function wire(op) {
 }
 function countSnap(s) { return 1 + s.k.reduce((a, k) => a + countSnap(k), 0); }
 function logOp(w, label) { opsTotal++; opBytes += w.length; oplog.unshift([w, label || '']); if (oplog.length > 40) oplog.pop(); }
-function commit(op, label) { const inv = apply(op); undoStack.push({ op, inv }); if (undoStack.length > 500) undoStack.shift(); redoStack.length = 0; logOp(wire(op), label); schedule(); }
+function commit(op, label) { return commitSeq([() => op], label); }
+/* Every edit runs here. Instance edits become overrides; edits to a main
+   component re-sync all its instances inside the same undo step. */
 function commitSeq(steps, label) {
-  const ops = [], invs = [];
-  for (const mk of steps) { const op = mk(); if (!op) continue; ops.push(op); invs.push(apply(op)); }
+  const ops = [], invs = [], touched = new Set(), keepSel = sel;
+  for (const mk of steps) { let op = mk(); if (!op) continue; op = withOverride(op); touchedComps(op, touched); ops.push(op); invs.push(apply(op)); }
   if (!ops.length) return false;
-  const op = { k: 'grp', ops, label }, inv = { k: 'grp', ops: invs.reverse(), label };
+  let synced = 0;
+  for (const M of touched) if (alive[M]) for (const I of instancesOf(M)) {
+    const sn = syncSnap(I, M), p = par[I], ix = indexOf(I);
+    for (const o of [{ k: 'del', id: I }, { k: 'ins', snap: sn, parent: p, index: ix }]) { ops.push(o); invs.push(apply(o)); }
+    synced++;
+  }
+  if (alive[keepSel]) sel = keepSel;
+  const op = ops.length === 1 ? ops[0] : { k: 'grp', ops, label }, inv = ops.length === 1 ? invs[0] : { k: 'grp', ops: invs.reverse(), label };
   undoStack.push({ op, inv }); if (undoStack.length > 500) undoStack.shift(); redoStack.length = 0;
-  logOp(wire(op), label); schedule(); return true;
+  logOp(wire(op), label + (synced ? ` · synced ${synced} instance${synced > 1 ? 's' : ''}` : '')); schedule(); return true;
 }
-function undo() { const e = undoStack.pop(); if (!e) return; e.op = apply(e.inv); redoStack.push(e); oplog.unshift(['UNDO ' + wire(e.inv), '']); clampSel(); schedule(); }
-function redo() { const e = redoStack.pop(); if (!e) return; e.inv = apply(e.op); undoStack.push(e); oplog.unshift(['REDO ' + wire(e.op), '']); clampSel(); schedule(); }
-function clampSel() { if (sel >= 0 && !alive[sel]) sel = curPage; if (!alive[curPage]) { curPage = homePage(); structDirty = true; } }
+function undo() { const e = undoStack.pop(); if (!e) return; const k = sel; e.op = apply(e.inv); redoStack.push(e); if (alive[k]) sel = k; oplog.unshift(['UNDO ' + wire(e.inv), '']); clampSel(); schedule(); }
+function redo() { const e = redoStack.pop(); if (!e) return; const k = sel; e.inv = apply(e.op); undoStack.push(e); if (alive[k]) sel = k; oplog.unshift(['REDO ' + wire(e.op), '']); clampSel(); schedule(); }
+function clampSel() { if (sel >= 0 && !alive[sel]) sel = curPage; if (!alive[curPage]) { curPage = homePage(); structDirty = true; } if (editingComp >= 0 && !alive[editingComp]) exitComp(); }
+
+/* =========================================================================
+   Components. Main components live under the site's library node. An
+   instance is a real copy whose nodes remember their main node (m); the
+   instance root names its component (c). Instance edits are recorded as
+   overrides (o) and survive every re-sync from the main component.
+   ========================================================================= */
+let editingComp = -1;
+const LOCKED = 'This is part of a component. Edit the main component to change its structure, or detach the instance.';
+const libNode = () => { const c = children(0).find((x) => type[x] === T.lib); return c === undefined ? -1 : c; };
+const comps = () => { const l = libNode(); return l >= 0 ? children(l) : []; };
+function compOf(id) { const L = libNode(); if (L < 0 || id < 0) return -1; for (let c = id; c >= 0; c = par[c]) if (par[c] === L) return c; return -1; }
+const isInstNode = (id) => id >= 0 && !!alive[id] && str.m[id] !== undefined && compOf(id) < 0;
+const isInstRoot = (id) => isInstNode(id) && str.c[id] !== undefined;
+const lockedStruct = (id) => isInstNode(id) && !isInstRoot(id);
+function instRootOf(id) { for (let c = id; c >= 0; c = par[c]) { if (!isInstNode(c)) return -1; if (str.c[c] !== undefined) return c; } return -1; }
+function instancesOf(M) { const out = []; for (let i = 0; i < CAP; i++) if (alive[i] && str.c[i] === M && compOf(i) < 0) out.push(i); return out; }
+const ovr = (id) => new Set((str.o[id] || '').split(',').filter(Boolean));
+const ROOT_KEEP = ['mt', 'mb', 'w', 'pos', 'anchor', 'x', 'y', 'inset', 'z', 'rot'];
+const STR_SYNC = ['x', 'h', 's'];
+const FI = (k) => SF.indexOf(k);
+const compShort = (M) => { const n = str.n[M] || 'Component', i = n.indexOf(' / '); return i > 0 ? n.slice(i + 3) : n; };
+const compGroup = (M) => { const n = str.n[M] || 'Component', i = n.indexOf(' / '); return i > 0 ? n.slice(0, i) : 'Ungrouped'; };
+function touchedComps(op, acc) {
+  if (op.k === 'grp') { op.ops.forEach((o) => touchedComps(o, acc)); return acc; }
+  if (op.k === 'doc' || op.k === 'tok') return acc;
+  for (const id of [op.id, op.parent, op.id >= 0 && alive[op.id] ? par[op.id] : -1]) if (id >= 0 && alive[id]) { const c = compOf(id); if (c >= 0) acc.add(c); }
+  return acc;
+}
+function withOverride(op) {
+  if (op.noOv || op.k === 'grp' || !isInstNode(op.id)) return op;
+  let key = null;
+  if (op.k === 'set' && op.v >= 0) key = PROPS[op.p][0];
+  else if (op.k === 'str' && STR_SYNC.includes(op.f)) key = op.f;
+  if (!key || (isInstRoot(op.id) && ROOT_KEEP.includes(key))) return op;
+  const o = ovr(op.id); if (o.has(key)) return op;
+  o.add(key);
+  return { k: 'grp', label: 'Override', ops: [op, { k: 'str', id: op.id, f: 'o', v: [...o].join(',') }] };
+}
+/* rebuild an instance from its main component, keeping ids and overrides */
+function syncSnap(I, M, byPath) {
+  const inI = new Set(subtree(I)), map = new Map();
+  if (byPath) { const walk = (a, b) => { map.set(b, a); const ka = children(a); children(b).forEach((k, i) => { if (ka[i] !== undefined && type[ka[i]] === type[k]) walk(ka[i], k); }); }; walk(I, M); }
+  else for (const n of inI) if (str.m[n] !== undefined) map.set(str.m[n], n);
+  const used = new Set();
+  const take = (want) => { if (want !== undefined && !used.has(want)) { used.add(want); return want; } let id = 1; while ((alive[id] && !inI.has(id)) || used.has(id)) id++; if (id >= CAP) throw new Error('The site is full.'); used.add(id); return id; };
+  const mk = (m, root) => {
+    let n = map.get(m); if (n !== undefined && !inI.has(n)) n = undefined;
+    const id = take(n);
+    const c = Array.from(cells.subarray(m * NP * BPN, (m + 1) * NP * BPN));
+    const keep = n !== undefined ? ovr(n) : new Set();
+    if (n !== undefined) for (const key of [...keep, ...(root ? ROOT_KEEP : [])]) { const p = PI[key]; if (p === undefined) continue; for (let bp = 0; bp < BPN; bp++) c[p * BPN + bp] = cell(n, p, bp); }
+    const f = SF.map((k) => str[k][m]);
+    if (n !== undefined) for (const k of STR_SYNC) if (keep.has(k)) f[FI(k)] = str[k][n];
+    f[FI('m')] = m; f[FI('o')] = keep.size ? [...keep].join(',') : undefined; f[FI('c')] = root ? M : undefined;
+    if (root) { f[FI('k')] = undefined; f[FI('d')] = undefined; }
+    return { id, t: type[m], c, f, k: children(m).map((k) => mk(k, false)) };
+  };
+  return mk(M, true);
+}
+function syncSteps(I, M, byPath) { let sn, p, ix; return [() => { sn = syncSnap(I, M, byPath); p = par[I]; ix = indexOf(I); return { k: 'del', id: I }; }, () => ({ k: 'ins', snap: sn, parent: p, index: ix })]; }
+function instanceSnap(M) {
+  const used = new Set();
+  const mk = (m, root) => {
+    let id = 1; while (alive[id] || used.has(id)) id++; if (id >= CAP) throw new Error('The site is full.'); used.add(id);
+    const f = SF.map((k) => str[k][m]); f[FI('m')] = m; f[FI('o')] = undefined; f[FI('c')] = root ? M : undefined;
+    if (root) { f[FI('k')] = undefined; f[FI('d')] = undefined; }
+    return { id, t: type[m], c: Array.from(cells.subarray(m * NP * BPN, (m + 1) * NP * BPN)), f, k: children(m).map((k) => mk(k, false)) };
+  };
+  return mk(M, true);
+}
+function sameShape(a, b) { if (type[a] !== type[b]) return false; const ka = children(a), kb = children(b); return ka.length === kb.length && ka.every((k, i) => sameShape(k, kb[i])); }
+function similarity(a, b) {
+  let eq = 0, tot = 0;
+  const walk = (x, y) => { for (let p = 0; p < NP; p++) { if (x === a && ROOT_KEEP.includes(PROPS[p][0])) continue; for (let bp = 0; bp < BPN; bp++) { const u = cell(x, p, bp), v = cell(y, p, bp); if (u < 0 && v < 0) continue; tot++; if (u === v) eq++; } } children(x).forEach((k, i) => walk(k, children(y)[i])); };
+  walk(a, b); return tot ? eq / tot : 1;
+}
+function findSimilar(id) {
+  const out = [];
+  for (const pg of pages()) for (const n of subtree(pg)) {
+    if (n === id || type[n] === T.page || isAncestor(n, id) || isAncestor(id, n) || isInstNode(n)) continue;
+    if (out.some((o) => isAncestor(o, n))) continue;
+    if (sameShape(id, n) && similarity(id, n) >= 0.6) out.push(n);
+  }
+  return out;
+}
+function linkOps(target, msn) {
+  const ops = [];
+  const walk = (n, sn, root) => {
+    const o = [];
+    for (let p = 0; p < NP; p++) { const key = PROPS[p][0]; if (root && ROOT_KEEP.includes(key)) continue; for (let bp = 0; bp < BPN; bp++) if (cell(n, p, bp) !== sn.c[p * BPN + bp]) { o.push(key); break; } }
+    for (const k of STR_SYNC) if ((str[k][n] ?? '') !== (sn.f[FI(k)] ?? '')) o.push(k);
+    ops.push({ k: 'str', id: n, f: 'm', v: sn.id }, { k: 'str', id: n, f: 'o', v: o.length ? o.join(',') : undefined });
+    if (root) ops.push({ k: 'str', id: n, f: 'c', v: sn.id }, { k: 'str', id: n, f: 'n', v: sn.f[FI('n')] });
+    children(n).forEach((k, i) => walk(k, sn.k[i], false));
+  };
+  walk(target, msn, true);
+  return ops;
+}
+const newUid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function cleanMaster(sn, root, name) {
+  sn.f[FI('m')] = undefined; sn.f[FI('o')] = undefined; sn.f[FI('c')] = undefined;
+  if (root) { for (const key of ROOT_KEEP) { const p = PI[key]; for (let bp = 0; bp < BPN; bp++) sn.c[p * BPN + bp] = -1; } if (name) sn.f[FI('n')] = name; sn.f[FI('k')] = 'component'; if (!sn.f[FI('d')] || name) sn.f[FI('d')] = newUid(); }
+  sn.k.forEach((k) => cleanMaster(k, false));
+  return sn;
+}
+function ensureLibStep() { return () => (libNode() >= 0 ? null : { k: 'ins', snap: assignIds(fromSpec(N('lib', {}, null, [], { n: 'Components' }))), parent: 0, index: 0 }); }
+function componentSteps(id, name, similar) {
+  let msn = null;
+  const steps = [ensureLibStep(), () => { msn = assignIds(cleanMaster(snap(id), true, name)); return { k: 'ins', snap: msn, parent: libNode(), index: children(libNode()).length }; }];
+  for (const target of [id, ...similar]) steps.push(() => ({ k: 'grp', label: 'Link instance', ops: linkOps(target, msn) }));
+  return steps;
+}
+function detachSteps(I) { return subtree(I).flatMap((n) => ['m', 'o', 'c'].map((f) => () => (str[f][n] === undefined ? null : { k: 'str', id: n, f, v: undefined }))); }
+function resetInstance(I) { commitSeq([...subtree(I).map((n) => () => (str.o[n] ? { k: 'str', id: n, f: 'o', v: undefined } : null)), ...syncSteps(I, str.c[I])], 'Reset overrides'); toast('Instance matches the main component again.'); }
+function resetPropOverride(id, p) {
+  const key = PROPS[p][0], m = str.m[id], o = ovr(id); o.delete(key);
+  commitSeq([() => ({ k: 'str', id, f: 'o', v: o.size ? [...o].join(',') : undefined }), ...[0, 1, 2].map((bp) => () => (alive[m] ? { k: 'set', id, p, bp, v: cell(m, p, bp), noOv: true } : null))], 'Reset override');
+}
+function enterComp(M, focus) {
+  editingComp = M; sel = focus >= 0 && alive[focus] ? focus : M; structDirty = true; closePop();
+  if (live) { live = false; for (const x of $('mode').children) x.setAttribute('aria-pressed', String(x.dataset.m === 'edit')); $('shell').classList.remove('live'); siteEl.classList.add('edit'); }
+  if (view !== 'design') setView('design');
+  showLeft('layers'); showTab('tabEl', true); wrap.scrollTo({ top: 0 }); schedule();
+}
+function exitComp() { if (editingComp < 0) return; const M = editingComp; editingComp = -1; const inst = instancesOf(M).find((i) => pageOf(i) === curPage); sel = inst ?? curPage; structDirty = true; schedule(); }
+$('compDone').addEventListener('click', exitComp);
+function deleteComponent(M) {
+  const ins = instancesOf(M);
+  if (editingComp === M) exitComp();
+  commitSeq([...ins.flatMap((I) => detachSteps(I)), () => ({ k: 'del', id: M })], 'Delete component');
+  toast(ins.length ? `Deleted ${str.n[M] || 'component'}. ${ins.length} instance${ins.length > 1 ? 's were' : ' was'} detached and kept.` : 'Component deleted.');
+}
+function duplicateComponent(M) {
+  let nid = -1;
+  const ok = commitSeq([() => { const sn = assignIds(cleanMaster(snap(M), true, `${compGroup(M) === 'Ungrouped' ? compShort(M) : compGroup(M)} / ${compShort(M)} copy`)); nid = sn.id; return { k: 'ins', snap: sn, parent: libNode(), index: children(libNode()).length }; }], 'Duplicate component');
+  if (ok) { enterComp(nid); toast('Variant created. Rename it, then style it.'); }
+}
+/* My library: components saved in this browser, reusable on any site */
+const MYLIB_KEY = 'flux-studio-mylib-v1';
+function myLib() { try { const l = JSON.parse(localStorage.getItem(MYLIB_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+function saveMyLib(l) { try { localStorage.setItem(MYLIB_KEY, JSON.stringify(l)); return true; } catch (e) { toast('This browser blocked saving. Copy the library as JSON instead.'); return false; } }
+function saveToMyLib(M) { const l = myLib().filter((e) => e.uid !== str.d[M]); l.unshift({ uid: str.d[M], name: str.n[M], savedAt: new Date().toISOString().slice(0, 10), snap: snap(M) }); if (saveMyLib(l)) { toast(`Saved ${str.n[M]} to My library`); schedule(); } }
+/* steps that make sure a My-library entry exists in this site; getM returns its main id */
+function importEntry(entry) {
+  const found = comps().find((M) => str.d[M] === entry.uid);
+  if (found !== undefined) return { pre: [], getM: () => found };
+  let M = -1;
+  return { pre: [ensureLibStep(), () => { const sn = assignIds(cleanMaster(JSON.parse(JSON.stringify(entry.snap)), true)); sn.f[FI('d')] = entry.uid; sn.f[FI('n')] = entry.name; M = sn.id; return { k: 'ins', snap: sn, parent: libNode(), index: children(libNode()).length }; }], getM: () => M };
+}
+/* where a new element or instance goes, given the selection */
+function placeFor(isSection) {
+  if (editingComp >= 0) {
+    const R = editingComp;
+    if (sel >= 0 && sel !== R && isAncestor(R, sel)) return CONTAINER.has(type[sel]) ? { parent: sel, index: children(sel).length } : { parent: par[sel], index: indexOf(sel) + 1 };
+    return CONTAINER.has(type[R]) ? { parent: R, index: children(R).length } : null;
+  }
+  if (isSection) { const s0 = topSection(sel); return { parent: curPage, index: s0 >= 0 && par[s0] === curPage ? indexOf(s0) + 1 : children(curPage).length }; }
+  if (sel >= 0 && CONTAINER.has(type[sel]) && type[sel] !== T.page && type[sel] !== T.site && type[sel] !== T.lib && !isInstNode(sel)) return { parent: sel, index: children(sel).length };
+  let s0 = sel; while (s0 >= 0 && lockedStruct(s0)) s0 = par[s0];
+  if (s0 >= 0 && type[s0] !== T.page && type[s0] !== T.site && par[s0] >= 0) return { parent: par[s0], index: indexOf(s0) + 1 };
+  const secs = children(curPage).filter((c) => !isShared(c));
+  if (!secs.length) return { wrap: true };
+  const last = secs[secs.length - 1]; return { parent: last, index: children(last).length };
+}
+function insertInstance(getM, pre, label, isSection) {
+  const pl = placeFor(isSection); if (!pl) { toast('Select a box inside the component to add to it.'); return; }
+  let nid = -1, sid = -1;
+  const mkIns = (parentFn, index) => () => { const M = getM(); if (editingComp >= 0 && (M === editingComp || isAncestor(M, editingComp))) throw new Error('A component cannot contain itself.'); const sn = instanceSnap(M); nid = sn.id; return { k: 'ins', snap: sn, parent: parentFn(), index }; };
+  const steps = [...pre];
+  if (pl.wrap) { steps.push(() => { const sn = freshSnap(N('section', { display: 'stack', gap: 5, ...PAD }, null, [], { n: 'Section' })); sid = sn.id; return { k: 'ins', snap: sn, parent: curPage, index: children(curPage).length }; }); steps.push(mkIns(() => sid, 0)); }
+  else steps.push(mkIns(() => pl.parent, pl.index));
+  try { if (commitSeq(steps, label)) { sel = nid; schedule(); } } catch (err) { toast(err.message); }
+}
 
 /* =========================================================================
    Sample site: seven pages and three articles, built on the design rules
@@ -865,7 +1084,7 @@ const PRESETS = {
       N('badge', { bg: 'surface', color: 'brand', fs: 1, fw: '600', pt: 1, pb: 1, pl: 3, pr: 3, radius: 'pill' }, 'Spring term · 6 seats left'),
       N('heading', { lvl: 'H1', fs: 8, lh: 'tight', ls: 'tight' }, 'Make something you will use every day.'),
       N('text', { fs: 3, color: 'muted' }, 'Wheel-throwing and hand-building classes in a sunlit studio on Alder Street. Small groups, our clay, our kilns.'),
-      N('box', { display: 'row', gap: 5, align: 'center', mt: 2 }, null, [N('button', CTA, 'See workshops', null, { h: 'page:/workshops' }), lnk('Visit the studio →', 'page:/visit')]),
+      N('box', { display: 'row', gap: 5, align: 'center', mt: 2 }, null, [N('button', CTA, 'See workshops', null, { h: 'page:/workshops', n: 'Primary button' }), lnk('Visit the studio →', 'page:/visit')]),
     ]),
     N('image', { ar: '4:3', radius: 'lg' }, 'Stoneware bowls drying on a wooden shelf'),
     N('badge', { pos: 'absolute', anchor: 'free', x: 94, y: 84, rot: '6', z: '2', bg: 'brand', color: 'on-brand', fw: '700', fs: 1, pt: 2, pb: 2, pl: 4, pr: 4, radius: 'pill', shadow: 'md', 'display@p': 'hide' }, 'Kilns fire every Friday', null, { n: 'Sticker' }),
@@ -876,7 +1095,7 @@ const PRESETS = {
       ['Clay and glazes', 'Stoneware and porcelain, eight house glazes and every firing.'],
       ['A wheel for everyone', 'One wheel per student, never shared. Tools and aprons on the hooks.'],
       ['Two kiln firings', 'Bisque and glaze firing at cone 6. Collect finished work in two weeks.'],
-    ].map(([h, t]) => N('box', { display: 'stack', gap: 3, pt: 6, pb: 6, pl: 6, pr: 6, bg: 'bg', radius: 'lg', border: 'thin' }, null, [N('heading', { lvl: 'H3', fs: 4 }, h), N('text', { color: 'muted' }, t)]))),
+    ].map(([h, t]) => N('box', { display: 'stack', gap: 3, pt: 6, pb: 6, pl: 6, pr: 6, bg: 'bg', radius: 'lg', border: 'thin' }, null, [N('heading', { lvl: 'H3', fs: 4 }, h), N('text', { color: 'muted' }, t)], { n: 'Feature card' }))),
   ], { n: 'Features' }),
   Pricing: () => N('section', { display: 'stack', gap: 7, ...PAD }, null, [
     N('heading', { lvl: 'H2', fs: 6 }, 'Choose a course'),
@@ -892,7 +1111,7 @@ const PRESETS = {
       N('divider', { op: '60' }),
       N('text', {}, desc),
       N('button', { w: 'full', mt: 2, pt: 3, pb: 3, radius: 'md', ...(hi ? { bg: 'on-brand', color: 'brand' } : { bg: 'accent', color: 'on-accent' }) }, 'Reserve a seat', null, { h: 'page:/book' }),
-    ]))),
+    ], { n: 'Course card' }))),
   ], { n: 'Courses' }),
   Testimonial: () => N('section', { display: 'stack', gap: 4, align: 'center', ta: 'center', bg: 'surface', ...PAD }, null, [
     N('text', { font: 'display', fs: 5, lh: 'snug', maxw: 'md' }, '“I signed up to relax after work. Six weeks later our whole kitchen eats off plates I made.”'),
@@ -948,8 +1167,18 @@ function articlePage(slug, title, date, excerpt, body) {
     PRESETS['Call to action'](),
   ], { n: title, h: slug, kind: 'article', date, x: excerpt });
 }
+/* the sample site's repeated designs become components with instances */
+function componentizeSample() {
+  const byName = (name) => { for (let i = 0; i < CAP; i++) if (alive[i] && str.n[i] === name && compOf(i) < 0 && !isInstNode(i)) return i; return -1; };
+  for (const [nm, comp] of [['Feature card', 'Card / Feature'], ['Course card', 'Card / Course'], ['Primary button', 'Button / Primary']]) {
+    const id = byName(nm); if (id < 0) continue;
+    for (const mk of componentSteps(id, comp, findSimilar(id))) { const op = mk(); if (op) apply(op); }
+  }
+  structDirty = true;
+}
 function sampleSite() {
   return N('site', {}, null, [
+    N('lib', {}, null, [], { n: 'Components' }),
     N('page', {}, null, [PRESETS.Header(), PRESETS.Hero(), PRESETS.Features(), PRESETS.Journal(), PRESETS.Testimonial(), PRESETS['Call to action'](), PRESETS.Footer()], { n: 'Home', h: '/', kind: 'page' }),
     N('page', {}, null, [pageHero('Spring workshops', 'Three courses, six students each. Every course includes clay, glazes and two firings.', 'Spring term 2026'), PRESETS.Pricing(),
       N('section', { display: 'stack', gap: 6, bg: 'surface', ...PAD }, null, [N('heading', { lvl: 'H2', fs: 6 }, 'What a class looks like'), N('box', { display: 'grid', cols: '3', 'cols@t': '1', gap: 5 }, null, [['Arrive', 'Tea, aprons and a ten-minute demo at the wheel.'], ['Make', 'Two hours of hands-on time with a teacher between every two wheels.'], ['Collect', 'Pieces are fired twice and ready on the shelf by the door.']].map(([h, t]) => N('box', { display: 'stack', gap: 2 }, null, [N('heading', { lvl: 'H3', fs: 4 }, h), N('text', { color: 'muted' }, t)])))], { n: 'What to expect' }),
@@ -978,7 +1207,7 @@ function sampleSite() {
   ], { n: 'Kiln & Co.', x: 'Adults in the city who want a calm, hands-on hobby; most have never touched clay.' });
 }
 function blankSite() {
-  return N('site', {}, null, [N('page', {}, null, [
+  return N('site', {}, null, [N('lib', {}, null, [], { n: 'Components' }), N('page', {}, null, [
     N('section', { display: 'row', justify: 'between', align: 'center', pt: 4, pb: 4, pl: 8, pr: 8, 'pl@p': 4, 'pr@p': 4, shared: 'header' }, null, [N('link', { font: 'display', fs: 4, fw: '700' }, 'Your site', null, { h: 'page:/' }), N('button', { ...CTA, pt: 2, pb: 2, radius: 'pill', fs: 1 }, 'Get started', null, { h: '#' })], { n: 'Header' }),
     pageHero('Say what this page is about', 'One sentence that tells visitors why they should stay.'),
   ], { n: 'Home', h: '/', kind: 'page' })], { n: 'Your site', x: '' });
@@ -988,11 +1217,11 @@ function blankSite() {
    Whole-document load / snapshot
    ========================================================================= */
 function clearAll() { alive.fill(0); par.fill(-1); first.fill(-1); next.fill(-1); cells.fill(-1); for (const k of SF) str[k] = []; cssCache.length = 0; dirty.clear(); }
-function docSnapshot() { return { v: 3, theme: JSON.parse(JSON.stringify(theme)), tree: snap(0), cur: curPage }; }
-function loadDoc(doc) { clearAll(); Object.assign(theme, JSON.parse(JSON.stringify(doc.theme))); restoreSnap(doc.tree, -1, 0); tokensDirty = structDirty = true; curPage = alive[doc.cur] && type[doc.cur] === T.page ? doc.cur : homePage(); if (!alive[sel]) sel = curPage; }
+function docSnapshot() { return { v: 4, theme: JSON.parse(JSON.stringify(theme)), tree: snap(0), cur: curPage }; }
+function loadDoc(doc) { editingComp = -1; clearAll(); Object.assign(theme, JSON.parse(JSON.stringify(doc.theme))); restoreSnap(doc.tree, -1, 0); tokensDirty = structDirty = true; curPage = alive[doc.cur] && type[doc.cur] === T.page ? doc.cur : homePage(); if (!alive[sel]) sel = curPage; }
 function buildFresh(spec) { clearAll(); const sn = fromSpec(spec); let i = 0; const num = (s) => { s.id = i++; s.k.forEach(num); }; num(sn); restoreSnap(sn, -1, 0); curPage = homePage(); sel = curPage; tokensDirty = structDirty = true; }
-function replaceSite(spec, themeObj, label) {
-  const old = docSnapshot(); buildFresh(spec); if (themeObj) Object.assign(theme, JSON.parse(JSON.stringify(themeObj)));
+function replaceSite(spec, themeObj, label, post) {
+  const old = docSnapshot(); editingComp = -1; buildFresh(spec); if (post) post(); if (themeObj) Object.assign(theme, JSON.parse(JSON.stringify(themeObj)));
   const nw = docSnapshot(); loadDoc(old); commit({ k: 'doc', doc: nw }, label); curPage = homePage(); sel = curPage; structDirty = true; themeDirty = true; schedule();
 }
 
@@ -1029,7 +1258,8 @@ function placeOverlays() {
     put(pads[0], { x: r.x, y: r.y, w: r.w, h: pt }); put(pads[2], { x: r.x, y: r.y + r.h - pb, w: r.w, h: pb });
     put(pads[3], { x: r.x, y: r.y + pt, w: pl, h: r.h - pt - pb }); put(pads[1], { x: r.x + r.w - pr, y: r.y + pt, w: pr, h: r.h - pt - pb });
     tag.hidden = false;
-    $('selName').innerHTML = ic(TYPE_ICON[type[sel]], 'sm') + `<span></span>`; $('selName').lastChild.textContent = nodeName(sel) + (isShared(sel) ? ' · on every page' : '');
+    { const root = sel === editingComp, lk = lockedStruct(sel); for (const k of ['tagUp', 'tagDown', 'tagDup', 'tagDel']) $(k).hidden = root || lk; $('tagParent').hidden = root; }
+    $('selName').innerHTML = ic(TYPE_ICON[type[sel]], 'sm') + `<span></span>`; $('selName').lastChild.textContent = (isInstRoot(sel) ? '◆ ' : '') + nodeName(sel) + (isShared(sel) ? ' · on every page' : '') + (lockedStruct(sel) ? ' · in a component' : '');
     tag.style.left = Math.max(0, r.x) + 'px'; tag.style.top = (r.y > 26 ? r.y - 26 : r.y + 2) + 'px';
     tag.style.transform = scale < 1 ? `scale(${1 / scale})` : '';
   }
@@ -1040,6 +1270,7 @@ function select(id) { sel = id; hover = -1; if (view === 'design') showTab('tabE
 const nodeFromEvent = (e) => { const t = e.composedPath().find((n) => n.dataset && n.dataset.n !== undefined); return t ? +t.dataset.n : -1; };
 function openPage(pg, anchor) {
   if (!alive[pg] || type[pg] !== T.page) return;
+  if (editingComp >= 0) { editingComp = -1; structDirty = true; }
   if (curPage !== pg) { curPage = pg; structDirty = true; sel = pg; }
   if (view !== 'design') setView('design');
   schedule();
@@ -1057,8 +1288,9 @@ siteEl.addEventListener('click', (e) => {
   const a = e.composedPath().find((n) => n.tagName === 'A');
   if (live) { if (a) { e.preventDefault(); follow(a.dataset.href || ''); } return; }
   e.preventDefault();
-  const id = nodeFromEvent(e); if (id >= 0 && editing !== id) select(id);
+  const id = resolvePick(nodeFromEvent(e)); if (id >= 0 && editing !== id) select(id);
 });
+function resolvePick(id) { const I = instRootOf(id); if (I < 0 || I === id) return id; if (sel >= 0 && (sel === I || isAncestor(I, sel))) return id; return I; }
 siteEl.addEventListener('pointerover', (e) => { if (live || drag.active) return; const id = nodeFromEvent(e); if (id !== hover) { hover = id; placeOverlays(); } });
 siteEl.addEventListener('pointerleave', () => { hover = -1; placeOverlays(); });
 let editing = -1;
@@ -1102,9 +1334,11 @@ function insertIndex(cont, x, y) {
 }
 function topSection(t) { let s = t; while (s >= 0 && type[s] !== T.section) s = par[s]; return s; }
 function computeDrop(x, y) {
-  const d = drag.id;
-  let t = nodeAtPoint(x, y, d); if (t < 0) t = curPage;
-  if (type[d] === T.section) {
+  const d = drag.id, isSec = d >= 0 ? type[d] === T.section : !!drag.newSection, R = editingComp >= 0 ? editingComp : curPage;
+  let t = nodeAtPoint(x, y, d); if (t < 0) t = R;
+  if (editingComp >= 0) {
+    if (t === R || !isAncestor(R, t)) { if (!CONTAINER.has(type[R])) return null; const ii = insertIndex(R, x, y); return { kind: 'move', parent: R, index: ii.index, ref: ii }; }
+  } else if (isSec) {
     const s = topSection(t);
     if (s < 0 || isShared(s) || par[s] !== curPage) { const ii = insertIndex(curPage, x, y); return { kind: 'move', parent: curPage, index: ii.index, ref: ii }; }
     const r = elOf[s].getBoundingClientRect(), after = y > r.top + r.height / 2;
@@ -1116,7 +1350,7 @@ function computeDrop(x, y) {
     const band = Math.min(12, r.height * 0.15, r.width * 0.15);
     const inside = x > r.left + band && x < r.right - band && y > r.top + band && y < r.bottom - band;
     if (inside) { const ii = insertIndex(t, x, y); return { kind: 'move', parent: t, index: ii.index, ref: ii }; }
-    if (type[t] === T.section) { if (isShared(t)) { const ii = insertIndex(t, x, y); return { kind: 'move', parent: t, index: ii.index, ref: ii }; } const after = y > r.top + r.height / 2; return { kind: 'section', index: indexOf(t) + (after ? 1 : 0), ref: after ? { before: -1, after: t } : { before: t, after: -1 } }; }
+    if (type[t] === T.section && editingComp < 0) { if (isShared(t)) { const ii = insertIndex(t, x, y); return { kind: 'move', parent: t, index: ii.index, ref: ii }; } const after = y > r.top + r.height / 2; return { kind: 'section', index: indexOf(t) + (after ? 1 : 0), ref: after ? { before: -1, after: t } : { before: t, after: -1 } }; }
   }
   const p = par[t], f = flowOf(p);
   if (f === 'col' && r.width > 140) {
@@ -1133,7 +1367,9 @@ function cleanupSteps(p) {
     () => (p > 0 && alive[p] && type[p] === T.box && !children(p).length ? { k: 'del', id: p } : null),
   ];
 }
+function dropLocked(dr) { return (dr.kind === 'move' && isInstNode(dr.parent)) || (dr.kind === 'row' && (isInstNode(par[dr.target]) || lockedStruct(dr.target))); }
 function doDrop(dr) {
+  if (dropLocked(dr)) { toast(LOCKED); return false; }
   const d = drag.id, old = par[d], steps = [];
   let label = 'Move ' + TYPE_LABEL[type[d]].toLowerCase();
   if (dr.kind === 'move') {
@@ -1171,7 +1407,7 @@ function drawDrop(dr, e) {
     else if (elOf[parent]) { const r = rectOf(elOf[parent]); lineAt(r.x + 8, r.y + 8, Math.max(24, r.w - 16), 4); }
     label = dr.kind === 'section' ? 'Into a new section' : parent === curPage ? 'Reorder sections' : `Into ${nodeName(parent)} · ${f === 'col' ? 'stacked' : f === 'row' ? 'in the row' : 'in the grid'}`;
   }
-  ghostAt(e, `${nodeName(drag.id)} → ${label}`);
+  ghostAt(e, `${drag.id >= 0 ? nodeName(drag.id) : '◆ ' + drag.newName} → ${dr && dropLocked(dr) ? 'Locked: part of a component' : label}`);
 }
 function freeMove(e) {
   const el = elOf[drag.id], host = el.offsetParent && el.offsetParent !== document.body ? el.offsetParent : elOf[par[drag.id]];
@@ -1196,9 +1432,10 @@ function endDrag() {
 }
 siteEl.addEventListener('pointerdown', (e) => {
   if (live || editing >= 0 || e.button !== 0) return;
-  const id = nodeFromEvent(e); if (id < 0 || id === curPage) return;
+  const id = resolvePick(nodeFromEvent(e)); if (id < 0 || id === curPage || id === editingComp) return;
   e.preventDefault();
   if (isShared(id) && par[id] !== curPage) { drag.id = -1; return; }      // shared sections are reordered on their home page
+  if (lockedStruct(id)) { drag.id = -1; return; }                         // parts of an instance follow their main component
   drag.id = id; drag.active = false; drag.sx = e.clientX; drag.sy = e.clientY;
   drag.free = eff(id, PI.pos, device) === 2;
   if (drag.free) { const r = elOf[id].getBoundingClientRect(); drag.gx = e.clientX - r.left; drag.gy = e.clientY - r.top; }
@@ -1229,6 +1466,22 @@ window.addEventListener('pointerup', () => {
   if (was) { drag.justDragged = true; setTimeout(() => { drag.justDragged = false; }, 0); schedule(); }
 });
 window.addEventListener('pointercancel', endDrag);
+/* library drags onto the canvas use the same smart drops */
+let libDrag = null;
+function clearDropUI() { $('dropLine').hidden = $('dropZone').hidden = $('dragGhost').hidden = true; }
+frame.addEventListener('dragover', (e) => { if (!libDrag || live) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; drag.id = -1; drag.newSection = libDrag.isSection; drag.newName = libDrag.name; drag.drop = computeDrop(e.clientX, e.clientY); drawDrop(drag.drop, e); });
+frame.addEventListener('dragleave', (e) => { if (!e.relatedTarget || !frame.contains(e.relatedTarget)) clearDropUI(); });
+frame.addEventListener('drop', (e) => { if (!libDrag) return; e.preventDefault(); const dr = drag.drop, ld = libDrag; clearDropUI(); libDrag = null; drag.drop = null; if (dr) doDropNew(dr, ld.getM, ld.pre, 'Insert ' + ld.name); });
+function doDropNew(dr, getM, pre, label) {
+  if (dropLocked(dr)) { toast(LOCKED); return; }
+  let nid = -1;
+  const mkIns = (parentFn, indexFn) => () => { const M = getM(); if (editingComp >= 0 && (M === editingComp || isAncestor(M, editingComp))) throw new Error('A component cannot contain itself.'); const sn = instanceSnap(M); nid = sn.id; return { k: 'ins', snap: sn, parent: parentFn(), index: indexFn() }; };
+  const steps = [...pre];
+  if (dr.kind === 'move') steps.push(mkIns(() => dr.parent, () => dr.index));
+  else if (dr.kind === 'row') { let wid = -1; steps.push(() => { const sn = freshSnap(N('box', { display: 'row', align: 'start', 'display@p': 'stack' }, null, [], { n: AUTO_ROW })); wid = sn.id; return { k: 'ins', snap: sn, parent: par[dr.target], index: indexOf(dr.target) }; }); steps.push(() => ({ k: 'mov', id: dr.target, parent: wid, index: 0 })); steps.push(mkIns(() => wid, () => (dr.side === 'left' ? 0 : 1))); }
+  else if (dr.kind === 'section') { let sid = -1; steps.push(() => { const sn = freshSnap(N('section', { display: 'stack', gap: 5, ...PAD }, null, [], { n: 'Section' })); sid = sn.id; return { k: 'ins', snap: sn, parent: curPage, index: dr.index }; }); steps.push(mkIns(() => sid, () => 0)); }
+  try { if (commitSeq(steps, label)) { sel = nid; schedule(); } } catch (err) { toast(err.message); }
+}
 new ResizeObserver(() => layoutStage()).observe(wrap);
 new ResizeObserver(() => layoutStage()).observe(frame);
 wrap.addEventListener('scroll', () => placeOverlays(), { passive: true });
@@ -1236,22 +1489,21 @@ wrap.addEventListener('scroll', () => placeOverlays(), { passive: true });
 /* structure edits */
 function insertAt(spec, parent, index, label) { try { const sn = freshSnap(spec); commit({ k: 'ins', snap: sn, parent, index }, label); sel = sn.id; } catch (err) { toast(err.message); } }
 function insertPreset(spec, label) {
-  let parent, index;
-  if (spec.t === 'section') { parent = curPage; const s = topSection(sel); index = s >= 0 && par[s] === curPage ? indexOf(s) + 1 : children(curPage).length; }
-  else if (CONTAINER.has(type[sel]) && type[sel] !== T.page && type[sel] !== T.site) { parent = sel; index = children(sel).length; }
-  else if (sel >= 0 && type[sel] !== T.page && par[sel] >= 0) { parent = par[sel]; index = indexOf(sel) + 1; }
-  else { const secs = children(curPage).filter((c) => !isShared(c)); if (!secs.length) { insertAt(N('section', { display: 'stack', gap: 5, ...PAD }, null, [spec]), curPage, children(curPage).length, label); return; } parent = secs[secs.length - 1]; index = children(parent).length; }
-  insertAt(spec, parent, index, label);
+  const pl = placeFor(spec.t === 'section');
+  if (!pl) { toast('Select a box inside the component to add to it.'); return; }
+  if (pl.wrap) { insertAt(N('section', { display: 'stack', gap: 5, ...PAD }, null, [spec]), curPage, children(curPage).length, label); return; }
+  insertAt(spec, pl.parent, pl.index, label);
 }
-function removeSel() { if (sel < 0 || type[sel] === T.page || type[sel] === T.site) return; const p = par[sel]; commitSeq([() => ({ k: 'del', id: sel }), ...cleanupSteps(p)], 'Delete ' + TYPE_LABEL[type[sel]]); sel = alive[p] ? p : curPage; schedule(); }
+function removeSel() { if (sel < 0 || type[sel] === T.page || type[sel] === T.site || sel === editingComp) return; if (lockedStruct(sel)) { toast(LOCKED); return; } const p = par[sel]; commitSeq([() => ({ k: 'del', id: sel }), ...cleanupSteps(p)], 'Delete ' + TYPE_LABEL[type[sel]]); sel = alive[p] ? p : curPage; schedule(); }
 function duplicateSel() {
-  if (sel < 0 || type[sel] === T.page || type[sel] === T.site) return;
+  if (sel < 0 || type[sel] === T.page || type[sel] === T.site || sel === editingComp) return;
+  if (lockedStruct(sel)) { toast(LOCKED); return; }
   try { const s0 = assignIds(snap(sel)); commit({ k: 'ins', snap: s0, parent: par[sel], index: indexOf(sel) + 1 }, 'Duplicate'); sel = s0.id; } catch (err) { toast(err.message); }
 }
-function moveSel(d) { if (sel < 0 || type[sel] === T.page) return; const i = indexOf(sel), n = children(par[sel]).length, j = i + d; if (j < 0 || j >= n) return; commit({ k: 'mov', id: sel, parent: par[sel], index: j }, d < 0 ? 'Move up' : 'Move down'); }
+function moveSel(d) { if (sel < 0 || type[sel] === T.page || sel === editingComp) return; if (lockedStruct(sel)) { toast(LOCKED); return; } const i = indexOf(sel), n = children(par[sel]).length, j = i + d; if (j < 0 || j >= n) return; commit({ k: 'mov', id: sel, parent: par[sel], index: j }, d < 0 ? 'Move up' : 'Move down'); }
 $('tagUp').addEventListener('click', () => moveSel(-1));
 $('tagDown').addEventListener('click', () => moveSel(1));
-$('tagParent').addEventListener('click', () => { if (sel >= 0 && par[sel] > 0) select(par[sel]); });
+$('tagParent').addEventListener('click', () => { if (sel >= 0 && par[sel] > 0 && (editingComp < 0 || isAncestor(editingComp, par[sel]))) select(par[sel]); });
 $('tagDup').addEventListener('click', duplicateSel);
 $('tagDel').addEventListener('click', removeSel);
 
@@ -1293,6 +1545,12 @@ function menu(box, items) {
 
 /* Add popover: sections and elements as icon tiles */
 $('btnAdd').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
+  if (comps().length) {
+    const h0 = document.createElement('h4'); h0.textContent = 'Your components'; p.appendChild(h0);
+    const g0 = document.createElement('div'); g0.className = 'grid';
+    for (const M of comps()) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tile'; b.style.color = 'var(--comp)'; b.innerHTML = ic('comp') + '<span></span>'; b.lastChild.textContent = str.n[M]; b.title = `Insert an instance of ${str.n[M]}`; b.addEventListener('click', () => { closePop(); insertInstance(() => M, [], 'Insert ' + str.n[M], type[M] === T.section); }); g0.appendChild(b); }
+    p.appendChild(g0);
+  }
   const h1 = document.createElement('h4'); h1.textContent = 'Sections'; p.appendChild(h1);
   const g1 = document.createElement('div'); g1.className = 'grid';
   for (const [name, fn] of Object.entries(PRESETS)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tile'; b.innerHTML = ic(SECTION_ICONS[name] || 'section') + '<span></span>'; b.lastChild.textContent = name; b.title = name === 'Header' || name === 'Footer' ? `${name}: shown on every page` : 'Add a ' + name.toLowerCase() + ' section'; b.addEventListener('click', () => { closePop(); insertPreset(fn(), 'Add ' + name); }); g1.appendChild(b); }
@@ -1315,12 +1573,13 @@ function renderLayers() {
     const li = document.createElement('li');
     li.setAttribute('role', 'treeitem'); li.setAttribute('aria-selected', String(id === sel)); li.dataset.id = id;
     li.style.paddingLeft = 6 + depth * 12 + 'px';
-    li.innerHTML = `${ic(TYPE_ICON[type[id]])}<span class="nm"></span>${isShared(id) ? '<span class="tag" title="Shown on every page">all pages</span>' : ''}${hasOverrides(id) ? '<span class="ov" title="Has tablet or phone overrides"></span>' : ''}`;
+    if (isInstRoot(id) || id === editingComp) li.classList.add('inst'); else if (isInstNode(id)) li.classList.add('inst-in');
+    li.innerHTML = `${ic(isInstRoot(id) || id === editingComp ? 'comp' : TYPE_ICON[type[id]])}<span class="nm"></span>${ovr(id).size && isInstNode(id) ? '<span class="tag" style="color:var(--comp);border-color:currentColor" title="Overrides on this instance">edited</span>' : ''}${isShared(id) ? '<span class="tag" title="Shown on every page">all pages</span>' : ''}${hasOverrides(id) ? '<span class="ov" title="Has tablet or phone overrides"></span>' : ''}`;
     li.querySelector('.nm').textContent = nodeName(id);
     li.addEventListener('click', () => select(id));
     li.addEventListener('pointerenter', () => { hover = id; placeOverlays(); });
     li.addEventListener('pointerleave', () => { hover = -1; placeOverlays(); });
-    const movable = id !== curPage && !(isShared(id) && par[id] !== curPage);
+    const movable = id !== curPage && id !== editingComp && !lockedStruct(id) && !(isShared(id) && par[id] !== curPage);
     if (movable) { li.draggable = true; li.addEventListener('dragstart', (e) => { dragLayer = id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(id)); }); }
     li.addEventListener('dragover', (e) => {
       if (dragLayer < 0 || isAncestor(dragLayer, id)) return;
@@ -1337,8 +1596,9 @@ function renderLayers() {
       let parent, index;
       if (pos === 'inside') { parent = id; index = children(id).length; } else { parent = par[id]; index = indexOf(id) + (pos === 'after' ? 1 : 0); }
       if (parent === par[d] && indexOf(d) < index) index--;
-      if (type[d] === T.section && parent !== curPage) return;
-      if (type[d] !== T.section && parent === curPage) return;
+      if (editingComp < 0 && type[d] === T.section && parent !== curPage) return;
+      if (editingComp < 0 && type[d] !== T.section && parent === curPage) return;
+      if (isInstNode(parent) || lockedStruct(d)) { toast(LOCKED); return; }
       const old = par[d];
       commitSeq([() => ({ k: 'mov', id: d, parent, index }), ...cleanupSteps(old)], 'Reorder'); sel = d;
     });
@@ -1346,6 +1606,7 @@ function renderLayers() {
     ul.appendChild(li);
     for (const c of children(id)) walk(c, depth + 1);
   };
+  if (editingComp >= 0) { walk(editingComp, 0); return; }
   const root = document.createElement('li'); root.setAttribute('aria-selected', String(sel === curPage)); root.innerHTML = `${ic(isArticle(curPage) ? 'article' : curPage === homePage() ? 'home' : 'page')}<span class="nm"></span><span class="sub"></span>`;
   root.querySelector('.nm').textContent = str.n[curPage]; root.querySelector('.sub').textContent = str.h[curPage]; root.addEventListener('click', () => select(curPage)); ul.appendChild(root);
   for (const s of pageSections(curPage)) walk(s, 1);
@@ -1381,19 +1642,21 @@ function newPage(kind) {
   const spec = isArt
     ? articlePage(slug, 'New article', new Date().toISOString().slice(0, 10), 'One sentence that makes people want to read on.', [['First point', ['Write the first section here. Keep paragraphs short so people can scan.']]])
     : N('page', {}, null, [pageHero('New page', 'Say in one sentence what this page helps visitors do.'), PRESETS['Call to action']()], { n: 'New page', h: slug, kind: 'page' });
-  try { const sn = freshSnap(spec); commit({ k: 'ins', snap: sn, parent: 0, index: pages().length }, isArt ? 'New article' : 'New page'); openPage(sn.id); sel = sn.id; showTab('tabEl'); toast(isArt ? 'Article added. It already appears in every article list.' : 'Page added. Link to it from the header or a button.'); }
+  try { const sn = freshSnap(spec); commit({ k: 'ins', snap: sn, parent: 0, index: children(0).length }, isArt ? 'New article' : 'New page'); openPage(sn.id); sel = sn.id; showTab('tabEl'); toast(isArt ? 'Article added. It already appears in every article list.' : 'Page added. Link to it from the header or a button.'); }
   catch (err) { toast(err.message); }
 }
-function duplicatePage(pg) { try { const s0 = assignIds(snap(pg)); s0.f[1] = uniqueSlug(str.h[pg] === '/' ? '/home-copy' : str.h[pg] + '-copy'); s0.f[3] = (str.n[pg] || 'Page') + ' copy'; commit({ k: 'ins', snap: s0, parent: 0, index: pages().length }, 'Duplicate page'); openPage(s0.id); } catch (err) { toast(err.message); } }
+function duplicatePage(pg) { try { const s0 = assignIds(snap(pg)); s0.f[1] = uniqueSlug(str.h[pg] === '/' ? '/home-copy' : str.h[pg] + '-copy'); s0.f[3] = (str.n[pg] || 'Page') + ' copy'; commit({ k: 'ins', snap: s0, parent: 0, index: children(0).length }, 'Duplicate page'); openPage(s0.id); } catch (err) { toast(err.message); } }
 function deletePage(pg) { if (pg === homePage()) { toast('The home page cannot be deleted.'); return; } const shared = children(pg).filter(isShared); if (shared.length) { toast('This page holds the shared header or footer. Move it to another page first.'); return; } if (curPage === pg) { curPage = homePage(); structDirty = true; } commit({ k: 'del', id: pg }, 'Delete page'); toast('Page deleted. Undo brings it back.'); }
 $('btnNewPage').addEventListener('click', () => newPage('page'));
 $('btnNewArticle').addEventListener('click', () => newPage('article'));
-function showLeft(which) { $('tabLayers').setAttribute('aria-selected', String(which === 'layers')); $('tabPages').setAttribute('aria-selected', String(which === 'pages')); $('layers').hidden = which !== 'layers'; $('pagesPane').hidden = which !== 'pages'; schedule(); }
+function showLeft(which) { $('tabLayers').setAttribute('aria-selected', String(which === 'layers')); $('tabPages').setAttribute('aria-selected', String(which === 'pages')); $('tabLib').setAttribute('aria-selected', String(which === 'lib')); $('layers').hidden = which !== 'layers'; $('pagesPane').hidden = which !== 'pages'; $('libPane').hidden = which !== 'lib'; schedule(); }
+$('tabLib').addEventListener('click', () => showLeft('lib'));
 $('tabLayers').addEventListener('click', () => showLeft('layers'));
 $('tabPages').addEventListener('click', () => showLeft('pages'));
 
 /* page switcher popover in the top bar */
-function renderPageBtn() { const b = $('btnPage'); b.innerHTML = `${ic(isArticle(curPage) ? 'article' : curPage === homePage() ? 'home' : 'page')}<span></span><small></small>${ic('chev', 'sm')}`; b.children[1].textContent = str.n[curPage] || 'Page'; b.children[2].textContent = str.h[curPage] || ''; }
+function renderCompBar() { const b = $('compBar'); b.hidden = editingComp < 0 || view !== 'design' || live; if (b.hidden) return; const n = instancesOf(editingComp).length; $('compBarText').textContent = `Editing main component ${str.n[editingComp]} · changes update ${n} instance${n === 1 ? '' : 's'} at once`; }
+function renderPageBtn() { const b = $('btnPage'); if (editingComp >= 0) { b.innerHTML = `${ic('comp')}<span></span><small>component</small>${ic('chev', 'sm')}`; b.children[1].textContent = str.n[editingComp]; return; } b.innerHTML = `${ic(isArticle(curPage) ? 'article' : curPage === homePage() ? 'home' : 'page')}<span></span><small></small>${ic('chev', 'sm')}`; b.children[1].textContent = str.n[curPage] || 'Page'; b.children[2].textContent = str.h[curPage] || ''; }
 $('btnPage').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
   const h = document.createElement('h4'); h.textContent = (str.n[0] || 'Site') + ' · pages'; p.appendChild(h);
   const sorted = pages().slice().sort((a, b) => (str.h[a] || '').localeCompare(str.h[b] || ''));
@@ -1404,8 +1667,8 @@ $('btnPage').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
 /* =========================================================================
    Inspector: collapsible groups so only what matters is open
    ========================================================================= */
-const openGroups = new Set(['page', 'content', 'link', 'layout', 'spacing', 'type', 'fill']);
-try { const g = JSON.parse(localStorage.getItem('flux-studio-groups') || 'null'); if (Array.isArray(g)) { openGroups.clear(); g.forEach((x) => openGroups.add(x)); } } catch (e) {}
+const openGroups = new Set(['component', 'page', 'content', 'link', 'layout', 'spacing', 'type', 'fill']);
+try { const g = JSON.parse(localStorage.getItem('flux-studio-groups') || 'null'); if (Array.isArray(g)) { openGroups.clear(); g.forEach((x) => openGroups.add(x)); openGroups.add('component'); } } catch (e) {}
 const GROUP_KEYS = { layout: ['display', 'cols', 'gap', 'align', 'justify', 'wrap'], spacing: ['pt', 'pr', 'pb', 'pl', 'mt', 'mb'], size: ['w', 'h', 'maxw', 'minh', 'ar'], position: ['pos', 'anchor', 'x', 'y', 'inset', 'z'], type: ['font', 'fs', 'fw', 'lh', 'ls', 'ta', 'color'], fill: ['bg', 'radius', 'border', 'bc', 'shadow'], effects: ['op', 'rot', 'overflow', 'blend'] };
 function accordion(pane, key, title, icon, id) {
   const d = document.createElement('details'); d.className = 'acc'; d.open = openGroups.has(key);
@@ -1420,13 +1683,21 @@ function accordion(pane, key, title, icon, id) {
 function setProp(id, p, v, label) { if (cell(id, p, device) === v) return; commit({ k: 'set', id, p, bp: device, v }, label || PROPS[p][1]); }
 function rowFor(id, p, ctl, labelText) {
   const row = document.createElement('div'); row.className = 'row';
-  const own = cell(id, p, device), val = eff(id, p, device);
-  if (own >= 0) row.classList.add('set'); if (own >= 0 && device > 0) row.classList.add('bpset'); if (own < 0 && val >= 0) row.classList.add('inh');
+  const own = cell(id, p, device), val = eff(id, p, device), key = PROPS[p][0];
   const lab = document.createElement('label'); lab.textContent = labelText || PROPS[p][1];
-  lab.title = own >= 0 ? (device ? `Set for ${DEVICES[device][0].toLowerCase()} and smaller` : 'Set') : val >= 0 ? 'Inherited from a wider screen' : 'Default';
   const rst = document.createElement('button'); rst.className = 'rst'; rst.type = 'button';
-  rst.title = own >= 0 ? 'Reset' : ''; rst.setAttribute('aria-label', own >= 0 ? 'Reset ' + PROPS[p][1] : 'Not set');
-  rst.addEventListener('click', () => { if (own >= 0) commit({ k: 'set', id, p, bp: device, v: -1 }, 'Reset ' + PROPS[p][1]); });
+  if (isInstNode(id) && !(isInstRoot(id) && ROOT_KEEP.includes(key))) {
+    const isO = ovr(id).has(key);
+    if (isO) row.classList.add('set', 'ovr'); else if (val >= 0) row.classList.add('inh');
+    lab.title = isO ? 'Changed on this instance only' : 'From the main component';
+    rst.title = isO ? 'Reset to the main component' : ''; rst.setAttribute('aria-label', isO ? 'Reset ' + PROPS[p][1] + ' to the main component' : 'From the main component');
+    rst.addEventListener('click', () => { if (isO) resetPropOverride(id, p); });
+  } else {
+    if (own >= 0) row.classList.add('set'); if (own >= 0 && device > 0) row.classList.add('bpset'); if (own < 0 && val >= 0) row.classList.add('inh');
+    lab.title = own >= 0 ? (device ? `Set for ${DEVICES[device][0].toLowerCase()} and smaller` : 'Set') : val >= 0 ? 'Inherited from a wider screen' : 'Default';
+    rst.title = own >= 0 ? 'Reset' : ''; rst.setAttribute('aria-label', own >= 0 ? 'Reset ' + PROPS[p][1] : 'Not set');
+    rst.addEventListener('click', () => { if (own >= 0) commit({ k: 'set', id, p, bp: device, v: -1 }, 'Reset ' + PROPS[p][1]); });
+  }
   row.append(lab, ctl, rst); return row;
 }
 function segCtl(id, p, opts, labels, onPick) {
@@ -1532,6 +1803,7 @@ function renderElementPane() {
   if (device) { const note = document.createElement('p'); note.className = 'hint'; note.innerHTML = `Changes apply to <b>${DEVICES[device][0].toLowerCase()}</b> and smaller. Orange dots are overrides; click one to reset it.`; head.appendChild(note); }
   pane.appendChild(head);
   if (t === T.page) { renderPageSettings(pane, id); return; }
+  componentPanel(pane, id);
   // content
   if (TEXTUAL.has(t) || t === T.image || t === T.field || t === T.list || t === T.section) {
     const body = accordion(pane, 'content', 'Content', 'text', -1);
@@ -1635,10 +1907,195 @@ function renderElementPane() {
   }
   // actions
   const s = document.createElement('div'); s.className = 'sect'; const g = document.createElement('div'); g.style.display = 'flex'; g.style.gap = '6px'; g.style.flexWrap = 'wrap';
-  for (const [l, icon, fn, cls] of [['Duplicate', 'copy', duplicateSel, ''], ['Parent', 'parent', () => select(par[id]), ''], ['Delete', 'trash', removeSel, 'danger']]) { const b = document.createElement('button'); b.className = 'btn small ' + cls; b.type = 'button'; b.innerHTML = ic(icon, 'sm') + l; b.addEventListener('click', fn); g.appendChild(b); }
+  const acts = [['Duplicate', 'copy', duplicateSel, ''], ['Parent', 'parent', () => select(par[id]), ''], ['Delete', 'trash', removeSel, 'danger']].filter(([l]) => !(id === editingComp) || l === 'Duplicate');
+  if (!isInstNode(id) && compOf(id) < 0) acts.unshift(['Create component', 'comp', (e) => createComponentPop(e.currentTarget, id), 'comp']);
+  if (id === editingComp) acts.length = 0;
+  for (const [l, icon, fn, cls] of acts) { const b = document.createElement('button'); b.className = 'btn small ' + (cls === 'danger' ? 'danger' : ''); if (cls === 'comp') { b.style.color = 'var(--comp)'; b.style.borderColor = 'var(--comp)'; } b.type = 'button'; b.innerHTML = ic(icon, 'sm') + l; b.addEventListener('click', fn); if (lockedStruct(id) && l !== 'Parent') b.disabled = true; g.appendChild(b); }
   s.appendChild(g); pane.appendChild(s);
   if (focusId && $(focusId)) $(focusId).focus();
   pane.parentElement.scrollTop = sc;
+}
+function componentPanel(pane, id) {
+  const M = compOf(id);
+  if (M >= 0) {
+    const box = document.createElement('div'); box.className = 'sect';
+    const n = document.createElement('div'); n.className = 'compnote';
+    const cnt = instancesOf(M).length;
+    n.innerHTML = `<p>${ic('comp', 'sm')} Main component <b></b>. Changes update ${cnt} instance${cnt === 1 ? '' : 's'} right away.</p><div class="acts"></div>`;
+    n.querySelector('b').textContent = str.n[M];
+    const a = n.querySelector('.acts');
+    if (editingComp !== M) { const b = document.createElement('button'); b.className = 'btn small'; b.innerHTML = ic('design', 'sm') + 'Open on its board'; b.addEventListener('click', () => enterComp(M, id)); a.appendChild(b); }
+    else { const b = document.createElement('button'); b.className = 'btn small'; b.innerHTML = ic('check', 'sm') + 'Done'; b.addEventListener('click', exitComp); a.appendChild(b); }
+    if (id === M) { const r = document.createElement('button'); r.className = 'btn small'; r.innerHTML = ic('settings', 'sm') + 'Rename'; r.addEventListener('click', (e) => renamePop(e.currentTarget, M)); a.appendChild(r); }
+    box.appendChild(n); pane.appendChild(box); return;
+  }
+  if (!isInstNode(id)) return;
+  const I = instRootOf(id), C = str.c[I];
+  if (id !== I) {
+    const box = document.createElement('div'); box.className = 'sect';
+    const n = document.createElement('div'); n.className = 'compnote';
+    n.innerHTML = `<p>${ic('comp', 'sm')} Part of <b></b>. Style and text changes here apply to this instance only and show a violet dot.</p><div class="acts"></div>`;
+    n.querySelector('b').textContent = alive[C] ? str.n[C] : 'a component';
+    const a = n.querySelector('.acts');
+    const s1 = document.createElement('button'); s1.className = 'btn small'; s1.innerHTML = ic('parent', 'sm') + 'Select instance'; s1.addEventListener('click', () => select(I)); a.appendChild(s1);
+    if (alive[C]) { const s2 = document.createElement('button'); s2.className = 'btn small'; s2.innerHTML = ic('comp', 'sm') + 'Edit main component'; s2.addEventListener('click', () => enterComp(C, str.m[id])); a.appendChild(s2); }
+    box.appendChild(n); pane.appendChild(box); return;
+  }
+  const body = accordion(pane, 'component', 'Component', 'comp', -1);
+  const total = subtree(I).reduce((acc, nn) => acc + ovr(nn).size, 0);
+  const info = document.createElement('p'); info.className = 'hint'; info.innerHTML = `Instance of <b></b> · ${total ? `<span style="color:var(--comp)">${total} override${total > 1 ? 's' : ''}</span>` : 'no overrides'}`; info.querySelector('b').textContent = alive[C] ? str.n[C] : 'a deleted component'; body.appendChild(info);
+  const a = document.createElement('div'); a.style.display = 'flex'; a.style.gap = '6px'; a.style.flexWrap = 'wrap';
+  const mk = (label, icon, fn, dis) => { const b = document.createElement('button'); b.className = 'btn small'; b.type = 'button'; b.innerHTML = ic(icon, 'sm') + label; b.disabled = !!dis; b.addEventListener('click', fn); a.appendChild(b); };
+  if (alive[C]) mk('Edit main', 'comp', () => enterComp(C));
+  mk('Reset overrides', 'undo', () => resetInstance(I), !total || !alive[C]);
+  mk('Detach', 'close', () => { commitSeq(detachSteps(I), 'Detach instance'); toast('Detached. It is now a regular element you can change freely.'); });
+  body.appendChild(a);
+  if (comps().length > 1 && alive[C]) {
+    const r = document.createElement('div'); r.className = 'row'; const l = document.createElement('label'); l.textContent = 'Swap to';
+    const sw = document.createElement('select'); sw.className = 'ctl'; sw.setAttribute('aria-label', 'Swap to another component');
+    for (const M2 of comps()) { const o = document.createElement('option'); o.value = M2; o.textContent = str.n[M2]; sw.appendChild(o); }
+    sw.value = String(C);
+    sw.addEventListener('change', () => { const M2 = +sw.value; if (M2 === C) return; commitSeq(syncSteps(I, M2, true), 'Swap component'); toast(`Swapped to ${str.n[M2]}. Text you changed was kept where the layout matches.`); });
+    r.append(l, sw, document.createElement('span')); body.appendChild(r);
+  }
+  const fields = subtree(I).filter((nn) => (TEXTUAL.has(type[nn]) || type[nn] === T.field || type[nn] === T.image));
+  if (fields.length) {
+    const h = document.createElement('p'); h.className = 'hint'; h.innerHTML = '<b>Fill in this instance</b>'; body.appendChild(h);
+    fields.forEach((nn, i) => {
+      const lbl = (str.n[str.m[nn]] || TYPE_LABEL[type[nn]]) + (ovr(nn).has('x') ? ' ·' : '');
+      const r = textRow(lbl, str.x[nn], (v) => commit({ k: 'str', id: nn, f: 'x', v }, 'Edit instance text'), { id: 'instF' + i, area: type[nn] === T.text, placeholder: type[nn] === T.image ? 'Alt text' : '' });
+      if (ovr(nn).has('x')) r.classList.add('ovr', 'set');
+      body.appendChild(r);
+    });
+  }
+}
+function namePop(anchor, title, initial, hint, extra, onOk) {
+  openPop(anchor, (p) => {
+    const h = document.createElement('h4'); h.textContent = title; p.appendChild(h);
+    const f = document.createElement('label'); f.className = 'field'; f.innerHTML = '<span>Name</span>'; const i = document.createElement('input'); i.id = 'popName'; i.value = initial; f.appendChild(i); p.appendChild(f);
+    if (hint) { const n = document.createElement('p'); n.className = 'hint'; n.style.marginBottom = '8px'; n.textContent = hint; p.appendChild(n); }
+    const ex = extra ? extra(p) : null;
+    const r = document.createElement('div'); r.className = 'row2';
+    const c = document.createElement('button'); c.className = 'btn small'; c.textContent = 'Cancel'; c.addEventListener('click', closePop);
+    const ok = document.createElement('button'); ok.className = 'btn small primary'; ok.textContent = 'Save';
+    const go = () => { const v = i.value.trim().replace(/\s*\/\s*/g, ' / '); if (!v) { i.focus(); return; } closePop(); onOk(v, ex); };
+    ok.addEventListener('click', go); i.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    r.append(c, ok); p.appendChild(r);
+    setTimeout(() => { i.focus(); i.select(); }, 0);
+  });
+}
+function createComponentPop(anchor, id) {
+  const similar = findSimilar(id);
+  const base = str.n[id] && str.n[id] !== AUTO_ROW ? str.n[id] : TYPE_LABEL[type[id]];
+  namePop(anchor, 'Create component', base.includes(' / ') ? base : `${TYPE_LABEL[type[id]]} / ${base === TYPE_LABEL[type[id]] ? 'Default' : base}`, 'Use Group / Name to keep variants together, for example Card / Course.', (p) => {
+    if (!similar.length) return null;
+    const l = document.createElement('label'); l.style.display = 'flex'; l.style.gap = '8px'; l.style.alignItems = 'center'; l.style.margin = '0 2px 10px';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.id = 'popSimilar';
+    const sp = document.createElement('span'); sp.textContent = `Also link ${similar.length} similar element${similar.length > 1 ? 's' : ''} on this site as instances. Their differences become overrides.`;
+    l.append(cb, sp); p.appendChild(l); return cb;
+  }, (name, cb) => {
+    if (comps().some((M) => str.n[M] === name)) { toast(`A component named ${name} already exists. Pick another name.`); return; }
+    const linked = cb && cb.checked ? similar : [];
+    if (commitSeq(componentSteps(id, name, linked), 'Create component')) toast(`Created ${name}${linked.length ? ` and linked ${linked.length} more instance${linked.length > 1 ? 's' : ''}` : ''}. Find it in Library.`);
+  });
+}
+function renamePop(anchor, M) { namePop(anchor, 'Rename component', str.n[M], 'Group / Name, for example Button / Primary.', null, (name) => commit({ k: 'str', id: M, f: 'n', v: name }, 'Rename component')); }
+
+/* Library tab: this site's components with live thumbnails, plus My library */
+function thumb(M) {
+  const host = document.createElement('div'); host.className = 'thumb';
+  const sh = host.attachShadow({ mode: 'open' });
+  const fit = compFit(M), W = fit ? 480 : 760;
+  const st = document.createElement('style'); st.textContent = stTokens.textContent + BASE_CSS + stNodes.textContent + `.site{box-sizing:border-box;padding:24px;display:flex;flex-direction:column;justify-content:center;align-items:${fit === 'fit' ? 'center' : 'stretch'};width:${W}px;min-height:100%;transform-origin:top left}`;
+  const site = document.createElement('div'); site.className = 'site'; site.appendChild(buildEl(M, false));
+  sh.append(st, site);
+  requestAnimationFrame(() => { const w = host.clientWidth || 220, sc = w / W; site.style.transform = `scale(${sc})`; site.style.minHeight = (96 / sc) + 'px'; });
+  return host;
+}
+let libKey = '';
+function renderLibrary() {
+  const box = $('libPane'); if (box.hidden) return;
+  const key = JSON.stringify([comps().map((M) => [M, str.n[M], instancesOf(M).length]), myLib().map((e) => e.uid), theme.palette, theme.display, opsTotal, undoStack.length]);
+  if (key === libKey && box.children.length) return; libKey = key;
+  box.textContent = '';
+  const site = document.createElement('div'); site.className = 'libsec';
+  const h = document.createElement('h4'); h.innerHTML = '<span>This site</span>'; site.appendChild(h);
+  const list = comps();
+  if (!list.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No components yet. Select something on the canvas and choose Create component in the inspector.'; site.appendChild(p); }
+  const groups = new Map(); for (const M of list) { const g = compGroup(M); (groups.get(g) || groups.set(g, []).get(g)).push(M); }
+  for (const [g, ms] of groups) {
+    const gh = document.createElement('p'); gh.className = 'hint'; gh.style.margin = '4px 2px 0'; gh.innerHTML = `${ic('comp', 'sm')} <b></b> · ${ms.length} variant${ms.length > 1 ? 's' : ''}`; gh.querySelector('b').textContent = g; site.appendChild(gh);
+    for (const M of ms) {
+      const tile = document.createElement('div'); tile.className = 'libtile'; tile.draggable = true; tile.tabIndex = 0; tile.setAttribute('role', 'button'); tile.title = `Click to insert, drag onto the canvas to place, double-click to edit`;
+      tile.appendChild(thumb(M));
+      const meta = document.createElement('div'); meta.className = 'meta'; const n = instancesOf(M).length;
+      meta.innerHTML = `${ic('comp', 'sm')}<span></span><small>${n} in use</small><button class="btn icon quiet" aria-label="Component actions">${ic('more', 'sm')}</button>`;
+      meta.querySelector('span').textContent = compShort(M);
+      meta.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); openPop(e.currentTarget, (p) => menu(p, [
+        { icon: 'plus', label: 'Insert instance', run: () => insertInstance(() => M, [], 'Insert ' + str.n[M], type[M] === T.section) },
+        { icon: 'design', label: 'Edit main component', run: () => enterComp(M) },
+        { icon: 'settings', label: 'Rename', run: () => setTimeout(() => renamePop(tile, M), 0) },
+        { icon: 'copy', label: 'Duplicate as a variant', run: () => duplicateComponent(M) },
+        { icon: 'upload', label: 'Save to My library', hint: 'any site', run: () => saveToMyLib(M) },
+        ...(n ? [{ icon: 'eye', label: 'Show an instance', run: () => { const I = instancesOf(M)[0]; exitComp(); openPage(pageOf(I)); sel = I; schedule(); } }] : []),
+        '-',
+        { icon: 'trash', label: n ? `Delete and detach ${n} instance${n > 1 ? 's' : ''}` : 'Delete component', danger: true, run: () => deleteComponent(M) },
+      ]), 'left'); });
+      tile.appendChild(meta);
+      let clickT = 0;
+      tile.addEventListener('click', (e) => { if (e.detail > 1) return; clearTimeout(clickT); clickT = setTimeout(() => insertInstance(() => M, [], 'Insert ' + str.n[M], type[M] === T.section), 240); });
+      tile.addEventListener('dblclick', () => { clearTimeout(clickT); enterComp(M); });
+      tile.addEventListener('keydown', (e) => { if (e.key === 'Enter') insertInstance(() => M, [], 'Insert ' + str.n[M], type[M] === T.section); });
+      tile.addEventListener('dragstart', (e) => { libDrag = { getM: () => M, pre: [], isSection: type[M] === T.section, name: str.n[M] }; e.dataTransfer.effectAllowed = 'copy'; e.dataTransfer.setData('text/plain', str.n[M]); });
+      tile.addEventListener('dragend', () => { libDrag = null; clearDropUI(); });
+      site.appendChild(tile);
+    }
+  }
+  box.appendChild(site);
+  const mine = document.createElement('div'); mine.className = 'libsec';
+  const mh = document.createElement('h4'); mh.innerHTML = '<span>My library</span>'; mine.appendChild(mh);
+  const ml = myLib();
+  if (!ml.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Components you save here are kept in this browser and can be inserted into any site. Use Save to My library from a component menu.'; mine.appendChild(p); }
+  for (const entry of ml) {
+    const r = document.createElement('div'); r.className = 'myrow'; r.draggable = true;
+    r.innerHTML = `${ic('comp', 'sm')}<span></span><small></small>`; r.querySelector('span').textContent = entry.name; r.querySelector('small').textContent = entry.savedAt || '';
+    const ins = document.createElement('button'); ins.className = 'btn small'; ins.textContent = 'Insert';
+    ins.addEventListener('click', () => { const im = importEntry(entry); insertInstance(im.getM, im.pre, 'Insert ' + entry.name, entry.snap.t === T.section); });
+    const rm = document.createElement('button'); rm.className = 'btn icon quiet'; rm.setAttribute('aria-label', 'Remove from My library'); rm.title = 'Remove from My library'; rm.innerHTML = ic('trash', 'sm');
+    rm.addEventListener('click', () => { if (saveMyLib(myLib().filter((e) => e.uid !== entry.uid))) { libKey = ''; renderLibrary(); } });
+    r.addEventListener('dragstart', (e) => { const im = importEntry(entry); libDrag = { getM: im.getM, pre: im.pre, isSection: entry.snap.t === T.section, name: entry.name }; e.dataTransfer.effectAllowed = 'copy'; e.dataTransfer.setData('text/plain', entry.name); });
+    r.addEventListener('dragend', () => { libDrag = null; clearDropUI(); });
+    r.append(ins, rm); mine.appendChild(r);
+  }
+  const io = document.createElement('div'); io.style.display = 'flex'; io.style.gap = '6px'; io.style.flexWrap = 'wrap';
+  const ex = document.createElement('button'); ex.className = 'btn small'; ex.innerHTML = ic('code', 'sm') + 'Copy as JSON';
+  ex.addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
+    const h4 = document.createElement('h4'); h4.textContent = 'Share components'; p.appendChild(h4);
+    const all = [...comps().map((M) => ({ uid: str.d[M], name: str.n[M], savedAt: new Date().toISOString().slice(0, 10), snap: snap(M) })), ...myLib().filter((e) => !comps().some((M) => str.d[M] === e.uid))];
+    const ta = document.createElement('textarea'); ta.readOnly = true; ta.value = JSON.stringify({ fluxComponents: 1, items: all }); p.appendChild(ta);
+    const n = document.createElement('p'); n.className = 'hint'; n.textContent = `${all.length} components. Paste this into Import on another site or browser.`; p.appendChild(n);
+    const r2 = document.createElement('div'); r2.className = 'row2'; const cp = document.createElement('button'); cp.className = 'btn small primary'; cp.textContent = 'Copy';
+    cp.addEventListener('click', () => { const fb = () => { ta.focus(); ta.select(); n.textContent = 'Selected. Press Ctrl+C or Cmd+C.'; }; try { navigator.clipboard.writeText(ta.value).then(() => { n.textContent = 'Copied.'; }, fb); } catch (err) { fb(); } });
+    r2.appendChild(cp); p.appendChild(r2);
+  }));
+  const im = document.createElement('button'); im.className = 'btn small'; im.innerHTML = ic('upload', 'sm') + 'Import';
+  im.addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
+    const h4 = document.createElement('h4'); h4.textContent = 'Import components'; p.appendChild(h4);
+    const ta = document.createElement('textarea'); ta.placeholder = 'Paste the JSON from Copy as JSON'; ta.id = 'importTa'; p.appendChild(ta);
+    const n = document.createElement('p'); n.className = 'hint'; n.textContent = 'Imported components go to My library.'; p.appendChild(n);
+    const r2 = document.createElement('div'); r2.className = 'row2'; const ok = document.createElement('button'); ok.className = 'btn small primary'; ok.textContent = 'Import';
+    ok.addEventListener('click', () => {
+      try {
+        const d = JSON.parse(ta.value); const items = (d && d.items) || [];
+        const valid = items.filter((x) => x && x.uid && x.name && x.snap && Array.isArray(x.snap.c) && x.snap.c.length === NP * BPN);
+        if (!valid.length) { n.textContent = 'No components found. Paste the full JSON from Copy as JSON.'; return; }
+        const l = myLib().filter((e) => !valid.some((v) => v.uid === e.uid)); if (saveMyLib([...valid, ...l])) { closePop(); libKey = ''; renderLibrary(); toast(`Imported ${valid.length} component${valid.length > 1 ? 's' : ''} into My library`); }
+      } catch (err) { n.textContent = 'That is not valid JSON. Paste the full text from Copy as JSON.'; }
+    });
+    r2.appendChild(ok); p.appendChild(r2);
+  }));
+  io.append(ex, im); mine.appendChild(io);
+  box.appendChild(mine);
 }
 function renderPageSettings(pane, id) {
   const body = accordion(pane, 'page', isArticle(id) ? 'Article settings' : 'Page settings', 'settings', -1);
@@ -1846,7 +2303,7 @@ function renderSitemap() {
 function setView(v) {
   view = v; for (const b of $('view').children) b.setAttribute('aria-pressed', String(b.dataset.v === v));
   $('shell').classList.toggle('mapview', v === 'map'); $('designView').hidden = v !== 'design'; $('mapView').hidden = v !== 'map';
-  if (v === 'map') { mapFocus = curPage; renderSitemap(); } else { structDirty = true; layoutStage(); }
+  if (v === 'map') { if (editingComp >= 0) { editingComp = -1; structDirty = true; } mapFocus = curPage; renderSitemap(); } else { structDirty = true; layoutStage(); }
   schedule();
 }
 $('view').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
@@ -1868,6 +2325,7 @@ function bestText(behind) { const P = PALETTE_RGB(); let best = 'ink', bv = 0; f
 const setOp = (id, key, valName, bp = 0) => { const def = PROPS[PI[key]]; const v = def[3] === 'color' ? COLORS.indexOf(valName) : def[3] === 'enum' ? def[4].indexOf(String(valName)) : valName; return () => (cell(id, PI[key], bp) === v ? null : { k: 'set', id, p: PI[key], bp, v }); };
 let lastChecks = [];
 function runChecks() {
+  if (editingComp >= 0) return lastChecks;
   const out = [], pg = curPage, nodes = pageSections(pg).flatMap((s) => subtree(s)).filter((n) => elOf[n] && elOf[n].isConnected);
   const rendered = (n) => elOf[n] && elOf[n].isConnected && elOf[n].getClientRects().length;
   const heads = nodes.filter((n) => type[n] === T.heading && rendered(n));
@@ -1951,7 +2409,7 @@ function runChecks() {
   return out;
 }
 let checkT = 0;
-function queueCheck() { clearTimeout(checkT); checkT = setTimeout(() => { if (view === 'design' && !drag.active) { runChecks(); if (popAnchor === $('btnCheck')) refreshPop(); renderStatus(); } }, 450); }
+function queueCheck() { clearTimeout(checkT); checkT = setTimeout(() => { if (view === 'design' && !drag.active && editingComp < 0) { runChecks(); if (popAnchor === $('btnCheck')) refreshPop(); renderStatus(); } }, 450); }
 function applyFix(c) {
   if (c.fix === 'audience') { showTab('tabTheme'); openGroups.add('site'); themeDirty = true; renderInspector(); setTimeout(() => $('siteAud') && $('siteAud').focus(), 50); closePop(); return; }
   const steps = c.fix().flat();
@@ -2057,7 +2515,7 @@ function exportHtml(pg) {
   };
   const used = [pg, ...pageSections(pg).flatMap((s) => subtree(s))];
   let nodeCss = ''; for (const i of used) { compileNode(i); nodeCss += cssCache[i] + '\n'; }
-  const css = (tokenCss('.site') + '\n' + tokenCssNarrow('.site *') + '\n' + BASE_CSS.split('\n').filter((l) => !/\.edit |dragging/.test(l)).join('\n') + nodeCss).replace(/\}(?=\.)/g, '}\n');
+  const css = (tokenCss('.site') + '\n' + tokenCssNarrow('.site *') + '\n' + BASE_CSS.split('\n').filter((l) => !/\.edit |dragging|comp-board/.test(l)).join('\n') + nodeCss).replace(/\}(?=\.)/g, '}\n');
   const desc = isArticle(pg) ? str.x[pg] : str.x[0];
   return `<!doctype html>
 <html lang="en">
@@ -2103,7 +2561,7 @@ $('btnMore').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
     { icon: 'clock', label: 'Versions and edit history', run: () => showTab('tabVer') },
     { icon: 'palette', label: 'Theme and audience', run: () => showTab('tabTheme') },
     '-',
-    { icon: 'home', label: 'Load the sample site', run: () => replaceSite(sampleSite(), DEFAULT_THEME, 'Load sample site') },
+    { icon: 'home', label: 'Load the sample site', run: () => replaceSite(sampleSite(), DEFAULT_THEME, 'Load sample site', componentizeSample) },
     { icon: 'page', label: 'Start from a blank site', run: () => replaceSite(blankSite(), DEFAULT_THEME, 'Blank site') },
   ]);
   const k = document.createElement('p'); k.className = 'hint'; k.style.padding = '6px 8px 2px'; k.innerHTML = '<b>Shortcuts</b> · Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+D duplicate · Del delete · Esc parent · Alt+↑/↓ move · double-click to edit text';
@@ -2118,10 +2576,12 @@ let statusT = 0, statusTimer = 0;
 function renderStatus() {
   const now = performance.now(); if (now - statusT < 150) { if (!statusTimer) statusTimer = setTimeout(() => { statusTimer = 0; renderStatus(); }, 160); return; } statusT = now;
   const dense = encodeDense().length;
-  $('status').innerHTML = `<span><b>${pages().length}</b> pages · <b>${nodeCount()}</b> nodes</span><span>site <b>${fmtBytes(dense)}</b> dense</span><span>last edit <b>${lastStyleMs.toFixed(2)} ms</b></span><span>${undoStack.length} undo</span><span>${versions[0] ? `published <b>v${versions[0].n}</b>` : 'not published'}</span>`;
+  $('status').innerHTML = `<span><b>${pages().length}</b> pages · <b>${comps().length}</b> components · <b>${nodeCount()}</b> nodes</span><span>site <b>${fmtBytes(dense)}</b> dense</span><span>last edit <b>${lastStyleMs.toFixed(2)} ms</b></span><span>${undoStack.length} undo</span><span>${versions[0] ? `published <b>v${versions[0].n}</b>` : 'not published'}</span>`;
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('flux-studio-site-v3', JSON.stringify(docSnapshot())); } catch (e) {} }, 700); }
+function saveNow() { clearTimeout(saveT); saveT = 0; try { localStorage.setItem('flux-studio-site-v4', JSON.stringify(docSnapshot())); } catch (e) {} }
+function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 700); }
+window.addEventListener('pagehide', () => { if (saveT) saveNow(); });
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2600); }
 
 $('devices').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; device = +b.dataset.d; for (const x of $('devices').children) x.setAttribute('aria-pressed', String(x === b)); if (view !== 'design') setView('design'); layoutStage(); schedule(); });
@@ -2129,6 +2589,7 @@ $('mode').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   live = b.dataset.m === 'live'; for (const x of $('mode').children) x.setAttribute('aria-pressed', String(x === b));
   $('shell').classList.toggle('live', live); siteEl.classList.toggle('edit', !live); closePop();
+  if (live && editingComp >= 0) { editingComp = -1; sel = curPage; }
   if (live && view !== 'design') setView('design');
   structDirty = true; layoutStage(); schedule();
 });
@@ -2145,7 +2606,7 @@ document.addEventListener('keydown', (e) => {
   if (typing || live || view !== 'design') return;
   if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSel(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSel(); }
-  else if (e.key === 'Escape') { if (sel >= 0 && par[sel] > 0) select(par[sel]); }
+  else if (e.key === 'Escape') { if (editingComp >= 0 && (sel === editingComp || sel < 0)) exitComp(); else if (sel >= 0 && par[sel] > 0 && (editingComp < 0 || isAncestor(editingComp, par[sel]))) select(par[sel]); }
   else if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
   else if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
 });
@@ -2154,8 +2615,8 @@ window.addEventListener('resize', layoutStage);
 
 /* boot: the saved site if there is one, otherwise the sample site */
 let restored = false;
-try { const s = localStorage.getItem('flux-studio-site-v3'); if (s) { const d = JSON.parse(s); if (d && d.v === 3) { loadDoc(d); restored = true; } } } catch (e) { restored = false; }
-if (!restored) buildFresh(sampleSite());
+try { const s = localStorage.getItem('flux-studio-site-v4'); if (s) { const d = JSON.parse(s); if (d && d.v === 4) { loadDoc(d); restored = true; } } } catch (e) { restored = false; }
+if (!restored) { buildFresh(sampleSite()); componentizeSample(); }
 sel = curPage;
 render(); layoutStage(); renderLayers(); renderInspector(); renderPageBtn(); renderStatus();
 ensureFonts(['JetBrains Mono']);
