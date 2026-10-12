@@ -424,7 +424,7 @@ footer b { color: var(--ink); }
     <div><b>How a launch works.</b> A creator builds a ChainLaunch payload, signs it and submits it over the wire. The protocol checks it and mints the fixed supply once; mint authority is then gone. The token trades on a bonding curve (CURVE_SWAP) whose SOL stays escrowed. At 85 SOL raised the protocol signs a MIGRATE record and auto-seeds a concentrated-liquidity pool with the raised SOL and the 186.9M reserve tokens. Its seed positions belong to a lock vault that nobody, including the creator, can withdraw from. From then on the token trades on the pool (CLMM_SWAP), anyone can add or remove their own LP range (CLMM_POSITION), and the protocol publishes CLMM_POOL_STATUS.</div>
     <div><b>How a rug is ruled out.</b> No mint after genesis, curve SOL escrowed, pool seed liquidity locked forever, and the creator's 2% unlocks only after migration, linearly over the vesting period. Every attempt to dump, withdraw or mint slashes 25% of the creator's bond to holders.</div>
     <div><b>How degen behaviour is damped.</b> The first 60 seconds clear at one uniform price with a per-wallet cap, so sniper bots get no edge. On the curve each wallet is capped at its share of supply. Swaps are capped at 3 SOL with a 10-second wait per wallet and a slippage limit, and a 30% move within a minute halts swaps for 30 seconds. Your own guard adds per-trade, daily-loss and grade limits.</div>
-    <div><b>Simulated.</b> No chain is involved. Traders, snipers, LP bots and creators run in a Web Worker and send signed CHAIN_LAUNCH, CURVE_SWAP, CLMM_SWAP, CLMM_POSITION and MINT records, reading the protocol's status records to pick a venue. Your own records travel through the same worker wire. This page's engine verifies signatures and enforces every rule. Signatures are keyed FNV-1a checksums standing in for Ed25519; CIDs are real sha-256 CIDv1 of each token's metadata. Your wallet holds demo SOL.</div>
+    <div><b>Simulated.</b> No chain is involved. Traders, snipers, LP bots and creators run in a Web Worker (or on the page thread where a viewer blocks workers) and send signed CHAIN_LAUNCH, CURVE_SWAP, CLMM_SWAP, CLMM_POSITION and MINT records, reading the protocol's status records to pick a venue. Your own records travel through the same worker wire. This page's engine verifies signatures and enforces every rule. Signatures are keyed FNV-1a checksums standing in for Ed25519; CIDs are real sha-256 CIDv1 of each token's metadata. Your wallet holds demo SOL.</div>
   </footer>
 
   <div class="modal" id="modal" hidden>
@@ -979,7 +979,7 @@ function refreshStats(tk, now) {
    and to place LP ranges. It never sees whether a record was accepted.
    History is generated in 5-minute slices, each answered with fresh status.
    ========================================================================= */
-const WSRC = `
+function SIM(scope) {
 'use strict';
 let key = 0, outbox = '', histEnd = 0, cursor = 0, live = false; const toks = []; const status = {};
 const LOG = Math.log(1.0001), OFF = 887272;
@@ -988,7 +988,7 @@ function mb(a){ return function(){ a|=0; a=(a+0x6d2b79f5)|0; let t=Math.imul(a^(
 const AL='abcdefghjkmnpqrstuvwxyz23456789';
 function wid(r,n){ let s=''; for(let i=0;i<n;i++) s+=AL[(r()*AL.length)|0]; return s; }
 function gauss(r){ let u=0; while(!u) u=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(6.283185307*r()); }
-function ln(b){ return b+'-SIG-'+sig(b)+'\\n'; }
+function ln(b){ return b+'-SIG-'+sig(b)+'\n'; }
 function venue(t){ return status[t.id] && status[t.id].m ? 'CLMM_SWAP' : 'CURVE_SWAP'; }
 function sw(t,w,x,ts,a){ return ln(venue(t)+'-R-'+t.id+'-W-'+w+'-X-'+x+'-T-'+ts+'-A-'+a+'-MIN-0'); }
 function setup(t){
@@ -1015,7 +1015,7 @@ function ev(t, ts){
     if (k<0.4) return sw(t,t.creator,'s',ts,10000);
     if (k<0.7) return m ? ln('CLMM_POSITION-R-'+t.id+'-W-'+t.creator+'-OP-r-PID-'+t.id+'s'+((r()*2)|0)+'-LO-0-HI-0-L-0-T-'+ts) : ln('CURVE_WITHDRAW-R-'+t.id+'-W-'+t.creator+'-T-'+ts+'-A-0');
     return ln('MINT-R-'+t.id+'-W-'+t.creator+'-T-'+ts+'-A-'+Math.round(1e8*(1+r()*9))); }
-  if (u < 0.007) return venue(t)+'-R-'+t.id+'-W-'+t.pool[(r()*t.pool.length)|0]+'-X-b-T-'+ts+'-A-'+Math.round(2e6*r()+1e5)+'-MIN-0-SIG-'+((r()*4294967295)>>>0).toString(16).padStart(8,'0')+'\\n';
+  if (u < 0.007) return venue(t)+'-R-'+t.id+'-W-'+t.pool[(r()*t.pool.length)|0]+'-X-b-T-'+ts+'-A-'+Math.round(2e6*r()+1e5)+'-MIN-0-SIG-'+((r()*4294967295)>>>0).toString(16).padStart(8,'0')+'\n';
   if (u < 0.02) return sw(t,t.whale,'b',ts,Math.round((3.5+r()*6)*1e6));
   if (u < 0.035) return sw(t,t.whale2,'b',ts,Math.round((1.8+r()*1.1)*1e6));
   if (u < 0.05) { let o=''; for(let j=0;j<3;j++){ t.cs = t.cs==='b'?'s':'b'; o += sw(t,t.churn,t.cs,ts+j*1800, t.cs==='b'?250000:10000); } return o; }
@@ -1049,19 +1049,44 @@ function slice(prefix){
   for (const t of toks) o += step(t, end);
   cursor = end;
   const done = end >= histEnd;
-  postMessage({ h: o, done });
-  if (done && !live) { live = true; setInterval(() => { const now=Date.now(); let o=outbox; outbox=''; for (const t of toks) o += step(t, now); if (o) postMessage(o); }, 50); }
+  scope.postMessage({ h: o, done });
+  if (done && !live) { live = true; setInterval(() => { const now=Date.now(); let o=outbox; outbox=''; for (const t of toks) o += step(t, now); if (o) scope.postMessage(o); }, 50); }
 }
-onmessage = (e) => {
+scope.onmessage = (e) => {
   const m = e.data;
-  if (m.type==='init') { key = m.key; histEnd = m.now; for (const t of m.toks) setup(t); cursor = Math.min(...m.toks.map(t=>t.t0)); slice(m.launches.join('\\n') + '\\n'); }
+  if (m.type==='init') { key = m.key; histEnd = m.now; for (const t of m.toks) setup(t); cursor = Math.min(...m.toks.map(t=>t.t0)); slice(m.launches.join('\n') + '\n'); }
   else if (m.type==='add') setup(m.tok);
-  else if (m.type==='submit') outbox += m.rec + '\\n';
+  else if (m.type==='submit') outbox += m.rec + '\n';
   else if (m.type==='status') {
     for (const rec of m.recs) { const f = rec.split('-'); status[f[2]] = f[0]==='CLMM_POOL_STATUS' ? { m: true, tick: +f[4] - OFF } : { m: false }; }
     if (m.next) slice('');
   }
-};`;
+};}
+
+/* The feed runs in a Web Worker where the page may start one. Some viewers (the
+   artifact frame) refuse blob workers, so the same code then runs on the page
+   thread, with messages still passed asynchronously in both directions. */
+let wireMode = 'Web Worker';
+function startWire() {
+  const api = { onmessage: null, postMessage: null };
+  const deliver = (e) => api.onmessage && api.onmessage(e);
+  const shim = () => {
+    wireMode = 'page thread';
+    const scope = { onmessage: null, postMessage: (d) => setTimeout(() => deliver({ data: d }), 0) };
+    SIM(scope);
+    return (d) => setTimeout(() => scope.onmessage({ data: d }), 0);
+  };
+  let send, queued = [];
+  try {
+    const w = new Worker(URL.createObjectURL(new Blob(['(' + SIM.toString() + ')(self);'], { type: 'text/javascript' })));
+    w.onmessage = (e) => { queued = null; deliver(e); };
+    w.onerror = () => { if (!queued) return; const q = queued; queued = null; send = shim(); for (const d of q) send(d); };
+    send = (d) => { if (queued) queued.push(d); w.postMessage(d); };
+  } catch (err) { send = shim(); }
+  api.postMessage = (d) => send(d);
+  return api;
+}
+
 let worker = null;
 
 /* =========================================================================
@@ -1796,7 +1821,7 @@ async function boot() {
     sims.push({ id, creator, t0, hype0: s.hype0, decay: s.decay, seed: 1000 + i * 77, mine: false });
   }
   let replayMs = 0, replayBytes = 0, replayRecs = 0, slices = 0;
-  worker = new Worker(URL.createObjectURL(new Blob([WSRC], { type: 'text/javascript' })));
+  worker = startWire();
   worker.onmessage = (e) => {
     const d = e.data;
     if (typeof d === 'string') { onWire(d); return; }
@@ -1807,7 +1832,7 @@ async function boot() {
     replayMs += performance.now() - t; replayBytes += d.h.length; replayRecs += wireRecs - before; slices++;
     worker.postMessage({ type: 'status', recs, next: !d.done });
     if (!d.done) return;
-    $('replayNote').textContent = `Replayed ${fmt(replayRecs, 0)} signed records (${fmt(replayBytes / 1048576, 1)} MB, ${slices} slices with status feedback) through the rule engine in ${fmt(replayMs, 0)} ms.`;
+    $('replayNote').textContent = `Replayed ${fmt(replayRecs, 0)} signed records (${fmt(replayBytes / 1048576, 1)} MB, ${slices} slices with status feedback) through the rule engine in ${fmt(replayMs, 0)} ms. Market simulator on the ${wireMode}.`;
     for (const tk of tokens) { advance(tk, Date.now()); refreshStats(tk, Date.now()); }
     select(tokens.find((x) => x.ticker === 'BSLT') || tokens[0]);
     drawSparks(); renderFeed(); renderStrip();
