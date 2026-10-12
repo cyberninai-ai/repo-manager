@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--head-end-->
+<title>Flux Chart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: trading terminal. Header quote bar, toolbar, chart column + instrument sidebar (stacks under 900px). */
+:root {
+  color-scheme: dark;
+  --bg: #0d1013;
+  --panel: #12171c;
+  --raise: #1a2027;
+  --rule: #232b34;
+  --grid: #181e25;
+  --fg: #d9e1e8;
+  --muted: #7f8c99;
+  --line: #e8a33d;
+  --fill: rgba(232, 163, 61, 0.16);
+  --up: #2bb68c;
+  --down: #e8564e;
+  --cross: #8a96a3;
+  --tag-fg: #0d1013;
+  --font-ui: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f5f6f7; --panel: #ffffff; --raise: #eef1f4; --rule: #d9dfe5; --grid: #e9edf0;
+    --fg: #151a20; --muted: #5d6975; --line: #b46d0c; --fill: rgba(180, 109, 12, 0.13);
+    --up: #0f8460; --down: #c8352e; --cross: #6b7682; --tag-fg: #ffffff;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f6f7; --panel: #ffffff; --raise: #eef1f4; --rule: #d9dfe5; --grid: #e9edf0;
+  --fg: #151a20; --muted: #5d6975; --line: #b46d0c; --fill: rgba(180, 109, 12, 0.13);
+  --up: #0f8460; --down: #c8352e; --cross: #6b7682; --tag-fg: #ffffff;
+}
+
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { margin: 0; font: 400 14px/1.45 var(--font-ui); }
+.app { max-width: 1480px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 28px; display: grid; gap: 12px; }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.brand { display: flex; align-items: baseline; gap: 6px; }
+.mark { font: 700 22px/1 var(--font-ui); letter-spacing: 0.14em; }
+.mark b { color: var(--line); font-weight: 700; }
+.sub { font: 500 11px/1 var(--font-data); color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.syms { display: flex; gap: 2px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 2px; }
+.syms button { font: 600 13px/1 var(--font-ui); letter-spacing: 0.04em; color: var(--muted); background: transparent; border: 0; border-radius: 4px; padding: 7px 11px; cursor: pointer; }
+.syms button[aria-selected="true"] { background: var(--raise); color: var(--fg); }
+.syms button:hover { color: var(--fg); }
+.quote { display: flex; align-items: baseline; gap: 10px; margin-left: auto; }
+.qprice { font: 500 26px/1 var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; transition: color .25s; }
+.qprice.up { color: var(--up); } .qprice.down { color: var(--down); }
+.pill { font: 500 12px/1 var(--font-data); padding: 4px 7px; border-radius: 4px; background: var(--raise); font-variant-numeric: tabular-nums; }
+.pill.up { color: var(--up); } .pill.down { color: var(--down); }
+.live { display: inline-flex; align-items: center; gap: 6px; font: 600 11px/1 var(--font-data); letter-spacing: 0.1em; color: var(--up); }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--up); animation: blink 1.6s ease-in-out infinite; }
+.live.paused { color: var(--muted); } .live.paused i { background: var(--muted); animation: none; }
+@keyframes blink { 50% { opacity: .25; } }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.group { display: flex; align-items: center; gap: 8px; }
+.group > span { font: 500 11px/1 var(--font-data); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.seg { display: flex; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+.seg button { font: 500 12px/1 var(--font-data); color: var(--muted); background: var(--panel); border: 0; border-right: 1px solid var(--rule); padding: 7px 10px; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { color: var(--fg); background: var(--raise); box-shadow: inset 0 -2px 0 var(--line); }
+.grow { flex: 1; }
+.btn { font: 600 12px/1 var(--font-ui); letter-spacing: 0.04em; color: var(--tag-fg); background: var(--line); border: 1px solid var(--line); border-radius: 5px; padding: 8px 12px; cursor: pointer; }
+.btn.ghost { color: var(--fg); background: transparent; border-color: var(--rule); }
+.btn.ghost:hover { border-color: var(--muted); }
+button:focus-visible, .chart:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } .quote { margin-left: 0; } }
+.chartcol { min-width: 0; display: grid; gap: 6px; }
+.chart { position: relative; height: clamp(320px, 64vh, 700px); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; cursor: crosshair; }
+.chart canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hint { margin: 0; font: 400 11.5px/1.4 var(--font-data); color: var(--muted); }
+
+.side { min-width: 0; display: grid; gap: 10px; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; min-width: 0; }
+.card h2 { margin: 0 0 8px; font: 600 11px/1 var(--font-data); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.card h2 em { font-style: normal; color: var(--fg); letter-spacing: 0.02em; text-transform: none; font-weight: 500; }
+dl.kv { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; font: 500 12.5px/1.45 var(--font-data); text-align: right; font-variant-numeric: tabular-nums; }
+.ok { color: var(--up); } .bad { color: var(--down); } .dim { color: var(--muted); }
+.bar { height: 4px; background: var(--raise); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--up); transition: width .3s; }
+
+table.cmp { width: 100%; border-collapse: collapse; font: 400 12px/1.4 var(--font-data); font-variant-numeric: tabular-nums; }
+table.cmp th { font: 600 10.5px/1.2 var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 0 6px; }
+table.cmp th:first-child, table.cmp td:first-child { text-align: left; font-family: var(--font-ui); font-size: 13px; color: var(--muted); }
+table.cmp td { text-align: right; padding: 4px 0; border-top: 1px solid var(--rule); }
+table.cmp td.win { color: var(--up); font-weight: 500; }
+
+ol.trace { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 400 12px/1.45 var(--font-data); }
+ol.trace li { display: grid; grid-template-columns: 1fr auto; gap: 10px; min-width: 0; }
+ol.trace li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+ol.trace li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; font: 600 10px/1 var(--font-data); padding: 3px 5px; border-radius: 3px; letter-spacing: 0.06em; }
+.tag.hit { background: var(--up); color: var(--tag-fg); } .tag.miss { background: var(--line); color: var(--tag-fg); }
+
+pre.rec { margin: 0; font: 400 11px/1.5 var(--font-data); white-space: pre-wrap; word-break: break-all; color: var(--fg); background: var(--raise); border-radius: 4px; padding: 8px; }
+pre.rec .k { color: var(--line); font-weight: 500; }
+ul.tape { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; font: 400 10.5px/1.4 var(--font-data); }
+ul.tape li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px; }
+ul.tape li span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+
+footer { font: 400 12px/1.5 var(--font-ui); color: var(--muted); max-width: 90ch; }
+footer b { color: var(--fg); font-weight: 600; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .live i { animation: none; } .qprice, .bar i { transition: none; } }
+</style>
+<!--body-start-->
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark">FL<b>U</b>X</span><span class="sub">chart · v0</span></div>
+    <div class="syms" id="syms" role="tablist" aria-label="Market"></div>
+    <div class="quote">
+      <span class="qprice" id="qPrice">—</span>
+      <span class="pill" id="qChg" title="Change over the last 24 hours">—</span>
+    </div>
+    <span class="live" id="liveChip"><i></i><span id="liveText">LIVE</span></span>
+  </header>
+
+  <div class="toolbar">
+    <div class="group"><span>View</span>
+      <div class="seg" id="segKind" role="group" aria-label="Chart type">
+        <button data-tf="0" aria-pressed="true">Line</button>
+        <button data-tf="60" aria-pressed="false">1m</button>
+        <button data-tf="300" aria-pressed="false">5m</button>
+        <button data-tf="900" aria-pressed="false">15m</button>
+        <button data-tf="3600" aria-pressed="false">1h</button>
+      </div>
+    </div>
+    <div class="group"><span>Feed</span>
+      <div class="seg" id="segRate" role="group" aria-label="Ticks per second, per market">
+        <button data-rate="5" aria-pressed="false">5/s</button>
+        <button data-rate="20" aria-pressed="true">20/s</button>
+        <button data-rate="100" aria-pressed="false">100/s</button>
+        <button data-rate="500" aria-pressed="false">500/s</button>
+      </div>
+    </div>
+    <span class="grow"></span>
+    <button class="btn ghost" id="btnForge" title="Push a tick with a bad signature onto the wire">Send forged tick</button>
+    <button class="btn" id="btnLive" hidden>Jump to live →</button>
+  </div>
+
+  <main class="grid">
+    <section class="chartcol">
+      <div class="chart" id="chart" tabindex="0" role="img" aria-label="Live price chart">
+        <canvas id="cMain"></canvas>
+        <canvas id="cOver"></canvas>
+      </div>
+      <p class="hint">Drag to pan · wheel or pinch to zoom · double-click or press L to return to live · arrow keys and + / − work when the chart has focus</p>
+      <p class="sr" id="srSummary"></p>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <h2>Tick stream <em id="sTps">—</em></h2>
+        <dl class="kv">
+          <dt>Wire in</dt><dd id="sWire">—</dd>
+          <dt>Bytes per tick</dt><dd id="sBpt">—</dd>
+          <dt>Parse + verify per tick</dt><dd id="sParse" title="Measured once at startup over 50,000 signed ticks">—</dd>
+          <dt>Signatures ok / rejected</dt><dd id="sSig">—</dd>
+          <dt>Points in buffer</dt><dd id="sPts">—</dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Renderer <em id="sFps">—</em></h2>
+        <dl class="kv">
+          <dt>Draw cost per frame</dt><dd id="sDraw">—</dd>
+          <dt>Full redraws</dt><dd id="sFull">—</dd>
+          <dt>Tail-only redraws</dt><dd id="sTail">—</dd>
+        </dl>
+        <div class="bar" title="Share of frames that redrew only the tail"><i id="sTailBar"></i></div>
+      </section>
+
+      <section class="card">
+        <h2>Cold load <em id="bTitle">BTC/USDT · measuring…</em></h2>
+        <table class="cmp">
+          <thead><tr><th></th><th>JSON</th><th>FLX</th></tr></thead>
+          <tbody>
+            <tr><td>Wire, raw</td><td id="bJsonRaw">—</td><td id="bFlxRaw" class="win">—</td></tr>
+            <tr><td>Wire, gzip</td><td id="bJsonGz">—</td><td id="bFlxGz" class="win">—</td></tr>
+            <tr><td>Parse to points</td><td id="bJsonMs">—</td><td id="bFlxMs" class="win">—</td></tr>
+            <tr><td>Objects per point</td><td>1</td><td class="win">0</td></tr>
+            <tr><td>First frame</td><td class="dim">n/a</td><td id="bPaint" class="win">—</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Resolve <em id="rName">—</em></h2>
+        <ol class="trace" id="rTrace"></ol>
+      </section>
+
+      <section class="card">
+        <h2>Records</h2>
+        <pre class="rec" id="recChart"></pre>
+        <ul class="tape" id="tape" aria-label="Latest ticks on the wire"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    <b>What is real here:</b> the FLX binary blob (delta-encoded, quantized, column-oriented), its CIDv1 sha-256 address, gzip over the wire, the zero-allocation tick parser, signature checks, and the three-layer Canvas renderer with tail-only redraws.
+    <b>What is simulated:</b> market prices are synthetic; the tick feed runs in a Web Worker in place of a Gun subscription; IPFS is an in-memory pin store; signatures are keyed FNV-1a checksums standing in for Ed25519.
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+/* =========================================================================
+   Markets (synthetic). One chart record per market.
+   ========================================================================= */
+const AUTHOR = 'flux.demo';
+const KEY = 0x5eed1234;          // stand-in signing key shared by publisher + feed
+const HIST_N = 100000;           // historical points per chart
+const LIVE_CAP = 400000;         // room for live ticks before the buffer compacts
+const MARKETS = [
+  { id: 'btcusdt', label: 'BTC/USDT', p0: 64250, vol: 0.00022, prec: 2, seed: 11 },
+  { id: 'ethusdt', label: 'ETH/USDT', p0: 3125,  vol: 0.00028, prec: 2, seed: 23 },
+  { id: 'solusdt', label: 'SOL/USDT', p0: 148.6, vol: 0.00036, prec: 3, seed: 37 },
+];
+
+/* =========================================================================
+   Content addressing: CIDv1, raw codec (0x55), sha2-256, base32 lower.
+   ========================================================================= */
+const B32 = 'abcdefghijklmnopqrstuvwxyz234567';
+function base32(bytes) {
+  let out = '', bits = 0, val = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    val = (val << 8) | bytes[i]; bits += 8;
+    while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; }
+    val &= (1 << bits) - 1;
+  }
+  if (bits > 0) out += B32[(val << (5 - bits)) & 31];
+  return out;
+}
+async function cidOf(buf) {
+  let digest;
+  if (window.crypto && crypto.subtle) {
+    digest = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+  } else { // fallback for insecure contexts: repeat FNV to 32 bytes (not a real CID)
+    digest = new Uint8Array(32); const u8 = new Uint8Array(buf);
+    for (let k = 0; k < 8; k++) { let h = (0x811c9dc5 ^ k) >>> 0; for (let i = 0; i < u8.length; i++) { h ^= u8[i]; h = Math.imul(h, 16777619); } new DataView(digest.buffer).setUint32(k * 4, h >>> 0); }
+  }
+  const b = new Uint8Array(36); b.set([0x01, 0x55, 0x12, 0x20]); b.set(digest, 4);
+  return 'b' + base32(b);
+}
+const shortCid = (c) => c.slice(0, 10) + '…' + c.slice(-6);
+
+/* Keyed FNV-1a over a char range. Stand-in for Ed25519 sign/verify. */
+function fnvRange(s, from, to) {
+  let h = (0x811c9dc5 ^ KEY) >>> 0;
+  for (let i = from; i < to; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+const sign = (s) => fnvRange(s, 0, s.length).toString(16).padStart(8, '0');
+
+/* gzip over the wire (stands in for zstd). */
+const hasCS = typeof CompressionStream === 'function';
+async function gzip(buf) {
+  if (!hasCS) return buf;
+  return new Response(new Blob([buf]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+}
+async function gunzip(buf) {
+  if (!hasCS) return buf;
+  return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
+
+/* =========================================================================
+   FLX data blob, kind = line.
+   [0..3]  'F' 'L' 'X' version
+   [4]     u32 pointCount N
+   [8]     u8 precision Q, u8 kind, u16 flags (bit0: values delta-encoded)
+   [12]    u32 scale S = 10^Q
+   [16]    u32 t0 (unix seconds)
+   [20]    u32 reserved
+   [24]    u16 delta_ms[N]       (first delta is relative to t0*1000), padded to 4
+   [..]    i32 value[N]          (quantized, delta-encoded; first is absolute)
+   ========================================================================= */
+const HDR = 24;
+function encodeLine(tMs, q, n, prec) {
+  const t0s = Math.floor(tMs[0] / 1000);
+  const vOff = HDR + ((n * 2 + 3) & ~3);
+  const buf = new ArrayBuffer(vOff + n * 4);
+  const dv = new DataView(buf);
+  dv.setUint8(0, 0x46); dv.setUint8(1, 0x4c); dv.setUint8(2, 0x58); dv.setUint8(3, 1);
+  dv.setUint32(4, n, true); dv.setUint8(8, prec); dv.setUint8(9, 1); dv.setUint16(10, 1, true);
+  dv.setUint32(12, 10 ** prec, true); dv.setUint32(16, t0s, true);
+  const d = new Uint16Array(buf, HDR, n), v = new Int32Array(buf, vOff, n);
+  let pt = t0s * 1000, pq = 0;
+  for (let i = 0; i < n; i++) { d[i] = tMs[i] - pt; pt = tMs[i]; v[i] = q[i] - pq; pq = q[i]; }
+  return buf;
+}
+/* Blob -> typed arrays. Times as seconds since t0 (Float64: live ticks need ms
+   precision far from t0), values as Float32 relative to the first price. */
+function decodeLine(buf) {
+  const dv = new DataView(buf);
+  if (dv.getUint8(0) !== 0x46 || dv.getUint8(1) !== 0x4c || dv.getUint8(2) !== 0x58) throw new Error('not an FLX blob');
+  const n = dv.getUint32(4, true), prec = dv.getUint8(8), scale = dv.getUint32(12, true), t0s = dv.getUint32(16, true);
+  const vOff = HDR + ((n * 2 + 3) & ~3);
+  const d = new Uint16Array(buf, HDR, n), v = new Int32Array(buf, vOff, n);
+  const xs = new Float64Array(n), ys = new Float32Array(n);
+  const q0 = v[0];
+  let tms = 0, q = 0;
+  for (let i = 0; i < n; i++) { tms += d[i]; q += v[i]; xs[i] = tms / 1000; ys[i] = (q - q0) / scale; }
+  return { n, xs, ys, t0s, scale, prec, q0, base: q0 / scale };
+}
+
+/* Publisher side: synthetic history, one tick about every second. */
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function synth(m, endMs) {
+  const r = mulberry32(m.seed), n = HIST_N, scale = 10 ** m.prec;
+  const tMs = new Float64Array(n), q = new Int32Array(n);
+  let t = 0, lp = 0, regime = 1, drift = 0;
+  const gauss = () => { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283185307 * r()); };
+  for (let i = 0; i < n; i++) {
+    t += 650 + Math.floor(r() * 700);
+    if (r() < 0.0004) { regime = 0.6 + r() * 1.8; drift = (r() - 0.5) * m.vol * 0.08; }
+    if (r() < 0.00003) lp += (r() - 0.5) * m.vol * 60;          // occasional jump
+    lp += drift + m.vol * regime * gauss() - lp * 0.000004;      // weak mean reversion
+    tMs[i] = t; q[i] = Math.round(m.p0 * Math.exp(lp) * scale);
+  }
+  const shift = endMs - tMs[n - 1];
+  for (let i = 0; i < n; i++) tMs[i] = Math.round(tMs[i] + shift);
+  return { tMs, q, scale };
+}
+
+/* =========================================================================
+   Mesh stand-ins: name registry, pin store (IPFS), decoded block cache.
+   ========================================================================= */
+const registry = new Map();   // 'chart.{id}' -> CHART record pattern
+const pinStore = new Map();   // cid -> gzipped blob bytes
+const blockCache = new Map(); // cid -> decoded typed arrays
+
+function parseChartRecord(rec) {
+  const t = rec.split('-'), f = { T: [] };
+  for (let i = 1; i < t.length; i += 2) { if (t[i] === 'T') f.T.push(+t[i + 1]); else f[t[i]] = t[i + 1]; }
+  f.sigOk = parseInt(f.SIG, 16) === fnvRange(rec, 0, rec.indexOf('-SIG-'));
+  return f;
+}
+
+async function resolveChart(name) {
+  const t0 = performance.now(), steps = [];
+  const rec = registry.get(name);
+  if (!rec) throw new Error('no record for ' + name);
+  const f = parseChartRecord(rec);
+  steps.push({ label: name + ' → CHART', ms: performance.now() - t0, extra: f.sigOk ? 'sig ok' : 'sig BAD' });
+  let dec = blockCache.get(f.D);
+  const hit = !!dec;
+  const timing = { gunzip: 0, verify: 0, decode: 0 };
+  if (!dec) {
+    let a = performance.now();
+    const raw = await gunzip(pinStore.get(f.D));
+    timing.gunzip = performance.now() - a; a = performance.now();
+    const cid = await cidOf(raw);
+    timing.verify = performance.now() - a;
+    if (cid !== f.D) throw new Error('CID mismatch');
+    a = performance.now();
+    dec = decodeLine(raw);
+    timing.decode = performance.now() - a;
+    blockCache.set(f.D, dec);
+  }
+  return { rec, f, dec, hit, steps, timing, total: performance.now() - t0 };
+}
+
+/* =========================================================================
+   Series buffers. Live ticks append into preallocated typed arrays.
+   ========================================================================= */
+const series = new Map();      // id -> series
+const idHash = new Map();      // int hash of chartId chars -> series (lookup without strings)
+function hashId(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0; return h; }
+function makeSeries(m, dec, rec) {
+  const cap = dec.n + LIVE_CAP;
+  const s = { m, rec, dec, cap, n: dec.n, xs: new Float64Array(cap), ys: new Float32Array(cap), t0s: dec.t0s, base: dec.base, scale: dec.scale, q0: dec.q0, prevY: 0, compacted: 0 };
+  s.xs.set(dec.xs); s.ys.set(dec.ys);
+  s.prevY = s.ys[s.n - 2];
+  series.set(m.id, s); idHash.set(hashId(m.id), s);
+  return s;
+}
+function append(s, x, y) {
+  if (s.n === s.cap) {               // compact: drop the oldest half, no allocation
+    const half = s.cap >> 1;
+    s.xs.copyWithin(0, half, s.n); s.ys.copyWithin(0, half, s.n); s.n -= half; s.compacted++;
+    if (s === active) fullDirty = true;
+  }
+  s.prevY = s.ys[s.n - 1];
+  s.xs[s.n] = x; s.ys[s.n] = y; s.n++;
+}
+function lowerBound(a, n, x) { let lo = 0, hi = n; while (lo < hi) { const mid = (lo + hi) >> 1; if (a[mid] < x) lo = mid + 1; else hi = mid; } return lo; }
+
+/* =========================================================================
+   Tick wire: TICK-R-{chartId}-S-{seriesId}-T-{ts}-V-{quantized}-SIG-{hex}
+   Parsed by scanning char codes. No split, no substrings, no objects.
+   ========================================================================= */
+const stats = { ticks: 0, bytes: 0, ok: 0, bad: 0, parseMs: 0, parsed: 0 };
+let tapeSrc = '', tapeA = 0, tapeB = 0, tapeOk = true, tapeFresh = false;
+
+function parseTick(s, a, b) {
+  // 'TICK-R-'
+  if (s.charCodeAt(a) !== 84 || s.charCodeAt(a + 4) !== 45 || s.charCodeAt(a + 5) !== 82) return 0;
+  let i = a + 7, h = 0, c = 0;
+  while (i < b && (c = s.charCodeAt(i)) !== 45) { h = (Math.imul(h, 31) + c) | 0; i++; }
+  i += 3;                                            // '-S-'
+  while (i < b && s.charCodeAt(i) !== 45) i++;       // series id
+  i += 3;                                            // '-T-'
+  let ts = 0;
+  while (i < b && (c = s.charCodeAt(i)) !== 45) { ts = ts * 10 + (c - 48); i++; }
+  i += 3;                                            // '-V-'
+  let v = 0;
+  while (i < b && (c = s.charCodeAt(i)) !== 45) { v = v * 10 + (c - 48); i++; }
+  const sigAt = i;                                   // '-SIG-'
+  i += 5;
+  let sig = 0;
+  while (i < b) { c = s.charCodeAt(i++); sig = sig * 16 + (c <= 57 ? c - 48 : c - 87); }
+  if (sig !== fnvRange(s, a, sigAt)) return -1;
+  const ser = idHash.get(h);
+  if (!ser) return 0;
+  append(ser, ts / 1000 - ser.t0s, (v - ser.q0) / ser.scale);
+  return ser === active ? 2 : 1;
+}
+
+function onWire(str) {
+  const t = performance.now();
+  stats.bytes += str.length;
+  let i = 0, L = str.length;
+  while (i < L) {
+    let e = str.indexOf('\n', i); if (e < 0) e = L;
+    const r = parseTick(str, i, e);
+    stats.ticks++;
+    if (r < 0) { stats.bad++; tapeSrc = str; tapeA = i; tapeB = e; tapeOk = false; tapeFresh = true; }
+    else if (r > 0) { stats.ok++; if (r === 2) { dataDirty = true; tapeSrc = str; tapeA = i; tapeB = e; tapeOk = true; tapeFresh = true; } }
+    i = e + 1;
+  }
+  stats.parseMs += performance.now() - t;
+}
+
+/* Feed worker: stands in for the Gun subscription. Ticks cross a real thread boundary as strings. */
+const WORKER_SRC = `
+'use strict';
+let rate = 20, syms = [], key = 0, last = 0, acc = 0, forge = [], lastTs = 0;
+function sig(s){ let h=(0x811c9dc5 ^ key)>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(16).padStart(8,'0'); }
+function g(){ let u=0; while(!u) u=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(6.283185307*Math.random()); }
+function pump(){
+  const now = performance.now(); acc += (now-last)*rate/1000; last = now;
+  let k = acc|0; acc -= k; if (k > 2000) { k = 2000; acc = 0; }
+  if (!k && !forge.length) return;
+  const wall = Date.now(); let out = '';
+  for (let j = 0; j < k; j++) {
+    let ts = Math.round(wall - (k-1-j)*1000/rate); if (ts < lastTs) ts = lastTs; lastTs = ts;
+    for (const s of syms) {
+      s.lp += s.vol*Math.sqrt(1/rate)*g() - s.lp*0.00002;
+      const body = 'TICK-R-'+s.id+'-S-last-T-'+ts+'-V-'+Math.round(s.p*Math.exp(s.lp)*s.scale);
+      out += body+'-SIG-'+sig(body)+'\\n';
+    }
+  }
+  while (forge.length) {
+    const s = syms.find(x => x.id === forge.pop()); if (!s) continue;
+    const body = 'TICK-R-'+s.id+'-S-last-T-'+Math.max(lastTs, wall)+'-V-'+Math.round(s.p*Math.exp(s.lp)*s.scale*1.08);
+    out += body+'-SIG-0badf00d\\n';
+  }
+  if (out) postMessage(out.slice(0, -1));
+}
+onmessage = (e) => {
+  const m = e.data;
+  if (m.type === 'init') { syms = m.syms.map(s => Object.assign({ lp: 0 }, s)); key = m.key; lastTs = m.lastTs; last = performance.now(); setInterval(pump, 16); }
+  else if (m.type === 'rate') rate = m.rate;
+  else if (m.type === 'forge') forge.push(m.id);
+};`;
+let worker = null;
+
+/* =========================================================================
+   Renderer: offscreen background, live layer, overlay. One rAF loop.
+   ========================================================================= */
+const chartEl = $('chart'), cMain = $('cMain'), cOver = $('cOver');
+const ctx = cMain.getContext('2d', { alpha: false });
+const octx = cOver.getContext('2d');
+const bg = document.createElement('canvas');
+const bctx = bg.getContext('2d', { alpha: false });
+const AXW = 76, AXH = 24, TOPPAD = 30;
+let W = 1, H = 1, DPR = 1, plotW = 1, plotH = 1;
+let active = null;
+const view = { x0: 0, x1: 1, y0: 0, y1: 1, follow: true, tf: 0 };
+let bgDirty = true, fullDirty = true, dataDirty = false, overDirty = true, viewChanged = true;
+let lastDrawn = -1, tfEff = 0;
+let mouse = { in: false, x: 0, y: 0 };
+const C = {};
+const FONT = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+const FONT_B = '500 12px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ['bg', 'panel', 'raise', 'rule', 'grid', 'fg', 'muted', 'line', 'fill', 'up', 'down', 'cross', 'tag-fg']) C[k] = cs.getPropertyValue('--' + k).trim();
+  bgDirty = fullDirty = overDirty = true;
+}
+function resize() {
+  const r = chartEl.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+  plotW = Math.max(1, W - AXW); plotH = Math.max(1, H - AXH);
+  for (const c of [cMain, cOver, bg]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
+  for (const c of [ctx, octx, bctx]) c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  viewChanged = bgDirty = fullDirty = overDirty = true;
+}
+
+const xToPx = (x) => (x - view.x0) * plotW / (view.x1 - view.x0);
+const pxToX = (px) => view.x0 + px * (view.x1 - view.x0) / plotW;
+const yToPx = (y) => TOPPAD + (view.y1 - y) * (plotH - TOPPAD - 8) / (view.y1 - view.y0);
+const pxToY = (py) => view.y1 - (py - TOPPAD) * (view.y1 - view.y0) / (plotH - TOPPAD - 8);
+
+const fmtCache = [];
+function fmt(v, d) { return (fmtCache[d] ||= new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })).format(v); }
+function niceStep(r) { const p = 10 ** Math.floor(Math.log10(r)), m = r / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+const TSTEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 172800, 604800];
+const TFS = [60, 300, 900, 3600, 14400, 86400];
+const p2 = (n) => (n < 10 ? '0' : '') + n;
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtTime(sec, step) {
+  const d = new Date(sec * 1000);
+  if (step >= 86400 || (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0)) return MON[d.getMonth()] + ' ' + d.getDate();
+  return p2(d.getHours()) + ':' + p2(d.getMinutes()) + (step < 60 ? ':' + p2(d.getSeconds()) : '');
+}
+function fmtFull(sec) { const d = new Date(sec * 1000); return MON[d.getMonth()] + ' ' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()); }
+
+function visibleRange() {
+  const s = active;
+  const a = Math.max(0, lowerBound(s.xs, s.n, tfEff ? Math.floor(view.x0 / tfEff) * tfEff : view.x0) - 1);
+  const b = Math.min(s.n - 1, lowerBound(s.xs, s.n, view.x1) + 1);
+  return [a, b];
+}
+function fitY() {
+  const s = active, [a, b] = visibleRange();
+  let mn = Infinity, mx = -Infinity;
+  for (let i = a; i <= b; i++) { const y = s.ys[i]; if (y < mn) mn = y; if (y > mx) mx = y; }
+  if (!isFinite(mn)) { mn = s.ys[s.n - 1] - 1; mx = mn + 2; }
+  let span = mx - mn; if (span < 10 ** -s.m.prec * 4) span = 10 ** -s.m.prec * 4;
+  view.y0 = mn - span * 0.1; view.y1 = mx + span * 0.1;
+}
+function pickTf() {
+  if (!view.tf) return 0;
+  let tf = view.tf;
+  const span = view.x1 - view.x0;
+  for (const t of TFS) if (t >= tf && span / t <= plotW / 4) return t;
+  return tf;
+}
+
+function drawBg() {
+  const s = active, b = bctx;
+  b.fillStyle = C.bg; b.fillRect(0, 0, W, H);
+  b.font = FONT; b.textBaseline = 'middle';
+  // horizontal grid + price labels
+  const lo = s.base + pxToY(plotH - 4), hi = s.base + pxToY(TOPPAD - 6);
+  const ystep = niceStep((hi - lo) / Math.max(2, plotH / 54));
+  const dec = Math.min(s.m.prec, Math.max(0, -Math.floor(Math.log10(ystep))));
+  b.fillStyle = C.panel; b.fillRect(plotW, 0, AXW, H); b.fillRect(0, plotH, plotW, AXH);
+  b.strokeStyle = C.grid; b.lineWidth = 1; b.beginPath();
+  b.fillStyle = C.muted; b.textAlign = 'left';
+  for (let v = Math.ceil(lo / ystep) * ystep; v <= hi; v += ystep) {
+    const py = Math.round(yToPx(v - s.base)) + 0.5;
+    if (py < 4 || py > plotH - 2) continue;
+    b.moveTo(0, py); b.lineTo(plotW, py);
+    b.fillText(fmt(v, dec), plotW + 8, py);
+  }
+  // vertical grid + time labels
+  const pxPerSec = plotW / (view.x1 - view.x0);
+  let tstep = TSTEPS[TSTEPS.length - 1];
+  for (const t of TSTEPS) if (t * pxPerSec >= 92) { tstep = t; break; }
+  const tzOff = -new Date().getTimezoneOffset() * 60;   // align steps to local clock
+  const abs0 = s.t0s + view.x0 + tzOff, abs1 = s.t0s + view.x1 + tzOff;
+  b.textAlign = 'center'; b.textBaseline = 'middle';
+  for (let t = Math.ceil(abs0 / tstep) * tstep; t <= abs1; t += tstep) {
+    const px = Math.round(xToPx(t - tzOff - s.t0s)) + 0.5;
+    b.moveTo(px, 0); b.lineTo(px, plotH);
+    if (px > 24 && px < plotW - 24) b.fillText(fmtTime(t - tzOff, tstep), px, plotH + AXH / 2);
+  }
+  b.stroke();
+  b.strokeStyle = C.rule; b.beginPath();
+  b.moveTo(plotW + 0.5, 0); b.lineTo(plotW + 0.5, H); b.moveTo(0, plotH + 0.5); b.lineTo(W, plotH + 0.5); b.stroke();
+}
+
+/* Line: min/max per pixel column so 100k points become ~4 segments per column. */
+let lineFirstX = 0, lineLastX = 0;
+function buildLine(from, to) {
+  const s = active, xs = s.xs, ys = s.ys, path = new Path2D();
+  const kx = plotW / (view.x1 - view.x0), x0 = view.x0;
+  const ky = (plotH - TOPPAD - 8) / (view.y1 - view.y0), y1 = view.y1;
+  let col = -1e9, cnt = 0, fy = 0, mn = 0, mx = 0, ly = 0, lx = 0, started = false;
+  const put = (x, y) => { if (started) path.lineTo(x, y); else { path.moveTo(x, y); started = true; lineFirstX = x; } lineLastX = x; };
+  const flush = () => {
+    if (cnt === 1) put(lx, ly);
+    else { const x = col + 0.5; put(x, fy); put(x, mn); put(x, mx); put(x, ly); }
+  };
+  for (let i = from; i <= to; i++) {
+    const px = (xs[i] - x0) * kx, py = TOPPAD + (y1 - ys[i]) * ky, c = Math.floor(px);
+    if (c !== col) { if (cnt) flush(); col = c; cnt = 1; fy = mn = mx = ly = py; lx = px; }
+    else { cnt++; if (py < mn) mn = py; if (py > mx) mx = py; ly = py; lx = px; }
+  }
+  if (cnt) flush();
+  return path;
+}
+function drawLine(c, from, to) {
+  const path = buildLine(from, to);
+  const fill = new Path2D(path);
+  fill.lineTo(lineLastX, plotH); fill.lineTo(lineFirstX, plotH); fill.closePath();
+  const g = c.createLinearGradient(0, TOPPAD, 0, plotH);
+  g.addColorStop(0, C.fill); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.fill(fill);
+  c.strokeStyle = C.line; c.lineWidth = 1.5; c.lineJoin = 'round'; c.stroke(path);
+}
+/* Candles aggregate straight from the typed arrays into four Path2Ds. */
+function drawCandles(c, from, to) {
+  const s = active, xs = s.xs, ys = s.ys, tf = tfEff;
+  const pxPerSec = plotW / (view.x1 - view.x0), cw = tf * pxPerSec, bw = Math.max(1, Math.floor(cw * 0.72));
+  const upW = new Path2D(), upB = new Path2D(), dnW = new Path2D(), dnB = new Path2D();
+  let bucket = NaN, o = 0, h = 0, l = 0, cl = 0;
+  const flush = () => {
+    const x = Math.round(xToPx(bucket * tf + tf / 2)) + 0.5, up = cl >= o;
+    const W_ = up ? upW : dnW, B_ = up ? upB : dnB;
+    W_.moveTo(x, yToPx(h)); W_.lineTo(x, yToPx(l));
+    if (bw >= 3) { const yo = yToPx(o), yc = yToPx(cl); B_.rect(x - 0.5 - (bw >> 1), Math.min(yo, yc), bw, Math.max(1, Math.abs(yc - yo))); }
+  };
+  for (let i = from; i <= to; i++) {
+    const bk = Math.floor(xs[i] / tf), y = ys[i];
+    if (bk !== bucket) { if (bucket === bucket) flush(); bucket = bk; o = h = l = cl = y; }
+    else { if (y > h) h = y; if (y < l) l = y; cl = y; }
+  }
+  if (bucket === bucket) flush();
+  c.lineWidth = bw >= 3 ? 1 : bw;
+  c.strokeStyle = C.up; c.stroke(upW); c.fillStyle = C.up; c.fill(upB);
+  c.strokeStyle = C.down; c.stroke(dnW); c.fillStyle = C.down; c.fill(dnB);
+}
+function drawSeries(c, from, to) { if (tfEff) drawCandles(c, from, to); else drawLine(c, from, to); }
+
+const rstats = { full: 0, tail: 0, frames: 0, drawMs: 0, fps: 0, lastFpsT: 0, lastFpsF: 0 };
+function drawFull() {
+  ctx.drawImage(bg, 0, 0, W, H);
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, plotW, plotH); ctx.clip();
+  const [a, b] = visibleRange();
+  drawSeries(ctx, a, b);
+  ctx.restore();
+  lastDrawn = active.n - 1; rstats.full++;
+}
+function drawTail() {
+  const s = active, xl = s.xs[lastDrawn];
+  let tailX, from;
+  if (tfEff) { const bs = Math.floor(xl / tfEff) * tfEff; tailX = Math.floor(xToPx(bs)) - 2; from = lowerBound(s.xs, s.n, bs); }
+  else { tailX = Math.floor(xToPx(xl)) - 1; from = Math.max(0, lowerBound(s.xs, s.n, pxToX(tailX)) - 1); }
+  tailX = Math.max(0, tailX);
+  const w = plotW - tailX;
+  ctx.save(); ctx.beginPath(); ctx.rect(tailX, 0, w, plotH); ctx.clip();
+  ctx.drawImage(bg, tailX * DPR, 0, w * DPR, plotH * DPR, tailX, 0, w, plotH);
+  drawSeries(ctx, from, s.n - 1);
+  ctx.restore();
+  lastDrawn = s.n - 1; rstats.tail++;
+}
+
+function drawOverlay() {
+  const s = active, c = octx;
+  c.clearRect(0, 0, W, H);
+  if (!s || s.n < 2) return;
+  c.font = FONT; c.textBaseline = 'middle';
+  const dec = s.m.prec;
+  // current-tick marker
+  const ly = s.ys[s.n - 1], lp = Math.round(yToPx(ly)) + 0.5, lx = xToPx(s.xs[s.n - 1]);
+  const up = ly >= s.prevY, col = up ? C.up : C.down;
+  if (lp > 0 && lp < plotH) {
+    c.strokeStyle = col; c.setLineDash([2, 3]); c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0, lp); c.lineTo(plotW, lp); c.stroke(); c.setLineDash([]);
+    if (!tfEff && lx >= 0 && lx <= plotW) { c.fillStyle = col; c.beginPath(); c.arc(lx, lp, 3, 0, 6.2832); c.fill(); }
+    tag(c, plotW, lp, fmt(s.base + ly, dec), col, C['tag-fg']);
+  }
+  // crosshair
+  let hx = null;
+  if (mouse.in && mouse.x < plotW && mouse.y < plotH) {
+    c.strokeStyle = C.cross; c.setLineDash([4, 4]); c.beginPath();
+    c.moveTo(Math.round(mouse.x) + 0.5, 0); c.lineTo(Math.round(mouse.x) + 0.5, plotH);
+    c.moveTo(0, Math.round(mouse.y) + 0.5); c.lineTo(plotW, Math.round(mouse.y) + 0.5); c.stroke(); c.setLineDash([]);
+    tag(c, plotW, mouse.y, fmt(s.base + pxToY(mouse.y), dec), C.raise, C.fg);
+    hx = pxToX(mouse.x);
+    const lbl = fmtFull(s.t0s + hx), tw = c.measureText(lbl).width + 14;
+    const bx = Math.min(Math.max(0, mouse.x - tw / 2), plotW - tw);
+    c.fillStyle = C.raise; c.fillRect(bx, plotH + 1, tw, AXH - 2);
+    c.fillStyle = C.fg; c.textAlign = 'center'; c.fillText(lbl, bx + tw / 2, plotH + AXH / 2);
+  }
+  // legend
+  c.textAlign = 'left'; c.font = FONT_B;
+  let x = 10; const y = 15;
+  const seg = (t, color) => { c.fillStyle = color; c.fillText(t, x, y); x += c.measureText(t).width + 10; };
+  seg(s.m.label + ' · ' + (tfEff ? (tfEff >= 3600 ? tfEff / 3600 + 'h' : tfEff / 60 + 'm') : 'tick line'), C.fg);
+  if (tfEff) {
+    const bk = Math.floor((hx ?? s.xs[s.n - 1]) / tfEff) * tfEff;
+    let i = lowerBound(s.xs, s.n, bk), o, h = -Infinity, l = Infinity, cl;
+    for (; i < s.n && s.xs[i] < bk + tfEff; i++) { const v = s.ys[i]; if (o === undefined) o = v; if (v > h) h = v; if (v < l) l = v; cl = v; }
+    if (o !== undefined) {
+      const k = cl >= o ? C.up : C.down;
+      seg('O ' + fmt(s.base + o, dec), k); seg('H ' + fmt(s.base + h, dec), k); seg('L ' + fmt(s.base + l, dec), k); seg('C ' + fmt(s.base + cl, dec), k);
+    }
+  } else {
+    const i = hx === null ? s.n - 1 : Math.min(s.n - 1, Math.max(0, lowerBound(s.xs, s.n, hx)));
+    seg(fmt(s.base + s.ys[i], dec), C.line);
+    seg(fmtFull(s.t0s + s.xs[i]), C.muted);
+  }
+}
+function tag(c, x, y, text, fill, color) {
+  c.font = FONT;
+  c.fillStyle = fill; c.fillRect(x + 1, y - 9, AXW - 2, 18);
+  c.fillStyle = color; c.textAlign = 'left'; c.fillText(text, x + 8, y);
+}
+
+function frame() {
+  requestAnimationFrame(frame);
+  const s = active; if (!s) return;
+  const t = performance.now();
+  if (s.n - 1 > lastDrawn && lastDrawn >= 0) {
+    const span = view.x1 - view.x0, lastX = s.xs[s.n - 1];
+    if (view.follow && lastX > view.x1 - span * 0.03) { view.x1 = lastX + span * 0.22; view.x0 = view.x1 - span; viewChanged = true; }
+    for (let i = lastDrawn + 1; i < s.n; i++) { const y = s.ys[i]; if (y < view.y0 || y > view.y1) { viewChanged = true; break; } }
+    if (lastX > view.x1) dataDirty = false;   // off-screen to the right: nothing to draw
+    overDirty = true;
+  }
+  if (viewChanged) { tfEff = pickTf(); fitY(); bgDirty = true; viewChanged = false; }
+  if (bgDirty) { drawBg(); bgDirty = false; fullDirty = true; }
+  if (fullDirty) { drawFull(); fullDirty = false; dataDirty = false; }
+  else if (dataDirty && lastDrawn < s.n - 1) { drawTail(); dataDirty = false; }
+  if (overDirty) { drawOverlay(); overDirty = false; }
+  const dt = performance.now() - t;
+  rstats.drawMs = rstats.drawMs * 0.95 + dt * 0.05;
+  rstats.frames++;
+}
+
+/* =========================================================================
+   Interaction
+   ========================================================================= */
+const pointers = new Map();
+let pinchD = 0, dragX = null;
+function setFollow(on) {
+  view.follow = on;
+  $('btnLive').hidden = on;
+  $('liveChip').classList.toggle('paused', !on);
+  $('liveText').textContent = on ? 'LIVE' : 'PAUSED VIEW';
+}
+function goLive() {
+  if (!active) return;
+  const s = active, span = view.x1 - view.x0;
+  view.x1 = s.xs[s.n - 1] + span * 0.15; view.x0 = view.x1 - span;
+  setFollow(true); viewChanged = true;
+}
+function clampView() {
+  if (!active) return;
+  const s = active, span = view.x1 - view.x0;
+  const minX = s.xs[0] - span * 0.5, maxX = s.xs[s.n - 1] + span * 0.5;
+  if (view.x0 < minX) { view.x0 = minX; view.x1 = minX + span; }
+  if (view.x1 > maxX) { view.x1 = maxX; view.x0 = maxX - span; }
+}
+function zoomAt(px, f) {
+  const span = view.x1 - view.x0;
+  const ns = Math.min(40 * 86400, Math.max(20, span * f));
+  if (view.follow) { view.x0 = view.x1 - ns; }
+  else { const ax = pxToX(px), r = px / plotW; view.x0 = ax - ns * r; view.x1 = view.x0 + ns; }
+  clampView(); viewChanged = true;
+}
+function pan(dpx) {
+  const d = dpx * (view.x1 - view.x0) / plotW;
+  view.x0 -= d; view.x1 -= d; clampView();
+  if (view.follow && dpx !== 0) setFollow(false);
+  viewChanged = true;
+}
+const local = (e) => { const r = chartEl.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+chartEl.addEventListener('pointerdown', (e) => {
+  chartEl.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, local(e));
+  if (pointers.size === 1) dragX = local(e)[0];
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchD = Math.hypot(a[0] - b[0], a[1] - b[1]); }
+});
+chartEl.addEventListener('pointermove', (e) => {
+  const [x, y] = local(e);
+  mouse.in = true; mouse.x = x; mouse.y = y; overDirty = true;
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, [x, y]);
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (pinchD > 0 && d > 0) zoomAt((a[0] + b[0]) / 2, pinchD / d);
+    pinchD = d;
+  } else if (dragX !== null) { pan(x - dragX); dragX = x; }
+});
+const endPtr = (e) => { pointers.delete(e.pointerId); dragX = pointers.size === 1 ? [...pointers.values()][0][0] : null; if (pointers.size < 2) pinchD = 0; };
+chartEl.addEventListener('pointerup', endPtr);
+chartEl.addEventListener('pointercancel', endPtr);
+chartEl.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { mouse.in = false; overDirty = true; } });
+chartEl.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const [x] = local(e);
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) pan(-e.deltaX);
+  else zoomAt(x, Math.exp(e.deltaY * 0.0015));
+}, { passive: false });
+chartEl.addEventListener('dblclick', goLive);
+chartEl.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') pan(plotW * 0.1);
+  else if (e.key === 'ArrowRight') pan(-plotW * 0.1);
+  else if (e.key === '+' || e.key === '=') zoomAt(plotW / 2, 0.8);
+  else if (e.key === '-' || e.key === '_') zoomAt(plotW / 2, 1.25);
+  else if (e.key === 'l' || e.key === 'L') goLive();
+  else return;
+  e.preventDefault();
+});
+$('btnLive').addEventListener('click', goLive);
+
+$('segKind').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  for (const x of $('segKind').children) x.setAttribute('aria-pressed', String(x === b));
+  view.tf = +b.dataset.tf;
+  const span = view.x1 - view.x0, want = view.tf ? Math.max(span, view.tf * 90) : Math.min(span, 4 * 3600);
+  if (view.follow) { view.x0 = view.x1 - want; } else { const mid = (view.x0 + view.x1) / 2; view.x0 = mid - want / 2; view.x1 = mid + want / 2; }
+  clampView(); viewChanged = true;
+});
+$('segRate').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  for (const x of $('segRate').children) x.setAttribute('aria-pressed', String(x === b));
+  worker && worker.postMessage({ type: 'rate', rate: +b.dataset.rate });
+});
+$('btnForge').addEventListener('click', () => { worker && worker.postMessage({ type: 'forge', id: active.m.id }); });
+
+new ResizeObserver(resize).observe(chartEl);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* =========================================================================
+   Symbol switching = resolving a name. Second visit is a cache hit.
+   ========================================================================= */
+const symBtns = new Map();
+for (const m of MARKETS) {
+  const b = document.createElement('button');
+  b.textContent = m.label; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', 'false');
+  b.addEventListener('click', () => switchTo(m.id));
+  $('syms').appendChild(b); symBtns.set(m.id, b);
+}
+function showTrace(r) {
+  const ul = $('rTrace'); ul.textContent = '';
+  const row = (l, rr, html) => { const li = document.createElement('li'); const a = document.createElement('span'); const b = document.createElement('span'); if (html) a.innerHTML = l; else a.textContent = l; b.textContent = rr; li.append(a, b); ul.appendChild(li); };
+  row('chart.' + r.f.R + ' → CHART record', r.f.sigOk ? 'sig ok' : 'sig bad');
+  row('D → ' + shortCid(r.f.D), '');
+  row(r.hit ? '<span class="tag hit">CACHE HIT</span> RAM read' : '<span class="tag miss">MISS</span> pin store fetch', '', true);
+  if (!r.hit) {
+    row('gunzip', r.timing.gunzip.toFixed(2) + ' ms');
+    row('verify sha-256 = CID', r.timing.verify.toFixed(2) + ' ms');
+    row('decode → Float64/32Array', r.timing.decode.toFixed(2) + ' ms');
+  }
+  row(fmt(r.dec.n, 0) + ' points ready', r.total.toFixed(2) + ' ms');
+  $('rName').textContent = 'chart.' + r.f.R;
+  renderRecord(r.rec);
+}
+function renderRecord(rec) {
+  const pre = $('recChart'); pre.textContent = '';
+  const parts = rec.split('-');
+  parts.forEach((p, i) => {
+    if (i) pre.append('-');
+    if (i === 0 || i % 2 === 1) { const k = document.createElement('span'); k.className = 'k'; k.textContent = p; pre.appendChild(k); }
+    else pre.append(p.length > 24 ? shortCid(p) : p);
+  });
+}
+async function switchTo(id) {
+  const r = await resolveChart('chart.' + id);
+  const s = series.get(id) || makeSeries(MARKETS.find((m) => m.id === id), r.dec, r.rec);
+  active = s;
+  for (const [k, b] of symBtns) b.setAttribute('aria-selected', String(k === id));
+  chartEl.setAttribute('aria-label', 'Live ' + s.m.label + ' price chart');
+  const span = view.x1 - view.x0 > 1 ? view.x1 - view.x0 : 2 * 3600;
+  view.x1 = s.xs[s.n - 1] + span * 0.15; view.x0 = view.x1 - span;
+  setFollow(true); viewChanged = true; overDirty = true; lastDrawn = -1;
+  tapeList.length = 0;
+  showTrace(r);
+  return r;
+}
+
+/* =========================================================================
+   Sidebar: DOM updates at 4 Hz so the stream never waits on layout.
+   ========================================================================= */
+const tapeList = [];
+let lastStatT = performance.now(), lastTicks = 0, lastBytes = 0, lastParse = 0, lastParsed = 0, lastQuote = NaN, lastFull = 0, lastTail = 0;
+function fmtBytes(n) { return n < 1024 ? fmt(n, 0) + ' B' : n < 1048576 ? fmt(n / 1024, 1) + ' KB' : fmt(n / 1048576, 2) + ' MB'; }
+function updateStats() {
+  const s = active; if (!s) return;
+  const now = performance.now(), dt = (now - lastStatT) / 1000;
+  const dT = stats.ticks - lastTicks, dB = stats.bytes - lastBytes, dP = stats.parseMs - lastParse;
+  $('sTps').textContent = fmt(dT / dt, 0) + ' ticks/s';
+  $('sWire').textContent = fmtBytes(dB / dt) + '/s';
+  $('sBpt').textContent = dT ? fmt(dB / dT, 1) + ' B' : '—';
+  $('sSig').innerHTML = '<span class="ok">' + fmt(stats.ok, 0) + '</span> / <span class="' + (stats.bad ? 'bad' : 'dim') + '">' + fmt(stats.bad, 0) + '</span>';
+  $('sPts').textContent = fmt(s.n, 0) + ' · ' + fmtBytes(s.n * 12);
+  const frames = rstats.frames - rstats.lastFpsF;
+  $('sFps').textContent = fmt(frames / dt, 0) + ' fps';
+  $('sDraw').textContent = fmt(rstats.drawMs, 2) + ' ms';
+  $('sFull').textContent = fmt(rstats.full, 0);
+  $('sTail').textContent = fmt(rstats.tail, 0);
+  const df = rstats.full - lastFull, dtl = rstats.tail - lastTail;
+  $('sTailBar').style.width = (df + dtl ? (dtl / (df + dtl)) * 100 : 0).toFixed(0) + '%';
+  lastFull = rstats.full; lastTail = rstats.tail;
+  rstats.lastFpsF = rstats.frames;
+  lastStatT = now; lastTicks = stats.ticks; lastBytes = stats.bytes; lastParse = stats.parseMs;
+
+  // quote
+  const price = s.base + s.ys[s.n - 1];
+  const qp = $('qPrice');
+  qp.textContent = fmt(price, s.m.prec);
+  if (price !== lastQuote && lastQuote === lastQuote) qp.className = 'qprice ' + (price > lastQuote ? 'up' : 'down');
+  lastQuote = price;
+  const i24 = lowerBound(s.xs, s.n, s.xs[s.n - 1] - 86400);
+  const p24 = s.base + s.ys[i24], ch = (price / p24 - 1) * 100;
+  const pill = $('qChg'); pill.textContent = (ch >= 0 ? '+' : '') + fmt(ch, 2) + '% 24h'; pill.className = 'pill ' + (ch >= 0 ? 'up' : 'down');
+
+  // tape
+  if (tapeFresh) {
+    tapeList.unshift([tapeOk, tapeSrc.slice(tapeA, tapeB)]); tapeFresh = false;
+    if (tapeList.length > 6) tapeList.length = 6;
+    const ul = $('tape'); ul.textContent = '';
+    for (const [ok, t] of tapeList) {
+      const li = document.createElement('li'); const a = document.createElement('span'), b = document.createElement('span');
+      a.textContent = ok ? '✓' : '✗'; a.className = ok ? 'ok' : 'bad'; b.textContent = t; b.title = t; li.append(a, b); ul.appendChild(li);
+    }
+  }
+}
+setInterval(updateStats, 250);
+setInterval(() => {
+  const s = active; if (!s) return;
+  const i24 = lowerBound(s.xs, s.n, s.xs[s.n - 1] - 86400);
+  let lo = Infinity, hi = -Infinity; for (let i = i24; i < s.n; i++) { const y = s.ys[i]; if (y < lo) lo = y; if (y > hi) hi = y; }
+  $('srSummary').textContent = s.m.label + ' last ' + fmt(s.base + s.ys[s.n - 1], s.m.prec) + ', 24 hour range ' + fmt(s.base + lo, s.m.prec) + ' to ' + fmt(s.base + hi, s.m.prec) + '.';
+}, 5000);
+
+/* =========================================================================
+   Boot: publish three charts, resolve BTC, paint, then stream.
+   ========================================================================= */
+async function publish(m, endMs) {
+  const { tMs, q } = synth(m, endMs);
+  const raw = encodeLine(tMs, q, HIST_N, m.prec);
+  const [gz, cid] = await Promise.all([gzip(raw), cidOf(raw)]);
+  pinStore.set(cid, gz);
+  const axT = await cidOf(new TextEncoder().encode('axis:time:utc:s'));
+  const axP = await cidOf(new TextEncoder().encode('axis:price:usdt:' + m.prec));
+  const t0 = Math.floor(tMs[0] / 1000), t1 = Math.ceil(tMs[HIST_N - 1] / 1000);
+  const body = `CHART-I-${AUTHOR}-R-${m.id}-K-line-AX-${axT}.${axP}-D-${cid}-T-${t0}-T-${t1}`;
+  registry.set('chart.' + m.id, body + '-SIG-' + sign(body));
+  return { raw, gz, tMs, q, t0 };
+}
+
+async function boot() {
+  readTheme(); resize();
+  const endMs = Date.now() - 400;
+  const pubs = {};
+  for (const m of MARKETS) pubs[m.id] = await publish(m, endMs);
+
+  // client: name -> record -> CID -> blob -> typed arrays -> first frame
+  const tc = performance.now();
+  const r = await switchTo('btcusdt');
+  tfEff = pickTf(); fitY(); drawBg(); drawFull(); drawOverlay();
+  bgDirty = fullDirty = viewChanged = overDirty = false;
+  const firstFrame = performance.now() - tc;
+  requestAnimationFrame(frame);
+
+  // warm the other charts (misses now, hits when you switch)
+  for (const m of MARKETS.slice(1)) { const rr = await resolveChart('chart.' + m.id); makeSeries(m, rr.dec, rr.rec); }
+
+  // stream
+  worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+  worker.onmessage = (e) => onWire(e.data);
+  worker.postMessage({ type: 'init', key: KEY, lastTs: endMs, syms: MARKETS.map((m) => { const s = series.get(m.id); return { id: m.id, p: s.base + s.ys[s.n - 1], vol: m.vol, scale: 10 ** m.prec }; }) });
+
+  // parser benchmark: 50k signed ticks for an unsubscribed chart (verified, then dropped)
+  {
+    let wire = '';
+    for (let i = 0; i < 50000; i++) { const body = 'TICK-R-benchusdt-S-last-T-' + (endMs + i) + '-V-' + (6400000 + (i % 977)); wire += body + '-SIG-' + sign(body) + '\n'; }
+    let i = 0, n = 0; const L = wire.length, a = performance.now();
+    while (i < L) { let e = wire.indexOf('\n', i); if (e < 0) e = L; if (parseTick(wire, i, e) === 0) n++; i = e + 1; }
+    $('sParse').textContent = fmt((performance.now() - a) / n * 1e6, 0) + ' ns';
+  }
+
+  // cold-load comparison against the equivalent JSON payload
+  setTimeout(async () => {
+    const p = pubs.btcusdt, sc = 10 ** MARKETS[0].prec;
+    const rows = new Array(HIST_N);
+    for (let i = 0; i < HIST_N; i++) rows[i] = { t: p.tMs[i], p: p.q[i] / sc };
+    const json = JSON.stringify(rows);
+    const jbytes = new TextEncoder().encode(json);
+    const jgz = await gzip(jbytes);
+    let a = performance.now();
+    const parsed = JSON.parse(json);
+    const pts = parsed.map((o) => ({ x: o.t / 1000 - p.t0, y: o.p }));
+    const jsonMs = performance.now() - a;
+    a = performance.now();
+    const raw = await gunzip(p.gz); decodeLine(raw);
+    const flxMs = performance.now() - a;
+    $('bTitle').textContent = 'BTC/USDT · ' + fmt(HIST_N, 0) + ' pts';
+    $('bJsonRaw').textContent = fmtBytes(jbytes.byteLength);
+    $('bFlxRaw').textContent = fmtBytes(p.raw.byteLength);
+    $('bJsonGz').textContent = hasCS ? fmtBytes(jgz.byteLength) : 'n/a';
+    $('bFlxGz').textContent = hasCS ? fmtBytes(p.gz.byteLength) : 'n/a';
+    $('bJsonMs').textContent = fmt(jsonMs, 1) + ' ms';
+    $('bFlxMs').textContent = fmt(flxMs, 1) + ' ms';
+    $('bPaint').textContent = fmt(firstFrame, 1) + ' ms';
+    if (pts.length !== HIST_N) console.warn('json check');
+  }, 600);
+}
+boot().catch((err) => { console.error(err); $('rTrace').textContent = 'Boot failed: ' + err.message; });
+})();
+</script>
+</body>
+</html>
