@@ -1,0 +1,1836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--head-end-->
+<title>Flux Launch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: inspection desk. Token board (left) · selected token: pool, chart, ticket (centre) · safety file (right). */
+:root {
+  --bg: #edf1ef;
+  --panel: #ffffff;
+  --sunk: #f4f7f5;
+  --rule: #d4ddd8;
+  --ink: #10201b;
+  --muted: #586a63;
+  --accent: #1d6b58;
+  --accent-ink: #ffffff;
+  --up: #14865a;
+  --down: #c23f2b;
+  --warn: #b6761a;
+  --shield: #5a46c2;
+  --gA: #14865a; --gB: #5f9223; --gC: #bf8712; --gD: #c23f2b;
+  --halt: rgba(182, 118, 26, 0.14);
+  --fair: rgba(29, 107, 88, 0.09);
+  --liq: rgba(29, 107, 88, 0.30);
+  --font-display: "Bricolage Grotesque", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0c1311; --panel: #121b18; --sunk: #0f1714; --rule: #24322d; --ink: #e2ebe7; --muted: #8b9d96;
+    --accent: #4dbd9d; --accent-ink: #06110d; --up: #3cc489; --down: #f0715c; --warn: #e0a54a; --shield: #a090ff;
+    --gA: #3cc489; --gB: #96c34a; --gC: #e0a54a; --gD: #f0715c;
+    --halt: rgba(224, 165, 74, 0.15); --fair: rgba(77, 189, 157, 0.10); --liq: rgba(77, 189, 157, 0.32);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0c1311; --panel: #121b18; --sunk: #0f1714; --rule: #24322d; --ink: #e2ebe7; --muted: #8b9d96;
+  --accent: #4dbd9d; --accent-ink: #06110d; --up: #3cc489; --down: #f0715c; --warn: #e0a54a; --shield: #a090ff;
+  --gA: #3cc489; --gB: #96c34a; --gC: #e0a54a; --gD: #f0715c;
+  --halt: rgba(224, 165, 74, 0.15); --fair: rgba(77, 189, 157, 0.10); --liq: rgba(77, 189, 157, 0.32);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); }
+body { margin: 0; font: 400 14px/1.45 var(--font-body); }
+.app { max-width: 1560px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 32px; display: grid; gap: 12px; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 30px; height: 34px; flex: none; }
+.mark { font: 800 24px/1 var(--font-display); letter-spacing: -0.02em; }
+.tagline { font: 500 12px/1.2 var(--font-body); color: var(--muted); }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; }
+.metrics div { display: grid; gap: 1px; }
+.metrics dt { font: 600 10.5px/1 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.metrics dd { margin: 0; font: 500 17px/1.2 var(--font-data); font-variant-numeric: tabular-nums; }
+.metrics .shield dd { color: var(--shield); }
+.walletbox { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.wallet { display: grid; text-align: right; }
+.wallet b { font: 500 16px/1.2 var(--font-data); }
+.wallet span { font: 400 12px/1.2 var(--font-data); color: var(--muted); }
+.btn { border: 1px solid var(--rule); background: var(--panel); border-radius: 7px; padding: 8px 13px; font-weight: 600; font-size: 13px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.small { padding: 4px 9px; font-size: 12px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* blocked strip */
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 8px 12px; border: 1px dashed var(--shield); border-radius: 8px; background: var(--panel); }
+.strip > b { font: 600 12px/1 var(--font-body); color: var(--shield); letter-spacing: 0.04em; margin-right: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font: 500 11.5px/1 var(--font-data); padding: 4px 7px; border-radius: 99px; background: var(--sunk); border: 1px solid var(--rule); white-space: nowrap; }
+.chip i { font-style: normal; color: var(--muted); }
+.strip .note { font: 400 12px/1.3 var(--font-body); color: var(--muted); margin-left: auto; }
+
+/* layout */
+.layout { display: grid; grid-template-columns: 320px minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
+@media (max-width: 1240px) { .layout { grid-template-columns: 300px minmax(0, 1fr); } .safety { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }
+@media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } .walletbox { margin-left: 0; } }
+section, aside { min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; }
+h2 { margin: 0; font: 600 11px/1 var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* board */
+.board { display: grid; gap: 8px; }
+.boardhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.boardhead select { border: 1px solid var(--rule); background: var(--panel); border-radius: 6px; padding: 5px 6px; font-size: 12.5px; }
+.cards { display: grid; gap: 6px; }
+.card-tok { display: grid; grid-template-columns: 34px minmax(0, 1fr) 92px; gap: 4px 10px; align-items: center; padding: 10px; background: var(--panel); border: 1px solid var(--rule); border-radius: 9px; text-align: left; width: 100%; }
+.card-tok:hover { border-color: var(--muted); }
+.card-tok[aria-current="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.card-tok.risky { opacity: .72; }
+.grade { display: grid; place-items: center; width: 34px; height: 38px; border-radius: 6px; font: 800 20px/1 var(--font-display); color: var(--accent-ink); grid-row: span 2; }
+.grade.A { background: var(--gA); } .grade.B { background: var(--gB); } .grade.C { background: var(--gC); } .grade.D { background: var(--gD); }
+.ct-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.ct-tick { font: 700 15px/1.1 var(--font-display); }
+.ct-name { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ct-age { margin-left: auto; font: 400 11px/1 var(--font-data); color: var(--muted); }
+.ct-mid { display: flex; align-items: baseline; gap: 8px; font: 500 12.5px/1.2 var(--font-data); font-variant-numeric: tabular-nums; }
+.ct-spark { grid-row: span 2; width: 92px; height: 34px; display: block; }
+.ct-bot { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; justify-content: space-between; font: 400 11.5px/1 var(--font-data); color: var(--muted); }
+.status { font: 600 10.5px/1 var(--font-data); padding: 3px 6px; border-radius: 4px; white-space: nowrap; letter-spacing: 0.02em; border: 1px solid currentColor; }
+.status.fair { color: var(--accent); } .status.live { color: var(--up); } .status.halt { color: var(--warn); }
+.up { color: var(--up); } .down { color: var(--down); } .muted { color: var(--muted); } .warn { color: var(--warn); } .shieldc { color: var(--shield); }
+.hiddennote { margin: 0; font-size: 12px; color: var(--muted); }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+/* detail */
+.detail { display: grid; gap: 10px; }
+.dhead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 16px; }
+.dhead .grade { width: 44px; height: 50px; font-size: 27px; grid-row: auto; }
+.dname { display: grid; gap: 2px; min-width: 0; flex: 1 1 200px; }
+.dname h1 { margin: 0; font: 800 26px/1.05 var(--font-display); letter-spacing: -0.02em; text-wrap: balance; }
+.dname span { color: var(--muted); font-size: 13px; }
+.dfig { display: flex; gap: 22px; flex-wrap: wrap; margin: 0; }
+.dfig div { display: grid; gap: 2px; text-align: right; }
+.dfig dt { font: 600 10.5px/1 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.dfig dd { margin: 0; font: 500 18px/1.15 var(--font-data); font-variant-numeric: tabular-nums; }
+
+.pool { padding: 12px 14px; display: grid; gap: 10px; }
+.poolhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.poolhead b { font: 700 15px/1.2 var(--font-display); }
+.poolgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; align-items: start; }
+@media (max-width: 1000px) { .poolgrid { grid-template-columns: minmax(0, 1fr); } }
+.curve { padding: 12px 14px; display: grid; gap: 9px; }
+.bigprog { height: 10px; background: var(--sunk); border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+.bigprog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+.crow { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+.prog { flex: 1; height: 5px; background: var(--sunk); border-radius: 3px; overflow: hidden; border: 1px solid var(--rule); max-width: 90px; }
+.prog i { display: block; height: 100%; background: var(--accent); width: 0; }
+.status.oncurve { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .bigprog i { transition: none; } }
+.liq { position: relative; height: 130px; }
+.liq canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.liqcap { font-size: 11.5px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.liqcap span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: var(--liq); }
+.liqcap span.lyou::before { background: var(--shield); }
+.liqcap span.lnow::before { background: var(--ink); width: 2px; }
+
+.chartwrap { padding: 10px 10px 8px; display: grid; gap: 6px; }
+.chartbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-inline: 4px; }
+.seg { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; border-right: 1px solid var(--rule); background: var(--panel); padding: 5px 10px; font: 500 12px/1 var(--font-data); color: var(--muted); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { color: var(--ink); background: var(--sunk); box-shadow: inset 0 -2px 0 var(--accent); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font: 400 11.5px/1 var(--font-data); color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.legend .lf::before { background: var(--fair); border: 1px solid var(--accent); }
+.legend .lh::before { background: var(--halt); border: 1px solid var(--warn); }
+.legend .lm::before { background: var(--shield); width: 2px; }
+.chart { position: relative; height: clamp(260px, 42vh, 440px); touch-action: pan-y; cursor: crosshair; }
+.chart canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.tradegrid { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 10px; align-items: start; }
+@media (max-width: 1000px) { .tradegrid { grid-template-columns: minmax(0, 1fr); } }
+.ticket { padding: 12px 14px; display: grid; gap: 10px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.tabs button { border: 0; border-right: 1px solid var(--rule); background: var(--panel); padding: 8px; font-weight: 600; color: var(--muted); }
+.tabs button:last-child { border-right: 0; }
+.tabs button[aria-selected="true"].buy { background: var(--up); color: var(--accent-ink); }
+.tabs button[aria-selected="true"].sell { background: var(--down); color: var(--accent-ink); }
+.tabs button[aria-selected="true"].lp { background: var(--shield); color: var(--accent-ink); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.presets button { border: 1px solid var(--rule); background: var(--sunk); border-radius: 6px; padding: 5px 9px; font: 500 12px/1 var(--font-data); }
+.presets button[aria-pressed="true"] { border-color: var(--shield); color: var(--shield); }
+.amount { display: flex; align-items: center; border: 1px solid var(--rule); border-radius: 7px; background: var(--sunk); }
+.amount input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 9px 10px; font: 500 16px/1 var(--font-data); }
+.amount span { padding-inline: 10px; color: var(--muted); font: 500 12px/1 var(--font-data); }
+.quote { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; font-size: 12.5px; margin: 0; }
+.quote dd { margin: 0; text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.quote dt { color: var(--muted); }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; }
+.checks li { display: grid; grid-template-columns: 16px 1fr; gap: 6px; }
+.checks li.block { color: var(--down); } .checks li.wait { color: var(--warn); } .checks li.ok { color: var(--muted); }
+.result { min-height: 1.4em; margin: 0; font-size: 13px; font-weight: 500; }
+.pos { font-size: 12.5px; color: var(--muted); }
+.pos b { color: var(--ink); font-family: var(--font-data); font-weight: 500; }
+.mypos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mypos li { border: 1px solid var(--rule); border-radius: 7px; padding: 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: 12px; align-items: center; }
+.mypos .rng { font-family: var(--font-data); }
+.mypos .amts { grid-column: 1 / -1; color: var(--muted); font-family: var(--font-data); font-size: 11.5px; }
+
+.tapebox { padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.tape { width: 100%; border-collapse: collapse; font: 400 12px/1.3 var(--font-data); font-variant-numeric: tabular-nums; }
+.tape td { padding: 4px 6px 4px 0; border-top: 1px solid var(--rule); white-space: nowrap; }
+.tape td:last-child { white-space: normal; padding-right: 0; }
+.tapewrap { overflow-x: auto; }
+.res { font: 600 10.5px/1 var(--font-data); padding: 2px 5px; border-radius: 3px; }
+.res.ok { color: var(--up); border: 1px solid currentColor; }
+.res.q { color: var(--accent); border: 1px solid currentColor; }
+.res.blk { color: var(--accent-ink); background: var(--shield); }
+.res.info { color: var(--accent-ink); background: var(--accent); }
+.res.neu { color: var(--muted); border: 1px solid currentColor; }
+
+/* safety */
+.safety { display: grid; gap: 10px; align-items: start; }
+.sbox { padding: 12px 14px; display: grid; gap: 9px; }
+.sbox h2 { display: flex; justify-content: space-between; gap: 8px; }
+.sbox h2 em { font-style: normal; text-transform: none; letter-spacing: 0; color: var(--ink); font-family: var(--font-data); font-weight: 500; font-size: 12px; }
+.score { display: grid; gap: 5px; }
+.srow { display: grid; grid-template-columns: 118px 1fr 44px; gap: 8px; align-items: center; font-size: 12.5px; }
+.srow .bar { height: 6px; background: var(--sunk); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+.srow .bar i { display: block; height: 100%; background: var(--accent); }
+.srow .bar i.neg { background: var(--down); }
+.srow span:last-child { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--muted); }
+.guar { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.guar li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; font-size: 13px; }
+.guar li svg { width: 16px; height: 16px; margin-top: 2px; color: var(--up); }
+.guar small { display: block; color: var(--muted); font-size: 12px; }
+.guar small b { color: var(--shield); font-weight: 600; font-family: var(--font-data); }
+dl.kv { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 12.5px; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.vest { height: 8px; background: var(--sunk); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.vest i { display: block; height: 100%; background: var(--warn); width: 0; }
+.holders { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 400 12px/1.2 var(--font-data); }
+.holders li { display: grid; grid-template-columns: 76px 1fr 50px; gap: 8px; align-items: center; }
+.holders .bar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.holders .bar i { display: block; height: 100%; background: var(--muted); }
+.holders li.you .bar i { background: var(--accent); }
+.holders li span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.guard { display: grid; gap: 8px; font-size: 13px; }
+.guard label { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.guard select { border: 1px solid var(--rule); background: var(--sunk); border-radius: 6px; padding: 4px 6px; font-size: 12.5px; }
+pre.rec { margin: 0; font: 400 11px/1.5 var(--font-data); white-space: pre-wrap; word-break: break-all; background: var(--sunk); border: 1px solid var(--rule); border-radius: 6px; padding: 8px; max-height: 220px; overflow: auto; }
+pre.rec .k { color: var(--accent); font-weight: 500; }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 400 11.5px/1.35 var(--font-data); }
+.feed li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 6px; }
+.feed li span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+footer { font-size: 12.5px; color: var(--muted); max-width: 100ch; display: grid; gap: 6px; }
+footer b { color: var(--ink); }
+
+/* modal */
+.modal { position: fixed; inset: 0; background: rgba(8, 14, 12, 0.55); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.sheet { width: min(860px, 100%); max-height: calc(100% - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; display: grid; gap: 12px; }
+.sheet h3 { margin: 0; font: 800 22px/1.1 var(--font-display); }
+.sheet p { margin: 0; color: var(--muted); font-size: 13px; }
+.sheetgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 720px) { .sheetgrid { grid-template-columns: minmax(0, 1fr); } }
+.formcol, .paycol { display: grid; gap: 10px; min-width: 0; }
+.field { display: grid; gap: 4px; font-size: 13px; font-weight: 500; }
+.field input, .field textarea, .field select { border: 1px solid var(--rule); background: var(--sunk); border-radius: 7px; padding: 8px 10px; font-weight: 400; }
+.field small { color: var(--muted); font-weight: 400; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+.steps li .dot { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--rule); display: grid; place-items: center; font: 600 11px/1 var(--font-data); color: var(--muted); }
+.steps li.done .dot { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.steps li.fail .dot { background: var(--down); border-color: var(--down); color: var(--accent-ink); }
+.steps li small { display: block; color: var(--muted); font-family: var(--font-data); font-size: 11px; word-break: break-all; }
+.err { color: var(--down); font-size: 13px; margin: 0; min-height: 1.2em; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+<!--body-start-->
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 30 34" aria-hidden="true"><path d="M15 1 28 6v10c0 8.3-5.6 14.4-13 17C7.6 30.4 2 24.3 2 16V6z" fill="var(--accent)"/><path d="m9 17 4.2 4.2L21.5 12" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><div class="mark">Flux Launch</div><div class="tagline">Bonding-curve launches that migrate into locked concentrated liquidity</div></div>
+    </div>
+    <dl class="metrics">
+      <div><dt>Tokens live</dt><dd id="mLive">—</dd></div>
+      <div><dt>Swaps / s</dt><dd id="mTps">—</dd></div>
+      <div><dt>Migrated</dt><dd id="mMig">—</dd></div>
+      <div><dt>Pool TVL</dt><dd id="mTvl">—</dd></div>
+      <div class="shield"><dt>Blocked by protocol</dt><dd id="mBlocked">—</dd></div>
+    </dl>
+    <div class="walletbox">
+      <div class="wallet"><b id="wSol">25.000 SOL</b><span id="wPnl">Demo wallet · realized today 0.000</span></div>
+      <button class="btn primary" id="btnCreate">Launch a token</button>
+    </div>
+  </header>
+
+  <div class="strip" id="strip" aria-label="Records the protocol rejected"><b>BLOCKED</b><span class="note" id="replayNote">Replaying signed history…</span></div>
+
+  <main class="layout">
+    <section class="board" aria-label="Tokens">
+      <div class="boardhead">
+        <h2>Tokens</h2>
+        <label class="sr" for="sortSel">Sort tokens</label>
+        <select id="sortSel">
+          <option value="safe">Safest first</option>
+          <option value="new">Newest first</option>
+          <option value="vol">Most volume (1 h)</option>
+          <option value="mcap">Market cap</option>
+        </select>
+      </div>
+      <div class="cards" id="cards"></div>
+      <p class="hiddennote" id="hiddenNote" hidden></p>
+    </section>
+
+    <section class="detail" aria-label="Selected token">
+      <div class="panel dhead">
+        <div class="grade A" id="dGrade">–</div>
+        <div class="dname"><h1 id="dName">Loading…</h1><span id="dSub"></span></div>
+        <dl class="dfig">
+          <div><dt>Market cap</dt><dd id="dMcap">—</dd></div>
+          <div><dt>Change 1h</dt><dd id="dChg">—</dd></div>
+          <div><dt>Holders</dt><dd id="dHold">—</dd></div>
+          <div><dt>Status</dt><dd id="dStatus">—</dd></div>
+        </dl>
+      </div>
+
+      <div class="panel curve" id="curvePanel">
+        <div class="poolhead"><b>Bonding curve</b><span class="muted" id="cHead">—</span></div>
+        <div class="bigprog"><i id="cBar"></i></div>
+        <div class="crow"><span id="cLeft">—</span><span class="muted" id="cNext">—</span></div>
+        <dl class="kv" id="cStats"></dl>
+        <pre class="rec" id="recCurve" aria-label="Latest CURVE_STATUS record"></pre>
+      </div>
+
+      <div class="panel pool" id="poolPanel" hidden>
+        <div class="poolhead"><b>CLMM pool</b><span class="muted" id="pHead">—</span></div>
+        <div class="poolgrid">
+          <dl class="kv" id="pStats"></dl>
+          <div>
+            <div class="liq"><canvas id="cLiq" aria-label="Liquidity by price"></canvas></div>
+            <div class="liqcap"><span>Liquidity by price</span><span class="lyou">Your positions</span><span class="lnow">Current price</span></div>
+          </div>
+        </div>
+        <pre class="rec" id="recStatus" aria-label="Latest CLMM_POOL_STATUS record"></pre>
+      </div>
+
+      <div class="panel chartwrap">
+        <div class="chartbar">
+          <div class="seg" id="segRange" role="group" aria-label="Chart range">
+            <button data-r="all" aria-pressed="true">Since launch</button>
+            <button data-r="15" aria-pressed="false">Last 15 min</button>
+          </div>
+          <div class="legend"><span class="lf">Fair-launch window</span><span class="lh">Circuit-breaker halt</span><span class="lm">Migrated to CLMM</span></div>
+        </div>
+        <div class="chart" id="chart" role="img" aria-label="Market cap chart"><canvas id="cMain"></canvas><canvas id="cOver"></canvas></div>
+      </div>
+
+      <div class="tradegrid">
+        <div class="panel ticket" id="ticket">
+          <div class="tabs" role="tablist">
+            <button class="buy" id="tabBuy" role="tab" aria-selected="true">Buy</button>
+            <button class="sell" id="tabSell" role="tab" aria-selected="false">Sell</button>
+            <button class="lp" id="tabLp" role="tab" aria-selected="false">Liquidity</button>
+          </div>
+          <div class="presets" id="presets"></div>
+          <label class="sr" for="amt">Amount</label>
+          <div class="amount"><input id="amt" inputmode="decimal" value="0.25" autocomplete="off"><span id="amtUnit">SOL</span></div>
+          <dl class="quote" id="quote"></dl>
+          <ul class="checks" id="checks" aria-label="Checks before this order"></ul>
+          <button class="btn primary" id="btnTrade">Buy</button>
+          <p class="result" id="result" role="status" aria-live="polite"></p>
+          <div class="pos" id="pos"></div>
+          <ul class="mypos" id="mypos" aria-label="Your liquidity positions"></ul>
+        </div>
+        <div class="panel tapebox">
+          <h2>Order tape · every record, accepted or blocked</h2>
+          <div class="tapewrap"><table class="tape"><tbody id="tape"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="safety" aria-label="Safety file">
+      <div class="panel sbox">
+        <h2>Safety grade <em id="sScore">—</em></h2>
+        <div class="score" id="scoreRows"></div>
+      </div>
+      <div class="panel sbox">
+        <h2>Enforced by protocol</h2>
+        <ul class="guar" id="guar"></ul>
+      </div>
+      <div class="panel sbox">
+        <h2>Creator <em id="crWallet">—</em></h2>
+        <dl class="kv">
+          <dt>Bond posted</dt><dd id="crBond">—</dd>
+          <dt>Slashed to holders</dt><dd id="crSlash">—</dd>
+          <dt>Rug attempts blocked</dt><dd id="crTries">—</dd>
+          <dt>Creator allocation</dt><dd>2.0% of supply</dd>
+          <dt>Unlocked so far</dt><dd id="crVested">—</dd>
+        </dl>
+        <div class="vest"><i id="crVestBar"></i></div>
+        <small class="muted" id="crVestNote"></small>
+      </div>
+      <div class="panel sbox">
+        <h2>Holders <em id="hTop">—</em></h2>
+        <ul class="holders" id="holders"></ul>
+      </div>
+      <div class="panel sbox">
+        <h2>Your degen guard</h2>
+        <div class="guard">
+          <label for="gMax">Max per trade<select id="gMax"><option value="5">5% of balance</option><option value="10">10% of balance</option><option value="25">25% of balance</option><option value="100">No limit</option></select></label>
+          <label for="gLoss">Daily loss limit<select id="gLoss"><option value="0.5">0.5 SOL</option><option value="1">1 SOL</option><option value="2">2 SOL</option><option value="1000">No limit</option></select></label>
+          <label for="gSlip">Max slippage<select id="gSlip"><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option></select></label>
+          <label for="gGrade">Block grade D tokens<input type="checkbox" id="gGrade" checked></label>
+          <label for="gShowD">Show grade D on the board<input type="checkbox" id="gShowD"></label>
+        </div>
+      </div>
+      <div class="panel sbox">
+        <h2>ChainLaunch and migration records</h2>
+        <pre class="rec" id="recLaunch"></pre>
+        <pre class="rec" id="recMigrate" hidden></pre>
+      </div>
+      <div class="panel sbox">
+        <h2>Blocked across all tokens</h2>
+        <ul class="feed" id="feed"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <div><b>How a launch works.</b> A creator builds a ChainLaunch payload, signs it and submits it over the wire. The protocol checks it and mints the fixed supply once; mint authority is then gone. The token trades on a bonding curve (CURVE_SWAP) whose SOL stays escrowed. At 85 SOL raised the protocol signs a MIGRATE record and auto-seeds a concentrated-liquidity pool with the raised SOL and the 186.9M reserve tokens. Its seed positions belong to a lock vault that nobody, including the creator, can withdraw from. From then on the token trades on the pool (CLMM_SWAP), anyone can add or remove their own LP range (CLMM_POSITION), and the protocol publishes CLMM_POOL_STATUS.</div>
+    <div><b>How a rug is ruled out.</b> No mint after genesis, curve SOL escrowed, pool seed liquidity locked forever, and the creator's 2% unlocks only after migration, linearly over the vesting period. Every attempt to dump, withdraw or mint slashes 25% of the creator's bond to holders.</div>
+    <div><b>How degen behaviour is damped.</b> The first 60 seconds clear at one uniform price with a per-wallet cap, so sniper bots get no edge. On the curve each wallet is capped at its share of supply. Swaps are capped at 3 SOL with a 10-second wait per wallet and a slippage limit, and a 30% move within a minute halts swaps for 30 seconds. Your own guard adds per-trade, daily-loss and grade limits.</div>
+    <div><b>Simulated.</b> No chain is involved. Traders, snipers, LP bots and creators run in a Web Worker and send signed CHAIN_LAUNCH, CURVE_SWAP, CLMM_SWAP, CLMM_POSITION and MINT records, reading the protocol's status records to pick a venue. Your own records travel through the same worker wire. This page's engine verifies signatures and enforces every rule. Signatures are keyed FNV-1a checksums standing in for Ed25519; CIDs are real sha-256 CIDv1 of each token's metadata. Your wallet holds demo SOL.</div>
+  </footer>
+
+  <div class="modal" id="modal" hidden>
+    <form class="sheet" id="createForm" novalidate>
+      <h3>Launch a token</h3>
+      <p>Fill in the form, then sign. The ChainLaunch payload on the right is exactly what gets signed and sent over the wire. Your token starts on a bonding curve and migrates into a locked CLMM pool at 85 SOL raised.</p>
+      <div class="sheetgrid">
+        <div class="formcol">
+          <div class="grid2">
+            <label class="field" for="fName">Name<input id="fName" maxlength="24" value="Harbor Lights" autocomplete="off"></label>
+            <label class="field" for="fTick">Ticker<input id="fTick" maxlength="6" value="HRBR" autocomplete="off"><small>3–6 letters</small></label>
+          </div>
+          <label class="field" for="fDesc">Description<textarea id="fDesc" rows="2" maxlength="140">A community token for night-shift dock workers.</textarea></label>
+          <div class="grid2">
+            <label class="field" for="fBond">Creator bond (SOL)<input id="fBond" inputmode="decimal" value="3"><small>1–10 SOL, slashed if you try to rug</small></label>
+            <label class="field" for="fVest">Vesting after migration<select id="fVest"><option value="30">30 days</option><option value="90" selected>90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label>
+          </div>
+          <div class="grid2">
+            <label class="field" for="fCap">Wallet cap on the curve<select id="fCap"><option value="100">1% of supply</option><option value="150" selected>1.5% of supply</option><option value="200">2% of supply</option></select></label>
+            <label class="field" for="fFee">Pool fee tier after migration<select id="fFee"><option value="30">0.30%</option><option value="100" selected>1.00%</option><option value="200">2.00%</option></select></label>
+          </div>
+          <ol class="steps" id="steps">
+            <li id="st1"><span class="dot">1</span><div>Build ChainLaunch payload<small id="st1s">Updates as you type</small></div></li>
+            <li id="st2"><span class="dot">2</span><div>Sign<small id="st2s">Not signed yet</small></div></li>
+            <li id="st3"><span class="dot">3</span><div>Submit over the wire<small id="st3s">Not submitted yet</small></div></li>
+            <li id="st4"><span class="dot">4</span><div>Accepted, bonding curve open<small id="st4s">Waiting for the protocol</small></div></li>
+          </ol>
+          <p class="err" id="fErr" role="alert"></p>
+        </div>
+        <div class="paycol">
+          <h2>ChainLaunch payload</h2>
+          <pre class="rec" id="payload" style="max-height: 360px"></pre>
+          <h2>Wire record</h2>
+          <pre class="rec" id="wireRec">Sign to produce the record.</pre>
+        </div>
+      </div>
+      <div class="actions"><button type="button" class="btn" id="btnCancel">Cancel</button><button type="submit" class="btn primary" id="btnLaunch">Sign and submit</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+/* =========================================================================
+   Protocol constants
+   Phase 1: pump-style constant-product bonding curve (virtual reserves).
+   Phase 2: at 85 SOL raised, migrate into a CLMM pool seeded and locked by protocol.
+   ========================================================================= */
+const KEY = 0x1a2b3c4d;
+const SUPPLY = 1e9, CURVE_TOKENS = 793.1e6, CREATOR_ALLOC = 20e6, RESERVE = SUPPLY - CURVE_TOKENS - CREATOR_ALLOC; // 186.9M
+const VS0 = 30, VT0 = 1.073e9, GRAD_VT = VT0 - CURVE_TOKENS;
+const GRAD_SOL = (VS0 * VT0) / GRAD_VT - VS0;           // ≈ 85 SOL raised
+const LOG = Math.log(1.0001), TS = 60, OFF = 887272;    // tick base, tick spacing, wire offset for negative ticks
+const MAX_TRADE = 3, COOLDOWN = 10000, HALT_MOVE = 0.3, HALT_WIN = 60000, HALT_LEN = 30000;
+const FAIR_MS = 60000, SLASH = 0.25;
+const VAULT = 'lockvault';
+
+const R = { OK: 0, QUEUED: 1, SIG: 2, FAIR_CAP: 3, WALLET_CAP: 4, MAX_TRADE: 5, COOLDOWN: 6, HALTED: 7, CREATOR_LOCKED: 8, LP_LOCKED: 9, MINT_RENOUNCED: 10, NO_BALANCE: 11, SLIPPAGE: 12, UNKNOWN: 13, CLEAR: 14, LAUNCHED: 15, NOT_OWNER: 16, BAD_LAUNCH: 17, NO_LIQUIDITY: 18, MIGRATED: 19, NOT_MIGRATED: 20, MIGRATE: 21 };
+const RTEXT = ['Accepted', 'Queued for the fair-launch clear', 'Forged signature', 'Sniper order trimmed to the fair-launch cap', 'Over the per-wallet cap on the curve', 'Over 3 SOL per swap', 'Same wallet within 10 s', 'Swaps halted by the circuit breaker', 'Creator tokens are still vesting', 'Liquidity is locked', 'Mint authority was renounced at genesis', 'Nothing to sell or deposit', 'Price moved past your slippage limit', 'Unknown token', 'Fair-launch clear', 'Launched', 'Not your position', 'ChainLaunch rejected', 'No liquidity at this price', 'Token has migrated; swap on the pool', 'Token is still on the bonding curve', 'Migrated'];
+const RSHORT = ['OK', 'QUEUED', 'FORGED', 'SNIPER', 'WALLET CAP', 'MAX SIZE', 'COOLDOWN', 'HALTED', 'CREATOR LOCK', 'LP LOCKED', 'NO MINT', 'NO BALANCE', 'SLIPPAGE', 'UNKNOWN', 'FAIR CLEAR', 'LAUNCHED', 'NOT OWNER', 'REJECTED', 'NO LIQUIDITY', 'WRONG VENUE', 'WRONG VENUE', 'MIGRATED'];
+const BLOCKED = [R.SIG, R.FAIR_CAP, R.WALLET_CAP, R.MAX_TRADE, R.COOLDOWN, R.HALTED, R.CREATOR_LOCKED, R.LP_LOCKED, R.MINT_RENOUNCED, R.NOT_OWNER];
+const NCODES = 22;
+const isBlocked = new Uint8Array(NCODES); for (const c of BLOCKED) isBlocked[c] = 1;
+const K_SWAP = 1, K_MINT = 2, K_POS = 3, K_LAUNCH = 4, K_CSWAP = 5, K_CWD = 6;
+
+/* =========================================================================
+   Crypto stand-ins (same as Flux Chart)
+   ========================================================================= */
+const B32 = 'abcdefghijklmnopqrstuvwxyz234567';
+function base32(bytes) { let out = '', bits = 0, val = 0; for (let i = 0; i < bytes.length; i++) { val = (val << 8) | bytes[i]; bits += 8; while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; } val &= (1 << bits) - 1; } if (bits > 0) out += B32[(val << (5 - bits)) & 31]; return out; }
+async function cidOf(bytes) {
+  let d;
+  if (window.crypto && crypto.subtle) d = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  else { d = new Uint8Array(32); for (let k = 0; k < 8; k++) { let h = (0x811c9dc5 ^ k) >>> 0; for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 16777619); } new DataView(d.buffer).setUint32(k * 4, h >>> 0); } }
+  const b = new Uint8Array(36); b.set([0x01, 0x55, 0x12, 0x20]); b.set(d, 4); return 'b' + base32(b);
+}
+const shortCid = (c) => c.slice(0, 10) + '…' + c.slice(-6);
+function fnvRange(s, from, to) { let h = (0x811c9dc5 ^ KEY) >>> 0; for (let i = from; i < to; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+const sign = (s) => fnvRange(s, 0, s.length).toString(16).padStart(8, '0');
+const signed = (body) => body + '-SIG-' + sign(body);
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0; return h; }
+function lowerBound(a, n, x) { let lo = 0, hi = n; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < x) lo = m + 1; else hi = m; } return lo; }
+function upperBound(a, x) { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] <= x) lo = m + 1; else hi = m; } return lo; }
+
+/* =========================================================================
+   Bonding curve (phase 1)
+   ========================================================================= */
+const curvePrice = (tk) => tk.vS / tk.vT;
+function curveBuy(tk, sol) {            // returns [tokensOut, solUsed]
+  let solIn = sol, out = tk.vT - tk.k / (tk.vS + solIn);
+  if (tk.vT - out < GRAD_VT) { out = tk.vT - GRAD_VT; solIn = tk.k / GRAD_VT - tk.vS; }
+  return [out, solIn];
+}
+const curveSell = (tk, tokens) => tk.vS - tk.k / (tk.vT + tokens);
+
+/* =========================================================================
+   CLMM pool (phase 2). Uniswap-v3 style math in floats. token0 = token, token1 = SOL.
+   ========================================================================= */
+const tickSqrt = (t) => Math.exp((t * LOG) / 2);
+const sqrtTick = (s) => Math.floor((2 * Math.log(s)) / LOG);
+const snap = (t) => Math.floor(t / TS) * TS;
+
+function newPool(feeBps, price) {
+  const sP = Math.sqrt(price);
+  return { sP, tick: sqrtTick(sP), L: 0, fee: feeBps / 1e4, feeBps, fg0: 0, fg1: 0, ticks: new Map(), sorted: [], positions: new Map(), feesTok: 0, feesSol: 0 };
+}
+function updateTick(pool, t, dL, upper) {
+  let tk = pool.ticks.get(t);
+  if (!tk) {
+    tk = { net: 0, gross: 0, o0: t <= pool.tick ? pool.fg0 : 0, o1: t <= pool.tick ? pool.fg1 : 0 };
+    pool.ticks.set(t, tk); pool.sorted.splice(upperBound(pool.sorted, t), 0, t);
+  }
+  tk.gross += dL; tk.net += upper ? -dL : dL;
+  if (tk.gross < 1e-9) { pool.ticks.delete(t); pool.sorted.splice(upperBound(pool.sorted, t) - 1, 1); }
+}
+function feeInside(pool, lo, hi) {
+  const a = pool.ticks.get(lo), b = pool.ticks.get(hi);
+  const b0 = pool.tick >= lo ? a.o0 : pool.fg0 - a.o0, b1 = pool.tick >= lo ? a.o1 : pool.fg1 - a.o1;
+  const u0 = pool.tick < hi ? b.o0 : pool.fg0 - b.o0, u1 = pool.tick < hi ? b.o1 : pool.fg1 - b.o1;
+  return [pool.fg0 - b0 - u0, pool.fg1 - b1 - u1];
+}
+function amountsFor(pool, lo, hi, L) {
+  const sa = tickSqrt(lo), sb = tickSqrt(hi), s = pool.sP;
+  if (s <= sa) return [L * (1 / sa - 1 / sb), 0];
+  if (s < sb) return [L * (1 / s - 1 / sb), L * (s - sa)];
+  return [0, L * (sb - sa)];
+}
+function posFees(pool, p) { const [i0, i1] = feeInside(pool, p.lo, p.hi); return [p.owed0 + p.L * (i0 - p.fi0), p.owed1 + p.L * (i1 - p.fi1)]; }
+function addPosition(pool, pid, pidStr, owner, lo, hi, L, locked) {
+  updateTick(pool, lo, L, false); updateTick(pool, hi, L, true);
+  if (pool.tick >= lo && pool.tick < hi) pool.L += L;
+  const [fi0, fi1] = feeInside(pool, lo, hi);
+  const p = { pid: pidStr, owner, lo, hi, L, fi0, fi1, owed0: 0, owed1: 0, locked: !!locked };
+  pool.positions.set(pid, p);
+  return p;
+}
+function removePosition(pool, pid) {
+  const p = pool.positions.get(pid);
+  const [f0, f1] = posFees(pool, p), [x, y] = amountsFor(pool, p.lo, p.hi, p.L);
+  if (pool.tick >= p.lo && pool.tick < p.hi) pool.L -= p.L;
+  updateTick(pool, p.lo, -p.L, false); updateTick(pool, p.hi, -p.L, true);
+  pool.positions.delete(pid);
+  return [x + f0, y + f1, f0, f1];
+}
+/* Exact-input swap. buy: SOL in, tokens out (price up). commit=false is a read-only quote. */
+function swap(pool, buy, amtIn, commit) {
+  let sP = pool.sP, tick = pool.tick, L = pool.L, rem = amtIn, out = 0, fg0 = pool.fg0, fg1 = pool.fg1;
+  const fee = pool.fee, S = pool.sorted; let guard = 0;
+  if (buy) {
+    let idx = upperBound(S, tick);
+    while (rem > 1e-12 && guard++ < 20000 && idx < S.length) {
+      const t = S[idx], sN = tickSqrt(t);
+      if (L > 1e-9) {
+        const need = L * (sN - sP), needG = need / (1 - fee);
+        if (rem <= needG) { const net = rem * (1 - fee); fg1 += (rem - net) / L; const s2 = sP + net / L; out += L * (1 / sP - 1 / s2); sP = s2; tick = Math.min(sqrtTick(sP), t - 1); rem = 0; break; }
+        fg1 += (needG - need) / L; out += L * (1 / sP - 1 / sN); rem -= needG;
+      }
+      sP = sN; tick = t; const tk = pool.ticks.get(t); L += tk.net;
+      if (commit) { tk.o0 = fg0 - tk.o0; tk.o1 = fg1 - tk.o1; }
+      idx++;
+    }
+  } else {
+    let idx = upperBound(S, tick) - 1;
+    while (rem > 1e-9 && guard++ < 20000 && idx >= 0) {
+      const t = S[idx], sN = tickSqrt(t);
+      if (L > 1e-9) {
+        const need = L * (1 / sN - 1 / sP), needG = need / (1 - fee);
+        if (rem <= needG) { const net = rem * (1 - fee); fg0 += (rem - net) / L; const s2 = 1 / (1 / sP + net / L); out += L * (sP - s2); sP = s2; tick = Math.max(sqrtTick(sP), t); rem = 0; break; }
+        fg0 += (needG - need) / L; out += L * (sP - sN); rem -= needG;
+      }
+      sP = sN; const tk = pool.ticks.get(t); L -= tk.net;
+      if (commit) { tk.o0 = fg0 - tk.o0; tk.o1 = fg1 - tk.o1; }
+      tick = t - 1; idx--;
+    }
+  }
+  const used = amtIn - rem;
+  if (commit) {
+    if (buy) pool.feesSol += used * fee; else pool.feesTok += used * fee;
+    pool.sP = sP; pool.tick = tick; pool.L = L; pool.fg0 = fg0; pool.fg1 = fg1;
+  }
+  return [out, used];
+}
+const priceOf = (pool) => pool.sP * pool.sP;
+function poolReserves(pool) { let x = 0, y = 0; for (const p of pool.positions.values()) { const [a, b] = amountsFor(pool, p.lo, p.hi, p.L); x += a; y += b; } return [x, y]; }
+/* Migration seed: two symmetric two-sided ranges, then single-sided remainders, all owned by the lock vault. */
+function seedPool(tk, sol, tokens) {
+  const pool = tk.pool, s = pool.sP, t = pool.tick, used = [0, 0];
+  const two = (mult, share, i) => {
+    const lo = snap(t - Math.log(mult) / LOG), hi = snap(t + Math.log(mult) / LOG) + TS;
+    const sa = tickSqrt(lo), sb = tickSqrt(hi);
+    let L = (tokens * share) / (1 / s - 1 / sb);
+    if (L * (s - sa) > (sol - used[1]) * 0.999) L = ((sol - used[1]) * 0.999) / (s - sa);
+    const [x, y] = amountsFor(pool, lo, hi, L); used[0] += x; used[1] += y;
+    addPosition(pool, hashStr(tk.id + 's' + i), tk.id + 's' + i, VAULT_H, lo, hi, L, true);
+  };
+  two(4, 0.7, 0); two(20, 0.3, 1);
+  const solLeft = sol - used[1], tokLeft = tokens - used[0];
+  if (solLeft > 1e-6) { const lo = snap(t - Math.log(20) / LOG), hi = snap(t); if (hi > lo) { const L = solLeft / (tickSqrt(hi) - tickSqrt(lo)); addPosition(pool, hashStr(tk.id + 's2'), tk.id + 's2', VAULT_H, lo, hi, L, true); } }
+  if (tokLeft > 1) { const lo = snap(t) + TS, hi = snap(t + Math.log(20) / LOG) + TS; const L = tokLeft / (1 / tickSqrt(lo) - 1 / tickSqrt(hi)); addPosition(pool, hashStr(tk.id + 's3'), tk.id + 's3', VAULT_H, lo, hi, L, true); }
+}
+
+/* =========================================================================
+   Token state
+   ========================================================================= */
+const tokens = [], tokByH = new Map(), walletName = new Map(), metaStore = new Map();
+const YOU = 'you', YOU_H = hashStr(YOU); walletName.set(YOU_H, YOU);
+const VAULT_H = hashStr(VAULT); walletName.set(VAULT_H, VAULT);
+const counts = new Uint32Array(NCODES);
+const TAPE_N = 40, FEED_N = 24;
+const mkEntry = () => ({ src: null, wa: 0, wb: 0, ts: 0, code: 0, side: 0, kind: 0, op: 0, sol: 0, tok: 0, text: '', tk: null });
+const feed = Array.from({ length: FEED_N }, mkEntry); let feedI = 0, feedCount = 0;
+let swapsWindow = 0;
+const priceNow = (tk) => (tk.pool ? priceOf(tk.pool) : curvePrice(tk));
+const mcapOf = (tk) => priceNow(tk) * SUPPLY;
+
+function makeToken(o) {
+  const cap = 80000;
+  const tk = Object.assign({}, o, {
+    h: hashStr(o.id), creatorH: hashStr(o.creator),
+    vS: VS0, vT: VT0, k: VS0 * VT0, sold: 0, pool: null, migrated: 0, migrateRec: '',
+    fairDone: false, fairEnd: o.t0 + FAIR_MS, queue: new Map(),
+    holders: new Map(), last: new Map(), haltUntil: 0, haltEnd: 0, halts: new Float64Array(1024), nh: 0,
+    ts: new Float64Array(cap), mc: new Float64Array(cap), vol: new Float32Array(cap), n: 0, cap,
+    lastTs: o.t0, rej: new Uint32Array(NCODES), swaps: 0, bondLeft: o.bond, slashed: 0, attempts: 0, creatorClaimed: 0,
+    tape: Array.from({ length: TAPE_N }, mkEntry), tapeI: 0, tapeCount: 0, tapeVer: 0,
+    score: 0, grade: 'A', parts: [], top10: 0, holdersN: 0, heldSum: 0, card: null, statusRec: '', vol1h: 0, tvl: 0, depth: 0, resX: 0, resY: 0,
+  });
+  tk.ts[0] = o.t0; tk.mc[0] = mcapOf(tk); tk.n = 1;
+  walletName.set(tk.creatorH, o.creator);
+  tokens.push(tk); tokByH.set(tk.h, tk);
+  return tk;
+}
+function pushPoint(tk, ts, vol) {
+  if (tk.n === tk.cap) { const h = tk.cap >> 1; tk.ts.copyWithin(0, h); tk.mc.copyWithin(0, h); tk.vol.copyWithin(0, h); tk.n -= h; }
+  tk.ts[tk.n] = ts; tk.mc[tk.n] = mcapOf(tk); tk.vol[tk.n] = vol; tk.n++;
+  if (tk === selected) { chartDirty = true; liqDirty = true; }
+}
+function migrate(tk, ts) {
+  const raised = tk.vS - VS0;
+  tk.migrated = ts;
+  tk.pool = newPool(tk.feeBps, curvePrice(tk));
+  seedPool(tk, raised, RESERVE);
+  const body = `MIGRATE-R-${tk.id}-FROM-curve-TO-clmm-SOL-${Math.round(raised * 1e6)}-TOK-${Math.round(RESERVE)}-FEE-${tk.feeBps}-TICK-${tk.pool.tick + OFF}-POS-${tk.pool.positions.size}-LOCK-${VAULT}-T-${ts}`;
+  tk.migrateRec = signed(body);
+  info(tk, R.MIGRATE, ts, `Migrated at ${fmt(raised, 1)} SOL raised. CLMM pool seeded with ${fmt(raised, 1)} SOL + ${fmtTok(RESERVE)} in ${tk.pool.positions.size} vault positions, locked forever.`);
+  if (tk === selected) select(tk);
+}
+
+/* =========================================================================
+   Record parser: KIND-K-v-…-SIG-hex, scanned by char code. Zero allocation.
+   CURVE_SWAP-R-{token}-W-{wallet}-X-{b|s}-T-{ms}-A-{microSOL | bps}-MIN-{min out ×1e6}
+   CLMM_SWAP-R-{token}-W-{wallet}-X-{b|s}-T-{ms}-A-{microSOL | bps}-MIN-{min out ×1e6}
+   CLMM_POSITION-R-{token}-W-{wallet}-OP-{a|r}-PID-{id}-LO-{tick+OFF}-HI-{tick+OFF}-L-{liquidity×1e3}-T-{ms}
+   CURVE_WITHDRAW-R-{token}-W-{wallet}-T-{ms}-A-0      MINT-R-{token}-W-{wallet}-T-{ms}-A-{tokens}
+   CHAIN_LAUNCH-… (rare; parsed by split)
+   ========================================================================= */
+const P = { kind: 0, tokH: 0, wH: 0, wa: 0, wb: 0, side: 0, op: 0, ts: 0, amt: 0, min: 0, pidH: 0, pa: 0, pb: 0, lo: 0, hi: 0, liq: 0, sigAt: 0, sig: -1 };
+function kindOf(s, a) {
+  const c0 = s.charCodeAt(a), c1 = s.charCodeAt(a + 1);
+  if (c0 === 77) return K_MINT;
+  if (c0 !== 67) return 0;
+  if (c1 === 72) return K_LAUNCH;
+  if (c1 === 85) return s.charCodeAt(a + 6) === 83 ? K_CSWAP : K_CWD;
+  return s.charCodeAt(a + 5) === 83 ? K_SWAP : s.charCodeAt(a + 7) === 83 ? K_POS : 0;
+}
+function parse(s, a, b) {
+  P.kind = kindOf(s, a); P.sig = -1; P.sigAt = b; P.min = 0; P.side = 0; P.op = 0;
+  let i = a; while (i < b && s.charCodeAt(i) !== 45) i++; i++;
+  while (i < b) {
+    const kc = s.charCodeAt(i), ks = i;
+    while (i < b && s.charCodeAt(i) !== 45) i++;
+    const kl = i - ks; i++;
+    if (kc === 83 && kl === 3) {
+      P.sigAt = ks - 1; let v = 0;
+      while (i < b) { const c = s.charCodeAt(i++); v = v * 16 + (c <= 57 ? c - 48 : c - 87); }
+      P.sig = v; break;
+    }
+    const vs = i; let h = 0, num = 0;
+    while (i < b) { const c = s.charCodeAt(i); if (c === 45) break; h = (Math.imul(h, 31) + c) | 0; num = num * 10 + (c - 48); i++; }
+    if (kl === 1) {
+      if (kc === 82) P.tokH = h; else if (kc === 87) { P.wH = h; P.wa = vs; P.wb = i; } else if (kc === 88) P.side = s.charCodeAt(vs);
+      else if (kc === 84) P.ts = num; else if (kc === 65) P.amt = num; else if (kc === 76) P.liq = num / 1e3;
+    } else if (kl === 2) {
+      if (kc === 79) P.op = s.charCodeAt(vs); else if (kc === 76) P.lo = num - OFF; else if (kc === 72) P.hi = num - OFF;
+    } else if (kl === 3) {
+      if (kc === 77) P.min = num / 1e6; else if (kc === 80) { P.pidH = h; P.pa = vs; P.pb = i; }
+    }
+    i++;
+  }
+}
+
+/* =========================================================================
+   Protocol engine. Every rule is checked here, for bots and for you alike.
+   ========================================================================= */
+let outSol = 0, outTok = 0, outFee0 = 0, outFee1 = 0;
+let onYou = null, onLaunch = null;
+
+function vestedAt(tk, ts) { return tk.migrated ? CREATOR_ALLOC * Math.min(1, (ts - tk.migrated) / (tk.vestDays * 864e5)) : 0; }
+function slash(tk) {
+  const cut = tk.bondLeft * SLASH; tk.bondLeft -= cut; tk.slashed += cut; tk.attempts++;
+  const mine = tk.holders.get(YOU_H) || 0;
+  if (mine > 0 && tk.heldSum > 0 && onYou) onYou('slash', tk, (cut * mine) / tk.heldSum, 0);
+}
+function advance(tk, ts) { if (!tk.fairDone && ts >= tk.fairEnd) clearFair(tk, tk.fairEnd); }
+function clearFair(tk, ts) {
+  tk.fairDone = true;
+  if (!tk.queue.size) { info(tk, R.CLEAR, ts, 'Fair-launch window closed with no orders.'); return; }
+  let total = 0; for (const q of tk.queue.values()) total += q.sol;
+  const [out0] = curveBuy(tk, total), p0 = total / out0, capTok = (tk.capBps / 1e4) * SUPPLY * 0.5;
+  let net = 0, trimmed = 0;
+  for (const q of tk.queue.values()) {
+    const want = q.sol / p0, got = Math.min(want, capTok);
+    q.spend = got * p0; net += q.spend;
+    if (want > capTok * 1.0001) { trimmed++; reject(tk, R.FAIR_CAP, ts, q.w, q.sol - q.spend); }
+  }
+  const [out] = curveBuy(tk, net);
+  tk.vS += net; tk.vT -= out; tk.sold += out;
+  for (const [wH, q] of tk.queue) {
+    const got = (out * q.spend) / net;
+    tk.holders.set(wH, (tk.holders.get(wH) || 0) + got); tk.last.set(wH, ts);
+    if (wH === YOU_H && onYou) onYou('clear', tk, q.sol - q.spend, got);
+  }
+  pushPoint(tk, ts, net);
+  info(tk, R.CLEAR, ts, `${tk.queue.size} wallets cleared at one price on the curve: ${fmt(net, 2)} SOL in${trimmed ? `, ${trimmed} sniper orders trimmed and refunded` : ''}.`);
+  tk.queue.clear();
+}
+/* shared checks for both venues; returns a code or -1 to continue */
+function preSwap(tk, wH, side, ts, amt) {
+  if (side === 98) outSol = amt / 1e6;
+  if (ts < tk.haltUntil) return R.HALTED;
+  const lt = tk.last.get(wH);
+  if (lt !== undefined && ts - lt < COOLDOWN) return R.COOLDOWN;
+  if (side === 98 && amt / 1e6 > MAX_TRADE) return R.MAX_TRADE;
+  if (side === 98 && !(amt > 0)) return R.UNKNOWN;
+  return -1;
+}
+/* creator sells draw on vested allocation; anything beyond is a dump attempt */
+function sellAmount(tk, wH, ts, bps) {
+  let hold = tk.holders.get(wH) || 0;
+  if (wH !== tk.creatorH) return [hold, (hold * bps) / 1e4];
+  const locked = CREATOR_ALLOC - tk.creatorClaimed, free = vestedAt(tk, ts) - tk.creatorClaimed, want = ((hold + locked) * bps) / 1e4;
+  if (want > hold + free + 1) return [hold, -1];
+  if (want > hold) { tk.creatorClaimed += want - hold; hold = want; }
+  return [hold, want];
+}
+function applyCurveSwap(tk, wH, side, ts, amt, min) {
+  if (tk.migrated) return R.MIGRATED;
+  const pre = preSwap(tk, wH, side, ts, amt); if (pre >= 0) return pre;
+  if (side === 98) {
+    const sol = amt / 1e6;
+    if (!tk.fairDone) {
+      const q = tk.queue.get(wH);
+      if (q) q.sol += sol; else tk.queue.set(wH, { sol, w: walletName.get(wH) || '?', spend: 0 });
+      tk.last.set(wH, ts); return R.QUEUED;
+    }
+    const [out, used] = curveBuy(tk, sol);
+    if (out < min) return R.SLIPPAGE;
+    const hold = tk.holders.get(wH) || 0;
+    if (hold + out > (tk.capBps / 1e4) * SUPPLY) return R.WALLET_CAP;
+    tk.vS += used; tk.vT -= out; tk.sold += out;
+    tk.holders.set(wH, hold + out); tk.last.set(wH, ts);
+    outSol = used; outTok = out; pushPoint(tk, ts, used);
+    if (tk.vT <= GRAD_VT + 1) { tk.swaps++; swapsWindow++; migrate(tk, ts); return R.OK; }
+  } else {
+    const [hold, want] = sellAmount(tk, wH, ts, amt);
+    if (want < 0) { slash(tk); return R.CREATOR_LOCKED; }
+    if (want < 1) return R.NO_BALANCE;
+    const solOut = curveSell(tk, want);
+    if (solOut < min) return R.SLIPPAGE;
+    tk.vS -= solOut; tk.vT += want; tk.sold -= want;
+    if (hold - want < 1) tk.holders.delete(wH); else tk.holders.set(wH, hold - want);
+    tk.last.set(wH, ts);
+    outSol = solOut; outTok = want; pushPoint(tk, ts, -solOut);
+  }
+  checkHalt(tk, ts); tk.swaps++; swapsWindow++;
+  return R.OK;
+}
+function applyPoolSwap(tk, wH, side, ts, amt, min) {
+  if (!tk.migrated) return R.NOT_MIGRATED;
+  const pre = preSwap(tk, wH, side, ts, amt); if (pre >= 0) return pre;
+  const pool = tk.pool;
+  if (side === 98) {
+    const sol = amt / 1e6, [q] = swap(pool, true, sol, false);
+    if (q <= 0) return R.NO_LIQUIDITY;
+    if (q < min) return R.SLIPPAGE;
+    const [out, used] = swap(pool, true, sol, true);
+    tk.holders.set(wH, (tk.holders.get(wH) || 0) + out); tk.last.set(wH, ts);
+    outSol = used; outTok = out; pushPoint(tk, ts, used);
+  } else {
+    const [hold, want] = sellAmount(tk, wH, ts, amt);
+    if (want < 0) { slash(tk); return R.CREATOR_LOCKED; }
+    if (want < 1) return R.NO_BALANCE;
+    const [q] = swap(pool, false, want, false);
+    if (q < min) return R.SLIPPAGE;
+    const [out, used] = swap(pool, false, want, true);
+    if (hold - used < 1) tk.holders.delete(wH); else tk.holders.set(wH, hold - used);
+    tk.last.set(wH, ts);
+    outSol = out; outTok = used; pushPoint(tk, ts, -out);
+  }
+  checkHalt(tk, ts); tk.swaps++; swapsWindow++;
+  return R.OK;
+}
+function applyPosition(tk, wH, op, pidH, pidStr, lo, hi, L) {
+  if (!tk.migrated) return R.NOT_MIGRATED;
+  const pool = tk.pool;
+  if (op === 97) {
+    if (!(hi > lo) || lo % TS || hi % TS || !(L > 0) || pool.positions.has(pidH)) return R.UNKNOWN;
+    const [x, y] = amountsFor(pool, lo, hi, L), hold = tk.holders.get(wH) || 0;
+    if (x > hold + 1e-6) return R.NO_BALANCE;
+    if (x > 0) { if (hold - x < 1) tk.holders.delete(wH); else tk.holders.set(wH, hold - x); }
+    addPosition(pool, pidH, pidStr, wH, lo, hi, L, false);
+    outSol = y; outTok = x; liqDirty = true;
+    return R.OK;
+  }
+  const p = pool.positions.get(pidH);
+  if (!p) return R.UNKNOWN;
+  if (p.locked) { if (wH === tk.creatorH) slash(tk); return R.LP_LOCKED; }
+  if (p.owner !== wH) return R.NOT_OWNER;
+  const [x, y, f0, f1] = removePosition(pool, pidH);
+  if (x > 0) tk.holders.set(wH, (tk.holders.get(wH) || 0) + x);
+  outSol = y; outTok = x; outFee0 = f0; outFee1 = f1; liqDirty = true;
+  return R.OK;
+}
+function checkHalt(tk, ts) {
+  const from = Math.max(ts - HALT_WIN, tk.haltEnd, tk.fairEnd, tk.migrated);
+  const i = lowerBound(tk.ts, tk.n, from);
+  if (i >= tk.n - 1) return;
+  const r = tk.mc[tk.n - 1] / tk.mc[i];
+  if (r > 1 + HALT_MOVE || r < 1 - HALT_MOVE) {
+    tk.haltUntil = tk.haltEnd = ts + HALT_LEN;
+    if (tk.nh < 512) { tk.halts[tk.nh * 2] = ts; tk.halts[tk.nh * 2 + 1] = ts + HALT_LEN; tk.nh++; }
+  }
+}
+
+/* CHAIN_LAUNCH: checked against the launch rules; the token then opens on its bonding curve. */
+function processLaunch(rec) {
+  const t = rec.split('-'), f = {};
+  for (let i = 1; i < t.length - 1; i += 2) f[t[i]] = t[i + 1];
+  const sigOk = parseInt(f.SIG, 16) === fnvRange(rec, 0, rec.indexOf('-SIG-'));
+  let why = '';
+  if (!sigOk) why = 'bad signature';
+  else if (tokens.some((x) => x.ticker === f.TK)) why = `$${f.TK} already exists`;
+  else if (f.MINT !== 'none') why = 'mint authority must be none';
+  else if (+f.SUP !== SUPPLY) why = 'supply must be 1,000,000,000';
+  else if (!(+f.CAP >= 50 && +f.CAP <= 200)) why = 'wallet cap must be 0.5–2%';
+  else if (!(+f.VEST >= 30)) why = 'vesting must be at least 30 days';
+  else if (!(+f.BOND >= 1000)) why = 'bond must be at least 1 SOL';
+  else if (![30, 100, 200].includes(+f.FEE)) why = 'fee tier must be 0.3%, 1% or 2%';
+  else if (f.LP !== 'locked') why = 'migrated liquidity must be locked';
+  else if (!metaStore.has(f.D)) why = 'metadata CID not found';
+  if (why) { counts[R.BAD_LAUNCH]++; onLaunch && onLaunch(f, null, why); return R.BAD_LAUNCH; }
+  const meta = JSON.parse(new TextDecoder().decode(metaStore.get(f.D)));
+  const tk = makeToken({ id: f.R, ticker: f.TK, name: meta.name, desc: meta.desc, creator: f.I, bond: +f.BOND / 1e3, vestDays: +f.VEST, capBps: +f.CAP, feeBps: +f.FEE, t0: +f.T, rec, metaCid: f.D, hype0: meta.sim?.hype0 ?? 1.5, decay: meta.sim?.decay ?? 3 * 3600e3, seed: meta.sim?.seed ?? 1, mine: f.I === YOU });
+  info(tk, R.LAUNCHED, tk.t0, `ChainLaunch accepted. Bonding curve open; migrates to a locked CLMM pool at ${fmt(GRAD_SOL, 0)} SOL raised.`);
+  counts[R.LAUNCHED]++;
+  onLaunch && onLaunch(f, tk, '');
+  return R.LAUNCHED;
+}
+
+/* tape + feed bookkeeping (preallocated ring entries) */
+function tapeEntry(tk) { const e = tk.tape[tk.tapeI]; tk.tapeI = (tk.tapeI + 1) % TAPE_N; tk.tapeCount++; tk.tapeVer++; return e; }
+function copyTo(e, tk, s, code, ts) { e.src = s; e.wa = P.wa; e.wb = P.wb; e.ts = ts; e.code = code; e.side = P.side; e.kind = P.kind; e.op = P.op; e.sol = outSol; e.tok = outTok; e.text = ''; e.tk = tk; }
+function record(tk, s, code, ts) {
+  copyTo(tapeEntry(tk), tk, s, code, ts);
+  counts[code]++; tk.rej[code]++;
+  if (isBlocked[code]) { copyTo(feed[feedI], tk, s, code, ts); feedI = (feedI + 1) % FEED_N; feedCount++; }
+}
+function reject(tk, code, ts, w, sol) {
+  for (const e of [tapeEntry(tk), feed[feedI]]) { e.src = null; e.text = w; e.ts = ts; e.code = code; e.side = 98; e.kind = K_CSWAP; e.op = 0; e.sol = sol; e.tok = 0; e.tk = tk; }
+  feedI = (feedI + 1) % FEED_N; feedCount++;
+  counts[code]++; tk.rej[code]++;
+}
+function info(tk, code, ts, text) { const e = tapeEntry(tk); e.src = null; e.text = text; e.ts = ts; e.code = code; e.kind = 0; e.sol = 0; e.tok = 0; e.tk = tk; }
+
+function processRec(s, a, b) {
+  if (kindOf(s, a) === K_LAUNCH) return processLaunch(a === 0 && b === s.length ? s : s.slice(a, b));
+  parse(s, a, b);
+  const tk = tokByH.get(P.tokH);
+  if (!tk) return R.UNKNOWN;
+  if (!walletName.has(P.wH)) walletName.set(P.wH, s.slice(P.wa, P.wb));
+  let ts = P.ts; if (ts < tk.lastTs) ts = tk.lastTs; tk.lastTs = ts;
+  advance(tk, ts);
+  outSol = 0; outTok = 0; outFee0 = 0; outFee1 = 0;
+  let code;
+  if (P.sig !== fnvRange(s, a, P.sigAt)) { code = R.SIG; if (P.side === 98) outSol = P.amt / 1e6; }
+  else if (P.kind === K_CSWAP) code = applyCurveSwap(tk, P.wH, P.side, ts, P.amt, P.min);
+  else if (P.kind === K_SWAP) code = applyPoolSwap(tk, P.wH, P.side, ts, P.amt, P.min);
+  else if (P.kind === K_POS) code = applyPosition(tk, P.wH, P.op, P.pidH, s.slice(P.pa, P.pb), P.lo, P.hi, P.liq);
+  else if (P.kind === K_MINT) { if (P.wH === tk.creatorH) slash(tk); code = R.MINT_RENOUNCED; }
+  else if (P.kind === K_CWD) { if (P.wH === tk.creatorH) slash(tk); code = R.LP_LOCKED; }
+  else code = R.UNKNOWN;
+  record(tk, s, code, ts);
+  if (P.wH === YOU_H && onYou) onYou('result', tk, code, P.kind);
+  return code;
+}
+let wireRecs = 0;
+function onWire(str) {
+  let i = 0; const L = str.length;
+  while (i < L) { let e = str.indexOf('\n', i); if (e < 0) e = L; if (e > i) { processRec(str, i, e); wireRecs++; } i = e + 1; }
+}
+
+/* Status records the protocol publishes: CURVE_STATUS before migration, CLMM_POOL_STATUS after. */
+function statusRecord(tk, now) {
+  if (!tk.migrated) {
+    tk.resY = tk.vS - VS0; tk.resX = CURVE_TOKENS - tk.sold;
+    tk.statusRec = signed(`CURVE_STATUS-R-${tk.id}-VS-${Math.round(tk.vS * 1e6)}-VT-${Math.round(tk.vT)}-RAISED-${Math.round(tk.resY * 1e6)}-GOAL-${Math.round(GRAD_SOL * 1e6)}-PCT-${Math.round((tk.resY / GRAD_SOL) * 1e4)}-T-${now}`);
+  } else {
+    const p = tk.pool, [x, y] = poolReserves(p); tk.resX = x; tk.resY = y;
+    let locked = 0; for (const q of p.positions.values()) if (q.locked) locked++;
+    tk.statusRec = signed(`CLMM_POOL_STATUS-R-${tk.id}-TICK-${p.tick + OFF}-SP-${Math.round(p.sP * 1e12)}-L-${Math.round(p.L * 1e3)}-TVLSOL-${Math.round(y * 1e6)}-TVLTOK-${Math.round(x)}-POS-${p.positions.size}-LOCKED-${locked}-FEE-${p.feeBps}-T-${now}`);
+  }
+  return tk.statusRec;
+}
+
+/* =========================================================================
+   Scoring: rugs are ruled out by protocol; the grade covers what is left.
+   ========================================================================= */
+function refreshStats(tk, now) {
+  let n = 0, total = 0; const top = [];
+  for (const [wH, v] of tk.holders) {
+    if (v < 1) continue; n++; total += v;
+    if (top.length < 10 || v > top[top.length - 1][1]) { let j = top.length; while (j > 0 && top[j - 1][1] < v) j--; top.splice(j, 0, [wH, v]); if (top.length > 10) top.pop(); }
+  }
+  tk.holdersN = n; tk.topList = top; tk.heldSum = total;
+  tk.top10 = total ? top.reduce((s, x) => s + x[1], 0) / total : 0;
+  let recentHalts = 0; for (let i = 0; i < tk.nh; i++) if (tk.halts[i * 2] > now - 3600e3) recentHalts++;
+  const i1 = lowerBound(tk.ts, tk.n, now - 3600e3); let v = 0; for (let i = i1; i < tk.n; i++) v += Math.abs(tk.vol[i]); tk.vol1h = v;
+  tk.depth = tk.migrated ? tk.pool.L * tk.pool.sP * (Math.sqrt(1.1) - 1) : tk.vS * (Math.sqrt(1.1) - 1);   // SOL to lift price 10%
+  statusRecord(tk, now);
+  tk.tvl = tk.resY + tk.resX * priceNow(tk);
+  const parts = [
+    ['Protocol rules', 35, 35],
+    ['Creator bond', Math.min(15, tk.bondLeft * 3), 15],
+    ['Vesting length', Math.min(10, tk.vestDays / 18), 10],
+    ['Distribution', n < 5 ? 10 : 20 * (1 - Math.min(1, Math.max(0, (tk.top10 - 0.25) / 0.45))), 20],
+    ['Price stability', Math.max(0, 10 - 3 * recentHalts), 10],
+    ['Liquidity depth', Math.min(10, tk.depth * 2), 10],
+  ];
+  const pen = Math.min(30, tk.attempts * 6);
+  if (pen) parts.push(['Rug attempts', -pen, 0]);
+  tk.parts = parts;
+  tk.score = Math.max(0, Math.round(parts.reduce((s, p) => s + p[1], 0)));
+  tk.grade = tk.score >= 80 ? 'A' : tk.score >= 65 ? 'B' : tk.score >= 50 ? 'C' : 'D';
+}
+
+/* =========================================================================
+   Market simulator (Web Worker). It emits signed records and relays yours.
+   It reads the protocol's status records to choose a venue (curve or pool)
+   and to place LP ranges. It never sees whether a record was accepted.
+   History is generated in 5-minute slices, each answered with fresh status.
+   ========================================================================= */
+const WSRC = `
+'use strict';
+let key = 0, outbox = '', histEnd = 0, cursor = 0, live = false; const toks = []; const status = {};
+const LOG = Math.log(1.0001), OFF = 887272;
+function sig(s){ let h=(0x811c9dc5 ^ key)>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(16).padStart(8,'0'); }
+function mb(a){ return function(){ a|=0; a=(a+0x6d2b79f5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+const AL='abcdefghjkmnpqrstuvwxyz23456789';
+function wid(r,n){ let s=''; for(let i=0;i<n;i++) s+=AL[(r()*AL.length)|0]; return s; }
+function gauss(r){ let u=0; while(!u) u=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(6.283185307*r()); }
+function ln(b){ return b+'-SIG-'+sig(b)+'\\n'; }
+function venue(t){ return status[t.id] && status[t.id].m ? 'CLMM_SWAP' : 'CURVE_SWAP'; }
+function sw(t,w,x,ts,a){ return ln(venue(t)+'-R-'+t.id+'-W-'+w+'-X-'+x+'-T-'+ts+'-A-'+a+'-MIN-0'); }
+function setup(t){
+  const r = t.r = mb(t.seed);
+  t.pool=[]; for(let i=0;i<260;i++) t.pool.push(wid(r,6));
+  t.bots=[]; for(let i=0;i<6;i++) t.bots.push('snp'+wid(r,3));
+  t.lps=[]; for(let i=0;i<5;i++) t.lps.push('lp'+wid(r,4));
+  t.churn='chn'+wid(r,3); t.whale='whl'+wid(r,3); t.whale2='acc'+wid(r,3);
+  t.held=[]; t.open=[]; t.hype=t.hype0; t.next=t.t0+900; t.snipe=t.t0+40; t.cs='s';
+  toks.push(t);
+}
+function lpAdd(t, ts){
+  const s = status[t.id]; if (!s || !s.m) return '';
+  const r = t.r, lo = Math.floor((s.tick + Math.log(0.45+r()*0.35)/LOG)/60)*60, hi = Math.floor((s.tick + Math.log(0.88+r()*0.1)/LOG)/60)*60;
+  if (hi <= lo) return '';
+  const sa = Math.exp(lo*LOG/2), sb = Math.exp(hi*LOG/2), y = 0.3 + r()*2.5, L = y/(sb-sa);
+  const pid = 'p'+wid(r,6), w = t.lps[(r()*t.lps.length)|0]; t.open.push([w,pid]);
+  return ln('CLMM_POSITION-R-'+t.id+'-W-'+w+'-OP-a-PID-'+pid+'-LO-'+(lo+OFF)+'-HI-'+(hi+OFF)+'-L-'+Math.round(L*1000)+'-T-'+ts);
+}
+function lpRm(t, ts){ if (!t.open.length) return ''; const [w,pid] = t.open.shift(); return ln('CLMM_POSITION-R-'+t.id+'-W-'+w+'-OP-r-PID-'+pid+'-LO-0-HI-0-L-0-T-'+ts); }
+function ev(t, ts){
+  const r=t.r, u=r(), m = status[t.id] && status[t.id].m;
+  if (!t.mine && u < 0.004) { const k=r();
+    if (k<0.4) return sw(t,t.creator,'s',ts,10000);
+    if (k<0.7) return m ? ln('CLMM_POSITION-R-'+t.id+'-W-'+t.creator+'-OP-r-PID-'+t.id+'s'+((r()*2)|0)+'-LO-0-HI-0-L-0-T-'+ts) : ln('CURVE_WITHDRAW-R-'+t.id+'-W-'+t.creator+'-T-'+ts+'-A-0');
+    return ln('MINT-R-'+t.id+'-W-'+t.creator+'-T-'+ts+'-A-'+Math.round(1e8*(1+r()*9))); }
+  if (u < 0.007) return venue(t)+'-R-'+t.id+'-W-'+t.pool[(r()*t.pool.length)|0]+'-X-b-T-'+ts+'-A-'+Math.round(2e6*r()+1e5)+'-MIN-0-SIG-'+((r()*4294967295)>>>0).toString(16).padStart(8,'0')+'\\n';
+  if (u < 0.02) return sw(t,t.whale,'b',ts,Math.round((3.5+r()*6)*1e6));
+  if (u < 0.035) return sw(t,t.whale2,'b',ts,Math.round((1.8+r()*1.1)*1e6));
+  if (u < 0.05) { let o=''; for(let j=0;j<3;j++){ t.cs = t.cs==='b'?'s':'b'; o += sw(t,t.churn,t.cs,ts+j*1800, t.cs==='b'?250000:10000); } return o; }
+  if (m && u < 0.064) return lpAdd(t, ts);
+  if (m && u < 0.072) return lpRm(t, ts);
+  const pb = 0.56 + 0.2*Math.tanh(t.hype-1);
+  if (r() < pb || t.held.length < 4) {
+    const w=t.pool[(Math.pow(r(),1.4)*t.pool.length)|0]; t.held.push(w); if(t.held.length>500) t.held.shift();
+    const sol=Math.min(2.8, Math.max(0.02, 0.22*Math.exp(0.85*gauss(r))));
+    return sw(t,w,'b',ts,Math.round(sol*1e6));
+  }
+  const i=(r()*t.held.length)|0, w=t.held[i], bps=[1500,3000,5000,10000][(r()*4)|0];
+  if (bps===10000) { t.held[i]=t.held[t.held.length-1]; t.held.pop(); }
+  return sw(t,w,'s',ts,bps);
+}
+function step(t, until){
+  let o='';
+  for(;;){
+    const sn = t.snipe < t.t0+15000 ? t.snipe : Infinity, nx = t.next, m = Math.min(sn, nx);
+    if (m > until) break;
+    if (sn <= nx) { o += sw(t, t.bots[(t.r()*6)|0], 'b', Math.round(sn), Math.round((0.6+t.r()*2.2)*1e6)); t.snipe += 120+t.r()*380; continue; }
+    o += ev(t, Math.round(nx));
+    const age = nx - t.t0, rate = 0.04 + 0.6*t.hype*Math.exp(-age/t.decay);
+    t.next += -Math.log(1-t.r())/rate*1000;
+    t.hype += (t.hype0-t.hype)*0.003 + (t.r()-0.5)*0.06; if (t.hype<0.1) t.hype=0.1;
+  }
+  return o;
+}
+function slice(prefix){
+  const end = Math.min(cursor + 300000, histEnd); let o = prefix;
+  for (const t of toks) o += step(t, end);
+  cursor = end;
+  const done = end >= histEnd;
+  postMessage({ h: o, done });
+  if (done && !live) { live = true; setInterval(() => { const now=Date.now(); let o=outbox; outbox=''; for (const t of toks) o += step(t, now); if (o) postMessage(o); }, 50); }
+}
+onmessage = (e) => {
+  const m = e.data;
+  if (m.type==='init') { key = m.key; histEnd = m.now; for (const t of m.toks) setup(t); cursor = Math.min(...m.toks.map(t=>t.t0)); slice(m.launches.join('\\n') + '\\n'); }
+  else if (m.type==='add') setup(m.tok);
+  else if (m.type==='submit') outbox += m.rec + '\\n';
+  else if (m.type==='status') {
+    for (const rec of m.recs) { const f = rec.split('-'); status[f[2]] = f[0]==='CLMM_POOL_STATUS' ? { m: true, tick: +f[4] - OFF } : { m: false }; }
+    if (m.next) slice('');
+  }
+};`;
+let worker = null;
+
+/* =========================================================================
+   Formatting
+   ========================================================================= */
+const nfCache = [];
+function fmt(v, d) { return (nfCache[d] ||= new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })).format(v); }
+function fmtTok(v) { const a = Math.abs(v); return a >= 1e9 ? fmt(v / 1e9, 2) + 'B' : a >= 1e6 ? fmt(v / 1e6, 2) + 'M' : a >= 1e3 ? fmt(v / 1e3, 1) + 'K' : fmt(v, 0); }
+function fmtMc(v) { return v >= 1000 ? fmt(v / 1000, 2) + 'K' : fmt(v, 1); }
+function fmtAge(ms) { const s = Math.max(0, ms / 1000); if (s < 60) return Math.floor(s) + 's'; if (s < 3600) return Math.floor(s / 60) + 'm'; const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h < 10 ? h + 'h ' + m + 'm' : h + 'h'; }
+function fmtClock(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+const p2 = (n) => String(n).padStart(2, '0');
+function fmtTime(ts, secs) { const d = new Date(ts); return p2(d.getHours()) + ':' + p2(d.getMinutes()) + (secs ? ':' + p2(d.getSeconds()) : ''); }
+function fmtPrice(p) { if (!(p > 0)) return '0'; const e = Math.floor(Math.log10(p)); return p.toFixed(Math.min(12, Math.max(2, 3 - e))); }
+
+/* =========================================================================
+   Price chart: offscreen background, live layer, overlay (as in Flux Chart)
+   ========================================================================= */
+const chartEl = $('chart'), cMain = $('cMain'), cOver = $('cOver');
+const ctx = cMain.getContext('2d', { alpha: false }), octx = cOver.getContext('2d');
+const bg = document.createElement('canvas'), bctx = bg.getContext('2d', { alpha: false });
+const AXW = 70, AXH = 22, TOP = 24;
+let W = 1, H = 1, DPR = 1, plotW = 1, plotH = 1, priceH = 1, volTop = 1;
+let chartDirty = true, overDirty = true, liqDirty = true, lastChartDraw = 0, lastLiqDraw = 0, rangeMode = 'all';
+let selected = null;
+const view = { x0: 0, x1: 1, y0: 0, y1: 1, tf: 1000 };
+const MAXC = 1200;
+const cO = new Float64Array(MAXC), cH = new Float64Array(MAXC), cL = new Float64Array(MAXC), cC = new Float64Array(MAXC), cB = new Float64Array(MAXC), cS = new Float64Array(MAXC), cT = new Float64Array(MAXC);
+let nC = 0;
+const C = {};
+const mouse = { in: false, x: 0, y: 0 };
+const FONT = '11px "JetBrains Mono", ui-monospace, Menlo, monospace';
+const TFS = [1000, 5000, 15000, 30000, 60000, 300000, 900000, 1800000, 3600000];
+
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ['bg', 'panel', 'sunk', 'rule', 'ink', 'muted', 'accent', 'accent-ink', 'up', 'down', 'warn', 'shield', 'halt', 'fair', 'liq']) C[k] = cs.getPropertyValue('--' + k).trim();
+  chartDirty = overDirty = liqDirty = true; drawSparks();
+}
+const liqEl = $('cLiq'), lctx = liqEl.getContext('2d');
+function resize() {
+  const r = chartEl.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+  plotW = Math.max(1, W - AXW); plotH = Math.max(1, H - AXH);
+  volTop = plotH - Math.round(plotH * 0.17); priceH = volTop - 8;
+  for (const c of [cMain, cOver, bg]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
+  for (const c of [ctx, octx, bctx]) c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const lr = liqEl.getBoundingClientRect();
+  liqEl.width = Math.max(1, Math.round(lr.width * DPR)); liqEl.height = Math.max(1, Math.round(lr.height * DPR)); lctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  chartDirty = overDirty = liqDirty = true;
+}
+const xPx = (t) => ((t - view.x0) / (view.x1 - view.x0)) * plotW;
+const yPx = (v) => TOP + ((view.y1 - v) / (view.y1 - view.y0)) * (priceH - TOP);
+const pxX = (px) => view.x0 + (px / plotW) * (view.x1 - view.x0);
+const pxY = (py) => view.y1 - ((py - TOP) / (priceH - TOP)) * (view.y1 - view.y0);
+function niceStep(r) { const p = 10 ** Math.floor(Math.log10(r)), m = r / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+
+function buildCandles(tk) {
+  const end = Math.max(Date.now(), tk.ts[tk.n - 1]);
+  let x0 = rangeMode === 'all' ? tk.t0 : end - 15 * 60e3;
+  if (x0 < tk.t0) x0 = tk.t0;
+  const span0 = Math.max(60e3, end - x0);
+  view.x0 = x0 - span0 * 0.01; view.x1 = end + span0 * 0.04;
+  const span = view.x1 - view.x0;
+  let tf = TFS[TFS.length - 1];
+  for (const t of TFS) if (span / t <= Math.min(MAXC, plotW / 6)) { tf = t; break; }
+  view.tf = tf;
+  nC = 0;
+  const startB = Math.floor(view.x0 / tf) * tf;
+  let i = Math.max(0, lowerBound(tk.ts, tk.n, startB) - 1), prevClose = tk.mc[i], bk = -1;
+  for (; i < tk.n; i++) {
+    const b = Math.floor(tk.ts[i] / tf) * tf, v = tk.mc[i], vol = tk.vol[i];
+    if (b < startB) { prevClose = v; continue; }
+    if (b !== bk) {
+      if (nC >= MAXC) break;
+      bk = b; cT[nC] = b; cO[nC] = prevClose; cH[nC] = Math.max(prevClose, v); cL[nC] = Math.min(prevClose, v); cC[nC] = v; cB[nC] = 0; cS[nC] = 0; nC++;
+    } else { const j = nC - 1; if (v > cH[j]) cH[j] = v; if (v < cL[j]) cL[j] = v; cC[j] = v; }
+    if (vol > 0) cB[nC - 1] += vol; else cS[nC - 1] -= vol;
+    prevClose = v;
+  }
+  let lo = Infinity, hi = -Infinity;
+  for (let j = 0; j < nC; j++) { if (cL[j] < lo) lo = cL[j]; if (cH[j] > hi) hi = cH[j]; }
+  if (!isFinite(lo)) lo = hi = mcapOf(tk);
+  const pad = Math.max((hi - lo) * 0.1, hi * 0.02);
+  view.y0 = Math.max(0, lo - pad); view.y1 = hi + pad;
+}
+function drawBg() {
+  const b = bctx;
+  b.fillStyle = C.panel; b.fillRect(0, 0, W, H);
+  b.font = FONT; b.textBaseline = 'middle';
+  const step = niceStep((view.y1 - view.y0) / Math.max(2, priceH / 50));
+  b.strokeStyle = C.rule; b.globalAlpha = 0.55; b.lineWidth = 1; b.beginPath();
+  for (let v = Math.ceil(view.y0 / step) * step; v <= view.y1; v += step) { const py = Math.round(yPx(v)) + 0.5; if (py < TOP - 4 || py > priceH) continue; b.moveTo(0, py); b.lineTo(plotW, py); }
+  const span = view.x1 - view.x0, tsteps = [5e3, 10e3, 15e3, 30e3, 60e3, 120e3, 300e3, 600e3, 900e3, 1800e3, 3600e3, 7200e3, 14400e3, 21600e3];
+  let tstep = tsteps[tsteps.length - 1]; for (const t of tsteps) if ((t / span) * plotW >= 80) { tstep = t; break; }
+  const tz = -new Date().getTimezoneOffset() * 60e3;
+  for (let t = Math.ceil((view.x0 + tz) / tstep) * tstep - tz; t <= view.x1; t += tstep) { const px = Math.round(xPx(t)) + 0.5; b.moveTo(px, TOP - 6); b.lineTo(px, plotH); }
+  b.stroke(); b.globalAlpha = 1;
+  b.fillStyle = C.muted; b.textAlign = 'left';
+  for (let v = Math.ceil(view.y0 / step) * step; v <= view.y1; v += step) { const py = Math.round(yPx(v)) + 0.5; if (py < TOP - 4 || py > priceH) continue; b.fillText(fmtMc(v), plotW + 8, py); }
+  b.textAlign = 'center';
+  for (let t = Math.ceil((view.x0 + tz) / tstep) * tstep - tz; t <= view.x1; t += tstep) { const px = xPx(t); if (px > 22 && px < plotW - 22) b.fillText(fmtTime(t, tstep < 60e3), px, plotH + AXH / 2); }
+  b.strokeStyle = C.rule; b.beginPath(); b.moveTo(plotW + 0.5, 0); b.lineTo(plotW + 0.5, H); b.moveTo(0, plotH + 0.5); b.lineTo(W, plotH + 0.5); b.moveTo(0, volTop - 3.5); b.lineTo(plotW, volTop - 3.5); b.stroke();
+  b.textAlign = 'left'; b.fillStyle = C.muted; b.fillText('MCAP · SOL', plotW + 8, 10); b.fillText('VOL', plotW + 8, volTop + 8);
+}
+function drawChart() {
+  const tk = selected; if (!tk) return;
+  buildCandles(tk); drawBg();
+  const c = ctx;
+  c.drawImage(bg, 0, 0, W, H);
+  c.save(); c.beginPath(); c.rect(0, 0, plotW, plotH); c.clip();
+  c.font = FONT; c.textBaseline = 'top';
+  const fx0 = xPx(tk.t0), fx1 = xPx(tk.fairEnd);
+  if (fx1 > 0 && fx0 < plotW) { c.fillStyle = C.fair; c.fillRect(fx0, 0, fx1 - fx0, plotH); c.fillStyle = C.accent; if (fx1 - fx0 > 70) c.fillText('FAIR LAUNCH', fx0 + 5, TOP + 2); }
+  for (let i = 0; i < tk.nh; i++) { const a = xPx(tk.halts[i * 2]), b = xPx(tk.halts[i * 2 + 1]); if (b < 0 || a > plotW) continue; c.fillStyle = C.halt; c.fillRect(a, 0, Math.max(2, b - a), plotH); }
+  if (tk.migrated) { const gx = Math.round(xPx(tk.migrated)) + 0.5; c.strokeStyle = C.shield; c.lineWidth = 2; c.beginPath(); c.moveTo(gx, 0); c.lineTo(gx, plotH); c.stroke(); c.fillStyle = C.shield; c.fillText('MIGRATED → CLMM · LP LOCKED', Math.max(4, Math.min(gx + 5, plotW - 210)), TOP + 16); }
+  let vmax = 0; for (let j = 0; j < nC; j++) { const v = cB[j] + cS[j]; if (v > vmax) vmax = v; }
+  const cw = (view.tf / (view.x1 - view.x0)) * plotW, bw = Math.max(1, Math.floor(cw * 0.7)), vh = plotH - volTop - 2;
+  const upB = new Path2D(), dnB = new Path2D(), upW = new Path2D(), dnW = new Path2D(), vUp = new Path2D(), vDn = new Path2D();
+  for (let j = 0; j < nC; j++) {
+    const x = Math.round(xPx(cT[j] + view.tf / 2)), up = cC[j] >= cO[j];
+    const W_ = up ? upW : dnW, B_ = up ? upB : dnB;
+    W_.moveTo(x + 0.5, yPx(cH[j])); W_.lineTo(x + 0.5, yPx(cL[j]));
+    const yo = yPx(cO[j]), yc = yPx(cC[j]);
+    if (bw >= 3) B_.rect(x - (bw >> 1), Math.min(yo, yc), bw, Math.max(1, Math.abs(yc - yo)));
+    if (vmax > 0) { const hb = (cB[j] / vmax) * vh, hs = (cS[j] / vmax) * vh; if (hb > 0) vUp.rect(x - (bw >> 1), plotH - hb, bw, hb); if (hs > 0) vDn.rect(x - (bw >> 1), plotH - hb - hs, bw, hs); }
+  }
+  c.lineWidth = bw >= 3 ? 1 : bw;
+  c.strokeStyle = C.up; c.stroke(upW); c.fillStyle = C.up; c.fill(upB);
+  c.strokeStyle = C.down; c.stroke(dnW); c.fillStyle = C.down; c.fill(dnB);
+  c.globalAlpha = 0.45; c.fillStyle = C.up; c.fill(vUp); c.fillStyle = C.down; c.fill(vDn); c.globalAlpha = 1;
+  c.restore();
+  chartDirty = false; overDirty = true; lastChartDraw = performance.now();
+}
+function drawOverlay() {
+  const tk = selected, c = octx; c.clearRect(0, 0, W, H); overDirty = false;
+  if (!tk || !nC) return;
+  c.font = FONT; c.textBaseline = 'middle';
+  const last = tk.mc[tk.n - 1], ly = Math.round(yPx(last)) + 0.5, col = cC[nC - 1] >= cO[nC - 1] ? C.up : C.down;
+  c.strokeStyle = col; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(0, ly); c.lineTo(plotW, ly); c.stroke(); c.setLineDash([]);
+  c.fillStyle = col; c.fillRect(plotW + 1, ly - 9, AXW - 2, 18); c.fillStyle = C['accent-ink']; c.textAlign = 'left'; c.fillText(fmtMc(last), plotW + 7, ly);
+  let j = nC - 1;
+  if (mouse.in && mouse.x < plotW && mouse.y < plotH) {
+    const mx = Math.round(mouse.x) + 0.5, my = Math.round(mouse.y) + 0.5;
+    c.strokeStyle = C.muted; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, plotH); if (my < priceH) { c.moveTo(0, my); c.lineTo(plotW, my); } c.stroke(); c.setLineDash([]);
+    if (my < priceH) { c.fillStyle = C.sunk; c.fillRect(plotW + 1, my - 9, AXW - 2, 18); c.fillStyle = C.ink; c.fillText(fmtMc(pxY(my)), plotW + 7, my); }
+    j = Math.min(nC - 1, Math.max(0, lowerBound(cT, nC, pxX(mouse.x) - view.tf + 1)));
+    const lbl = fmtTime(cT[j], true), tw = c.measureText(lbl).width + 12, bx = Math.min(Math.max(0, mouse.x - tw / 2), plotW - tw);
+    c.fillStyle = C.sunk; c.fillRect(bx, plotH + 1, tw, AXH - 2); c.fillStyle = C.ink; c.textAlign = 'center'; c.fillText(lbl, bx + tw / 2, plotH + AXH / 2);
+  }
+  c.textAlign = 'left'; let x = 8; const y = 11;
+  const seg = (t, color) => { c.fillStyle = color; c.fillText(t, x, y); x += c.measureText(t).width + 10; };
+  const k = cC[j] >= cO[j] ? C.up : C.down;
+  seg('$' + tk.ticker + ' · ' + (view.tf >= 60e3 ? view.tf / 60e3 + 'm' : view.tf / 1e3 + 's') + ' · ' + (tk.migrated ? 'CLMM' : 'curve'), C.ink);
+  seg('O ' + fmtMc(cO[j]), k); seg('H ' + fmtMc(cH[j]), k); seg('L ' + fmtMc(cL[j]), k); seg('C ' + fmtMc(cC[j]), k);
+  seg('Vol ' + fmt(cB[j] + cS[j], 2) + ' SOL', C.muted);
+}
+/* Liquidity by price: active L per tick segment, log price axis around the current price. */
+function drawLiq() {
+  const tk = selected; liqDirty = false; lastLiqDraw = performance.now();
+  if (!tk || !tk.pool) return;
+  const r = liqEl.getBoundingClientRect(), w = r.width, h = r.height, c = lctx, pool = tk.pool;
+  c.clearRect(0, 0, w, h);
+  const span = Math.round(Math.log(12) / LOG), now = Math.log(priceOf(pool)) / LOG, t0 = now - span, t1 = now + span, base = h - 16;
+  const tx = (t) => ((t - t0) / (t1 - t0)) * w;
+  const S = pool.sorted; let L = 0, maxL = 0; const segs = [];
+  for (let i = 0; i < S.length; i++) {
+    L += pool.ticks.get(S[i]).net;
+    const a = S[i], b = i + 1 < S.length ? S[i + 1] : a;
+    if (b > t0 && a < t1 && L > 1e-9) { segs.push([a, b, L]); if (L > maxL) maxL = L; }
+  }
+  c.fillStyle = C.liq;
+  for (const [a, b, l] of segs) { const x0 = Math.max(0, tx(a)), x1 = Math.min(w, tx(b)), hh = (l / maxL) * (base - 18); c.fillRect(x0, base - hh, Math.max(1, x1 - x0 - 0.5), hh); }
+  let row = 0;
+  for (const p of pool.positions.values()) {
+    if (p.owner !== YOU_H) continue;
+    const x0 = Math.max(0, tx(p.lo)), x1 = Math.min(w, tx(p.hi)); if (x1 <= 0 || x0 >= w) continue;
+    c.fillStyle = C.shield; c.fillRect(x0, 2 + (row % 3) * 5, Math.max(2, x1 - x0), 3); row++;
+  }
+  c.fillStyle = C.ink; c.fillRect(Math.round(tx(now)), 0, 2, base);
+  c.font = '10.5px "JetBrains Mono", ui-monospace, monospace'; c.fillStyle = C.muted; c.textBaseline = 'top';
+  const mc = mcapOf(tk);
+  c.textAlign = 'left'; c.fillText(fmtMc(mc / 12), 2, base + 3);
+  c.textAlign = 'center'; c.fillText(fmtMc(mc) + ' mcap', w / 2, base + 3);
+  c.textAlign = 'right'; c.fillText(fmtMc(mc * 12), w - 2, base + 3);
+  c.strokeStyle = C.rule; c.beginPath(); c.moveTo(0, base + 0.5); c.lineTo(w, base + 0.5); c.stroke();
+}
+chartEl.addEventListener('pointermove', (e) => { const r = chartEl.getBoundingClientRect(); mouse.in = true; mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; overDirty = true; });
+chartEl.addEventListener('pointerleave', () => { mouse.in = false; overDirty = true; });
+$('segRange').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; for (const x of $('segRange').children) x.setAttribute('aria-pressed', String(x === b)); rangeMode = b.dataset.r; chartDirty = true; });
+new ResizeObserver(resize).observe(chartEl);
+new ResizeObserver(resize).observe(liqEl);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+function frame() {
+  requestAnimationFrame(frame);
+  const now = performance.now();
+  if (chartDirty ? now - lastChartDraw > 80 : now - lastChartDraw > 1000) drawChart();
+  if (overDirty) drawOverlay();
+  if (liqDirty && now - lastLiqDraw > 250) drawLiq();
+}
+
+/* =========================================================================
+   Board
+   ========================================================================= */
+function statusOf(tk, now) {
+  if (!tk.fairDone) return ['fair', 'Fair launch · ' + fmtClock(tk.fairEnd - now)];
+  if (now < tk.haltUntil) return ['halt', 'Halted · ' + fmtClock(tk.haltUntil - now)];
+  if (tk.migrated) return ['live', 'CLMM · LP locked'];
+  return ['oncurve', 'Curve · ' + fmt(((tk.vS - VS0) / GRAD_SOL) * 100, 0) + '%'];
+}
+function buildCard(tk) {
+  const b = document.createElement('button');
+  b.className = 'card-tok'; b.type = 'button';
+  b.innerHTML = '<div class="grade"></div><div class="ct-top"><span class="ct-tick"></span><span class="ct-name"></span><span class="ct-age"></span></div><canvas class="ct-spark" width="184" height="68" aria-hidden="true"></canvas><div class="ct-mid"><span class="mc"></span><span class="chg"></span></div><div class="ct-bot"><span class="status"></span><div class="prog"><i></i></div><span class="vol"></span></div>';
+  b.addEventListener('click', () => select(tk));
+  const q = (s) => b.querySelector(s);
+  tk.card = { root: b, grade: q('.grade'), tick: q('.ct-tick'), name: q('.ct-name'), age: q('.ct-age'), mc: q('.mc'), chg: q('.chg'), vol: q('.vol'), bar: q('.prog i'), prog: q('.prog'), status: q('.status'), spark: q('.ct-spark') };
+  tk.card.tick.textContent = '$' + tk.ticker; tk.card.name.textContent = tk.name;
+}
+function change1h(tk, now) { const i = lowerBound(tk.ts, tk.n, now - 3600e3); return tk.mc[tk.n - 1] / tk.mc[Math.min(i, tk.n - 1)] - 1; }
+function updateBoard() {
+  const now = Date.now(), showD = $('gShowD').checked, sort = $('sortSel').value;
+  let hidden = 0;
+  const order = tokens.slice();
+  order.sort(sort === 'new' ? (a, b) => b.t0 - a.t0 : sort === 'vol' ? (a, b) => b.vol1h - a.vol1h : sort === 'mcap' ? (a, b) => mcapOf(b) - mcapOf(a) : (a, b) => b.score - a.score || b.t0 - a.t0);
+  const box = $('cards');
+  for (const tk of order) {
+    if (!tk.card) buildCard(tk);
+    const c = tk.card, risky = tk.grade === 'D', show = showD || !risky || tk === selected;
+    c.root.hidden = !show; if (!show) hidden++;
+    c.root.classList.toggle('risky', risky);
+    c.root.setAttribute('aria-current', String(tk === selected));
+    c.grade.textContent = tk.grade; c.grade.className = 'grade ' + tk.grade;
+    c.age.textContent = fmtAge(now - tk.t0);
+    c.mc.textContent = fmtMc(mcapOf(tk)) + ' SOL';
+    const ch = change1h(tk, now); c.chg.textContent = (ch >= 0 ? '+' : '') + fmt(ch * 100, 1) + '%'; c.chg.className = ch >= 0 ? 'up' : 'down';
+    c.vol.textContent = 'Vol 1h ' + fmt(tk.vol1h, 1);
+    c.prog.hidden = !!tk.migrated; c.bar.style.width = fmt(Math.min(100, ((tk.vS - VS0) / GRAD_SOL) * 100), 1) + '%';
+    const [cls, txt] = statusOf(tk, now); c.status.className = 'status ' + cls; c.status.textContent = txt;
+    box.appendChild(c.root);
+  }
+  const hn = $('hiddenNote'); hn.hidden = !hidden;
+  if (hidden) { hn.textContent = ''; hn.append(hidden + ' grade D token' + (hidden > 1 ? 's' : '') + ' hidden by your guard. '); const l = document.createElement('button'); l.className = 'linkbtn'; l.textContent = 'Show them'; l.addEventListener('click', () => { $('gShowD').checked = true; saveGuard(); }); hn.appendChild(l); }
+}
+function drawSparks() {
+  for (const tk of tokens) {
+    if (!tk.card) continue;
+    const cv = tk.card.spark, c = cv.getContext('2d'), w = cv.width, h = cv.height;
+    c.clearRect(0, 0, w, h);
+    const n = tk.n, from = Math.max(0, n - 300);
+    let lo = Infinity, hi = -Infinity; for (let i = from; i < n; i++) { const v = tk.mc[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (hi - lo < 1e-9) hi = lo + 1;
+    const t0 = tk.ts[from], t1 = Math.max(tk.ts[n - 1], t0 + 1), p = new Path2D();
+    for (let i = from; i < n; i++) { const x = ((tk.ts[i] - t0) / (t1 - t0)) * (w - 6) + 1, y = h - 4 - ((tk.mc[i] - lo) / (hi - lo)) * (h - 8); if (i === from) p.moveTo(x, y); else p.lineTo(x, y); }
+    const col = tk.mc[n - 1] >= tk.mc[from] ? C.up : C.down;
+    const f = new Path2D(p); f.lineTo(w - 5, h); f.lineTo(1, h); f.closePath();
+    c.globalAlpha = 0.14; c.fillStyle = col; c.fill(f); c.globalAlpha = 1;
+    c.strokeStyle = col; c.lineWidth = 2; c.stroke(p);
+    const ly = h - 4 - ((tk.mc[n - 1] - lo) / (hi - lo)) * (h - 8);
+    c.fillStyle = col; c.beginPath(); c.arc(w - 5, ly, 3, 0, 6.2832); c.fill();
+  }
+}
+
+/* =========================================================================
+   Detail: curve or pool status, safety file
+   ========================================================================= */
+const CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 14 3.5v4c0 3.6-2.5 6.2-6 7.5-3.5-1.3-6-3.9-6-7.5v-4z" fill="currentColor" opacity=".18"/><path d="m5 8 2 2 4-4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function select(tk) {
+  selected = tk; chartDirty = liqDirty = true; lastTapeVer = -1; myPosKey = '';
+  $('dName').textContent = tk.name;
+  $('dSub').textContent = '$' + tk.ticker + ' · ' + tk.desc;
+  chartEl.setAttribute('aria-label', 'Market cap chart for ' + tk.name);
+  renderRecord($('recLaunch'), tk.rec);
+  $('recMigrate').hidden = !tk.migrateRec; if (tk.migrateRec) renderRecord($('recMigrate'), tk.migrateRec);
+  if (!tk.migrated && side === 'lp') side = 'b';
+  setSide(side);
+  updateDetail(); updateBoard(); renderTape();
+}
+function renderRecord(pre, rec) {
+  pre.textContent = '';
+  rec.split('-').forEach((p, i) => { if (i) pre.append('-'); if (i === 0 || i % 2 === 1) { const k = document.createElement('span'); k.className = 'k'; k.textContent = p; pre.appendChild(k); } else pre.append(p.length > 24 ? shortCid(p) : p); });
+}
+function kv(dl, rows) { dl.textContent = ''; for (const [k, v, cls] of rows) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; if (cls) dd.className = cls; dl.append(dt, dd); } }
+function updateDetail() {
+  const tk = selected; if (!tk) return;
+  const now = Date.now();
+  $('dGrade').textContent = tk.grade; $('dGrade').className = 'grade ' + tk.grade;
+  $('dMcap').textContent = fmtMc(mcapOf(tk)) + ' SOL';
+  const ch = change1h(tk, now); $('dChg').textContent = (ch >= 0 ? '+' : '') + fmt(ch * 100, 1) + '%'; $('dChg').className = ch >= 0 ? 'up' : 'down';
+  $('dHold').textContent = fmt(tk.holdersN, 0);
+  const [cls, txt] = statusOf(tk, now); $('dStatus').textContent = ''; const st = document.createElement('span'); st.className = 'status ' + cls; st.textContent = txt; $('dStatus').appendChild(st);
+  $('curvePanel').hidden = !!tk.migrated; $('poolPanel').hidden = !tk.migrated;
+  if (!tk.migrated) {
+    const raised = tk.vS - VS0;
+    $('cHead').textContent = `migrates at ${fmt(GRAD_SOL, 0)} SOL into a ${fmt(tk.feeBps / 100, 2)}% CLMM pool`;
+    $('cBar').style.width = fmt(Math.min(100, (raised / GRAD_SOL) * 100), 1) + '%';
+    $('cLeft').textContent = `${fmt(raised, 2)} / ${fmt(GRAD_SOL, 0)} SOL raised · ${fmt((raised / GRAD_SOL) * 100, 1)}%`;
+    $('cNext').textContent = `${fmtTok(CURVE_TOKENS - tk.sold)} tokens left on the curve`;
+    kv($('cStats'), [
+      ['Price', fmtPrice(curvePrice(tk)) + ' SOL'],
+      ['Virtual reserves', fmt(tk.vS, 2) + ' SOL · ' + fmtTok(tk.vT)],
+      ['SOL escrowed', fmt(raised, 3) + ' SOL'],
+      ['Depth to +10%', fmt(tk.depth, 2) + ' SOL'],
+      ['At migration', `${fmt(GRAD_SOL, 0)} SOL + ${fmtTok(RESERVE)} seed the pool`],
+    ]);
+    renderRecord($('recCurve'), tk.statusRec);
+  } else {
+    const pool = tk.pool;
+    let mine = 0, lpCount = 0, locked = 0; for (const p of pool.positions.values()) { if (p.owner === YOU_H) mine++; if (p.locked) locked++; else lpCount++; }
+    $('pHead').textContent = `migrated ${fmtAge(now - tk.migrated)} ago · fee ${fmt(pool.feeBps / 100, 2)}% · tick spacing ${TS}`;
+    kv($('pStats'), [
+      ['Price', fmtPrice(priceOf(pool)) + ' SOL'],
+      ['Current tick', fmt(pool.tick, 0)],
+      ['Active liquidity', fmt(pool.L, 0)],
+      ['TVL', fmt(tk.tvl, 2) + ' SOL'],
+      ['Reserves', fmt(tk.resY, 2) + ' SOL + ' + fmtTok(tk.resX)],
+      ['Depth to +10%', fmt(tk.depth, 2) + ' SOL'],
+      ['Fees earned', fmt(pool.feesSol + pool.feesTok * priceOf(pool), 3) + ' SOL'],
+      ['Positions', `${locked} locked · ${lpCount} LP${mine ? ` (${mine} yours)` : ''}`],
+    ]);
+    renderRecord($('recStatus'), tk.statusRec);
+  }
+  // score
+  $('sScore').textContent = tk.score + ' / 100 · ' + tk.grade;
+  const sr = $('scoreRows'); sr.textContent = '';
+  for (const [label, v, max] of tk.parts) {
+    const row = document.createElement('div'); row.className = 'srow'; const neg = v < 0;
+    row.innerHTML = `<span></span><div class="bar"><i class="${neg ? 'neg' : ''}" style="width:${(neg ? Math.min(1, -v / 30) : v / max) * 100}%"></i></div><span></span>`;
+    row.firstChild.textContent = label; row.lastChild.textContent = neg ? fmt(v, 0) : fmt(v, 0) + '/' + max;
+    sr.appendChild(row);
+  }
+  // guarantees with live evidence
+  const r = tk.rej, g = $('guar'); g.textContent = '';
+  const add = (title, evid) => { const li = document.createElement('li'); li.innerHTML = CHECK + '<div></div>'; const d = li.lastChild; d.append(title); const sm = document.createElement('small'); sm.innerHTML = evid; d.appendChild(sm); g.appendChild(li); };
+  const b = (n) => `<b>${fmt(n, 0)}</b>`;
+  add('Mint authority renounced at genesis', `${b(r[R.MINT_RENOUNCED])} mint attempts rejected`);
+  add(tk.migrated ? 'Pool seed liquidity locked forever' : 'Curve SOL escrowed until migration', `${b(r[R.LP_LOCKED])} withdraw attempts rejected${tk.migrated ? ' · ' + tk.pool.positions.size + ' positions, ' + VAULT : ' · seeds a locked pool at ' + fmt(GRAD_SOL, 0) + ' SOL'}`);
+  add('Fair launch: first 60 s clear at one price', `${b(r[R.FAIR_CAP])} sniper orders trimmed and refunded`);
+  add(`Wallet cap ${fmt(tk.capBps / 100, 1)}% on the curve`, `${b(r[R.WALLET_CAP])} over-cap buys rejected${tk.migrated ? ' · lifted at migration' : ''}`);
+  add('Max 3 SOL per swap, 10 s per wallet', `${b(r[R.MAX_TRADE])} oversized and ${b(r[R.COOLDOWN])} rapid-fire swaps rejected`);
+  add('Circuit breaker: ±30% in 60 s halts for 30 s', `${b(tk.nh)} halts · ${b(r[R.HALTED])} swaps held back`);
+  add('Creator allocation vests after migration', `${b(r[R.CREATOR_LOCKED])} early dump attempts rejected`);
+  add('LP positions belong to their owner', `${b(r[R.NOT_OWNER])} attempts to remove someone else's LP rejected`);
+  add('Every record is signed', `${b(r[R.SIG])} forged records rejected`);
+  // creator
+  $('crWallet').textContent = tk.creator;
+  $('crBond').textContent = fmt(tk.bond, 2) + ' SOL';
+  $('crSlash').textContent = fmt(tk.slashed, 3) + ' SOL'; $('crSlash').className = tk.slashed ? 'shieldc' : '';
+  $('crTries').textContent = fmt(tk.attempts, 0);
+  const vested = vestedAt(tk, now);
+  $('crVested').textContent = fmtTok(vested) + ' of ' + fmtTok(CREATOR_ALLOC);
+  $('crVestBar').style.width = ((vested / CREATOR_ALLOC) * 100).toFixed(1) + '%';
+  $('crVestNote').textContent = tk.migrated ? `Unlocking linearly over ${tk.vestDays} days from migration.` : `Fully locked until migration, then unlocks over ${tk.vestDays} days.`;
+  // holders
+  $('hTop').textContent = 'top 10 hold ' + fmt(tk.top10 * 100, 1) + '%';
+  const ul = $('holders'); ul.textContent = '';
+  const tops = (tk.topList || []).slice(0, 6), max = tops.length ? tops[0][1] : 1, held = tk.heldSum || 1;
+  for (const [wH, v] of tops) {
+    const li = document.createElement('li'); if (wH === YOU_H) li.className = 'you';
+    li.innerHTML = `<span></span><div class="bar"><i style="width:${(v / max) * 100}%"></i></div><span></span>`;
+    li.firstChild.textContent = walletName.get(wH) || '?'; li.lastChild.textContent = fmt((v / held) * 100, 1) + '%';
+    ul.appendChild(li);
+  }
+  if (!tops.length) { const li = document.createElement('li'); li.style.gridTemplateColumns = '1fr'; li.textContent = 'No holders yet. Orders clear when the fair-launch window ends.'; ul.appendChild(li); }
+}
+
+/* tape */
+let lastTapeVer = -1;
+function entryWallet(e) { return e.src ? e.src.slice(e.wa, e.wb) : e.text; }
+function entryAction(e) {
+  if (e.kind === K_MINT) return 'MINT';
+  if (e.kind === K_CWD) return 'WITHDRAW CURVE SOL';
+  if (e.kind === K_POS) return e.op === 97 ? (e.code === R.OK ? `ADD LP ${fmt(e.sol, 2)} SOL${e.tok > 0 ? ' + ' + fmtTok(e.tok) : ''}` : 'ADD LP') : (e.code === R.OK ? `REMOVE LP → ${fmt(e.sol, 2)} SOL${e.tok > 0 ? ' + ' + fmtTok(e.tok) : ''}` : 'REMOVE LP');
+  const v = e.kind === K_SWAP ? 'pool ' : 'curve ';
+  if (e.side === 98) return v + 'BUY ' + fmt(e.sol, 3) + ' SOL';
+  return e.code === R.OK ? v + 'SELL ' + fmtTok(e.tok) : v + 'SELL';
+}
+function resClass(c) { return c === R.OK ? 'ok' : c === R.QUEUED ? 'q' : isBlocked[c] ? 'blk' : c === R.CLEAR || c === R.LAUNCHED || c === R.MIGRATE ? 'info' : 'neu'; }
+function renderTape() {
+  const tk = selected; if (!tk || tk.tapeVer === lastTapeVer) return;
+  lastTapeVer = tk.tapeVer;
+  const tb = $('tape'); tb.textContent = '';
+  const n = Math.min(14, tk.tapeCount, TAPE_N);
+  for (let k = 0; k < n; k++) {
+    const e = tk.tape[(tk.tapeI - 1 - k + TAPE_N * 2) % TAPE_N];
+    const tr = document.createElement('tr');
+    const t1 = document.createElement('td'); t1.textContent = fmtTime(e.ts, true); t1.className = 'muted';
+    const t4 = document.createElement('td'); const chip = document.createElement('span'); chip.className = 'res ' + resClass(e.code); chip.textContent = RSHORT[e.code]; t4.appendChild(chip);
+    if (e.kind === 0) { const td = document.createElement('td'); td.colSpan = 2; td.textContent = e.text; td.style.whiteSpace = 'normal'; tr.append(t1, t4, td); }
+    else {
+      const t2 = document.createElement('td'); const w = entryWallet(e); t2.textContent = w; if (w === YOU) t2.style.fontWeight = '600';
+      const t3 = document.createElement('td'); t3.textContent = entryAction(e);
+      if (isBlocked[e.code] || e.code === R.SLIPPAGE || e.code === R.MIGRATED || e.code === R.NOT_MIGRATED) { t4.append(' '); const s = document.createElement('span'); s.className = 'muted'; s.textContent = RTEXT[e.code]; t4.appendChild(s); }
+      tr.append(t1, t2, t3, t4);
+    }
+    tb.appendChild(tr);
+  }
+}
+let lastFeedCount = -1;
+function renderFeed() {
+  if (feedCount === lastFeedCount) return; lastFeedCount = feedCount;
+  const ul = $('feed'); ul.textContent = '';
+  const n = Math.min(10, feedCount, FEED_N);
+  for (let k = 0; k < n; k++) {
+    const e = feed[(feedI - 1 - k + FEED_N * 2) % FEED_N];
+    const li = document.createElement('li'); const a = document.createElement('span'), b = document.createElement('span');
+    a.className = 'shieldc'; a.textContent = '$' + e.tk.ticker; b.textContent = RSHORT[e.code] + ' · ' + entryWallet(e) + ' · ' + entryAction(e); b.title = RTEXT[e.code];
+    li.append(a, b); ul.appendChild(li);
+  }
+}
+function renderStrip() {
+  const s = $('strip'), note = $('replayNote');
+  const labels = [[R.FAIR_CAP, 'Sniper refunds'], [R.COOLDOWN, 'Cooldown'], [R.MAX_TRADE, 'Max size'], [R.WALLET_CAP, 'Wallet cap'], [R.HALTED, 'Halted'], [R.CREATOR_LOCKED, 'Creator dumps'], [R.LP_LOCKED, 'Withdraws'], [R.MINT_RENOUNCED, 'Mints'], [R.NOT_OWNER, 'LP theft'], [R.SIG, 'Forged']];
+  if (!s.dataset.built) { s.dataset.built = '1'; for (const [code, l] of labels) { const c = document.createElement('span'); c.className = 'chip'; c.innerHTML = '<i></i><b></b>'; c.firstChild.textContent = l; c.dataset.code = code; s.insertBefore(c, note); } }
+  for (const c of s.querySelectorAll('.chip')) c.lastChild.textContent = fmt(counts[+c.dataset.code], 0);
+  let total = 0; for (const c of BLOCKED) total += counts[c];
+  $('mBlocked').textContent = fmt(total, 0);
+}
+
+/* =========================================================================
+   Your wallet, ticket (buy / sell / liquidity), degen guard.
+   Your records are signed here and submitted over the same worker wire.
+   ========================================================================= */
+const wallet = { sol: 25, cost: new Map(), realized: 0, day: new Date().toDateString() };
+const guard = { max: 10, loss: 1, slip: 2, blockD: true, showD: false };
+try { Object.assign(guard, JSON.parse(localStorage.getItem('flux-launch-guard') || '{}')); } catch (e) {}
+$('gMax').value = String(guard.max); $('gLoss').value = String(guard.loss); $('gSlip').value = String(guard.slip); $('gGrade').checked = guard.blockD; $('gShowD').checked = guard.showD;
+function saveGuard() {
+  guard.max = +$('gMax').value; guard.loss = +$('gLoss').value; guard.slip = +$('gSlip').value; guard.blockD = $('gGrade').checked; guard.showD = $('gShowD').checked;
+  try { localStorage.setItem('flux-launch-guard', JSON.stringify(guard)); } catch (e) {}
+  updateTicket(); updateBoard();
+}
+for (const id of ['gMax', 'gLoss', 'gSlip', 'gGrade', 'gShowD']) $(id).addEventListener('change', saveGuard);
+
+let pending = null, pidSeq = 0;
+function submit(rec, meta) { pending = Object.assign({ t: performance.now() }, meta); worker.postMessage({ type: 'submit', rec }); updateTicket(); }
+
+onYou = (kind, tk, a, b) => {
+  if (kind === 'clear') { wallet.sol += a; wallet.cost.set(tk.id, (wallet.cost.get(tk.id) || 0) - a); say(`Fair launch cleared: you got ${fmtTok(b)} $${tk.ticker}${a > 1e-6 ? `, ${fmt(a, 3)} SOL refunded` : ''}.`, 'up'); }
+  else if (kind === 'slash') { wallet.sol += a; say(`The creator of $${tk.ticker} tried to rug. You received ${fmt(a, 4)} SOL from the slashed bond.`, 'shieldc'); }
+  else if (kind === 'result') {
+    const code = a, rk = b, pend = pending || {}; pending = null;
+    const ms = pend.t ? ` (${fmt(performance.now() - pend.t, 0)} ms over the wire)` : '';
+    const venue = rk === K_SWAP ? ' on the pool' : ' on the curve';
+    if ((rk === K_SWAP || rk === K_CSWAP) && P.side === 98) {
+      if (code === R.OK) { wallet.sol -= outSol; wallet.cost.set(tk.id, (wallet.cost.get(tk.id) || 0) + outSol); say(`Bought ${fmtTok(outTok)} $${tk.ticker} for ${fmt(outSol, 3)} SOL${venue}${ms}.`, 'up'); }
+      else if (code === R.QUEUED) { wallet.sol -= outSol; wallet.cost.set(tk.id, (wallet.cost.get(tk.id) || 0) + outSol); say(`Queued ${fmt(outSol, 3)} SOL. It clears with everyone else's at one price in ${fmtClock(tk.fairEnd - Date.now())}.`, 'muted'); }
+      else say('Blocked by the protocol: ' + RTEXT[code] + '.', 'down');
+    } else if (rk === K_SWAP || rk === K_CSWAP) {
+      if (code === R.OK) { const hb = pend.holdBefore || outTok, cost = wallet.cost.get(tk.id) || 0, part = (cost * outTok) / hb; wallet.cost.set(tk.id, cost - part); wallet.realized += outSol - part; wallet.sol += outSol; say(`Sold ${fmtTok(outTok)} $${tk.ticker} for ${fmt(outSol, 4)} SOL${venue}${ms}.`, outSol - part >= 0 ? 'up' : 'down'); }
+      else say('Blocked by the protocol: ' + RTEXT[code] + '.', 'down');
+    } else if (rk === K_POS) {
+      if (code !== R.OK) say('Position rejected: ' + RTEXT[code] + '.', 'down');
+      else if (P.op === 97) { wallet.sol -= outSol; say(`Position added: ${fmt(outSol, 3)} SOL${outTok > 0 ? ' + ' + fmtTok(outTok) + ' $' + tk.ticker : ''} deposited${ms}.`, 'up'); }
+      else { wallet.sol += outSol; say(`Position removed: ${fmt(outSol, 4)} SOL${outTok > 0 ? ' + ' + fmtTok(outTok) + ' $' + tk.ticker : ''} returned, including ${fmt(outFee1, 4)} SOL${outFee0 > 0 ? ' + ' + fmtTok(outFee0) : ''} in fees.`, 'up'); }
+    }
+  }
+  updateWallet(); updateTicket();
+};
+function updateWallet() {
+  const today = new Date().toDateString(); if (today !== wallet.day) { wallet.day = today; wallet.realized = 0; }
+  $('wSol').textContent = fmt(wallet.sol, 3) + ' SOL';
+  $('wPnl').textContent = 'Demo wallet · realized today ' + (wallet.realized >= 0 ? '+' : '') + fmt(wallet.realized, 3);
+  $('wPnl').className = wallet.realized > 0 ? 'up' : wallet.realized < 0 ? 'down' : '';
+}
+
+let side = 'b', lpMode = 'around';
+const LP_MODES = { below: ['Below', 0.6, 0.95], around: ['Around', 0.8, 1.25], above: ['Above', 1.05, 2] };
+function setSide(s) {
+  side = s;
+  $('tabBuy').setAttribute('aria-selected', String(s === 'b')); $('tabSell').setAttribute('aria-selected', String(s === 's')); $('tabLp').setAttribute('aria-selected', String(s === 'lp'));
+  buildPresets();
+  $('amt').value = s === 'b' ? '0.25' : s === 's' ? '50' : lpMode === 'above' ? '50' : '0.5';
+  updateTicket();
+}
+function buildPresets() {
+  const pr = $('presets'); pr.textContent = '';
+  if (side === 'lp') {
+    for (const [k, [label, lo, hi]] of Object.entries(LP_MODES)) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(k === lpMode));
+      const pct = (m) => (m < 1 ? '−' : '+') + fmt(Math.abs(m - 1) * 100, 0) + '%';
+      b.textContent = `${label} ${pct(lo)}…${pct(hi)}`;
+      b.addEventListener('click', () => { lpMode = k; buildPresets(); $('amt').value = k === 'above' ? '50' : '0.5'; updateTicket(); });
+      pr.appendChild(b);
+    }
+    return;
+  }
+  const vals = side === 'b' ? [['0.1', '0.1 SOL'], ['0.25', '0.25 SOL'], ['0.5', '0.5 SOL'], ['1', '1 SOL']] : [['25', '25%'], ['50', '50%'], ['100', '100%']];
+  for (const [v, l] of vals) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.addEventListener('click', () => { $('amt').value = v; updateTicket(); }); pr.appendChild(b); }
+}
+$('tabBuy').addEventListener('click', () => setSide('b'));
+$('tabSell').addEventListener('click', () => setSide('s'));
+$('tabLp').addEventListener('click', () => setSide('lp'));
+$('amt').addEventListener('input', updateTicket);
+
+/* LP plan: ticks and liquidity for the chosen range and amount */
+function lpPlan(tk, amount) {
+  const pool = tk.pool, [, mLo, mHi] = LP_MODES[lpMode];
+  let lo = snap(pool.tick + Math.log(mLo) / LOG), hi = snap(pool.tick + Math.log(mHi) / LOG);
+  if (lpMode === 'below') hi = Math.min(hi, snap(pool.tick)); if (lpMode === 'above') lo = Math.max(lo, snap(pool.tick) + TS);
+  if (lpMode === 'around') { lo = Math.min(lo, snap(pool.tick)); hi = Math.max(hi, snap(pool.tick) + TS); }
+  if (hi <= lo) hi = lo + TS;
+  const sa = tickSqrt(lo), sb = tickSqrt(hi), s = pool.sP;
+  let L = 0;
+  if (lpMode === 'above') { const x = ((tk.holders.get(YOU_H) || 0) * Math.min(100, Math.max(0, amount || 0))) / 100; L = x / (1 / Math.max(s, sa) - 1 / sb); }
+  else if (s >= sb) L = (amount || 0) / (sb - sa);
+  else L = (amount || 0) / Math.max(1e-30, s - sa);
+  if (!(L > 0) || !isFinite(L)) L = 0;
+  const [x, y] = L ? amountsFor(pool, lo, hi, L) : [0, 0];
+  return { lo, hi, L, x, y };
+}
+const quoteBuy = (tk, sol) => (tk.migrated ? swap(tk.pool, true, sol, false)[0] : curveBuy(tk, sol)[0]);
+const quoteSell = (tk, tokens) => (tk.migrated ? swap(tk.pool, false, tokens, false)[0] : curveSell(tk, tokens));
+function ticketChecks(tk, amount, now) {
+  const out = [], hold = tk.holders.get(YOU_H) || 0;
+  if (pending) out.push(['wait', 'Waiting for your last record to come back over the wire…']);
+  if (side === 'lp') {
+    if (!tk.migrated) { out.push(['block', `Liquidity opens when $${tk.ticker} migrates to its CLMM pool at ${fmt(GRAD_SOL, 0)} SOL raised.`]); return out; }
+    const pl = lpPlan(tk, amount);
+    if (!(pl.L > 0)) out.push(['block', lpMode === 'above' ? 'Enter a percentage of your holding to deposit.' : 'Enter an amount of SOL to deposit.']);
+    if (pl.y > wallet.sol) out.push(['block', `Not enough SOL: this range needs ${fmt(pl.y, 3)}.`]);
+    if (pl.x > hold + 1e-6) out.push(['block', `This range also needs ${fmtTok(pl.x)} $${tk.ticker}; you hold ${fmtTok(hold)}. Buy some first or choose Below (SOL only).`]);
+    if (guard.max < 100 && pl.y > (wallet.sol * guard.max) / 100) out.push(['block', `Your guard: at most ${guard.max}% of your balance per order (${fmt((wallet.sol * guard.max) / 100, 3)} SOL).`]);
+    if (!out.some((c) => c[0] === 'block')) out.push(['ok', 'You can remove this position at any time. Only the vault seed positions are locked.']);
+    return out;
+  }
+  if (side === 'b') {
+    if (!(amount > 0)) out.push(['block', 'Enter an amount in SOL.']);
+    if (amount > wallet.sol) out.push(['block', `Not enough SOL: you have ${fmt(wallet.sol, 3)}.`]);
+    if (amount > MAX_TRADE) out.push(['block', 'Protocol: at most 3 SOL per swap.']);
+    if (guard.max < 100 && amount > (wallet.sol * guard.max) / 100) out.push(['block', `Your guard: at most ${guard.max}% of your balance per trade (${fmt((wallet.sol * guard.max) / 100, 3)} SOL).`]);
+    if (wallet.realized <= -guard.loss) out.push(['block', `Your guard: daily loss limit of ${fmt(guard.loss, 1)} SOL reached. It resets at midnight.`]);
+    if (guard.blockD && tk.grade === 'D') out.push(['block', 'Your guard: grade D tokens are blocked.']);
+    if (tk.fairDone && !tk.migrated && amount > 0) {
+      const q = quoteBuy(tk, Math.min(amount, MAX_TRADE)), cap = (tk.capBps / 1e4) * SUPPLY;
+      if (hold + q > cap) out.push(['block', `Protocol: this would take you over the ${fmt(tk.capBps / 100, 1)}% wallet cap on the curve.`]);
+      else out.push(['ok', `Wallet cap headroom on the curve: ${fmtTok(cap - hold)} tokens.`]);
+    }
+    if (!tk.fairDone) out.push(['wait', `Fair launch: your order joins the batch that clears at one price in ${fmtClock(tk.fairEnd - now)}.`]);
+  } else {
+    if (hold < 1) out.push(['block', `You hold no $${tk.ticker}.`]);
+    if (!(amount > 0 && amount <= 100)) out.push(['block', 'Enter a percentage between 1 and 100.']);
+  }
+  if (now < tk.haltUntil) out.push(['block', `Circuit breaker: swaps resume in ${fmtClock(tk.haltUntil - now)}.`]);
+  const lt = tk.last.get(YOU_H);
+  if (lt !== undefined && now - lt < COOLDOWN) out.push(['block', `Cooldown: you can swap this token again in ${Math.ceil((COOLDOWN - (now - lt)) / 1000)} s.`]);
+  if (!out.some((c) => c[0] === 'block' || c[0] === 'wait')) out.push(['ok', `All checks pass. This swap goes to the ${tk.migrated ? 'CLMM pool (CLMM_SWAP)' : 'bonding curve (CURVE_SWAP)'}.`]);
+  return out;
+}
+function updateTicket() {
+  const tk = selected; if (!tk) return;
+  const now = Date.now(), amount = parseFloat($('amt').value), hold = tk.holders.get(YOU_H) || 0;
+  $('tabLp').disabled = !tk.migrated; $('tabLp').title = tk.migrated ? '' : 'Opens after migration';
+  let rows;
+  if (side === 'lp') {
+    $('amtUnit').textContent = lpMode === 'above' ? '% of holding' : 'SOL';
+    if (tk.migrated) {
+      const pl = lpPlan(tk, amount), mc = (t) => fmtMc(tickSqrt(t) ** 2 * SUPPLY);
+      rows = [['Range (mcap)', `${mc(pl.lo)} – ${mc(pl.hi)} SOL`], ['Deposit SOL', fmt(pl.y, 4)], ['Deposit $' + tk.ticker, fmtTok(pl.x)], ['Liquidity', fmt(pl.L, 0)], ['Fee tier', fmt(tk.pool.feeBps / 100, 2) + '%']];
+    } else rows = [];
+  } else if (side === 'b') {
+    $('amtUnit').textContent = 'SOL';
+    const sol = Math.min(Math.max(0, amount || 0), MAX_TRADE), q = sol > 0 ? quoteBuy(tk, sol) : 0, p0 = priceNow(tk), avg = q > 0 ? sol / q : 0;
+    rows = [['Venue', tk.migrated ? 'CLMM pool' : 'Bonding curve'], ['You receive', sol > 0 ? (tk.fairDone ? '≈ ' : 'est. ') + fmtTok(q) + ' $' + tk.ticker : '—'], ['Average price impact', q > 0 ? '+' + fmt((avg / p0 - 1) * 100, 2) + '%' : '—'], ['Minimum received', q > 0 && tk.fairDone ? fmtTok(q * (1 - guard.slip / 100)) : '—']];
+    if (tk.migrated) rows.push(['Pool fee', fmt(tk.pool.feeBps / 100, 2) + '%']);
+  } else {
+    $('amtUnit').textContent = '% of holding';
+    const want = (hold * Math.min(100, Math.max(0, amount || 0))) / 100, q = want > 0 ? quoteSell(tk, want) : 0, p0 = priceNow(tk), avg = want > 0 ? q / want : 0;
+    rows = [['Venue', tk.migrated ? 'CLMM pool' : 'Bonding curve'], ['You receive', want > 0 ? '≈ ' + fmt(q, 4) + ' SOL' : '—'], ['Average price impact', want > 0 ? fmt((avg / p0 - 1) * 100, 2) + '%' : '—'], ['Minimum received', want > 0 ? fmt(q * (1 - guard.slip / 100), 4) + ' SOL' : '—']];
+  }
+  kv($('quote'), rows);
+  const checks = ticketChecks(tk, amount, now), ul = $('checks'); ul.textContent = '';
+  for (const [lvl, t] of checks) { const li = document.createElement('li'); li.className = lvl; li.innerHTML = `<span>${lvl === 'block' ? '✕' : lvl === 'wait' ? '◷' : '✓'}</span><span></span>`; li.lastChild.textContent = t; ul.appendChild(li); }
+  const bt = $('btnTrade');
+  bt.textContent = side === 'lp' ? 'Add liquidity' : side === 'b' ? (tk.fairDone ? 'Buy $' : 'Join fair launch for $') + tk.ticker : 'Sell $' + tk.ticker;
+  bt.disabled = checks.some((c) => c[0] === 'block' || c[0] === 'wait');
+  const cost = wallet.cost.get(tk.id) || 0, value = hold > 0 ? quoteSell(tk, hold) : 0;
+  $('pos').innerHTML = hold > 0 ? `You hold <b>${fmtTok(hold)} $${tk.ticker}</b> · sells for ≈ <b>${fmt(value, 4)} SOL</b> · cost <b>${fmt(cost, 4)} SOL</b>` : (tk.queue.has(YOU_H) ? `Queued: <b>${fmt(tk.queue.get(YOU_H).sol, 3)} SOL</b> waiting for the fair-launch clear` : 'You hold none of this token.');
+  renderMyPositions(tk);
+}
+let myPosKey = '';
+function renderMyPositions(tk) {
+  const ul = $('mypos');
+  if (!tk.pool) { if (myPosKey !== 'none') { ul.textContent = ''; myPosKey = 'none'; } return; }
+  const pool = tk.pool, mine = [...pool.positions.entries()].filter(([, p]) => p.owner === YOU_H);
+  const key = tk.id + ':' + mine.map(([h]) => h).join(',') + ':' + (pending ? 1 : 0);
+  if (key !== myPosKey) {
+    myPosKey = key; ul.textContent = '';
+    for (const [h, p] of mine) {
+      const li = document.createElement('li'); li.dataset.h = h;
+      li.innerHTML = '<span class="rng"></span><button type="button" class="btn small">Remove</button><span class="amts"></span>';
+      li.querySelector('button').disabled = !!pending;
+      li.querySelector('button').addEventListener('click', () => submit(signed(`CLMM_POSITION-R-${tk.id}-W-${YOU}-OP-r-PID-${p.pid}-LO-0-HI-0-L-0-T-${Date.now()}`), { kind: 'rm' }));
+      ul.appendChild(li);
+    }
+  }
+  for (const li of ul.children) {
+    const p = pool.positions.get(+li.dataset.h); if (!p) continue;
+    const [x, y] = amountsFor(pool, p.lo, p.hi, p.L), [f0, f1] = posFees(pool, p), inR = pool.tick >= p.lo && pool.tick < p.hi;
+    const mc = (t) => fmtMc(tickSqrt(t) ** 2 * SUPPLY);
+    li.querySelector('.rng').textContent = `${p.pid} · ${mc(p.lo)}–${mc(p.hi)} mcap · ${inR ? 'in range' : 'out of range'}`;
+    li.querySelector('.rng').className = 'rng ' + (inR ? 'up' : 'warn');
+    li.querySelector('.amts').textContent = `Holds ${fmt(y, 4)} SOL + ${fmtTok(x)} · fees ${fmt(f1, 5)} SOL + ${fmtTok(f0)}`;
+  }
+}
+function say(text, cls) { const r = $('result'); r.textContent = text; r.className = 'result ' + (cls || ''); }
+
+$('btnTrade').addEventListener('click', () => {
+  const tk = selected; if (!tk || pending) return;
+  const amount = parseFloat($('amt').value), now = Date.now();
+  if (ticketChecks(tk, amount, now).some((c) => c[0] === 'block')) { updateTicket(); return; }
+  if (side === 'lp') {
+    const pl = lpPlan(tk, amount), pid = 'you' + (++pidSeq) + Math.floor(Math.random() * 900 + 100);
+    submit(signed(`CLMM_POSITION-R-${tk.id}-W-${YOU}-OP-a-PID-${pid}-LO-${pl.lo + OFF}-HI-${pl.hi + OFF}-L-${Math.floor(pl.L * 1e3 * 0.9999)}-T-${now}`), { kind: 'add' });
+    say('Signed CLMM_POSITION and submitted over the wire…', 'muted');
+    return;
+  }
+  const holdBefore = tk.holders.get(YOU_H) || 0, kind = tk.migrated ? 'CLMM_SWAP' : 'CURVE_SWAP';
+  let a, min = 0;
+  if (side === 'b') { a = Math.round(amount * 1e6); if (tk.fairDone) min = quoteBuy(tk, amount) * (1 - guard.slip / 100); }
+  else { a = Math.round(amount * 100); min = quoteSell(tk, (holdBefore * a) / 1e4) * (1 - guard.slip / 100); }
+  submit(signed(`${kind}-R-${tk.id}-W-${YOU}-X-${side}-T-${now}-A-${a}-MIN-${Math.floor(min * 1e6)}`), { kind: 'swap', holdBefore });
+  say(`Signed ${kind} and submitted over the wire…`, 'muted');
+});
+
+/* =========================================================================
+   ChainLaunch: build the payload, sign it, submit it over the wire.
+   ========================================================================= */
+const modal = $('modal');
+let draft = null;
+function formValues() {
+  return { name: $('fName').value.trim(), ticker: $('fTick').value.trim().toUpperCase(), desc: $('fDesc').value.trim(), bond: parseFloat($('fBond').value), vest: +$('fVest').value, cap: +$('fCap').value, fee: +$('fFee').value };
+}
+function buildPayload(v, t0) {
+  return {
+    type: 'ChainLaunch', version: 1, creator: YOU, createdAt: t0,
+    token: { name: v.name, ticker: v.ticker, description: v.desc, supply: SUPPLY, decimals: 6, mintAuthority: null },
+    launch: { fairLaunchSec: FAIR_MS / 1000, maxSwapSol: MAX_TRADE, cooldownSec: COOLDOWN / 1000, circuitBreaker: { movePct: 30, windowSec: 60, haltSec: 30 } },
+    curve: { type: 'constant-product', virtualSol: VS0, virtualTokens: VT0, curveTokens: CURVE_TOKENS, walletCapBps: v.cap, migrateAtSol: +GRAD_SOL.toFixed(3) },
+    migration: { to: 'CLMM', feeBps: v.fee, tickSpacing: TS, seedSol: 'all raised', seedTokens: RESERVE, seedRanges: ['±4× two-sided (70%)', '±20× two-sided (30%)', 'remainders single-sided'], seedOwner: VAULT, seedLocked: true },
+    creatorTerms: { bondSol: v.bond, allocationTokens: CREATOR_ALLOC, vestFrom: 'migration', vestDays: v.vest, slashPerAttemptPct: 25 },
+  };
+}
+function encodePayload(pl, id, metaCid) {
+  return `CHAIN_LAUNCH-I-${pl.creator}-R-${id}-TK-${pl.token.ticker}-SUP-${pl.token.supply}-MINT-none-CURVE-cp-VSOL-${pl.curve.virtualSol}-CAP-${pl.curve.walletCapBps}-GOAL-${Math.round(GRAD_SOL * 1e3)}-VEST-${pl.creatorTerms.vestDays}-BOND-${Math.round(pl.creatorTerms.bondSol * 1e3)}-FAIR-${pl.launch.fairLaunchSec}-MIGRATE-clmm-FEE-${pl.migration.feeBps}-TS-${pl.migration.tickSpacing}-LP-locked-D-${metaCid}-T-${pl.createdAt}`;
+}
+function stepState(n, state, text) { $('st' + n).className = state || ''; if (text !== undefined) $('st' + n + 's').textContent = text; }
+function refreshPayload() {
+  if (draft) return;
+  const pl = buildPayload(formValues(), Date.now());
+  $('payload').textContent = JSON.stringify(pl, null, 2);
+  stepState(1, 'done', `${JSON.stringify(pl).length} bytes · updates as you type`);
+}
+for (const id of ['fName', 'fTick', 'fDesc', 'fBond', 'fVest', 'fCap', 'fFee']) $(id).addEventListener('input', refreshPayload);
+function openModal() {
+  draft = null; modal.hidden = false; $('fErr').textContent = ''; $('btnLaunch').disabled = false;
+  $('wireRec').textContent = 'Sign to produce the record.';
+  stepState(2, '', 'Not signed yet'); stepState(3, '', 'Not submitted yet'); stepState(4, '', 'Waiting for the protocol');
+  refreshPayload(); $('fName').focus();
+}
+$('btnCreate').addEventListener('click', openModal);
+$('btnCancel').addEventListener('click', () => { modal.hidden = true; });
+modal.addEventListener('click', (e) => { if (e.target === modal) modal.hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) modal.hidden = true; });
+$('createForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (draft) return;
+  const v = formValues(), err = (m) => { $('fErr').textContent = m; };
+  if (v.name.length < 2) return err('Give the token a name of at least 2 characters.');
+  if (!/^[A-Z]{3,6}$/.test(v.ticker)) return err('The ticker must be 3 to 6 letters.');
+  if (tokens.some((t) => t.ticker === v.ticker)) return err(`$${v.ticker} is already taken. Pick another ticker.`);
+  if (!(v.bond >= 1 && v.bond <= 10)) return err('The creator bond must be between 1 and 10 SOL.');
+  if (v.bond > wallet.sol) return err(`You have ${fmt(wallet.sol, 3)} SOL, not enough for a ${fmt(v.bond, 2)} SOL bond.`);
+  err('');
+  const t0 = Date.now(), pl = buildPayload(v, t0), id = v.ticker.toLowerCase() + Math.floor(Math.random() * 900 + 100);
+  draft = { id, bond: v.bond, sent: 0 };
+  $('payload').textContent = JSON.stringify(pl, null, 2);
+  const metaBytes = new TextEncoder().encode(JSON.stringify({ name: v.name, desc: v.desc || 'No description.', created: t0, sim: { hype0: 1.5, decay: 3 * 3600e3, seed: (Math.random() * 1e9) | 0 } }));
+  const metaCid = await cidOf(metaBytes);
+  metaStore.set(metaCid, metaBytes);
+  const body = encodePayload(pl, id, metaCid), rec = signed(body);
+  renderRecord($('wireRec'), rec);
+  stepState(2, 'done', 'SIG ' + rec.slice(-8) + ' over ' + body.length + ' bytes · metadata ' + shortCid(metaCid));
+  $('btnLaunch').disabled = true;
+  draft.sent = performance.now();
+  worker.postMessage({ type: 'submit', rec });
+  stepState(3, 'done', `Submitted as ${rec.length} bytes on the worker wire`);
+});
+onLaunch = (f, tk, why) => {
+  if (f.I !== YOU || !draft || f.R !== draft.id) return;
+  if (!tk) { stepState(4, 'fail', 'Rejected: ' + why); $('fErr').textContent = 'The protocol rejected the launch: ' + why + '.'; draft = null; $('btnLaunch').disabled = false; return; }
+  wallet.sol -= draft.bond; updateWallet();
+  stepState(4, 'done', `Accepted in ${fmt(performance.now() - draft.sent, 0)} ms · bonding curve open, migrates at ${fmt(GRAD_SOL, 0)} SOL`);
+  worker.postMessage({ type: 'add', tok: workerTok(tk) });
+  refreshStats(tk, Date.now()); select(tk);
+  say(`$${tk.ticker} is live on its bonding curve. The fair-launch window clears in 60 s.`, 'up');
+  setTimeout(() => { modal.hidden = true; }, 1400);
+};
+const workerTok = (tk) => ({ id: tk.id, creator: tk.creator, t0: tk.t0, hype0: tk.hype0, decay: tk.decay, seed: tk.seed, mine: !!tk.mine });
+
+/* =========================================================================
+   Boot: build ChainLaunch records for the example tokens, replay history in
+   slices (each answered with status records), then go live.
+   ========================================================================= */
+const SEEDS = [
+  { ticker: 'TIDE', name: 'Tidepool', desc: 'Funds rock-pool surveys on the west coast.', age: 42e3, hype0: 1.7, bond: 4, vest: 180, cap: 150, fee: 100, decay: 2 * 3600e3 },
+  { ticker: 'MOTH', name: 'Lantern Moth', desc: 'A night-market collective token.', age: 7 * 60e3, hype0: 1.9, bond: 3, vest: 90, cap: 200, fee: 100, decay: 2 * 3600e3 },
+  { ticker: 'OTTR', name: 'Quiet Otter', desc: 'Meme token, slow and steady.', age: 26 * 60e3, hype0: 1.3, bond: 1.5, vest: 30, cap: 200, fee: 200, decay: 3 * 3600e3 },
+  { ticker: 'BSLT', name: 'Basalt', desc: 'Membership token for a climbing gym co-op.', age: 95 * 60e3, hype0: 2.6, bond: 6, vest: 365, cap: 100, fee: 100, decay: 4 * 3600e3 },
+  { ticker: 'CRANE', name: 'Paper Crane', desc: 'Origami artists pooling print runs.', age: 4.2 * 3600e3, hype0: 1.2, bond: 2, vest: 90, cap: 150, fee: 30, decay: 3 * 3600e3 },
+  { ticker: 'NBUS', name: 'Night Bus', desc: 'Late-night transit memes.', age: 9 * 3600e3, hype0: 0.8, bond: 1, vest: 30, cap: 200, fee: 200, decay: 3 * 3600e3 },
+  { ticker: 'KTTL', name: 'Copper Kettle', desc: 'A tea-house loyalty token.', age: 17 * 3600e3, hype0: 2.1, bond: 5, vest: 180, cap: 150, fee: 100, decay: 5 * 3600e3 },
+  { ticker: 'FNL', name: 'Fennel', desc: 'Herb-garden swap club.', age: 23.7 * 3600e3, hype0: 0.6, bond: 1, vest: 30, cap: 200, fee: 100, decay: 2 * 3600e3 },
+];
+async function boot() {
+  readTheme(); resize(); updateWallet(); setSide('b');
+  const now = Date.now();
+  let a = 7; const rnd = () => { a = (a * 16807) % 2147483647; return a / 2147483647; };
+  const AL = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const launches = [], sims = [];
+  for (const [i, s] of SEEDS.entries()) {
+    let creator = 'dev'; for (let k = 0; k < 4; k++) creator += AL[(rnd() * AL.length) | 0];
+    const t0 = now - s.age, id = s.ticker.toLowerCase() + (100 + i);
+    const metaBytes = new TextEncoder().encode(JSON.stringify({ name: s.name, desc: s.desc, created: t0, sim: { hype0: s.hype0, decay: s.decay, seed: 1000 + i * 77 } }));
+    const metaCid = await cidOf(metaBytes); metaStore.set(metaCid, metaBytes);
+    const pl = buildPayload({ name: s.name, ticker: s.ticker, desc: s.desc, bond: s.bond, vest: s.vest, cap: s.cap, fee: s.fee }, t0);
+    pl.creator = creator;
+    launches.push(signed(encodePayload(pl, id, metaCid)));
+    sims.push({ id, creator, t0, hype0: s.hype0, decay: s.decay, seed: 1000 + i * 77, mine: false });
+  }
+  let replayMs = 0, replayBytes = 0, replayRecs = 0, slices = 0;
+  worker = new Worker(URL.createObjectURL(new Blob([WSRC], { type: 'text/javascript' })));
+  worker.onmessage = (e) => {
+    const d = e.data;
+    if (typeof d === 'string') { onWire(d); return; }
+    const t = performance.now(), before = wireRecs;
+    onWire(d.h);
+    const ts = Date.now();
+    const recs = tokens.map((tk) => statusRecord(tk, ts));
+    replayMs += performance.now() - t; replayBytes += d.h.length; replayRecs += wireRecs - before; slices++;
+    worker.postMessage({ type: 'status', recs, next: !d.done });
+    if (!d.done) return;
+    $('replayNote').textContent = `Replayed ${fmt(replayRecs, 0)} signed records (${fmt(replayBytes / 1048576, 1)} MB, ${slices} slices with status feedback) through the rule engine in ${fmt(replayMs, 0)} ms.`;
+    for (const tk of tokens) { advance(tk, Date.now()); refreshStats(tk, Date.now()); }
+    select(tokens.find((x) => x.ticker === 'BSLT') || tokens[0]);
+    drawSparks(); renderFeed(); renderStrip();
+    requestAnimationFrame(frame);
+  };
+  worker.postMessage({ type: 'init', key: KEY, now, launches, toks: sims });
+
+  let lastT = performance.now();
+  setInterval(() => { if (!selected) return; const n = Date.now(); for (const tk of tokens) advance(tk, n); updateTicket(); renderTape(); renderFeed(); renderStrip(); }, 250);
+  setInterval(() => {
+    if (!selected) return;
+    const n = Date.now();
+    for (const tk of tokens) refreshStats(tk, n);
+    worker.postMessage({ type: 'status', recs: tokens.map((t) => t.statusRec) });
+    updateBoard(); updateDetail(); drawSparks(); liqDirty = true;
+    const t = performance.now(); $('mTps').textContent = fmt(swapsWindow / ((t - lastT) / 1000), 1); swapsWindow = 0; lastT = t;
+    $('mLive').textContent = fmt(tokens.length, 0);
+    $('mMig').textContent = fmt(tokens.filter((x) => x.migrated).length, 0);
+    $('mTvl').textContent = fmt(tokens.reduce((s, x) => s + (x.migrated ? x.tvl : 0), 0), 0) + ' SOL';
+  }, 1000);
+}
+boot().catch((err) => { console.error(err); $('replayNote').textContent = 'Startup failed: ' + err.message; });
+})();
+</script>
+</body>
+</html>
