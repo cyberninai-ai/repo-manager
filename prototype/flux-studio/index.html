@@ -124,6 +124,8 @@ button { cursor: pointer; }
 .ov-tag { position: absolute; pointer-events: auto; z-index: 4; display: flex; align-items: stretch; background: var(--accent); color: var(--accent-ink); border-radius: 5px; font: 600 11px/1 var(--font-ui); white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.15); transform-origin: left top; }
 .ov-tag span { padding: 5px 7px; display: inline-flex; align-items: center; gap: 5px; }
 .ov-tag button { border: 0; background: transparent; color: inherit; padding: 3px 5px; display: grid; place-items: center; border-left: 1px solid rgba(255,255,255,.25); }
+.ov-tag button.grip { border-left: 0; border-right: 1px solid rgba(255,255,255,.25); cursor: grab; padding: 3px 6px; }
+.ov-tag button.grip:active { cursor: grabbing; }
 .live .ov-box, .live .ov-pad, .live .ov-tag { display: none; }
 .drop-line { position: absolute; background: var(--accent); z-index: 6; pointer-events: none; border-radius: 3px; box-shadow: 0 0 0 1px var(--panel); }
 .drop-zone { position: absolute; border: 2px dashed var(--accent); background: var(--accent-soft); z-index: 5; pointer-events: none; border-radius: 4px; }
@@ -224,8 +226,39 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
 .anchor { display: grid; grid-template-columns: repeat(3, 16px); gap: 3px; padding: 4px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sunk); }
 .anchor button { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--rule); background: var(--panel); padding: 0; }
 .anchor button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
-.rngc { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 6px; align-items: center; }
+.rngc { display: grid; grid-template-columns: minmax(0, 1fr) 54px 10px; gap: 6px; align-items: center; }
+.rngc .num { width: 100%; font: 500 11.5px/1 var(--font-data); padding: 4px 5px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); color: var(--ink); text-align: right; }
+.rngc .pc { font: 500 11px/1 var(--font-data); color: var(--muted); }
 .rngc input { width: 100%; accent-color: var(--accent); }
+.livestat { margin: 0 0 8px; padding: 7px 9px 7px 24px; border-radius: 7px; background: var(--sunk); font-size: 12px; line-height: 1.4; position: relative; }
+.livestat::before { content: ''; position: absolute; left: 10px; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: #b45309; }
+.livestat[data-state=live]::before { background: #15803d; }
+.fields { display: grid; gap: 2px; margin: 8px 0; }
+.fieldrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 4px 6px; text-align: left; color: var(--ink); cursor: pointer; }
+.fieldrow:hover { border-color: var(--rule); background: var(--sunk); }
+.fieldrow code { font: 600 11.5px/1.2 var(--font-data); color: var(--accent); }
+.fieldrow span { font: 400 11.5px/1.2 var(--font-data); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.chips2 { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; align-items: center; }
+.chips2 .hint { width: 100%; display: flex; gap: 4px; align-items: center; }
+.chip2 { border: 1px solid var(--rule); background: var(--panel); border-radius: 999px; padding: 2px 8px; font: 500 11px/1.4 var(--font-data); color: var(--ink); cursor: pointer; }
+.chip2:hover { border-color: var(--accent); }
+details.adv { margin: 4px 0 6px; } details.adv summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 4px 0; }
+.warnhint { color: var(--warn); }
+.pwmeter { font-size: 12px; margin: 2px 0 8px; padding-left: 10px; border-left: 3px solid var(--rule); }
+.pwmeter.weak, .pwmeter.none { border-color: var(--danger); color: var(--danger); } .pwmeter.ok { border-color: var(--warn); } .pwmeter.strong { border-color: #15803d; }
+.serp { border: 1px solid var(--rule); border-radius: 9px; padding: 10px 12px; margin-bottom: 10px; background: var(--panel); display: grid; gap: 3px; }
+.serp cite { font: 400 12px/1.3 system-ui, sans-serif; color: #4d5156; font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serp b { font: 400 17px/1.3 system-ui, sans-serif; color: #1a0dab; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serp p { margin: 0; font: 400 13px/1.45 system-ui, sans-serif; color: #4d5156; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cnt2 { display: block; margin-top: 3px; font: 500 10.5px/1 var(--font-data); color: var(--muted); } .cnt2.bad { color: var(--danger); } .cnt2.bad { color: var(--danger); }
+.seock { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.seock li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 7px; font-size: 12.5px; line-height: 1.4; }
+.seock li .ic { margin-top: 2px; } .seock li.ok .ic { color: #15803d; } .seock li.warn .ic { color: var(--warn); }
+.seock li span small { display: block; color: var(--muted); }
+.botrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 12.5px; }
+.botrow small { display: block; color: var(--muted); font-size: 11.5px; }
+.botrow code { font: 600 11.5px/1.2 var(--font-data); }
+.tile.live .ic { color: var(--accent); }
 .rngc output { font: 500 11.5px/1 var(--font-data); text-align: right; }
 .hint { color: var(--muted); font-size: 12px; margin: 0; }
 .hint b { color: var(--ink); }
@@ -302,6 +335,15 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
 .sheet h2 { margin: 0; font-size: 18px; margin-right: auto; }
 .sheet textarea { width: 100%; min-height: 320px; height: 100%; font: 400 11.5px/1.45 var(--font-data); border: 1px solid var(--rule); border-radius: 8px; background: var(--sunk); padding: 10px; resize: none; }
 .sheet .acts { display: flex; justify-content: flex-end; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sheet.ask { width: min(480px, 100%); grid-template-rows: auto; gap: 12px; }
+.askhead { display: flex; gap: 10px; align-items: center; }
+.askic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in srgb, var(--comp) 14%, transparent); color: var(--comp); flex: none; }
+.sheet.ask h2 { font-size: 16px; margin: 0; }
+.sheet.ask p { margin: 0; color: var(--muted); line-height: 1.5; }
+.askrem { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.sheet.ask .acts { justify-content: stretch; }
+.sheet.ask .acts .btn { flex: 1 1 auto; justify-content: center; }
+.btn.compbtn { background: var(--comp); border-color: var(--comp); color: #fff; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 <!--body-start-->
@@ -362,6 +404,13 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
   <symbol id="i-eye" viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></symbol>
   <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.5v3.5M8 5v.1"/></symbol>
   <symbol id="i-comp" viewBox="0 0 16 16"><path d="M8 1.5 10.75 4.25 8 7 5.25 4.25zM4.25 5.25 7 8 4.25 10.75 1.5 8zM11.75 5.25 14.5 8 11.75 10.75 9 8zM8 9 10.75 11.75 8 14.5 5.25 11.75z"/></symbol>
+  <symbol id="i-stream" viewBox="0 0 16 16"><path d="M1.5 9.5h2l1.5-5 3 8 2-6 1.5 3h3"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="3" rx="1"/><rect x="2" y="6.5" width="12" height="3" rx="1" opacity=".6"/><rect x="2" y="10.5" width="12" height="3" rx="1" opacity=".35"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 16 16"><path d="M1.5 12.5 5 8l3 2.5 3.5-6 3 3"/><path d="M1.5 14.5h13" opacity=".4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 4 4"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 16 16"><rect x="2.5" y="5" width="11" height="8.5" rx="2"/><path d="M8 5V2.5M6 9h.1M10 9h.1M5.5 11.5h5"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="m2 4.5 6 4.5 6-4.5"/></symbol>
   <symbol id="i-wand" viewBox="0 0 16 16"><path d="M2.5 13.5l8-8M9 4l1.5 1.5M12 2v2M13.5 3.5h-3M12.5 7.5v1.5M13.25 8.25h-1.5"/></symbol>
 </svg>
 
@@ -418,6 +467,7 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
           <div class="ov-box" id="selBox" hidden></div>
           <div class="drop-zone" id="dropZone" hidden></div><div class="drop-line" id="dropLine" hidden></div><div class="drag-ghost" id="dragGhost" hidden></div>
           <div class="ov-tag" id="selTag" hidden>
+            <button id="tagGrip" class="grip" title="Drag to move" aria-label="Drag to move"><svg class="ic sm"><use href="#i-move"/></svg></button>
             <span id="selName">Section</span>
             <button id="tagUp" title="Move up (Alt+↑)" aria-label="Move up"><svg class="ic sm"><use href="#i-up"/></svg></button>
             <button id="tagDown" title="Move down (Alt+↓)" aria-label="Move down"><svg class="ic sm"><use href="#i-down"/></svg></button>
@@ -434,10 +484,12 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
       <div class="tabs" role="tablist">
         <button role="tab" id="tabEl" aria-selected="true"><svg class="ic"><use href="#i-cursor"/></svg>Element</button>
         <button role="tab" id="tabTheme" aria-selected="false"><svg class="ic"><use href="#i-palette"/></svg>Theme</button>
+        <button role="tab" id="tabSeo" aria-selected="false" title="Search engines and AI assistants"><svg class="ic"><use href="#i-search"/></svg>SEO</button>
         <button role="tab" id="tabVer" aria-selected="false"><svg class="ic"><use href="#i-clock"/></svg>History</button>
       </div>
       <div id="paneEl"></div>
       <div id="paneTheme" hidden></div>
+      <div id="paneSeo" hidden></div>
       <div id="paneVer" hidden>
         <div class="sect">
           <h3>Versions</h3>
@@ -459,7 +511,15 @@ textarea.ctl { resize: vertical; min-height: 54px; font-size: 12.5px; }
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
     <div class="shead"><h2 id="mTitle">Export HTML</h2><label class="hint" for="mPage">Page</label><select class="ctl" id="mPage" style="width:auto"></select></div>
     <textarea id="mCode" readonly aria-label="Exported HTML"></textarea>
-    <div class="acts"><span class="hint" id="mNote"></span><button class="btn" id="mClose">Close</button><button class="btn primary" id="mCopy">Copy HTML</button></div>
+    <div class="acts"><span class="hint" id="mNote"></span><button class="btn" id="mClose">Close</button><button class="btn" id="mDown">Download</button><button class="btn primary" id="mCopy">Copy</button></div>
+  </div>
+</div>
+<div class="modal" id="askModal" hidden>
+  <div class="sheet ask" role="alertdialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askBody">
+    <div class="askhead"><span class="askic"><svg class="ic"><use href="#i-comp"/></svg></span><h2 id="askTitle"></h2></div>
+    <p id="askBody"></p>
+    <label class="askrem" id="askRemWrap"><input type="checkbox" id="askRem"> <span id="askRemText">Always update the component without asking</span></label>
+    <div class="acts" id="askActs"></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
@@ -477,11 +537,11 @@ const ic = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use h
    children are pages. Edits are small op records with exact inverses.
    ========================================================================= */
 const CAP = 2048, BPN = 3;
-const TYPES = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'site', 'list', 'field', 'lib'];
+const TYPES = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'site', 'list', 'field', 'lib', 'data', 'repeat', 'spark'];
 const T = Object.fromEntries(TYPES.map((t, i) => [t, i]));
-const TYPE_LABEL = ['Page', 'Section', 'Box', 'Heading', 'Text', 'Button', 'Image', 'Divider', 'Spacer', 'Link', 'Badge', 'Site', 'Article list', 'Field', 'Library'];
-const TYPE_ICON = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'sitemap', 'list', 'field', 'comp'];
-const CONTAINER = new Set([T.page, T.section, T.box, T.site, T.lib]);
+const TYPE_LABEL = ['Page', 'Section', 'Box', 'Heading', 'Text', 'Button', 'Image', 'Divider', 'Spacer', 'Link', 'Badge', 'Site', 'Article list', 'Field', 'Library', 'Live data', 'Live list', 'Sparkline'];
+const TYPE_ICON = ['page', 'section', 'box', 'heading', 'text', 'button', 'image', 'divider', 'spacer', 'link', 'badge', 'sitemap', 'list', 'field', 'comp', 'stream', 'repeat', 'spark'];
+const CONTAINER = new Set([T.page, T.section, T.box, T.site, T.lib, T.data, T.repeat]);
 const TEXTUAL = new Set([T.heading, T.text, T.button, T.link, T.badge]);
 const LINKY = new Set([T.button, T.link]);
 
@@ -526,7 +586,7 @@ const PROPS = [
   ['overflow', 'Overflow', 'effects', 'enum', ['visible', 'hidden', 'scroll']],
   ['blend', 'Blend mode', 'effects', 'enum', ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity']],
   ['shared', 'Show on', 'content', 'enum', ['this', 'header', 'footer']],
-  ['limit', 'Show', 'content', 'enum', ['all', '3', '6']],
+  ['limit', 'Show', 'content', 'enum', ['all', '3', '6', '10']],
 ];
 const NP = PROPS.length;
 const PI = Object.fromEntries(PROPS.map((p, i) => [p[0], i]));
@@ -534,11 +594,16 @@ const PI = Object.fromEntries(PROPS.map((p, i) => [p[0], i]));
 const type = new Uint8Array(CAP), alive = new Uint8Array(CAP);
 const par = new Int16Array(CAP).fill(-1), first = new Int16Array(CAP).fill(-1), next = new Int16Array(CAP).fill(-1);
 const cells = new Int8Array(CAP * NP * BPN).fill(-1);
-const SF = ['x', 'h', 's', 'n', 'k', 'd', 'm', 'o', 'c'];  // text, href/slug, image, name/title, page kind, date, main node, overrides, component
+const SF = ['x', 'h', 's', 'n', 'k', 'd', 'm', 'o', 'c', 'q', 'g', 'e'];  // text, href/slug, image, name/title, page kind, date, main node, overrides, component, data source, access gate, search and AI
 const str = Object.fromEntries(SF.map((k) => [k, []]));
 const cell = (id, p, bp) => cells[(id * NP + p) * BPN + bp];
 const setCell = (id, p, bp, v) => { cells[(id * NP + p) * BPN + bp] = v; };
-function eff(id, p, bp) { for (let b = bp; b >= 0; b--) { const v = cell(id, p, b); if (v >= 0) return v; } return -1; }
+function eff(id, p, bp) { for (let b = bp; b >= 0; b--) { const v = cell(id, p, b); if (v !== -1) return v; } return -1; }
+/* X and Y are signed percents. -1 is reserved for inherit, so negatives are stored one lower. */
+const PCT_MIN = -100, PCT_MAX = 120;
+const pctEnc = (r) => { r = Math.max(PCT_MIN, Math.min(PCT_MAX, Math.round(r))); return r < 0 ? r - 1 : r; };
+const pctDec = (v) => (v < -1 ? v + 1 : v);
+const pctOf = (id, p, bp) => { const v = eff(id, p, bp); return v === -1 ? 0 : pctDec(v); };
 function children(id) { const a = []; for (let c = first[id]; c >= 0; c = next[c]) a.push(c); return a; }
 function indexOf(id) { let i = 0; for (let c = first[par[id]]; c >= 0; c = next[c], i++) if (c === id) return i; return -1; }
 function detach(id) { const p = par[id]; if (p < 0) return; if (first[p] === id) first[p] = next[id]; else { let c = first[p]; while (next[c] !== id) c = next[c]; next[c] = next[id]; } next[id] = -1; par[id] = -1; }
@@ -568,10 +633,11 @@ function fromSpec(spec) {
     let val = v;
     if (def[3] === 'enum') val = def[4].indexOf(String(v));
     else if (def[3] === 'color') val = COLORS.indexOf(v);
-    if (val < 0) throw new Error('bad value ' + k + '=' + v);
+    else if (def[3] === 'pct') val = pctEnc(+v);
+    if (def[3] !== 'pct' && val < 0) throw new Error('bad value ' + k + '=' + v);
     c[p * BPN + bp] = val;
   }
-  return { id: -1, t: T[spec.t], c, f: [spec.x, spec.h, undefined, spec.n, spec.kind, spec.date, undefined, undefined, undefined], k: (spec.k || []).map(fromSpec) };
+  return { id: -1, t: T[spec.t], c, f: [spec.x, spec.h, spec.s, spec.n, spec.kind, spec.date, undefined, undefined, undefined, spec.q, spec.g, spec.e], k: (spec.k || []).map(fromSpec) };
 }
 function assignIds(sn, used = new Set()) { let id = 1; while (alive[id] || used.has(id)) id++; if (id >= CAP) throw new Error('The site is full. Remove some elements first.'); used.add(id); sn.id = id; sn.k.forEach((k) => assignIds(k, used)); return sn; }
 const freshSnap = (spec) => assignIds(fromSpec(spec));
@@ -609,6 +675,8 @@ function tokenCss(sel) {
   for (let i = 0; i < FS_STEPS; i++) s += `--fs-${i}:${fsPx(i)}px;`;
   SPACE.forEach((m, i) => { s += `--s-${i}:${Math.round(m * t.unit)}px;`; });
   s += `--r-sm:${Math.round(t.radius * 0.5)}px;--r-md:${t.radius}px;--r-lg:${t.radius * 2}px;`;
+  const dark = lum(hexRgb(c.bg)) < 0.3;
+  s += `--c-up:${dark ? '#4ade80' : '#15803d'};--c-down:${dark ? '#f87171' : '#b91c1c'};--c-wait:${dark ? '#fbbf24' : '#b45309'};`;
   const a = [0, 0.06, 0.12][t.shadow];
   return s + `--sh-sm:0 1px 2px rgba(0,0,0,${a});--sh-md:0 4px 14px rgba(0,0,0,${a * 1.3});--sh-lg:0 14px 40px rgba(0,0,0,${a * 1.6});}`;
 }
@@ -655,7 +723,7 @@ function propCss(p, v, id, bp) {
 }
 const POSK = ['pos', 'anchor', 'x', 'y', 'inset', 'rot'].map((k) => PI[k]);
 function positionCss(id, bp) {
-  if (!POSK.some((p) => cell(id, p, bp) >= 0)) return '';
+  if (!POSK.some((p) => cell(id, p, bp) !== -1)) return '';
   const pos = eff(id, PI.pos, bp), a = Math.max(0, eff(id, PI.anchor, bp)), ins = eff(id, PI.inset, bp), d = ins >= 0 ? `var(--s-${ins})` : '0px';
   const rot = eff(id, PI.rot, bp), deg = rot > 0 ? +PROPS[PI.rot][4][rot] : 0, tf = [];
   let s = '';
@@ -664,7 +732,7 @@ function positionCss(id, bp) {
   else if (pos === 3) s += `position:sticky;top:${d};${eff(id, PI.z, bp) < 0 ? 'z-index:5;' : ''}`;
   else if (pos === 2) {
     s += `position:absolute;margin:0;${eff(id, PI.w, bp) < 0 && a !== 10 ? 'width:max-content;max-width:100%;' : ''}`;
-    if (a === 0) { const x = Math.max(0, eff(id, PI.x, bp)), y = Math.max(0, eff(id, PI.y, bp)); s += `inset:auto;left:${x}%;top:${y}%;`; tf.push(`translate(-${x}%,-${y}%)`); }
+    if (a === 0) { const x = pctOf(id, PI.x, bp), y = pctOf(id, PI.y, bp); s += `inset:auto;left:${x}%;top:${y}%;`; tf.push(`translate(${-x}%,${-y}%)`); }
     else if (a === 10) s += `inset:${d};`;
     else {
       const col = (a - 1) % 3, row = Math.floor((a - 1) / 3);
@@ -681,7 +749,7 @@ function compileNode(id) {
   let s = '';
   for (let bp = 0; bp < BPN; bp++) {
     let body = '';
-    for (let p = 0; p < NP; p++) { const v = cell(id, p, bp); if (v >= 0) body += propCss(p, v, id, bp); }
+    for (let p = 0; p < NP; p++) { const v = cell(id, p, bp); if (v !== -1) body += propCss(p, v, id, bp); }
     body += positionCss(id, bp);
     if (!body) continue;
     const grow = cell(id, PI.display, bp) === 1 && eff(id, PI.justify, bp) < 0 ? `.n${id}>.t-box,.n${id}>.t-image,.n${id}>.t-text,.n${id}>.t-field{flex:1 1 200px}` : '';
@@ -719,6 +787,31 @@ const BASE_CSS = `
 .edit .t-field{pointer-events:none}
 .dragging-site,.dragging-site *{cursor:grabbing!important;user-select:none}
 .is-dragging{opacity:.35;outline:2px dashed var(--c-accent);outline-offset:-2px}
+.t-data{position:relative;min-width:0}
+.t-repeat{display:flex;flex-direction:column;gap:var(--s-2);min-width:0}
+.t-spark{display:block;width:100%;height:56px;color:var(--c-brand)}
+.site [data-sign=up]{color:var(--c-up)}
+.site [data-sign=down]{color:var(--c-down)}
+[data-live]::before{content:'';display:inline-block;width:.55em;height:.55em;border-radius:50%;margin-right:.45em;vertical-align:.05em;background:var(--c-muted)}
+[data-live=live]::before{background:var(--c-up);animation:fx-pulse 1.6s ease-in-out infinite}
+[data-live=sample]::before,[data-live=demo]::before,[data-live=stale]::before,[data-live=connecting]::before{background:var(--c-wait)}
+@keyframes fx-pulse{50%{opacity:.35}}
+@keyframes fx-up{from{background-color:color-mix(in srgb,var(--c-up) 16%,transparent)}to{background-color:transparent}}
+@keyframes fx-down{from{background-color:color-mix(in srgb,var(--c-down) 16%,transparent)}to{background-color:transparent}}
+.fx-up{animation:fx-up .7s ease-out;border-radius:4px}.fx-down{animation:fx-down .7s ease-out;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.fx-up,.fx-down,[data-live]::before{animation:none}}
+.fx-gate{grid-column:1/-1;flex:1 1 100%;width:100%;display:grid;place-items:center;padding:var(--s-7) var(--s-4);border:1px dashed var(--c-line);border-radius:var(--r-lg);background:var(--c-surface);color:var(--c-ink);text-align:center}
+.fx-gate-in{display:grid;gap:var(--s-3);max-width:440px;width:100%;justify-items:center}
+.fx-gate-ic{color:var(--c-brand)}
+.fx-gate-t{font-family:var(--f-display);font-size:var(--fs-4);font-weight:700;line-height:1.2}
+.fx-gate-m{color:var(--c-muted)}
+.fx-gate-f{display:flex;gap:var(--s-2);width:100%;flex-wrap:wrap}
+.fx-gate-f input{flex:1 1 200px;font:inherit;padding:var(--s-3) var(--s-4);border:1px solid var(--c-line);border-radius:var(--r-md);background:var(--c-bg);color:var(--c-ink);min-height:44px;min-width:0}
+.fx-gate-f button{flex:0 0 auto;background:var(--c-accent);color:var(--c-on-accent);border:0;border-radius:var(--r-md);padding:0 var(--s-5);min-height:44px;font:inherit;font-weight:600;cursor:pointer}
+.fx-gate-e{color:var(--c-down);font-size:var(--fs-1);min-height:1.2em}
+.fx-gate-h{color:var(--c-muted);font-size:var(--fs-1)}
+.edit [data-gate]{outline:2px dashed color-mix(in srgb,var(--c-accent) 60%,transparent);outline-offset:-2px}
+.edit [data-gate]::after{content:attr(data-gate);position:absolute;top:8px;right:8px;z-index:3;pointer-events:none;font:600 11px/1 system-ui,sans-serif;padding:5px 8px;border-radius:999px;background:var(--c-accent);color:var(--c-on-accent)}
 .comp-board{padding:56px 48px;min-height:440px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;background-image:radial-gradient(var(--c-line) 1.2px,transparent 1.2px);background-size:18px 18px}
 .comp-board.fit{align-items:center}.comp-board.card>*{width:min(100%,440px);align-self:center}
 `;
@@ -768,6 +861,218 @@ function linkIndex() {
 }
 
 /* =========================================================================
+   Live data runtime. Self-contained: the editor runs it on the canvas and
+   every exported page that has live data ships this same function.
+   A [data-src] element is a source (WebSocket, server-sent events, JSON
+   polling or a simulator). Inside it, [data-bind] text fills {{field|format}},
+   [data-repeat] repeats its children per item, canvas[data-spark] charts a
+   field over time. Sources that cannot be reached fall back to sample data
+   and say so through {{$status}}.
+   ========================================================================= */
+function FluxLive() {
+  const PRESETS = {
+    'binance-ticker': { label: 'Binance · live ticker', kind: 'ws', param: 'btcusdt', paramLabel: 'Pair', url: (p) => `wss://stream.binance.com:9443/ws/${p.toLowerCase()}@ticker`, map: { symbol: 's', price: 'c', change: 'P', open: 'o', high: 'h', low: 'l', volume: 'q' }, sim: 'ticker' },
+    'binance-trades': { label: 'Binance · live trades', kind: 'ws', param: 'btcusdt', paramLabel: 'Pair', url: (p) => `wss://stream.binance.com:9443/ws/${p.toLowerCase()}@trade`, map: { price: 'p', size: 'q', time: 'T' }, derive: (r) => { r.side = r.m ? 'Sell' : 'Buy'; }, keep: 12, sim: 'trades' },
+    'coinbase-ticker': { label: 'Coinbase · live ticker', kind: 'ws', param: 'BTC-USD', paramLabel: 'Product', url: () => 'wss://ws-feed.exchange.coinbase.com', sub: (p) => JSON.stringify({ type: 'subscribe', product_ids: [p.toUpperCase()], channels: ['ticker'] }), filter: (m) => m && m.type === 'ticker', map: { symbol: 'product_id', price: 'price', open: 'open_24h', high: 'high_24h', low: 'low_24h', volume: 'volume_24h' }, derive: (r) => { if (r.open) r.change = ((r.price - r.open) / r.open) * 100; }, sim: 'ticker' },
+    'coingecko-markets': { label: 'CoinGecko · top coins', kind: 'poll', every: 60, param: '10', paramLabel: 'How many', url: (p) => `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${Math.min(50, Math.max(1, +p || 10))}&page=1`, map: { name: 'name', symbol: 'symbol', price: 'current_price', change: 'price_change_percentage_24h', cap: 'market_cap', image: 'image' }, derive: (r) => { r.symbol = String(r.symbol || '').toUpperCase(); }, sim: 'markets' },
+    'wikimedia-edits': { label: 'Wikipedia · live edits', kind: 'sse', url: () => 'https://stream.wikimedia.org/v2/stream/recentchange', filter: (m) => m && m.type === 'edit' && m.title, map: { title: 'title', user: 'user', wiki: 'server_name', time: 'timestamp', url: 'meta.uri' }, derive: (r) => { r.time = r.time * 1000; }, keep: 8, sim: 'edits' },
+    'sim-ticker': { label: 'Simulated · ticker', kind: 'sim', sim: 'ticker', param: 'BTC', paramLabel: 'Symbol' },
+    'sim-trades': { label: 'Simulated · trades', kind: 'sim', sim: 'trades', keep: 12, param: 'BTC', paramLabel: 'Symbol' },
+    'sim-markets': { label: 'Simulated · top coins', kind: 'sim', sim: 'markets' },
+    'sim-metrics': { label: 'Simulated · site metrics', kind: 'sim', sim: 'metrics' },
+    'custom-ws': { label: 'Your WebSocket', kind: 'ws', custom: true },
+    'custom-sse': { label: 'Your event stream (SSE)', kind: 'sse', custom: true },
+    'custom-poll': { label: 'Your JSON address (polling)', kind: 'poll', every: 15, custom: true },
+  };
+  const sources = new Map();
+  const get = (o, path) => { if (o == null || !path) return undefined; let v = o; for (const k of String(path).split('.')) { if (v == null) return undefined; v = v[k]; } return v; };
+  const numish = (v) => (typeof v === 'string' && v.trim() !== '' && !isNaN(+v) ? +v : v);
+  function parseMap(s) { const out = {}; String(s || '').split(/[;\n]+/).forEach((l) => { const m = /^\s*([\w$]+)\s*=\s*([\w.$-]+)\s*$/.exec(l); if (m) out[m[1]] = m[2]; }); return out; }
+  function resolve(cfg) {
+    const P = PRESETS[cfg.p] || PRESETS['sim-ticker'], param = String(cfg.a || P.param || '');
+    return { P, label: cfg.p && P.custom ? (cfg.url || P.label) : P.label, kind: P.kind, param,
+      url: P.custom ? cfg.url || '' : P.url ? P.url(param) : '', sub: P.custom ? cfg.sub || '' : P.sub ? P.sub(param) : '',
+      map: Object.assign({}, P.map || {}, parseMap(cfg.map)), path: cfg.path || '', keep: +(cfg.keep ?? P.keep ?? 0) || 0,
+      every: Math.max(5, +(cfg.every || P.every || 15)), sim: P.sim || 'ticker' };
+  }
+  function mapRec(src, o) {
+    const r = o && typeof o === 'object' && !Array.isArray(o) ? Object.assign({}, o) : { value: o };
+    for (const [alias, path] of Object.entries(src.r.map)) r[alias] = numish(get(o, path));
+    if (src.r.P.derive) try { src.r.P.derive(r); } catch (e) {}
+    return r;
+  }
+  function push(src, raw, viaSim) {
+    if (src.stopped) return;
+    if (!viaSim && src.r.P.filter && !src.r.P.filter(raw)) return;
+    const v = src.r.path ? get(raw, src.r.path) : raw;
+    if (Array.isArray(v)) { src.list = v.slice(0, 200).map((x) => (viaSim ? Object.assign({}, x) : mapRec(src, x))); src.rec = src.list[0] || {}; }
+    else { const r = viaSim ? Object.assign({}, v) : mapRec(src, v); src.rec = r; if (src.r.keep) { src.list.unshift(r); if (src.list.length > src.r.keep) src.list.length = src.r.keep; } }
+    src.hist.push(src.rec); if (src.hist.length > 240) src.hist.shift();
+    src.n++; src.t = Date.now();
+    if (!viaSim) { src.state = 'live'; src.real++; }
+    src.ver++; queue();
+  }
+  /* ---------- simulators: same field names as the real presets ---------- */
+  const SEED = { BTC: 67000, BTCUSDT: 67000, 'BTC-USD': 67000, ETH: 3200, ETHUSDT: 3200, 'ETH-USD': 3200, SOL: 150, SOLUSDT: 150, 'SOL-USD': 150 };
+  const COINS = [['Bitcoin', 'BTC', 67000], ['Ethereum', 'ETH', 3200], ['Tether', 'USDT', 1], ['Solana', 'SOL', 150], ['BNB', 'BNB', 590], ['XRP', 'XRP', 0.52], ['Cardano', 'ADA', 0.45], ['Dogecoin', 'DOGE', 0.12], ['Avalanche', 'AVAX', 28], ['Chainlink', 'LINK', 14]];
+  const WORDS = ['Kiln', 'Glaze chemistry', 'Stoneware', 'Porcelain', 'Raku', 'Celadon', 'Pottery wheel', 'Earthenware', 'Slip casting', 'Terra sigillata', 'Anagama kiln', 'Bone china'];
+  function startSim(src) {
+    const kind = src.r.sim, sym = String(src.r.param || 'BTC').toUpperCase();
+    const base = SEED[sym] || 100; let price = base * (0.98 + Math.random() * 0.04), open = base, hi = price, lo = price, vol = base * 9000, users = 1840, signups = 312, revenue = 48210;
+    const rnd = (a) => (Math.random() - 0.5) * a;
+    let coins = COINS.map(([name, symbol, p]) => ({ name, symbol, price: p, change: rnd(8), cap: p * 1e7 * (12 - COINS.length), image: '' }));
+    const tick = () => {
+      if (kind === 'ticker') { price *= 1 + rnd(0.0016); hi = Math.max(hi, price); lo = Math.min(lo, price); vol += Math.random() * base * 3; push(src, { symbol: sym.replace(/-|USDT$/g, '') + (sym.includes('-') ? '-USD' : 'USDT'), price, change: ((price - open) / open) * 100, open, high: hi, low: lo, volume: vol }, true); }
+      else if (kind === 'trades') { price *= 1 + rnd(0.0008); push(src, { price, size: +(Math.random() * 0.4).toFixed(5), time: Date.now(), side: Math.random() > 0.5 ? 'Buy' : 'Sell' }, true); }
+      else if (kind === 'markets') { coins = coins.map((c) => ({ ...c, price: c.price * (1 + rnd(0.004)), change: c.change + rnd(0.3) })); push(src, coins, true); }
+      else if (kind === 'metrics') { users += Math.round(rnd(30)); signups += Math.random() < 0.3 ? 1 : 0; revenue += Math.random() < 0.2 ? Math.round(40 + Math.random() * 200) : 0; push(src, { visitors: Math.max(0, users), signups, revenue, latency: Math.round(80 + Math.random() * 60), uptime: 99.98 }, true); }
+      else { push(src, { title: WORDS[Math.floor(Math.random() * WORDS.length)], user: 'Editor' + Math.floor(Math.random() * 900 + 100), wiki: ['en', 'de', 'fr', 'ja'][Math.floor(Math.random() * 4)] + '.wikipedia.org', time: Date.now(), url: '' }, true); }
+    };
+    tick(); if (kind === 'markets') for (let i = 0; i < 1; i++) tick();
+    const iv = setInterval(tick, kind === 'trades' ? 450 : kind === 'markets' ? 3000 : kind === 'metrics' ? 1200 : kind === 'edits' ? 900 : 800);
+    src.closeSim = () => clearInterval(iv);
+  }
+  function fallback(src, why) {
+    if (src.stopped || src.closeSim) return;
+    if (src.close) { try { src.close(); } catch (e) {} src.close = null; }
+    src.state = 'sample'; src.why = why; startSim(src); src.ver++; queue();
+  }
+  function connect(src) {
+    const r = src.r; src.state = r.kind === 'sim' ? 'demo' : 'connecting';
+    if (r.kind === 'sim') { startSim(src); return; }
+    if (!r.url) { src.state = 'offline'; src.why = 'No address set'; return; }
+    const timer = setTimeout(() => { if (!src.real) fallback(src, 'No data within 10 seconds'); }, 10000);
+    src.timers.push(timer);
+    try {
+      if (r.kind === 'ws') {
+        let tries = 0;
+        const open = () => {
+          const ws = new WebSocket(r.url); src.close = () => { ws.onclose = null; ws.close(); };
+          ws.onopen = () => { tries = 0; if (r.sub) ws.send(r.sub); };
+          ws.onmessage = (e) => { try { push(src, JSON.parse(e.data)); } catch (err) {} };
+          ws.onclose = () => { if (src.stopped || src.closeSim) return; if (!src.real) { fallback(src, 'Connection refused'); return; } src.state = 'stale'; src.ver++; queue(); const t = setTimeout(open, Math.min(15000, 1000 * 2 ** tries++)); src.timers.push(t); };
+          ws.onerror = () => {};
+        };
+        open();
+      } else if (r.kind === 'sse') {
+        const es = new EventSource(r.url); src.close = () => es.close();
+        es.onmessage = (e) => { try { push(src, JSON.parse(e.data)); } catch (err) {} };
+        es.onerror = () => { if (!src.real) fallback(src, 'Stream refused'); else { src.state = 'stale'; src.ver++; queue(); } };
+      } else {
+        let stop = false; src.close = () => { stop = true; };
+        const poll = () => fetch(r.url, { cache: 'no-store' }).then((res) => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); }).then((j) => { if (!stop) push(src, j); }, () => { if (stop) return; if (!src.real) fallback(src, 'Address refused'); else { src.state = 'stale'; src.ver++; queue(); } });
+        poll(); const iv = setInterval(() => { if (!stop && !src.closeSim) poll(); }, r.every * 1000); src.timers.push(iv);
+      }
+    } catch (e) { fallback(src, 'Blocked by the browser'); }
+  }
+  function stopSource(src) { src.stopped = true; src.timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); if (src.close) try { src.close(); } catch (e) {} if (src.closeSim) src.closeSim(); }
+  /* ---------- formatting ---------- */
+  const STATUS = { live: 'Live', connecting: 'Connecting…', sample: 'Sample data', demo: 'Simulated', stale: 'Reconnecting…', offline: 'Offline' };
+  function fmt(v, pipes) {
+    const list = pipes ? pipes.split('|').map((x) => x.trim()).filter(Boolean) : [];
+    const dflt = list.find((p) => p.startsWith('or:'));
+    if (v == null || v === '' || (typeof v === 'number' && isNaN(v))) return { text: dflt ? dflt.slice(3) : '—' };
+    let out = v, sign = 0;
+    for (const p of list) {
+      const [name, arg] = p.split(':'), n = Number(out);
+      if (name === 'usd') { const d = arg !== undefined ? +arg : Math.abs(n) >= 1 ? 2 : Math.abs(n) >= 0.01 ? 4 : 6; out = (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+      else if (name === 'num') { const d = arg !== undefined ? +arg : Math.abs(n) >= 100 ? 0 : 2; out = n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+      else if (name === 'int') out = Math.round(n).toLocaleString('en-US');
+      else if (name === 'pct') { sign = Math.sign(n); out = (n > 0 ? '+' : '') + n.toFixed(arg !== undefined ? +arg : 2) + '%'; }
+      else if (name === 'signed') { sign = Math.sign(n); out = (n > 0 ? '+' : '') + n.toLocaleString('en-US', { maximumFractionDigits: 2 }); }
+      else if (name === 'trend') sign = Math.sign(n);
+      else if (name === 'compact') out = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+      else if (name === 'time' || name === 'date' || name === 'ago') { const ms = n < 1e12 ? n * 1000 : n, d = new Date(ms); if (isNaN(d)) continue; if (name === 'time') out = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); else if (name === 'date') out = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); else { const s = Math.max(0, Math.round((Date.now() - ms) / 1000)); out = s < 5 ? 'just now' : s < 60 ? s + ' s ago' : s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago'; } }
+      else if (name === 'upper') out = String(out).toUpperCase();
+      else if (name === 'lower') out = String(out).toLowerCase();
+    }
+    return { text: String(out), sign };
+  }
+  const TOKEN = /\{\{\s*([^}|]+?)\s*((?:\|[^}|]+)*)\}\}/g;
+  function fill(tpl, ctx) { let sign = 0, first = null; const text = tpl.replace(TOKEN, (_, path, pipes) => { const r = fmt(get(ctx, path.trim()), pipes); if (r.sign) sign = r.sign; if (first === null) first = Number(get(ctx, path.trim())); return r.text; }); return { text, sign, num: first }; }
+  function setBound(el, ctx) {
+    if (el.dataset.editing) return;
+    const tpl = el.dataset.bind, r = fill(tpl, ctx);
+    if (el.textContent !== r.text) {
+      if (el._num !== undefined && isFinite(r.num) && isFinite(el._num) && r.num !== el._num && /^\s*\{\{[^}]+\}\}\s*$/.test(tpl) && !el.closest('[data-repeat]')) { el.classList.remove('fx-up', 'fx-down'); void el.offsetWidth; el.classList.add(r.num > el._num ? 'fx-up' : 'fx-down'); }
+      el.textContent = r.text;
+    }
+    el._num = r.num;
+    if (/[|]\s*(pct|signed|trend)/.test(tpl)) el.dataset.sign = r.sign > 0 ? 'up' : r.sign < 0 ? 'down' : 'flat';
+    if (tpl.includes('$status')) el.dataset.live = ctx.$state;
+  }
+  function bindTree(root, ctx) {
+    const els = root.matches && root.matches('[data-bind]') ? [root] : [];
+    els.push(...root.querySelectorAll('[data-bind]'));
+    for (const el of els) setBound(el, ctx);
+    const imgs = root.matches && root.matches('[data-bind-img]') ? [root] : []; imgs.push(...root.querySelectorAll('[data-bind-img]'));
+    for (const el of imgs) { const u = fill(el.dataset.bindImg, ctx).text; const v = u && u !== '—' ? `url("${u.replace(/"/g, '%22')}")` : ''; if (el.style.backgroundImage !== v) el.style.backgroundImage = v; }
+  }
+  function ctxOf(src, rec) { return Object.assign({}, rec, { $status: STATUS[src.state] || src.state, $state: src.state, $source: src.r.label, $count: src.n, $updated: src.t, $why: src.why || '' }); }
+  function owner(el) { return el.closest('[data-src]'); }
+  function paintRepeat(el, src) {
+    const lim = +el.dataset.repeat || 0, items = src.list.length ? src.list : src.rec && Object.keys(src.rec).length ? [src.rec] : [];
+    const shown = lim ? items.slice(0, lim) : items;
+    const tpl = [...el.children].filter((c) => !c.hasAttribute('data-clone'));
+    tpl.forEach((c) => bindTree(c, ctxOf(src, shown[0] || {})));
+    const want = Math.max(0, shown.length - 1) * tpl.length;
+    let clones = [...el.children].filter((c) => c.hasAttribute('data-clone'));
+    if (clones.length !== want) {
+      clones.forEach((c) => c.remove()); clones = [];
+      for (let i = 1; i < shown.length; i++) for (const t of tpl) { const c = t.cloneNode(true); c.setAttribute('data-clone', ''); c.removeAttribute('data-n'); c.removeAttribute('id'); c.querySelectorAll('[data-n]').forEach((x) => x.removeAttribute('data-n')); c.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); el.appendChild(c); clones.push(c); }
+    }
+    clones.forEach((c, k) => bindTree(c, ctxOf(src, shown[1 + Math.floor(k / tpl.length)] || {})));
+  }
+  function paintSpark(cv, src) {
+    const field = cv.dataset.spark || 'price', vals = src.hist.map((r) => Number(get(r, field))).filter((v) => isFinite(v));
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    if (vals.length < 2) return;
+    let lo = Math.min(...vals), hi = Math.max(...vals); if (hi === lo) { hi += 1; lo -= 1; }
+    const col = getComputedStyle(cv).color, X = (i) => (i / (vals.length - 1)) * (w - 2) + 1, Y = (v) => h - 3 - ((v - lo) / (hi - lo)) * (h - 6);
+    g.beginPath(); vals.forEach((v, i) => (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v))));
+    g.strokeStyle = col; g.lineWidth = 1.75; g.lineJoin = 'round'; g.stroke();
+    g.lineTo(X(vals.length - 1), h); g.lineTo(X(0), h); g.closePath(); g.globalAlpha = 0.12; g.fillStyle = col; g.fill(); g.globalAlpha = 1;
+    g.beginPath(); g.arc(X(vals.length - 1), Y(vals[vals.length - 1]), 2.5, 0, 7); g.fillStyle = col; g.fill();
+  }
+  function paintHost(host, src) {
+    host.dataset.state = src.state;
+    const ctx = ctxOf(src, src.rec || {});
+    for (const el of host.querySelectorAll('[data-repeat]')) if (owner(el) === host && !el.parentElement.closest('[data-repeat]')) paintRepeat(el, src);
+    for (const el of host.querySelectorAll('[data-bind],[data-bind-img]')) if (owner(el) === host && !el.closest('[data-repeat]')) bindTree(el, ctx);
+    if (host.matches('[data-bind]')) setBound(host, ctx);
+    for (const cv of host.querySelectorAll('canvas[data-spark]')) if (owner(cv) === host && !cv.closest('[data-clone]')) paintSpark(cv, src);
+  }
+  let queued = false, lastPaint = 0;
+  function queue() { if (queued) return; queued = true; const wait = Math.max(0, 200 - (Date.now() - lastPaint)); setTimeout(() => requestAnimationFrame(paint), wait); }
+  function paint() {
+    queued = false; lastPaint = Date.now();
+    for (const src of sources.values()) {
+      for (const h of [...src.hosts]) { if (!h.isConnected) { src.hosts.delete(h); continue; } if (h._ver !== src.ver || h._force) { h._ver = src.ver; h._force = false; paintHost(h, src); } }
+      if (!src.hosts.size && !src.idleSince) src.idleSince = Date.now();
+      if (src.hosts.size) src.idleSince = 0;
+      if (src.idleSince && Date.now() - src.idleSince > 4000) { stopSource(src); sources.delete(src.key); }
+    }
+  }
+  setInterval(() => { for (const src of sources.values()) for (const h of src.hosts) if (h.isConnected && h.querySelector('[data-bind*="|ago"],[data-bind*="$updated"]')) h._force = true; queue(); }, 1000);
+  function scan(root) {
+    for (const host of root.querySelectorAll('[data-src]')) {
+      const key = host.dataset.src || '{}';
+      let src = sources.get(key);
+      if (!src) { let cfg = {}; try { cfg = JSON.parse(key); } catch (e) {} src = { key, cfg, r: resolve(cfg), state: 'connecting', rec: {}, list: [], hist: [], n: 0, real: 0, t: 0, ver: 1, hosts: new Set(), timers: [], close: null, closeSim: null, stopped: false, why: '' }; sources.set(key, src); connect(src); }
+      if (!src.hosts.has(host)) { src.hosts.add(host); host._ver = -1; }
+      src.idleSince = 0;
+    }
+    queue();
+  }
+  function info(key) { const s = sources.get(key); return s ? { state: s.state, status: STATUS[s.state] || s.state, why: s.why, n: s.n, real: s.real, t: s.t, rec: s.rec, list: s.list, label: s.r.label, url: s.r.url } : null; }
+  function stop() { for (const s of sources.values()) stopSource(s); sources.clear(); }
+  return { scan, info, stop, fill, PRESETS, resolve };
+}
+const LIVE = FluxLive();
+
+/* =========================================================================
    Preview: the current page renders into a shadow root in the device frame
    ========================================================================= */
 const frame = $('frame');
@@ -777,23 +1082,49 @@ stBase.textContent = BASE_CSS;
 const siteEl = document.createElement('div'); siteEl.className = 'site edit';
 shadow.append(stTokens, stBase, stNodes, siteEl);
 const elOf = new Array(CAP);
-const TAGS = (id) => { const t = type[id]; return t === T.section ? 'section' : t === T.heading ? ['h1', 'h2', 'h3', 'h4'][Math.max(0, eff(id, PI.lvl, 0))] : t === T.text ? 'p' : LINKY.has(t) ? 'a' : t === T.divider ? 'hr' : t === T.badge ? 'span' : t === T.field ? 'input' : 'div'; };
+const TAGS = (id) => { const t = type[id]; return t === T.spark ? 'canvas' : t === T.section ? 'section' : t === T.heading ? ['h1', 'h2', 'h3', 'h4'][Math.max(0, eff(id, PI.lvl, 0))] : t === T.text ? 'p' : LINKY.has(t) ? 'a' : t === T.divider ? 'hr' : t === T.badge ? 'span' : t === T.field ? 'input' : 'div'; };
 function listCards(id, exportMode) {
   const lim = eff(id, PI.limit, 0), all = articles(), items = lim > 0 ? all.slice(0, +PROPS[PI.limit][4][lim]) : all;
   if (!items.length) return `<p class="al-empty">No articles yet. Add one from Pages → New article.</p>`;
   return items.map((pg) => `<a class="al-card" ${exportMode ? `href="${slugFile(str.h[pg])}"` : `href="#" data-href="page:${esc(str.h[pg])}"`}><div class="al-img"${firstImage(pg) ? ` style="background-image:url('${firstImage(pg)}')"` : ''}></div><span class="al-meta">${esc(fmtDate(str.d[pg]))} · ${readMinutes(pg)} min read</span><span class="al-title">${esc(str.n[pg])}</span><span class="al-ex">${esc(str.x[pg] || '')}</span><span class="al-more">Read the article →</span></a>`).join('');
 }
+const isBound = (s) => typeof s === 'string' && s.includes('{{');
+/* ---------- access gates ---------- */
+const gateOpen = new Set();
+const gateOf = (id) => { if (!str.g[id]) return null; try { const g = JSON.parse(str.g[id]); return g && (g.m === 'email' || g.m === 'password') ? g : null; } catch (e) { return null; } };
+function gateMarkup(id, g, extra) {
+  const pw = g.m === 'password';
+  return `<div class="fx-gate" data-gate="${pw ? 'password' : 'email'}" data-id="${id}"${extra || ''}><div class="fx-gate-in"><span class="fx-gate-ic" aria-hidden="true"><svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${pw ? '<rect x="3" y="7" width="10" height="7.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/>' : '<rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="m2 4.5 6 4.5 6-4.5"/>'}</svg></span><p class="fx-gate-t">${esc(g.t || (pw ? 'Members only' : 'Read the rest'))}</p><p class="fx-gate-m">${esc(g.msg || (pw ? 'Enter the password to unlock this part of the page.' : 'Leave your email to keep reading.'))}</p><form class="fx-gate-f"><input type="${pw ? 'password' : 'email'}" required autocomplete="${pw ? 'current-password' : 'email'}" placeholder="${pw ? 'Password' : 'you@example.com'}" aria-label="${pw ? 'Password' : 'Email address'}"><button type="submit">${esc(g.cta || (pw ? 'Unlock' : 'Continue'))}</button></form><p class="fx-gate-e" role="alert"></p>${g.hint ? `<p class="fx-gate-h">${esc(g.hint)}</p>` : ''}</div></div>`;
+}
+/* Live mode in the editor: the same gate, checked against the stored password */
+function previewGate(el, id, g) {
+  el.innerHTML = gateMarkup(id, g);
+  const f = el.querySelector('form'), inp = f.querySelector('input'), err = el.querySelector('.fx-gate-e');
+  f.addEventListener('submit', (e) => {
+    e.preventDefault(); const v = inp.value.trim();
+    if (g.m === 'email' ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) : v !== (g.pw || '')) { err.textContent = g.m === 'email' ? 'Enter a valid email address.' : 'That password did not work.'; return; }
+    gateOpen.add(id); structDirty = true; schedule();
+  });
+}
 function firstImage(pg) { for (const n of subtree(pg)) if (type[n] === T.image && str.s[n]) return str.s[n]; return ''; }
 function buildEl(id, reg = true) {
   const t = type[id], el = document.createElement(TAGS(id));
   el.className = `t-${TYPES[t]} n${id}`; el.dataset.n = id;
-  if (TEXTUAL.has(t)) el.textContent = str.x[id] ?? '';
+  if (TEXTUAL.has(t)) { el.textContent = str.x[id] ?? ''; if (isBound(str.x[id])) el.dataset.bind = str.x[id]; }
+  if (t === T.data) el.dataset.src = str.q[id] || '{}';
+  if (t === T.repeat) { const l = eff(id, PI.limit, 0); el.dataset.repeat = l > 0 ? PROPS[PI.limit][4][l] : ''; }
+  if (t === T.spark) { el.dataset.spark = str.x[id] || 'price'; el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'Live chart of ' + (str.x[id] || 'price')); }
   if (LINKY.has(t)) { el.href = '#'; el.dataset.href = str.h[id] || ''; }
-  if (t === T.image) { el.setAttribute('role', 'img'); el.setAttribute('aria-label', str.x[id] || 'Image'); if (str.s[id]) el.style.backgroundImage = `url("${str.s[id]}")`; }
+  if (t === T.image) { el.setAttribute('role', 'img'); el.setAttribute('aria-label', str.x[id] || 'Image'); if (isBound(str.s[id])) el.dataset.bindImg = str.s[id]; else if (str.s[id]) el.style.backgroundImage = `url("${str.s[id]}")`; }
   if (t === T.field) { el.placeholder = str.x[id] || ''; el.setAttribute('aria-label', str.x[id] || 'Field'); el.tabIndex = live ? 0 : -1; }
   if (t === T.list) el.innerHTML = listCards(id, false);
   if (t === T.section) el.id = 'n' + id;
   if (reg) elOf[id] = el;
+  const g = (t === T.section || t === T.box) ? gateOf(id) : null;
+  if (g) {
+    if (!live) el.dataset.gate = g.m === 'password' ? '🔒 Encrypted · password' : '✉ Email gate';
+    else if (!gateOpen.has(id)) { previewGate(el, id, g); return el; }
+  }
   if (CONTAINER.has(t)) for (const c of children(id)) el.appendChild(buildEl(c, reg));
   return el;
 }
@@ -809,7 +1140,7 @@ let structDirty = true, tokensDirty = true, lastStyleMs = 0, lastDomMs = 0;
 function render() {
   const t0 = performance.now();
   if (tokensDirty) { stTokens.textContent = tokenCss('.site') + tokenCssNarrow('.site *'); tokensDirty = false; ensureFonts([theme.display, theme.body]); }
-  if (structDirty) { const td = performance.now(); siteEl.replaceChildren(editingComp >= 0 && alive[editingComp] ? buildBoard(editingComp) : buildPage(curPage)); structDirty = false; lastDomMs = performance.now() - td; }
+  if (structDirty) { const td = performance.now(); siteEl.replaceChildren(editingComp >= 0 && alive[editingComp] ? buildBoard(editingComp) : buildPage(curPage)); structDirty = false; lastDomMs = performance.now() - td; LIVE.scan(siteEl); }
   if (dirty.size) {
     for (const id of dirty) if (alive[id]) compileNode(id);
     dirty.clear();
@@ -845,7 +1176,9 @@ function apply(op) {
 function patchText(id, f) {
   const el = elOf[id];
   if (type[id] === T.page || !el || !el.isConnected || structDirty) { structDirty = true; return; }
-  if (f === 'x' && TEXTUAL.has(type[id])) { if (el.textContent !== str.x[id]) el.textContent = str.x[id] ?? ''; }
+  if (f === 'x' && TEXTUAL.has(type[id]) && (isBound(str.x[id]) || el.dataset.bind)) structDirty = true;
+  else if (f === 's' && (isBound(str.s[id]) || el.dataset.bindImg)) structDirty = true;
+  else if (f === 'x' && TEXTUAL.has(type[id])) { if (el.textContent !== str.x[id]) el.textContent = str.x[id] ?? ''; }
   else if (f === 'x' && type[id] === T.image) el.setAttribute('aria-label', str.x[id] || 'Image');
   else if (f === 'x' && type[id] === T.field) el.placeholder = str.x[id] || '';
   else if (f === 'h' && LINKY.has(type[id])) el.dataset.href = str.h[id] || '';
@@ -908,7 +1241,7 @@ function instRootOf(id) { for (let c = id; c >= 0; c = par[c]) { if (!isInstNode
 function instancesOf(M) { const out = []; for (let i = 0; i < CAP; i++) if (alive[i] && str.c[i] === M && compOf(i) < 0) out.push(i); return out; }
 const ovr = (id) => new Set((str.o[id] || '').split(',').filter(Boolean));
 const ROOT_KEEP = ['mt', 'mb', 'w', 'pos', 'anchor', 'x', 'y', 'inset', 'z', 'rot'];
-const STR_SYNC = ['x', 'h', 's'];
+const STR_SYNC = ['x', 'h', 's', 'q', 'g'];
 const FI = (k) => SF.indexOf(k);
 const compShort = (M) => { const n = str.n[M] || 'Component', i = n.indexOf(' / '); return i > 0 ? n.slice(i + 3) : n; };
 const compGroup = (M) => { const n = str.n[M] || 'Component', i = n.indexOf(' / '); return i > 0 ? n.slice(0, i) : 'Ungrouped'; };
@@ -921,7 +1254,7 @@ function touchedComps(op, acc) {
 function withOverride(op) {
   if (op.noOv || op.k === 'grp' || !isInstNode(op.id)) return op;
   let key = null;
-  if (op.k === 'set' && op.v >= 0) key = PROPS[op.p][0];
+  if (op.k === 'set' && op.v !== -1) key = PROPS[op.p][0];
   else if (op.k === 'str' && STR_SYNC.includes(op.f)) key = op.f;
   if (!key || (isInstRoot(op.id) && ROOT_KEEP.includes(key))) return op;
   const o = ovr(op.id); if (o.has(key)) return op;
@@ -963,7 +1296,7 @@ function instanceSnap(M) {
 function sameShape(a, b) { if (type[a] !== type[b]) return false; const ka = children(a), kb = children(b); return ka.length === kb.length && ka.every((k, i) => sameShape(k, kb[i])); }
 function similarity(a, b) {
   let eq = 0, tot = 0;
-  const walk = (x, y) => { for (let p = 0; p < NP; p++) { if (x === a && ROOT_KEEP.includes(PROPS[p][0])) continue; for (let bp = 0; bp < BPN; bp++) { const u = cell(x, p, bp), v = cell(y, p, bp); if (u < 0 && v < 0) continue; tot++; if (u === v) eq++; } } children(x).forEach((k, i) => walk(k, children(y)[i])); };
+  const walk = (x, y) => { for (let p = 0; p < NP; p++) { if (x === a && ROOT_KEEP.includes(PROPS[p][0])) continue; for (let bp = 0; bp < BPN; bp++) { const u = cell(x, p, bp), v = cell(y, p, bp); if (u === -1 && v === -1) continue; tot++; if (u === v) eq++; } } children(x).forEach((k, i) => walk(k, children(y)[i])); };
   walk(a, b); return tot ? eq / tot : 1;
 }
 function findSimilar(id) {
@@ -1004,6 +1337,23 @@ function componentSteps(id, name, similar) {
 }
 function detachSteps(I) { return subtree(I).flatMap((n) => ['m', 'o', 'c'].map((f) => () => (str[f][n] === undefined ? null : { k: 'str', id: n, f, v: undefined }))); }
 function resetInstance(I) { commitSeq([...subtree(I).map((n) => () => (str.o[n] ? { k: 'str', id: n, f: 'o', v: undefined } : null)), ...syncSteps(I, str.c[I])], 'Reset overrides'); toast('Instance matches the main component again.'); }
+/* push this instance's overrides into the main component, so every instance gets them */
+function pushOverrides(I) {
+  const M = str.c[I], nodes = subtree(I).filter((n) => ovr(n).size && alive[str.m[n]]), cnt = nodes.reduce((a, n) => a + ovr(n).size, 0);
+  if (!cnt) return;
+  askPush(I, `Applying ${cnt} change${cnt > 1 ? 's' : ''} made on this instance to ${str.n[M]}.`, () => {
+    const steps = [];
+    for (const n of nodes) {
+      const m = str.m[n], keys = [...ovr(n)];
+      steps.push(() => ({ k: 'str', id: n, f: 'o', v: undefined }));
+      for (const key of keys) {
+        if (STR_SYNC.includes(key)) steps.push(() => ({ k: 'str', id: m, f: key, v: str[key][n] }));
+        else if (PI[key] !== undefined) for (let bp = 0; bp < BPN; bp++) steps.push(() => (cell(m, PI[key], bp) === cell(n, PI[key], bp) ? null : { k: 'set', id: m, p: PI[key], bp, v: cell(n, PI[key], bp) }));
+      }
+    }
+    pushSteps(I, steps, 'Apply overrides to main', () => M);
+  });
+}
 function resetPropOverride(id, p) {
   const key = PROPS[p][0], m = str.m[id], o = ovr(id); o.delete(key);
   commitSeq([() => ({ k: 'str', id, f: 'o', v: o.size ? [...o].join(',') : undefined }), ...[0, 1, 2].map((bp) => () => (alive[m] ? { k: 'set', id, p, bp, v: cell(m, p, bp), noOv: true } : null))], 'Reset override');
@@ -1062,6 +1412,42 @@ function insertInstance(getM, pre, label, isSection) {
   if (pl.wrap) { steps.push(() => { const sn = freshSnap(N('section', { display: 'stack', gap: 5, ...PAD }, null, [], { n: 'Section' })); sid = sn.id; return { k: 'ins', snap: sn, parent: curPage, index: children(curPage).length }; }); steps.push(mkIns(() => sid, 0)); }
   else steps.push(mkIns(() => pl.parent, pl.index));
   try { if (commitSeq(steps, label)) { sel = nid; schedule(); } } catch (err) { toast(err.message); }
+}
+
+/* ---------- changing an instance's structure updates its main component ---------- */
+let askAlways = false;
+function closeAsk() { $('askModal').hidden = true; }
+$('askModal').addEventListener('click', (e) => { if (e.target === $('askModal')) closeAsk(); });
+function ask({ title, body, choices, remember }) {
+  if (remember && askAlways) { choices[0].run(); return; }
+  $('askTitle').textContent = title; $('askBody').textContent = body;
+  $('askRemWrap').hidden = !remember; $('askRem').checked = false;
+  const acts = $('askActs'); acts.textContent = '';
+  choices.forEach((c, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (i === 0 ? ' compbtn' : ''); b.textContent = c.label;
+    b.addEventListener('click', () => { if (i === 0 && remember && $('askRem').checked) askAlways = true; closeAsk(); c.run(); });
+    acts.appendChild(b);
+  });
+  $('askModal').hidden = false; acts.firstChild.focus();
+}
+/* the node inside instance I that mirrors main-component node m */
+function instNodeFor(I, m) { if (!alive[I]) return -1; for (const n of subtree(I)) if (str.m[n] === m) return n; return -1; }
+/* a plain copy for moving into or out of a component: no instance links, fresh ids */
+function plainCopy(id) {
+  const strip = (sn) => { sn.f[FI('m')] = undefined; sn.f[FI('o')] = undefined; sn.f[FI('c')] = undefined; sn.f[FI('k')] = type[sn.id] === T.page ? sn.f[FI('k')] : undefined; sn.k.forEach(strip); return sn; };
+  return assignIds(strip(snap(id)));
+}
+function askPush(I, what, onMaster, local) {
+  const M = str.c[I];
+  if (!alive[M]) { toast(LOCKED); return; }
+  const n = instancesOf(M).length;
+  ask({ title: `Update ${str.n[M]} everywhere?`, remember: true,
+    body: `${what} This changes the component itself, so all ${n} instance${n === 1 ? '' : 's'} on every page get the same change in one undo step. Overrides on each instance are kept.`,
+    choices: [{ label: `Update component · ${n} instance${n === 1 ? '' : 's'}`, run: onMaster }, ...(local ? [{ label: local.label, run: local.run }] : []), { label: 'Cancel', run: () => {} }] });
+}
+/* run master-side steps; afterwards select what the person was working on in this instance */
+function pushSteps(I, steps, label, pickMaster) {
+  try { if (commitSeq(steps, label)) { const m = pickMaster ? pickMaster() : -1; const n = m >= 0 ? instNodeFor(I, m) : -1; sel = n >= 0 ? n : alive[I] ? I : curPage; toast(`Updated ${str.n[str.c[I]] || 'the component'} and every instance.`); schedule(); } } catch (err) { toast(err.message); }
 }
 
 /* =========================================================================
@@ -1132,7 +1518,7 @@ const PRESETS = {
   ], { n: 'Call to action' }),
   Footer: () => N('section', { display: 'grid', cols: '3', 'cols@t': '1', gap: 6, pt: 8, pb: 8, pl: 8, pr: 8, 'pl@p': 4, 'pr@p': 4, bg: 'ink', color: 'bg', shared: 'footer' }, null, [
     N('box', { display: 'stack', gap: 2 }, null, [N('link', { font: 'display', fs: 4, fw: '700' }, 'Kiln & Co.', null, { h: 'page:/' }), N('text', { fs: 1 }, '418 Alder Street · Tuesday to Sunday')]),
-    N('box', { display: 'stack', gap: 2, align: 'start' }, null, [N('text', { fw: '600', fs: 1 }, 'Explore'), N('link', { fs: 1 }, 'Workshops', null, { h: 'page:/workshops' }), N('link', { fs: 1 }, 'Visit the studio', null, { h: 'page:/visit' }), N('link', { fs: 1 }, 'Journal', null, { h: 'page:/journal' }), N('link', { fs: 1 }, 'Reserve a seat', null, { h: 'page:/book' })], { n: 'Footer links' }),
+    N('box', { display: 'stack', gap: 2, align: 'start' }, null, [N('text', { fw: '600', fs: 1 }, 'Explore'), N('link', { fs: 1 }, 'Workshops', null, { h: 'page:/workshops' }), N('link', { fs: 1 }, 'Visit the studio', null, { h: 'page:/visit' }), N('link', { fs: 1 }, 'Journal', null, { h: 'page:/journal' }), N('link', { fs: 1 }, 'Live data', null, { h: 'page:/live' }), N('link', { fs: 1 }, 'Reserve a seat', null, { h: 'page:/book' })], { n: 'Footer links' }),
     N('box', { display: 'stack', gap: 2 }, null, [N('text', { fw: '600', fs: 1 }, 'Questions?'), N('text', { fs: 1 }, 'hello@kilnandco.studio · (503) 555-0148')]),
   ], { n: 'Footer' }),
 };
@@ -1150,6 +1536,59 @@ const ELEMENTS = {
   Badge: ['badge', 'Small label', () => N('badge', { bg: 'surface', color: 'brand', fs: 1, fw: '600', pt: 1, pb: 1, pl: 3, pr: 3, radius: 'pill' }, 'New')],
   Divider: ['divider', 'Horizontal rule', () => N('divider', {})],
   Spacer: ['spacer', 'Empty vertical space', () => N('spacer', { pt: 6 })],
+};
+/* live data building blocks: real public streams with labelled sample-data fallback */
+const LCARD = { display: 'stack', gap: 3, pt: 5, pb: 5, pl: 5, pr: 5, bg: 'bg', radius: 'lg', border: 'thin' };
+const STATUS_BADGE = () => N('badge', { fs: 0, fw: '600', pt: 1, pb: 1, pl: 2, pr: 2, radius: 'pill', bg: 'surface', color: 'ink' }, '{{$status}}', null, { n: 'Status' });
+const srcCfg = (p, a, extra) => JSON.stringify({ p, ...(a ? { a } : {}), ...(extra || {}) });
+function tickerSpec(pair) {
+  return N('data', { ...LCARD }, null, [
+    N('box', { display: 'row', justify: 'between', align: 'center', gap: 3 }, null, [N('text', { fw: '700' }, '{{symbol}}', null, { n: 'Symbol' }), STATUS_BADGE()]),
+    N('text', { font: 'display', fs: 6, fw: '700', lh: 'tight' }, '{{price|usd}}', null, { n: 'Price' }),
+    N('text', { fs: 1, fw: '600' }, '{{change|pct}} in 24 h', null, { n: 'Change' }),
+    N('spark', {}, 'price', null, { n: 'Price chart' }),
+    N('text', { fs: 0, color: 'muted' }, 'High {{high|usd}} · Low {{low|usd}} · Volume {{volume|compact}}', null, { n: 'Range' }),
+  ], { n: 'Ticker card', q: srcCfg('binance-ticker', pair) });
+}
+function tradesSpec(pair = 'btcusdt') {
+  return N('data', { ...LCARD }, null, [
+    N('box', { display: 'row', justify: 'between', align: 'center', gap: 3 }, null, [N('heading', { lvl: 'H3', fs: 4 }, 'Live trades'), STATUS_BADGE()]),
+    N('repeat', { gap: 1, limit: '10' }, null, [
+      N('box', { display: 'grid', cols: '4', gap: 2, pt: 1, pb: 1, align: 'center' }, null, [N('text', { fw: '600', fs: 1 }, '{{side}}'), N('text', { font: 'mono', fs: 1 }, '{{price|usd}}'), N('text', { font: 'mono', fs: 1, color: 'muted' }, '{{size|num:4}}'), N('text', { fs: 1, color: 'muted', ta: 'right' }, '{{time|time}}')], { n: 'Trade row' }),
+    ], { n: 'Trades' }),
+  ], { n: 'Trades card', q: srcCfg('binance-trades', pair) });
+}
+function marketsSpec() {
+  return N('data', { ...LCARD }, null, [
+    N('box', { display: 'row', justify: 'between', align: 'center', gap: 3 }, null, [N('heading', { lvl: 'H3', fs: 4 }, 'Top coins'), STATUS_BADGE()]),
+    N('repeat', { gap: 1, limit: '6' }, null, [
+      N('box', { display: 'grid', cols: '4', gap: 2, pt: 1, pb: 1, align: 'center' }, null, [N('text', { fw: '600', fs: 1 }, '{{name}}'), N('text', { fs: 0, color: 'muted' }, '{{symbol}}'), N('text', { font: 'mono', fs: 1 }, '{{price|usd}}'), N('text', { fw: '600', fs: 1, ta: 'right' }, '{{change|pct}}')], { n: 'Coin row' }),
+    ], { n: 'Coins' }),
+  ], { n: 'Markets card', q: srcCfg('coingecko-markets', '10') });
+}
+function metricsSpec() {
+  const stat = (label, tpl) => N('box', { display: 'stack', gap: 1 }, null, [N('text', { fs: 0, color: 'muted', fw: '600' }, label), N('text', { font: 'display', fs: 5, fw: '700', lh: 'tight' }, tpl)], { n: label });
+  return N('data', { ...LCARD }, null, [
+    N('box', { display: 'row', justify: 'between', align: 'center', gap: 3 }, null, [N('heading', { lvl: 'H3', fs: 4 }, 'Right now on the site'), STATUS_BADGE()]),
+    N('box', { display: 'grid', cols: '3', gap: 4 }, null, [stat('Visitors', '{{visitors|int}}'), stat('Sign-ups', '{{signups|int}}'), stat('Bookings', '{{revenue|usd:0}}')]),
+    N('spark', {}, 'visitors', null, { n: 'Visitors chart' }),
+  ], { n: 'Metrics card', q: srcCfg('sim-metrics') });
+}
+function editsSpec() {
+  return N('data', { ...LCARD }, null, [
+    N('box', { display: 'row', justify: 'between', align: 'center', gap: 3 }, null, [N('heading', { lvl: 'H3', fs: 4 }, 'Wikipedia, edited right now'), STATUS_BADGE()]),
+    N('repeat', { gap: 2, limit: '6' }, null, [N('box', { display: 'stack', gap: 0 }, null, [N('text', { fw: '600', fs: 1 }, '{{title}}'), N('text', { fs: 0, color: 'muted' }, '{{wiki}} · {{time|ago}}')], { n: 'Edit row' })], { n: 'Edits' }),
+  ], { n: 'Edits card', q: srcCfg('wikimedia-edits') });
+}
+const LIVE_ELEMENTS = {
+  'Crypto ticker': ['stream', 'Live price over WebSocket (Binance)', () => tickerSpec('btcusdt')],
+  'Live trades': ['repeat', 'Every trade as it happens (Binance)', () => tradesSpec()],
+  'Top coins': ['list', 'Market table, refreshed every minute (CoinGecko)', () => marketsSpec()],
+  'Live feed': ['text', 'Wikipedia edits over server-sent events', () => editsSpec()],
+  'Metrics': ['spark', 'Simulated visitor counters', () => metricsSpec()],
+  'Data source': ['stream', 'Connect your own stream or JSON address', () => N('data', { ...LCARD }, null, [STATUS_BADGE(), N('text', {}, 'Latest value: {{value}}')], { n: 'Data source', q: srcCfg('sim-ticker', 'BTC') })],
+  'Live list': ['repeat', 'Repeats its first child for each item (inside a data source)', () => N('repeat', { gap: 2, limit: '6' }, null, [N('text', {}, '{{name}} · {{price|usd}}')], { n: 'Live list' })],
+  'Sparkline': ['spark', 'Chart of a field over time (inside a data source)', () => N('spark', {}, 'price', null, { n: 'Sparkline' })],
 };
 const SECTION_ICONS = { Header: 'section', Hero: 'heading', Features: 'grid', Pricing: 'list', Testimonial: 'text', Journal: 'article', Signup: 'field', 'Call to action': 'button', Footer: 'section' };
 function pageHero(h1, lead, badge) { return N('section', { display: 'stack', gap: 4, align: 'start', ...PAD, pb: 6 }, null, [...(badge ? [N('badge', { bg: 'surface', color: 'brand', fs: 1, fw: '600', pt: 1, pb: 1, pl: 3, pr: 3, radius: 'pill' }, badge)] : []), N('heading', { lvl: 'H1', fs: 7, lh: 'tight' }, h1), N('text', { fs: 3, color: 'muted' }, lead)], { n: 'Page header' }); }
@@ -1170,7 +1609,7 @@ function articlePage(slug, title, date, excerpt, body) {
 /* the sample site's repeated designs become components with instances */
 function componentizeSample() {
   const byName = (name) => { for (let i = 0; i < CAP; i++) if (alive[i] && str.n[i] === name && compOf(i) < 0 && !isInstNode(i)) return i; return -1; };
-  for (const [nm, comp] of [['Feature card', 'Card / Feature'], ['Course card', 'Card / Course'], ['Primary button', 'Button / Primary']]) {
+  for (const [nm, comp] of [['Feature card', 'Card / Feature'], ['Course card', 'Card / Course'], ['Primary button', 'Button / Primary'], ['Ticker card', 'Data / Crypto ticker']]) {
     const id = byName(nm); if (id < 0) continue;
     for (const mk of componentSteps(id, comp, findSimilar(id))) { const op = mk(); if (op) apply(op); }
   }
@@ -1187,15 +1626,25 @@ function sampleSite() {
       N('section', { display: 'grid', cols: '2', 'cols@t': '1', gap: 8, ...PAD, pt: 2 }, null, [
         N('box', { display: 'stack', gap: 3 }, null, [N('heading', { lvl: 'H2', fs: 5 }, 'Opening hours'), N('text', {}, 'Tuesday to Friday · 4 pm to 9 pm'), N('text', {}, 'Saturday and Sunday · 10 am to 6 pm'), N('text', { color: 'muted' }, 'Closed Mondays and public holidays.'), N('heading', { lvl: 'H2', fs: 5, mt: 4 }, 'Getting here'), N('text', {}, '418 Alder Street, ground floor. The 12 and 40 buses stop outside, and there are bike racks by the door.')]),
         N('image', { ar: '1:1', radius: 'lg' }, 'Map of Alder Street with the studio marked'),
-      ], { n: 'Hours and directions' }), PRESETS['Call to action']()], { n: 'Visit', h: '/visit', kind: 'page' }),
+      ], { n: 'Hours and directions' }),
+      N('section', { display: 'stack', gap: 3, ...PAD, pt: 2 }, null, [N('heading', { lvl: 'H2', fs: 5 }, 'Key holders'), N('text', {}, 'The side door code is 4-1-8-6#. Kilns are loaded on Thursday night; leave pieces on the green shelf. Switch off the glaze room fan when you lock up.')],
+        { n: 'Key holders', g: JSON.stringify({ m: 'password', pw: 'kiln-key-2026', t: 'Members only', msg: 'Key holders: enter the studio password to see the door code and the closing checklist.', cta: 'Unlock', hint: 'The password is printed on your membership card.' }) }),
+      PRESETS['Call to action']()], { n: 'Visit', h: '/visit', kind: 'page' }),
     N('page', {}, null, [pageHero('Journal', 'Notes from the studio: firing logs, clay choices and techniques we teach.'), N('section', { display: 'stack', gap: 5, ...PAD, pt: 2 }, null, [N('list', { limit: 'all' })], { n: 'All articles' }), PRESETS.Signup()], { n: 'Journal', h: '/journal', kind: 'page' }),
     N('page', {}, null, [pageHero('Reserve a seat', 'Pick a course and we hold your seat for 24 hours while you pay.'),
       N('section', { display: 'stack', gap: 4, ...PAD, pt: 2 }, null, [N('box', { display: 'stack', gap: 3, maxw: 'sm', w: 'full', mt: 0 }, null, [N('field', {}, 'Your name'), N('field', {}, 'Email address'), N('field', {}, 'Course: Wheel basics, Hand-building or Glaze lab'), N('button', { ...CTA, w: 'full' }, 'Request a seat', null, { h: '#' }), N('text', { fs: 1, color: 'muted' }, 'We reply within one working day.')], { n: 'Booking form' })], { n: 'Booking' })], { n: 'Book', h: '/book', kind: 'page' }),
-    articlePage('/journal/glaze-firing', 'What happens in a glaze firing', '2026-09-28', 'From bisque to cone 6: the twelve hours that turn chalky glaze into glass.', [
+    N('page', {}, null, [
+      N('section', { display: 'stack', gap: 4, align: 'start', ...PAD, pb: 6 }, null, [STATUS_BADGE(), N('heading', { lvl: 'H1', fs: 7, lh: 'tight' }, 'Live data, in plain components'), N('text', { fs: 3, color: 'muted' }, 'Prices, trades and edits stream straight into cards you design. The three tickers are one component; each instance only changes its pair.'), N('button', { ...CTA, w: 'fit' }, 'Back to the studio', null, { h: 'page:/' })].map((x, i) => (i === 0 ? N('data', {}, null, [x], { n: 'Page status', q: srcCfg('binance-ticker', 'btcusdt') }) : x)), { n: 'Page header' }),
+      N('section', { display: 'stack', gap: 5, ...PAD, pt: 2 }, null, [N('heading', { lvl: 'H2', fs: 5 }, 'Three pairs, one component'), N('box', { display: 'grid', cols: '3', 'cols@t': '1', gap: 5 }, null, [tickerSpec('btcusdt'), tickerSpec('ethusdt'), tickerSpec('solusdt')])], { n: 'Tickers' }),
+      N('section', { display: 'grid', cols: '2', 'cols@t': '1', gap: 5, bg: 'surface', ...PAD }, null, [tradesSpec(), marketsSpec()], { n: 'Markets' }),
+      N('section', { display: 'grid', cols: '2', 'cols@t': '1', gap: 5, ...PAD }, null, [metricsSpec(), editsSpec()], { n: 'Feeds' }),
+    ], { n: 'Live data', h: '/live', kind: 'page' }),
+    ((a) => (a.k.splice(2, 0, N('section', { display: 'stack', gap: 4, ...PAD, pt: 2 }, null, [N('box', { display: 'stack', gap: 3, maxw: 'md' }, null, [N('heading', { lvl: 'H2', fs: 5 }, 'Our exact cone 6 schedule'), N('text', { fs: 3, lh: 'loose' }, '100 °C an hour to 600 °C, then 150 °C an hour to 1,100 °C, then 60 °C an hour to 1,222 °C. Hold for 10 minutes, then let the kiln cool on its own.')])],
+      { n: 'Firing schedule', g: JSON.stringify({ m: 'email', t: 'Get our firing schedule', msg: 'Leave your email and we will show the exact cone 6 schedule we fire every Friday.', cta: 'Show the schedule', hint: 'One studio note a month. Unsubscribe any time.' }) })), a))(articlePage('/journal/glaze-firing', 'What happens in a glaze firing', '2026-09-28', 'From bisque to cone 6: the twelve hours that turn chalky glaze into glass.', [
       ['The slow climb', ['The kiln rises about 100 °C an hour for the first stretch, so any water left in the glaze leaves gently instead of blistering.', 'Around 600 °C quartz in the clay expands suddenly. Going slowly here is what keeps pots from cracking.']],
       ['Cone 6 and the hold', ['Near 1,220 °C the glaze melts into glass. A short hold at the top lets bubbles rise and settle.', 'Witness cones on the shelf tell us when the heat has done its work, not just the temperature.']],
       ['Opening the kiln', ['We wait until the kiln is below 100 °C. Opening early can crack glazes with the sudden draft.']],
-    ]),
+    ])),
     articlePage('/journal/stoneware-or-porcelain', 'Stoneware or porcelain: where to start', '2026-09-14', 'Why every beginner gets stoneware first, and when porcelain is worth the trouble.', [
       ['Why stoneware first', ['Stoneware has grog, small grains of fired clay, that give it tooth. It holds its shape while you learn to center.']],
       ['When to switch', ['Once you can pull an even wall, porcelain rewards you with thin walls and bright glazes. Expect more collapses in the first week.']],
@@ -1204,7 +1653,7 @@ function sampleSite() {
       ['Leather-hard is a window', ['Too wet and the tool drags; too dry and it chatters. Press a thumbnail into the base: it should leave a mark without denting.']],
       ['Three tools', ['A loop tool for the bulk, a ribbon tool for the foot ring and a flexible rib to burnish the curve.']],
     ]),
-  ], { n: 'Kiln & Co.', x: 'Adults in the city who want a calm, hands-on hobby; most have never touched clay.' });
+  ], { n: 'Kiln & Co.', x: 'Adults in the city who want a calm, hands-on hobby; most have never touched clay.', e: JSON.stringify({ url: 'https://kilnandco.studio', lang: 'en', org: 'LocalBusiness', sum: 'Kiln & Co. is a pottery studio at 418 Alder Street that teaches small wheel-throwing, hand-building and glaze classes to adult beginners. Courses include clay, glazes and two firings.' }) });
 }
 function blankSite() {
   return N('site', {}, null, [N('lib', {}, null, [], { n: 'Components' }), N('page', {}, null, [
@@ -1217,7 +1666,7 @@ function blankSite() {
    Whole-document load / snapshot
    ========================================================================= */
 function clearAll() { alive.fill(0); par.fill(-1); first.fill(-1); next.fill(-1); cells.fill(-1); for (const k of SF) str[k] = []; cssCache.length = 0; dirty.clear(); }
-function docSnapshot() { return { v: 4, theme: JSON.parse(JSON.stringify(theme)), tree: snap(0), cur: curPage }; }
+function docSnapshot() { return { v: 5, theme: JSON.parse(JSON.stringify(theme)), tree: snap(0), cur: curPage }; }
 function loadDoc(doc) { editingComp = -1; clearAll(); Object.assign(theme, JSON.parse(JSON.stringify(doc.theme))); restoreSnap(doc.tree, -1, 0); tokensDirty = structDirty = true; curPage = alive[doc.cur] && type[doc.cur] === T.page ? doc.cur : homePage(); if (!alive[sel]) sel = curPage; }
 function buildFresh(spec) { clearAll(); const sn = fromSpec(spec); let i = 0; const num = (s) => { s.id = i++; s.k.forEach(num); }; num(sn); restoreSnap(sn, -1, 0); curPage = homePage(); sel = curPage; tokensDirty = structDirty = true; }
 function replaceSite(spec, themeObj, label, post) {
@@ -1258,9 +1707,10 @@ function placeOverlays() {
     put(pads[0], { x: r.x, y: r.y, w: r.w, h: pt }); put(pads[2], { x: r.x, y: r.y + r.h - pb, w: r.w, h: pb });
     put(pads[3], { x: r.x, y: r.y + pt, w: pl, h: r.h - pt - pb }); put(pads[1], { x: r.x + r.w - pr, y: r.y + pt, w: pr, h: r.h - pt - pb });
     tag.hidden = false;
-    { const root = sel === editingComp, lk = lockedStruct(sel); for (const k of ['tagUp', 'tagDown', 'tagDup', 'tagDel']) $(k).hidden = root || lk; $('tagParent').hidden = root; }
+    { const root = sel === editingComp; for (const k of ['tagUp', 'tagDown', 'tagDup', 'tagDel']) $(k).hidden = root; $('tagParent').hidden = root; $('tagGrip').hidden = root || !canDrag(sel); }
     $('selName').innerHTML = ic(TYPE_ICON[type[sel]], 'sm') + `<span></span>`; $('selName').lastChild.textContent = (isInstRoot(sel) ? '◆ ' : '') + nodeName(sel) + (isShared(sel) ? ' · on every page' : '') + (lockedStruct(sel) ? ' · in a component' : '');
-    tag.style.left = Math.max(0, r.x) + 'px'; tag.style.top = (r.y > 26 ? r.y - 26 : r.y + 2) + 'px';
+    const th = scale < 1 ? 26 / scale : 26, fh = stage.offsetHeight;
+    tag.style.left = Math.max(0, r.x) + 'px'; tag.style.top = (r.y > th ? r.y - th : r.y + r.h + 2 + th < fh ? r.y + r.h + 2 : r.y + 2) + 'px';
     tag.style.transform = scale < 1 ? `scale(${1 / scale})` : '';
   }
   if (live || view !== 'design' || drag.active || hover < 0 || hover === sel || hover === curPage || !elOf[hover] || !elOf[hover].isConnected) hb.hidden = true; else put(hb, rectOf(elOf[hover]));
@@ -1298,13 +1748,14 @@ siteEl.addEventListener('dblclick', (e) => {
   if (live) return;
   const id = nodeFromEvent(e); if (id < 0 || !TEXTUAL.has(type[id])) return;
   const el = elOf[id]; editing = id; sel = id;
+  if (el.dataset.bind) { el.dataset.editing = '1'; el.textContent = str.x[id] ?? ''; el.removeAttribute('data-sign'); }
   try { el.contentEditable = 'plaintext-only'; } catch (err) { el.contentEditable = 'true'; }
   if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
   el.focus();
   const r = document.createRange(); r.selectNodeContents(el); const s = shadow.getSelection ? shadow.getSelection() : window.getSelection(); s.removeAllRanges(); s.addRange(r);
   const done = (keep) => {
     el.removeEventListener('blur', onBlur); el.removeEventListener('keydown', onKey);
-    el.removeAttribute('contenteditable'); editing = -1;
+    el.removeAttribute('contenteditable'); editing = -1; delete el.dataset.editing;
     const v = el.textContent.replace(/\s+/g, ' ').trim();
     if (keep && v !== (str.x[id] || '')) commit({ k: 'str', id, f: 'x', v }, 'Edit text'); else { el.textContent = str.x[id] ?? ''; schedule(); }
   };
@@ -1368,26 +1819,54 @@ function cleanupSteps(p) {
   ];
 }
 function dropLocked(dr) { return (dr.kind === 'move' && isInstNode(dr.parent)) || (dr.kind === 'row' && (isInstNode(par[dr.target]) || lockedStruct(dr.target))); }
-function doDrop(dr) {
-  if (dropLocked(dr)) { toast(LOCKED); return false; }
-  const d = drag.id, old = par[d], steps = [];
-  let label = 'Move ' + TYPE_LABEL[type[d]].toLowerCase();
+/* steps that put node getD() where the drop says; getD is read when the step runs */
+function dropSteps(getD, dr) {
+  const steps = [];
   if (dr.kind === 'move') {
-    let idx = dr.index; if (dr.parent === old && indexOf(d) < idx) idx--;
-    if (dr.parent === old && idx === indexOf(d)) return false;
-    steps.push(() => ({ k: 'mov', id: d, parent: dr.parent, index: idx }));
+    steps.push(() => { const d = getD(); let idx = dr.index; if (dr.parent === par[d] && indexOf(d) < idx) idx--; if (dr.parent === par[d] && idx === indexOf(d)) return null; return { k: 'mov', id: d, parent: dr.parent, index: idx }; });
   } else if (dr.kind === 'row') {
-    let wid = -1; label = 'Side by side';
+    let wid = -1;
     steps.push(() => { const sn = freshSnap(N('box', { display: 'row', align: 'start', 'display@p': 'stack' }, null, [], { n: AUTO_ROW })); wid = sn.id; return { k: 'ins', snap: sn, parent: par[dr.target], index: indexOf(dr.target) }; });
     steps.push(() => ({ k: 'mov', id: dr.target, parent: wid, index: 0 }));
-    steps.push(() => ({ k: 'mov', id: d, parent: wid, index: dr.side === 'left' ? 0 : 1 }));
+    steps.push(() => ({ k: 'mov', id: getD(), parent: wid, index: dr.side === 'left' ? 0 : 1 }));
   } else if (dr.kind === 'section') {
-    let sid = -1; label = 'New section';
+    let sid = -1;
     steps.push(() => { const sn = freshSnap(N('section', { display: 'stack', gap: 5, ...PAD }, null, [], { n: 'Section' })); sid = sn.id; return { k: 'ins', snap: sn, parent: curPage, index: dr.index }; });
-    steps.push(() => ({ k: 'mov', id: d, parent: sid, index: 0 }));
+    steps.push(() => ({ k: 'mov', id: getD(), parent: sid, index: 0 }));
   }
-  steps.push(...cleanupSteps(old));
-  try { if (commitSeq(steps, label)) { sel = d; return true; } } catch (err) { toast(err.message); }
+  return steps;
+}
+const dropLabel = (d, dr) => dr.kind === 'row' ? 'Side by side' : dr.kind === 'section' ? 'New section' : 'Move ' + TYPE_LABEL[type[d]].toLowerCase();
+/* the drop expressed on the main component's nodes */
+function masterDrop(dr) { return dr.kind === 'move' ? { ...dr, parent: str.m[dr.parent] } : dr.kind === 'row' ? { ...dr, target: str.m[dr.target] } : dr; }
+function doDrop(dr, dragged) {
+  const d = dragged ?? drag.id, old = par[d];
+  const srcI = lockedStruct(d) ? instRootOf(d) : -1;
+  const dstNode = dr.kind === 'move' && isInstNode(dr.parent) ? dr.parent : dr.kind === 'row' && (lockedStruct(dr.target) || isInstNode(par[dr.target])) ? dr.target : -1;
+  const dstI = dstNode >= 0 ? instRootOf(dstNode) : -1;
+  if (srcI < 0 && dstI < 0) {
+    const steps = [...dropSteps(() => d, dr), ...cleanupSteps(old)];
+    try { if (commitSeq(steps, dropLabel(d, dr))) { sel = d; return true; } } catch (err) { toast(err.message); }
+    return false;
+  }
+  if (srcI >= 0 && dstI >= 0 && srcI !== dstI) { toast('Moving between two different component instances is not supported. Detach one of them first.'); return false; }
+  const I = srcI >= 0 ? srcI : dstI, M = str.c[I];
+  if (!alive[M]) { toast(LOCKED); return false; }
+  const what = srcI >= 0 && dstI >= 0 ? `Moving ${nodeName(d)} inside ${str.n[M]}.` : dstI >= 0 ? `Adding ${nodeName(d)} to ${str.n[M]}.` : `Taking ${nodeName(d)} out of ${str.n[M]}.`;
+  const onMaster = () => {
+    if (srcI >= 0 && dstI >= 0) {                                   // reorder inside the component
+      const md = str.m[d];
+      pushSteps(I, [...dropSteps(() => md, masterDrop(dr)), ...cleanupSteps(str.m[old])], 'Move in component', () => md);
+    } else if (dstI >= 0) {                                         // page element joins the component
+      let cpy = -1;
+      pushSteps(I, [() => { const sn = plainCopy(d); cpy = sn.id; return { k: 'ins', snap: sn, parent: M, index: children(M).length }; }, ...dropSteps(() => cpy, masterDrop(dr)), () => ({ k: 'del', id: d }), ...cleanupSteps(old)], 'Add to component', () => cpy);
+    } else {                                                        // component part moves onto the page
+      let cpy = -1; const md = str.m[d], mp = str.m[old];
+      try { if (commitSeq([() => { const sn = plainCopy(d); cpy = sn.id; return { k: 'ins', snap: sn, parent: par[I], index: indexOf(I) + 1 }; }, ...dropSteps(() => cpy, dr), () => (alive[md] ? { k: 'del', id: md } : null), ...cleanupSteps(mp)], 'Take out of component')) { sel = cpy; toast(`Removed from ${str.n[M]} everywhere and placed here.`); schedule(); } } catch (err) { toast(err.message); }
+    }
+  };
+  const onLocal = () => { const steps = [...detachSteps(I), ...dropSteps(() => d, dr), ...cleanupSteps(old)]; try { if (commitSeq(steps, 'Detach and move')) { sel = d; toast('Detached this instance and moved the element. Other instances are unchanged.'); schedule(); } } catch (err) { toast(err.message); } };
+  askPush(I, what, onMaster, { label: 'Only here · detach instance', run: onLocal });
   return false;
 }
 function lineAt(x, y, w, h) { const L = $('dropLine'); L.hidden = false; L.style.left = x + 'px'; L.style.top = y + 'px'; L.style.width = w + 'px'; L.style.height = h + 'px'; }
@@ -1407,7 +1886,8 @@ function drawDrop(dr, e) {
     else if (elOf[parent]) { const r = rectOf(elOf[parent]); lineAt(r.x + 8, r.y + 8, Math.max(24, r.w - 16), 4); }
     label = dr.kind === 'section' ? 'Into a new section' : parent === curPage ? 'Reorder sections' : `Into ${nodeName(parent)} · ${f === 'col' ? 'stacked' : f === 'row' ? 'in the row' : 'in the grid'}`;
   }
-  ghostAt(e, `${drag.id >= 0 ? nodeName(drag.id) : '◆ ' + drag.newName} → ${dr && dropLocked(dr) ? 'Locked: part of a component' : label}`);
+  const intoComp = dr && (dropLocked(dr) || (drag.id >= 0 && lockedStruct(drag.id))), I = intoComp ? instRootOf(dr.kind === 'move' && isInstNode(dr.parent) ? dr.parent : dr.kind === 'row' && isInstNode(dr.target) ? dr.target : drag.id) : -1;
+  ghostAt(e, `${drag.id >= 0 ? nodeName(drag.id) : '◆ ' + drag.newName} → ${label}${I >= 0 && drag.id >= 0 ? ` · updates ${str.n[str.c[I]] || 'the component'}` : ''}`);
 }
 function freeMove(e) {
   const el = elOf[drag.id], host = el.offsetParent && el.offsetParent !== document.body ? el.offsetParent : elOf[par[drag.id]];
@@ -1415,13 +1895,13 @@ function freeMove(e) {
   const snapTo = (v) => { for (const t of [0, 50, 100]) if (Math.abs(v - t) < 2.5) return [t, true]; return [Math.round(v), false]; };
   const fx = pr.width - er.width > 0 ? ((e.clientX - drag.gx - pr.left) / (pr.width - er.width)) * 100 : 0;
   const fy = pr.height - er.height > 0 ? ((e.clientY - drag.gy - pr.top) / (pr.height - er.height)) * 100 : 0;
-  const [x, sx] = snapTo(Math.max(0, Math.min(100, fx))), [y, sy] = snapTo(Math.max(0, Math.min(100, fy)));
+  const [x, sx] = snapTo(Math.max(PCT_MIN, Math.min(PCT_MAX, fx))), [y, sy] = snapTo(Math.max(PCT_MIN, Math.min(PCT_MAX, fy)));
   drag.fx = x; drag.fy = y;
   const rot = eff(drag.id, PI.rot, device), deg = rot > 0 ? +PROPS[PI.rot][4][rot] : 0;
-  Object.assign(el.style, { inset: 'auto', left: x + '%', top: y + '%', transform: `translate(-${x}%,-${y}%)${deg ? ` rotate(${deg}deg)` : ''}` });
+  Object.assign(el.style, { inset: 'auto', left: x + '%', top: y + '%', transform: `translate(${-x}%,${-y}%)${deg ? ` rotate(${deg}deg)` : ''}` });
   const hr = rectOf(host); put($('dropZone'), hr); $('dropLine').hidden = true;
   if (sx) lineAt(hr.x + (x / 100) * hr.w - 1, hr.y, 2, hr.h); else if (sy) lineAt(hr.x, hr.y + (y / 100) * hr.h - 1, hr.w, 2);
-  ghostAt(e, `${nodeName(drag.id)} · X ${x}% · Y ${y}%${sx || sy ? ' · snapped' : ''}`);
+  ghostAt(e, `${nodeName(drag.id)} · X ${x}% · Y ${y}%${sx || sy ? ' · snapped' : x < 0 || y < 0 || x > 100 || y > 100 ? ' · past the edge' : ''}`);
 }
 function endDrag() {
   if (drag.id >= 0 && elOf[drag.id]) elOf[drag.id].classList.remove('is-dragging');
@@ -1430,20 +1910,29 @@ function endDrag() {
   drag.id = -1; drag.active = false; drag.drop = null; drag.free = false;
   placeOverlays();
 }
-siteEl.addEventListener('pointerdown', (e) => {
-  if (live || editing >= 0 || e.button !== 0) return;
-  const id = resolvePick(nodeFromEvent(e)); if (id < 0 || id === curPage || id === editingComp) return;
-  e.preventDefault();
-  if (isShared(id) && par[id] !== curPage) { drag.id = -1; return; }      // shared sections are reordered on their home page
-  if (lockedStruct(id)) { drag.id = -1; return; }                         // parts of an instance follow their main component
+/* Pressing anywhere inside the selected element drags the selection itself,
+   so a selected card moves as a card instead of grabbing its heading. A click
+   without movement still drills into the child under the pointer. */
+function canDrag(id) { return id >= 0 && alive[id] && id !== curPage && id !== editingComp && type[id] !== T.page && !(isShared(id) && par[id] !== curPage); }
+function beginDrag(id, e) {
   drag.id = id; drag.active = false; drag.sx = e.clientX; drag.sy = e.clientY;
   drag.free = eff(id, PI.pos, device) === 2;
-  if (drag.free) { const r = elOf[id].getBoundingClientRect(); drag.gx = e.clientX - r.left; drag.gy = e.clientY - r.top; }
+  if (drag.free && elOf[id]) { const r = elOf[id].getBoundingClientRect(); drag.gx = e.clientX - r.left; drag.gy = e.clientY - r.top; }
+}
+siteEl.addEventListener('pointerdown', (e) => {
+  if (live || editing >= 0 || e.button !== 0) return;
+  const hit = nodeFromEvent(e);
+  const id = sel >= 0 && alive[sel] && sel !== curPage && hit >= 0 && isAncestor(sel, hit) && canDrag(sel) ? sel : resolvePick(hit);
+  if (id < 0 || id === curPage || id === editingComp) return;
+  e.preventDefault();
+  if (!canDrag(id)) { drag.id = -1; return; }      // shared sections are reordered on their home page
+  beginDrag(id, e);
 });
+$('tagGrip').addEventListener('pointerdown', (e) => { if (e.button !== 0 || !canDrag(sel)) return; e.preventDefault(); e.stopPropagation(); beginDrag(sel, e); drag.sx = -9999; });
 window.addEventListener('pointermove', (e) => {
   if (drag.id < 0) return;
   if (!drag.active) {
-    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
+    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 4) return;
     drag.active = true; sel = drag.id; hover = -1; closePop();
     if (!drag.free) elOf[drag.id].classList.add('is-dragging');
     siteEl.classList.add('dragging-site'); placeOverlays();
@@ -1458,7 +1947,7 @@ window.addEventListener('pointerup', () => {
   if (was && free && drag.fx !== undefined) {
     elOf[id].removeAttribute('style'); if (type[id] === T.image && str.s[id]) elOf[id].style.backgroundImage = `url("${str.s[id]}")`;
     const x = drag.fx, y = drag.fy;
-    commitSeq([() => (eff(id, PI.anchor, device) !== 0 ? { k: 'set', id, p: PI.anchor, bp: device, v: 0 } : null), () => ({ k: 'set', id, p: PI.x, bp: device, v: x }), () => ({ k: 'set', id, p: PI.y, bp: device, v: y })], 'Move freely');
+    commitSeq([() => (eff(id, PI.anchor, device) !== 0 ? { k: 'set', id, p: PI.anchor, bp: device, v: 0 } : null), () => ({ k: 'set', id, p: PI.x, bp: device, v: pctEnc(x) }), () => ({ k: 'set', id, p: PI.y, bp: device, v: pctEnc(y) })], 'Move freely');
     drag.fx = drag.fy = undefined;
   } else if (was && dr) doDrop(dr);
   endDrag();
@@ -1473,7 +1962,7 @@ frame.addEventListener('dragover', (e) => { if (!libDrag || live) return; e.prev
 frame.addEventListener('dragleave', (e) => { if (!e.relatedTarget || !frame.contains(e.relatedTarget)) clearDropUI(); });
 frame.addEventListener('drop', (e) => { if (!libDrag) return; e.preventDefault(); const dr = drag.drop, ld = libDrag; clearDropUI(); libDrag = null; drag.drop = null; if (dr) doDropNew(dr, ld.getM, ld.pre, 'Insert ' + ld.name); });
 function doDropNew(dr, getM, pre, label) {
-  if (dropLocked(dr)) { toast(LOCKED); return; }
+  if (dropLocked(dr)) { const t = dr.kind === 'move' ? dr.parent : dr.target, I = instRootOf(t); if (I < 0) { toast(LOCKED); return; } dr = { kind: 'move', parent: par[I], index: indexOf(I) + 1, ref: { before: -1, after: I } }; toast('Components cannot nest, so it was placed right after the instance.'); }
   let nid = -1;
   const mkIns = (parentFn, indexFn) => () => { const M = getM(); if (editingComp >= 0 && (M === editingComp || isAncestor(M, editingComp))) throw new Error('A component cannot contain itself.'); const sn = instanceSnap(M); nid = sn.id; return { k: 'ins', snap: sn, parent: parentFn(), index: indexFn() }; };
   const steps = [...pre];
@@ -1489,18 +1978,29 @@ wrap.addEventListener('scroll', () => placeOverlays(), { passive: true });
 /* structure edits */
 function insertAt(spec, parent, index, label) { try { const sn = freshSnap(spec); commit({ k: 'ins', snap: sn, parent, index }, label); sel = sn.id; } catch (err) { toast(err.message); } }
 function insertPreset(spec, label) {
+  if (editingComp < 0 && spec.t !== 'section' && sel >= 0 && isInstNode(sel) && (CONTAINER.has(type[sel]) || lockedStruct(sel))) {
+    const id = sel, I = instRootOf(id), into = CONTAINER.has(type[id]), mp = into ? str.m[id] : str.m[par[id]], mi = into ? -1 : str.m[id];
+    let nm = -1;
+    const name = label.replace(/^Add /, '');
+    askPush(I, `Adding ${name} ${into ? 'into' : 'next to'} ${nodeName(id)} in ${str.n[str.c[I]]}.`,
+      () => pushSteps(I, [() => { const sn = freshSnap(spec); nm = sn.id; return { k: 'ins', snap: sn, parent: mp, index: into ? children(mp).length : indexOf(mi) + 1 }; }], label + ' to component', () => nm),
+      { label: 'Add after the instance', run: () => insertAt(spec, par[I], indexOf(I) + 1, label) });
+    return;
+  }
   const pl = placeFor(spec.t === 'section');
   if (!pl) { toast('Select a box inside the component to add to it.'); return; }
   if (pl.wrap) { insertAt(N('section', { display: 'stack', gap: 5, ...PAD }, null, [spec]), curPage, children(curPage).length, label); return; }
   insertAt(spec, pl.parent, pl.index, label);
 }
-function removeSel() { if (sel < 0 || type[sel] === T.page || type[sel] === T.site || sel === editingComp) return; if (lockedStruct(sel)) { toast(LOCKED); return; } const p = par[sel]; commitSeq([() => ({ k: 'del', id: sel }), ...cleanupSteps(p)], 'Delete ' + TYPE_LABEL[type[sel]]); sel = alive[p] ? p : curPage; schedule(); }
+function removeSel() { if (sel < 0 || type[sel] === T.page || type[sel] === T.site || sel === editingComp) return;
+  if (lockedStruct(sel)) { const id = sel, I = instRootOf(id), m = str.m[id], mp = str.m[par[id]]; askPush(I, `Deleting ${nodeName(id)} from ${str.n[str.c[I]]}.`, () => pushSteps(I, [() => ({ k: 'del', id: m }), ...cleanupSteps(mp)], 'Delete in component', () => mp), { label: 'Only here · detach instance', run: () => { const p = par[id]; commitSeq([...detachSteps(I), () => ({ k: 'del', id }), ...cleanupSteps(p)], 'Detach and delete'); sel = alive[p] ? p : curPage; schedule(); } }); return; } const p = par[sel]; commitSeq([() => ({ k: 'del', id: sel }), ...cleanupSteps(p)], 'Delete ' + TYPE_LABEL[type[sel]]); sel = alive[p] ? p : curPage; schedule(); }
 function duplicateSel() {
   if (sel < 0 || type[sel] === T.page || type[sel] === T.site || sel === editingComp) return;
-  if (lockedStruct(sel)) { toast(LOCKED); return; }
+  if (lockedStruct(sel)) { const id = sel, I = instRootOf(id), m = str.m[id]; let nm = -1; askPush(I, `Duplicating ${nodeName(id)} inside ${str.n[str.c[I]]}.`, () => pushSteps(I, [() => { const sn = assignIds(snap(m)); nm = sn.id; return { k: 'ins', snap: sn, parent: par[m], index: indexOf(m) + 1 }; }], 'Duplicate in component', () => nm)); return; }
   try { const s0 = assignIds(snap(sel)); commit({ k: 'ins', snap: s0, parent: par[sel], index: indexOf(sel) + 1 }, 'Duplicate'); sel = s0.id; } catch (err) { toast(err.message); }
 }
-function moveSel(d) { if (sel < 0 || type[sel] === T.page || sel === editingComp) return; if (lockedStruct(sel)) { toast(LOCKED); return; } const i = indexOf(sel), n = children(par[sel]).length, j = i + d; if (j < 0 || j >= n) return; commit({ k: 'mov', id: sel, parent: par[sel], index: j }, d < 0 ? 'Move up' : 'Move down'); }
+function moveSel(d) { if (sel < 0 || type[sel] === T.page || sel === editingComp) return;
+  if (lockedStruct(sel)) { const id = sel, I = instRootOf(id), m = str.m[id], j = indexOf(m) + d; if (j < 0 || j >= children(par[m]).length) return; askPush(I, `Moving ${nodeName(id)} ${d < 0 ? 'up' : 'down'} inside ${str.n[str.c[I]]}.`, () => pushSteps(I, [() => ({ k: 'mov', id: m, parent: par[m], index: j })], 'Move in component', () => m)); return; } const i = indexOf(sel), n = children(par[sel]).length, j = i + d; if (j < 0 || j >= n) return; commit({ k: 'mov', id: sel, parent: par[sel], index: j }, d < 0 ? 'Move up' : 'Move down'); }
 $('tagUp').addEventListener('click', () => moveSel(-1));
 $('tagDown').addEventListener('click', () => moveSel(1));
 $('tagParent').addEventListener('click', () => { if (sel >= 0 && par[sel] > 0 && (editingComp < 0 || isAncestor(editingComp, par[sel]))) select(par[sel]); });
@@ -1559,14 +2059,18 @@ $('btnAdd').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
   const g2 = document.createElement('div'); g2.className = 'grid';
   for (const [name, [icon, hint, fn]] of Object.entries(ELEMENTS)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tile'; b.innerHTML = ic(icon) + '<span></span>'; b.lastChild.textContent = name; b.title = hint; b.addEventListener('click', () => { closePop(); insertPreset(fn(), 'Add ' + name); }); g2.appendChild(b); }
   p.appendChild(g2);
-  const hint = document.createElement('p'); hint.className = 'hint'; hint.textContent = 'Elements go inside the selected box, or after the selected element. Drag them anywhere afterwards.'; p.appendChild(hint);
+  const h3 = document.createElement('h4'); h3.textContent = 'Live data'; p.appendChild(h3);
+  const g3 = document.createElement('div'); g3.className = 'grid';
+  for (const [name, [icon, hint, fn]] of Object.entries(LIVE_ELEMENTS)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tile live'; b.innerHTML = ic(icon) + '<span></span>'; b.lastChild.textContent = name; b.title = hint; b.addEventListener('click', () => { closePop(); insertPreset(fn(), 'Add ' + name); }); g3.appendChild(b); }
+  p.appendChild(g3);
+  const hint = document.createElement('p'); hint.className = 'hint'; hint.textContent = 'Elements go inside the selected box, or after the selected element. Drag them anywhere afterwards. In any text inside a live data box, type {{field}} to show live values.'; p.appendChild(hint);
 }));
 
 /* =========================================================================
    Left rail: layers and pages
    ========================================================================= */
 let dragLayer = -1;
-function hasOverrides(id) { for (let p = 0; p < NP; p++) if (cell(id, p, 1) >= 0 || cell(id, p, 2) >= 0) return true; return false; }
+function hasOverrides(id) { for (let p = 0; p < NP; p++) if (cell(id, p, 1) !== -1 || cell(id, p, 2) !== -1) return true; return false; }
 function renderLayers() {
   const ul = $('layers'); if (ul.hidden) return; ul.textContent = '';
   const walk = (id, depth) => {
@@ -1595,10 +2099,11 @@ function renderLayers() {
       if (d < 0 || isAncestor(d, id)) return;
       let parent, index;
       if (pos === 'inside') { parent = id; index = children(id).length; } else { parent = par[id]; index = indexOf(id) + (pos === 'after' ? 1 : 0); }
+      const rawIndex = index;
       if (parent === par[d] && indexOf(d) < index) index--;
       if (editingComp < 0 && type[d] === T.section && parent !== curPage) return;
       if (editingComp < 0 && type[d] !== T.section && parent === curPage) return;
-      if (isInstNode(parent) || lockedStruct(d)) { toast(LOCKED); return; }
+      if (isInstNode(parent) || lockedStruct(d)) { doDrop({ kind: 'move', parent, index: rawIndex }, d); return; }
       const old = par[d];
       commitSeq([() => ({ k: 'mov', id: d, parent, index }), ...cleanupSteps(old)], 'Reorder'); sel = d;
     });
@@ -1667,13 +2172,13 @@ $('btnPage').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
 /* =========================================================================
    Inspector: collapsible groups so only what matters is open
    ========================================================================= */
-const openGroups = new Set(['component', 'page', 'content', 'link', 'layout', 'spacing', 'type', 'fill']);
-try { const g = JSON.parse(localStorage.getItem('flux-studio-groups') || 'null'); if (Array.isArray(g)) { openGroups.clear(); g.forEach((x) => openGroups.add(x)); openGroups.add('component'); } } catch (e) {}
+const openGroups = new Set(['component', 'data', 'access', 'seo', 'seoai', 'seock', 'page', 'content', 'link', 'layout', 'spacing', 'type', 'fill']);
+try { const g = JSON.parse(localStorage.getItem('flux-studio-groups') || 'null'); if (Array.isArray(g)) { openGroups.clear(); g.forEach((x) => openGroups.add(x)); openGroups.add('component'); openGroups.add('data'); } } catch (e) {}
 const GROUP_KEYS = { layout: ['display', 'cols', 'gap', 'align', 'justify', 'wrap'], spacing: ['pt', 'pr', 'pb', 'pl', 'mt', 'mb'], size: ['w', 'h', 'maxw', 'minh', 'ar'], position: ['pos', 'anchor', 'x', 'y', 'inset', 'z'], type: ['font', 'fs', 'fw', 'lh', 'ls', 'ta', 'color'], fill: ['bg', 'radius', 'border', 'bc', 'shadow'], effects: ['op', 'rot', 'overflow', 'blend'] };
 function accordion(pane, key, title, icon, id) {
   const d = document.createElement('details'); d.className = 'acc'; d.open = openGroups.has(key);
   const keys = GROUP_KEYS[key] || [];
-  const n = id >= 0 ? keys.filter((k) => cell(id, PI[k], device) >= 0).length : 0;
+  const n = id >= 0 ? keys.filter((k) => cell(id, PI[k], device) !== -1).length : 0;
   d.innerHTML = `<summary>${ic(icon)}<span></span>${n ? `<span class="cnt" title="${n} set at this size">${n}</span>` : ''}${ic('chev', 'chev')}</summary>`;
   d.querySelector('summary span').textContent = title;
   const body = document.createElement('div'); body.className = 'acc-body'; d.appendChild(body);
@@ -1688,15 +2193,16 @@ function rowFor(id, p, ctl, labelText) {
   const rst = document.createElement('button'); rst.className = 'rst'; rst.type = 'button';
   if (isInstNode(id) && !(isInstRoot(id) && ROOT_KEEP.includes(key))) {
     const isO = ovr(id).has(key);
-    if (isO) row.classList.add('set', 'ovr'); else if (val >= 0) row.classList.add('inh');
+    if (isO) row.classList.add('set', 'ovr'); else if (val !== -1) row.classList.add('inh');
     lab.title = isO ? 'Changed on this instance only' : 'From the main component';
     rst.title = isO ? 'Reset to the main component' : ''; rst.setAttribute('aria-label', isO ? 'Reset ' + PROPS[p][1] + ' to the main component' : 'From the main component');
     rst.addEventListener('click', () => { if (isO) resetPropOverride(id, p); });
   } else {
-    if (own >= 0) row.classList.add('set'); if (own >= 0 && device > 0) row.classList.add('bpset'); if (own < 0 && val >= 0) row.classList.add('inh');
-    lab.title = own >= 0 ? (device ? `Set for ${DEVICES[device][0].toLowerCase()} and smaller` : 'Set') : val >= 0 ? 'Inherited from a wider screen' : 'Default';
-    rst.title = own >= 0 ? 'Reset' : ''; rst.setAttribute('aria-label', own >= 0 ? 'Reset ' + PROPS[p][1] : 'Not set');
-    rst.addEventListener('click', () => { if (own >= 0) commit({ k: 'set', id, p, bp: device, v: -1 }, 'Reset ' + PROPS[p][1]); });
+    const isSet = own !== -1;
+    if (isSet) row.classList.add('set'); if (isSet && device > 0) row.classList.add('bpset'); if (!isSet && val !== -1) row.classList.add('inh');
+    lab.title = isSet ? (device ? `Set for ${DEVICES[device][0].toLowerCase()} and smaller` : 'Set') : val !== -1 ? 'Inherited from a wider screen' : 'Default';
+    rst.title = isSet ? 'Reset' : ''; rst.setAttribute('aria-label', isSet ? 'Reset ' + PROPS[p][1] : 'Not set');
+    rst.addEventListener('click', () => { if (isSet) commit({ k: 'set', id, p, bp: device, v: -1 }, 'Reset ' + PROPS[p][1]); });
   }
   row.append(lab, ctl, rst); return row;
 }
@@ -1721,19 +2227,20 @@ function swatchCtl(id, p, allowNone) {
 }
 function rangeCtl(id, p) {
   const w = document.createElement('div'); w.className = 'rngc';
-  const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 100; i.step = 1; i.value = Math.max(0, eff(id, p, device)); i.id = 'pct-' + PROPS[p][0]; i.setAttribute('aria-label', PROPS[p][1] + ' percent');
-  const o = document.createElement('output'); o.textContent = i.value + '%';
+  const i = document.createElement('input'); i.type = 'range'; i.min = PCT_MIN; i.max = PCT_MAX; i.step = 1; i.value = pctOf(id, p, device); i.id = 'pct-' + PROPS[p][0]; i.setAttribute('aria-label', PROPS[p][1] + ' percent');
+  const n = document.createElement('input'); n.type = 'number'; n.className = 'num'; n.min = PCT_MIN; n.max = PCT_MAX; n.value = i.value; n.setAttribute('aria-label', PROPS[p][1] + ' percent, exact'); n.id = 'pctn-' + PROPS[p][0];
   let start = null;
-  i.addEventListener('input', () => { if (start === null) start = cell(id, p, device); setCell(id, p, device, +i.value); o.textContent = i.value + '%'; dirty.add(id); render(); });
-  i.addEventListener('change', () => { const v = +i.value; setCell(id, p, device, start ?? -1); start = null; commit({ k: 'set', id, p, bp: device, v }, PROPS[p][1]); });
-  w.append(i, o); return w;
+  i.addEventListener('input', () => { if (start === null) start = cell(id, p, device); setCell(id, p, device, pctEnc(+i.value)); n.value = i.value; dirty.add(id); render(); });
+  i.addEventListener('change', () => { const v = pctEnc(+i.value); setCell(id, p, device, start ?? -1); start = null; commit({ k: 'set', id, p, bp: device, v }, PROPS[p][1]); });
+  n.addEventListener('change', () => { if (n.value === '' || isNaN(+n.value)) return; commit({ k: 'set', id, p, bp: device, v: pctEnc(+n.value) }, PROPS[p][1]); });
+  const pc = document.createElement('span'); pc.className = 'pc'; pc.textContent = '%';
+  w.append(i, n, pc); return w;
 }
 function makeAbsolute(id) {
   const el = elOf[id], host = elOf[par[id]];
   let x = 0, y = 0;
   if (el && host && el.isConnected) { const er = el.getBoundingClientRect(), pr = host.getBoundingClientRect(); x = pr.width - er.width > 0 ? Math.round(((er.left - pr.left) / (pr.width - er.width)) * 100) : 0; y = pr.height - er.height > 0 ? Math.round(((er.top - pr.top) / (pr.height - er.height)) * 100) : 0; }
-  const clamp = (v) => Math.max(0, Math.min(100, v));
-  commitSeq([() => ({ k: 'set', id, p: PI.pos, bp: device, v: 2 }), () => (eff(id, PI.anchor, device) < 0 ? { k: 'set', id, p: PI.anchor, bp: device, v: 0 } : null), () => ({ k: 'set', id, p: PI.x, bp: device, v: clamp(x) }), () => ({ k: 'set', id, p: PI.y, bp: device, v: clamp(y) }), () => (eff(id, PI.z, device) < 0 ? { k: 'set', id, p: PI.z, bp: device, v: 4 } : null)], 'Make absolute');
+  commitSeq([() => ({ k: 'set', id, p: PI.pos, bp: device, v: 2 }), () => (eff(id, PI.anchor, device) < 0 ? { k: 'set', id, p: PI.anchor, bp: device, v: 0 } : null), () => ({ k: 'set', id, p: PI.x, bp: device, v: pctEnc(x) }), () => ({ k: 'set', id, p: PI.y, bp: device, v: pctEnc(y) }), () => (eff(id, PI.z, device) < 0 ? { k: 'set', id, p: PI.z, bp: device, v: 4 } : null)], 'Make absolute');
 }
 function textRow(label, value, onChange, opts = {}) {
   const r = document.createElement('div'); r.className = 'row';
@@ -1787,6 +2294,7 @@ function renderInspector() {
   if (!$('paneEl').hidden) renderElementPane();
   if (!$('paneTheme').hidden && themeDirty) renderThemePane();
   if (!$('paneVer').hidden) renderVersions();
+  if (!$('paneSeo').hidden) renderSeoPane();
   $('btnUndo').disabled = !undoStack.length; $('btnRedo').disabled = !redoStack.length;
   const bn = $('bpNote'); bn.hidden = device === 0 || live || view !== 'design'; bn.innerHTML = device ? `${ic('warn', 'sm')}Editing ${DEVICES[device][0].toLowerCase()} overrides` : '';
 }
@@ -1804,13 +2312,15 @@ function renderElementPane() {
   pane.appendChild(head);
   if (t === T.page) { renderPageSettings(pane, id); return; }
   componentPanel(pane, id);
+  if (t === T.data) dataPanel(pane, id);
+  if (t === T.repeat || t === T.spark) liveChildPanel(pane, id);
   // content
   if (TEXTUAL.has(t) || t === T.image || t === T.field || t === T.list || t === T.section) {
     const body = accordion(pane, 'content', 'Content', 'text', -1);
-    if (TEXTUAL.has(t)) { const ta = document.createElement('textarea'); ta.className = 'ctl'; ta.id = 'elText'; ta.value = str.x[id] || ''; ta.setAttribute('aria-label', 'Text'); ta.addEventListener('change', () => commit({ k: 'str', id, f: 'x', v: ta.value }, 'Edit text')); body.appendChild(ta); }
+    if (TEXTUAL.has(t)) { const ta = document.createElement('textarea'); ta.className = 'ctl'; ta.id = 'elText'; ta.value = str.x[id] || ''; ta.setAttribute('aria-label', 'Text'); ta.addEventListener('change', () => commit({ k: 'str', id, f: 'x', v: ta.value }, 'Edit text')); body.appendChild(ta); fieldChips(body, id, ta); }
     if (t === T.heading) { body.appendChild(rowFor(id, PI.lvl, segCtl(id, PI.lvl, PROPS[PI.lvl][4]))); const n = document.createElement('p'); n.className = 'hint'; n.textContent = 'One H1 per page says what the page is about. Use H2 for sections and H3 inside them.'; body.appendChild(n); }
     if (t === T.field) body.appendChild(textRow('Placeholder', str.x[id], (v) => commit({ k: 'str', id, f: 'x', v }, 'Placeholder'), { id: 'elPh' }));
-    if (t === T.list) { body.appendChild(rowFor(id, PI.limit, segCtl(id, PI.limit, PROPS[PI.limit][4], ['All', 'Latest 3', 'Latest 6']))); const n = document.createElement('p'); n.className = 'hint'; n.textContent = `Shows your articles automatically, newest first. You have ${articles().length}.`; body.appendChild(n); }
+    if (t === T.list) { body.appendChild(rowFor(id, PI.limit, segCtl(id, PI.limit, PROPS[PI.limit][4], ['All', '3', '6', '10']))); const n = document.createElement('p'); n.className = 'hint'; n.textContent = `Shows your articles automatically, newest first. You have ${articles().length}.`; body.appendChild(n); }
     if (t === T.section && par[id] >= 0) { body.appendChild(rowFor(id, PI.shared, segCtl(id, PI.shared, PROPS[PI.shared][4], ['This page', 'Every page · top', 'Every page · bottom']))); }
     if (t === T.image) {
       const r = document.createElement('div'); r.className = 'grp'; r.style.display = 'flex'; r.style.gap = '6px';
@@ -1821,6 +2331,7 @@ function renderElementPane() {
     }
   }
   if (LINKY.has(t)) linkPicker(accordion(pane, 'link', 'Link', 'link', -1), id);
+  if ((t === T.section && !isShared(id)) || t === T.box) accessPanel(pane, id);
   // layout
   if (CONTAINER.has(t)) {
     const body = accordion(pane, 'layout', 'Layout', 'grid', id);
@@ -1894,7 +2405,7 @@ function renderElementPane() {
     } else if (pos === 3) body.appendChild(rowFor(id, PI.inset, selectCtl(id, PI.inset, spaceOpts(' px from top'))));
     body.appendChild(rowFor(id, PI.z, selectCtl(id, PI.z, PROPS[PI.z][4].map((v, i) => [i, i ? v : 'Auto']))));
     const h = document.createElement('p'); h.className = 'hint';
-    h.innerHTML = pos === 2 ? 'Placed inside the nearest section or box. <b>Drag it on the canvas</b> to move it; it snaps to the edges and center.' : pos === 3 ? 'Sticks to the top while its section scrolls.' : 'Elements flow with the layout. Absolute lets you place one anywhere inside its parent.';
+    h.innerHTML = pos === 2 ? 'Placed inside the nearest section or box. <b>Drag it on the canvas</b> or use the arrow keys (Shift for 10). X and Y go from −100 % to 120 %, so it can hang past an edge; turn on Clip in Effects on the parent to crop it.' : pos === 3 ? 'Sticks to the top while its section scrolls.' : 'Elements flow with the layout. Absolute lets you place one anywhere inside its parent.';
     body.appendChild(h);
   }
   // effects
@@ -1910,7 +2421,7 @@ function renderElementPane() {
   const acts = [['Duplicate', 'copy', duplicateSel, ''], ['Parent', 'parent', () => select(par[id]), ''], ['Delete', 'trash', removeSel, 'danger']].filter(([l]) => !(id === editingComp) || l === 'Duplicate');
   if (!isInstNode(id) && compOf(id) < 0) acts.unshift(['Create component', 'comp', (e) => createComponentPop(e.currentTarget, id), 'comp']);
   if (id === editingComp) acts.length = 0;
-  for (const [l, icon, fn, cls] of acts) { const b = document.createElement('button'); b.className = 'btn small ' + (cls === 'danger' ? 'danger' : ''); if (cls === 'comp') { b.style.color = 'var(--comp)'; b.style.borderColor = 'var(--comp)'; } b.type = 'button'; b.innerHTML = ic(icon, 'sm') + l; b.addEventListener('click', fn); if (lockedStruct(id) && l !== 'Parent') b.disabled = true; g.appendChild(b); }
+  for (const [l, icon, fn, cls] of acts) { const b = document.createElement('button'); b.className = 'btn small ' + (cls === 'danger' ? 'danger' : ''); if (cls === 'comp') { b.style.color = 'var(--comp)'; b.style.borderColor = 'var(--comp)'; } b.type = 'button'; b.innerHTML = ic(icon, 'sm') + l; b.addEventListener('click', fn); g.appendChild(b); }
   s.appendChild(g); pane.appendChild(s);
   if (focusId && $(focusId)) $(focusId).focus();
   pane.parentElement.scrollTop = sc;
@@ -1934,7 +2445,7 @@ function componentPanel(pane, id) {
   if (id !== I) {
     const box = document.createElement('div'); box.className = 'sect';
     const n = document.createElement('div'); n.className = 'compnote';
-    n.innerHTML = `<p>${ic('comp', 'sm')} Part of <b></b>. Style and text changes here apply to this instance only and show a violet dot.</p><div class="acts"></div>`;
+    n.innerHTML = `<p>${ic('comp', 'sm')} Part of <b></b>. Style and text changes here apply to this instance only and show a violet dot. Adding, moving or deleting parts asks whether to update the component everywhere.</p><div class="acts"></div>`;
     n.querySelector('b').textContent = alive[C] ? str.n[C] : 'a component';
     const a = n.querySelector('.acts');
     const s1 = document.createElement('button'); s1.className = 'btn small'; s1.innerHTML = ic('parent', 'sm') + 'Select instance'; s1.addEventListener('click', () => select(I)); a.appendChild(s1);
@@ -1947,6 +2458,7 @@ function componentPanel(pane, id) {
   const a = document.createElement('div'); a.style.display = 'flex'; a.style.gap = '6px'; a.style.flexWrap = 'wrap';
   const mk = (label, icon, fn, dis) => { const b = document.createElement('button'); b.className = 'btn small'; b.type = 'button'; b.innerHTML = ic(icon, 'sm') + label; b.disabled = !!dis; b.addEventListener('click', fn); a.appendChild(b); };
   if (alive[C]) mk('Edit main', 'comp', () => enterComp(C));
+  mk('Apply to main', 'upload', () => pushOverrides(I), !total || !alive[C]);
   mk('Reset overrides', 'undo', () => resetInstance(I), !total || !alive[C]);
   mk('Detach', 'close', () => { commitSeq(detachSteps(I), 'Detach instance'); toast('Detached. It is now a regular element you can change freely.'); });
   body.appendChild(a);
@@ -1969,6 +2481,134 @@ function componentPanel(pane, id) {
     });
   }
 }
+/* ---------- access inspector ---------- */
+function pwStrength(pw) { const s = (pw || '').length + (/[A-Z]/.test(pw) ? 2 : 0) + (/[0-9]/.test(pw) ? 2 : 0) + (/[^A-Za-z0-9]/.test(pw) ? 2 : 0); return !pw ? ['none', 'No password set: nobody will be able to open it.'] : s < 10 ? ['weak', 'Weak: someone could guess it. Use 12 or more characters.'] : s < 16 ? ['ok', 'Okay. Longer is stronger.'] : ['strong', 'Strong.']; }
+function accessPanel(pane, id) {
+  const body = accordion(pane, 'access', 'Access', 'lock', -1);
+  const g = gateOf(id) || {}, mode = g.m || 'open';
+  const save = (patch, label) => { const c = { ...g, ...patch }; for (const k of Object.keys(c)) if (c[k] === '' || c[k] == null) delete c[k]; commit({ k: 'str', id, f: 'g', v: c.m ? JSON.stringify(c) : undefined }, label || 'Access'); };
+  const r = document.createElement('div'); r.className = 'row'; const l = document.createElement('label'); l.textContent = 'Who sees it';
+  const seg = document.createElement('div'); seg.className = 'ctl-seg';
+  [['open', 'Everyone'], ['email', 'Email'], ['password', 'Password']].forEach(([m, lab]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = lab; b.setAttribute('aria-pressed', String(mode === m)); b.addEventListener('click', () => (m === 'open' ? commit({ k: 'str', id, f: 'g', v: undefined }, 'Open to everyone') : save({ m }, m === 'email' ? 'Email gate' : 'Password gate'))); seg.appendChild(b); });
+  r.append(l, seg, document.createElement('span')); body.appendChild(r);
+  if (mode === 'open') { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Gate this part of the page behind an email sign-up, or encrypt it behind a password for members.'; body.appendChild(p); return; }
+  const pw = mode === 'password';
+  body.appendChild(textRow('Title', g.t, (v) => save({ t: v.trim() }, 'Gate title'), { id: 'gateT', placeholder: pw ? 'Members only' : 'Read the rest' }));
+  body.appendChild(textRow('Message', g.msg, (v) => save({ msg: v.trim() }, 'Gate message'), { id: 'gateMsg', area: true, placeholder: pw ? 'Enter the password to unlock this part of the page.' : 'Leave your email to keep reading.' }));
+  body.appendChild(textRow('Button', g.cta, (v) => save({ cta: v.trim() }, 'Gate button'), { id: 'gateCta', placeholder: pw ? 'Unlock' : 'Continue' }));
+  if (pw) {
+    const pr = textRow('Password', g.pw, (v) => save({ pw: v }, 'Gate password'), { id: 'gatePw', type: 'password', placeholder: 'At least 12 characters' });
+    const eye = document.createElement('button'); eye.type = 'button'; eye.className = 'btn icon quiet'; eye.title = 'Show or hide'; eye.setAttribute('aria-label', 'Show password'); eye.innerHTML = ic('eye', 'sm'); eye.addEventListener('click', () => { const i = $('gatePw'); i.type = i.type === 'password' ? 'text' : 'password'; });
+    pr.lastChild.replaceWith(eye); body.appendChild(pr);
+    const [lvl, msg] = pwStrength(g.pw || ''); const m = document.createElement('p'); m.className = 'pwmeter ' + lvl; m.textContent = msg; body.appendChild(m);
+    body.appendChild(textRow('Hint', g.hint, (v) => save({ hint: v.trim() }, 'Gate hint'), { id: 'gateHint', placeholder: 'Where members find the password' }));
+    const n = document.createElement('p'); n.className = 'hint'; n.innerHTML = '<b>Encrypted on export.</b> The published page holds only AES-256-GCM ciphertext, with the key derived from the password (PBKDF2, 250,000 rounds). Visitors, search engines and AI crawlers cannot read it without the password. Studio keeps the password in this browser so it can encrypt when you export.'; body.appendChild(n);
+  } else {
+    body.appendChild(textRow('Note', g.hint, (v) => save({ hint: v.trim() }, 'Gate note'), { id: 'gateHint', placeholder: 'One email a month. Unsubscribe any time.' }));
+    body.appendChild(textRow('Send to', g.act, (v) => save({ act: v.trim() }, 'Sign-up address'), { id: 'gateAct', placeholder: 'https://formspree.io/f/… (optional)' }));
+    const n = document.createElement('p'); n.className = 'hint'; n.innerHTML = '<b>Soft gate.</b> The content stays in the page, so search engines still index it, and it opens once a visitor leaves an address (remembered on their device). Addresses are posted as JSON to the link above. Use Password for anything private.'; body.appendChild(n);
+  }
+  const tb = document.createElement('button'); tb.className = 'btn small'; tb.type = 'button'; tb.innerHTML = ic('play', 'sm') + 'Try it in Live mode'; tb.addEventListener('click', () => $('mode').querySelector('[data-m="live"]').click()); body.appendChild(tb);
+}
+
+/* ---------- live data inspector ---------- */
+const srcOf = (id) => { for (let c = id; c >= 0; c = par[c]) if (type[c] === T.data) return c; return -1; };
+const cfgOf = (id) => { try { return JSON.parse(str.q[id] || '{}'); } catch (e) { return {}; } };
+function guessPipe(k, v) {
+  if (k.startsWith('$')) return k === '$updated' ? '|ago' : '';
+  if (/price|open|high|low|revenue|amount|cost/i.test(k)) return '|usd';
+  if (/change|pct|percent/i.test(k)) return '|pct';
+  if (/volume|cap|count|supply/i.test(k)) return '|compact';
+  if (/^(time|ts|timestamp|date|updated)$/i.test(k)) return '|time';
+  return typeof v === 'number' ? '|num' : '';
+}
+function fieldsOf(D) {
+  const inf = LIVE.info(str.q[D] || '{}'); if (!inf) return [];
+  return Object.entries(inf.rec || {}).filter(([k, v]) => v !== null && typeof v !== 'object' && k.length < 32).slice(0, 18);
+}
+function liveLine(D) {
+  const inf = LIVE.info(str.q[D] || '{}');
+  if (!inf) return { cls: 'connecting', text: 'Connecting…' };
+  const ago = inf.t ? Math.max(0, Math.round((Date.now() - inf.t) / 1000)) : null;
+  const text = inf.state === 'live' ? `Live · ${inf.real} message${inf.real === 1 ? '' : 's'} · updated ${ago < 2 ? 'just now' : ago + ' s ago'}`
+    : inf.state === 'sample' ? `Showing sample data · ${inf.why}. Visitors whose browser can reach the source see real data; the {{$status}} badge tells them which.`
+    : inf.state === 'demo' ? 'Simulated stream · numbers are generated in the browser.'
+    : inf.state === 'stale' ? 'Connection dropped · reconnecting, last values stay on screen.' : inf.state === 'offline' ? `Offline · ${inf.why}` : 'Connecting…';
+  return { cls: inf.state, text };
+}
+function dataPanel(pane, id) {
+  const body = accordion(pane, 'data', 'Live data', 'stream', -1);
+  const cfg = cfgOf(id), PR = LIVE.PRESETS, P = PR[cfg.p] || PR['sim-ticker'];
+  const save = (patch, label) => { const c = { ...cfg, ...patch }; for (const k of Object.keys(c)) if (c[k] === '' || c[k] == null) delete c[k]; const v = JSON.stringify(c); if (v !== (str.q[id] || '{}')) commit({ k: 'str', id, f: 'q', v }, label || 'Data source'); };
+  const st = document.createElement('p'); st.className = 'livestat'; st.id = 'liveStat'; st.dataset.d = id; const l0 = liveLine(id); st.dataset.state = l0.cls; st.textContent = l0.text; body.appendChild(st);
+  const r = document.createElement('div'); r.className = 'row'; const lb = document.createElement('label'); lb.textContent = 'Source'; lb.htmlFor = 'liveSrc';
+  const s = document.createElement('select'); s.className = 'ctl'; s.id = 'liveSrc';
+  for (const [g, keys] of [['Real public streams', ['binance-ticker', 'binance-trades', 'coinbase-ticker', 'coingecko-markets', 'wikimedia-edits']], ['Simulated', ['sim-ticker', 'sim-trades', 'sim-markets', 'sim-metrics']], ['Your own', ['custom-ws', 'custom-sse', 'custom-poll']]]) {
+    const og = document.createElement('optgroup'); og.label = g; for (const k of keys) { const o = document.createElement('option'); o.value = k; o.textContent = PR[k].label; og.appendChild(o); } s.appendChild(og);
+  }
+  s.value = PR[cfg.p] ? cfg.p : 'sim-ticker';
+  s.addEventListener('change', () => save({ p: s.value, a: '', url: PR[s.value].custom ? cfg.url : '', path: '', map: '' }, 'Data source'));
+  r.append(lb, s, document.createElement('span')); body.appendChild(r);
+  if (P.paramLabel) body.appendChild(textRow(P.paramLabel, cfg.a || P.param || '', (v) => save({ a: v.trim() }, P.paramLabel), { id: 'liveParam', placeholder: P.param }));
+  if (P.custom) {
+    body.appendChild(textRow('Address', cfg.url, (v) => save({ url: v.trim() }, 'Source address'), { id: 'liveUrl', placeholder: P.kind === 'ws' ? 'wss://…' : 'https://…' }));
+    if (P.kind === 'ws') body.appendChild(textRow('Send on open', cfg.sub, (v) => save({ sub: v }, 'Subscribe message'), { id: 'liveSub', placeholder: '{"type":"subscribe"}' }));
+    if (P.kind === 'poll') body.appendChild(textRow('Every (s)', cfg.every || 15, (v) => save({ every: Math.max(5, +v || 15) }, 'Refresh rate'), { id: 'liveEvery', type: 'number' }));
+  }
+  const adv = document.createElement('details'); adv.className = 'adv'; adv.open = !!(cfg.path || cfg.map || cfg.keep);
+  adv.innerHTML = '<summary>Shape the data</summary>';
+  adv.appendChild(textRow('Items at', cfg.path, (v) => save({ path: v.trim() }, 'Data path'), { id: 'livePath', placeholder: 'e.g. data.items' }));
+  adv.appendChild(textRow('Keep last', cfg.keep ?? P.keep ?? '', (v) => save({ keep: v === '' ? '' : Math.max(0, Math.min(200, +v || 0)) }, 'Keep last'), { id: 'liveKeep', type: 'number', placeholder: '0 = latest only' }));
+  adv.appendChild(textRow('Rename', cfg.map, (v) => save({ map: v }, 'Field names'), { id: 'liveMap', area: true, placeholder: 'price = data.c\nchange = data.P' }));
+  body.appendChild(adv);
+  const fl = document.createElement('div'); fl.className = 'fields'; fl.id = 'liveFields'; fl.dataset.d = id; body.appendChild(fl); renderFieldList(fl, id);
+  const acts = document.createElement('div'); acts.style.display = 'flex'; acts.style.gap = '6px'; acts.style.flexWrap = 'wrap';
+  const add = (label, icon, spec) => { const b = document.createElement('button'); b.className = 'btn small'; b.type = 'button'; b.innerHTML = ic(icon, 'sm') + label; b.addEventListener('click', () => { sel = id; insertPreset(spec(), 'Add ' + label.toLowerCase()); }); acts.appendChild(b); };
+  add('Status', 'stream', STATUS_BADGE); add('Sparkline', 'spark', () => N('spark', {}, fieldsOf(id).find(([, v]) => typeof v === 'number')?.[0] || 'price', null, { n: 'Sparkline' }));
+  add('Live list', 'repeat', () => N('repeat', { gap: 2, limit: '6' }, null, [N('text', {}, fieldsOf(id).slice(0, 2).map(([k, v]) => `{{${k}${guessPipe(k, v)}}}`).join(' · ') || '{{value}}')], { n: 'Live list' }));
+  body.appendChild(acts);
+  const h = document.createElement('p'); h.className = 'hint'; h.innerHTML = 'Type <code>{{field}}</code> in any text inside this box. Formats: <code>|usd</code> <code>|pct</code> <code>|num:2</code> <code>|compact</code> <code>|time</code> <code>|ago</code> <code>|upper</code> <code>|or:—</code>. <code>{{$status}}</code> says Live, Sample data or Reconnecting.'; body.appendChild(h);
+}
+function renderFieldList(fl, D) {
+  fl.textContent = '';
+  const fs = fieldsOf(D); fl.dataset.n = fs.length;
+  if (!fs.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Fields appear here as soon as the first message arrives.'; fl.appendChild(p); return; }
+  const h = document.createElement('p'); h.className = 'hint'; h.innerHTML = '<b>Fields</b> · click to add as text'; fl.appendChild(h);
+  for (const [k, v] of fs) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fieldrow'; b.dataset.k = k; b.title = `Add {{${k}${guessPipe(k, v)}}} as a text element`;
+    b.innerHTML = '<code></code><span></span>' + ic('plus', 'sm'); b.querySelector('code').textContent = k; b.querySelector('span').textContent = LIVE.fill(`{{${k}${guessPipe(k, v)}}}`, { [k]: v }).text;
+    b.addEventListener('click', () => { const R = [...subtree(D)].find((n) => type[n] === T.repeat && srcOf(n) === D); const inf = LIVE.info(str.q[D] || '{}'); sel = R !== undefined && inf && inf.list.length > 1 ? R : D; insertPreset(N('text', {}, `{{${k}${guessPipe(k, v)}}}`), 'Add field ' + k); });
+    fl.appendChild(b);
+  }
+}
+function fieldChips(body, id, ta) {
+  const D = srcOf(id); if (D < 0) return;
+  const fs = fieldsOf(D); if (!fs.length) return;
+  const w = document.createElement('div'); w.className = 'chips2'; w.innerHTML = `<span class="hint">${ic('stream', 'sm')} Insert a live field</span>`;
+  for (const [k, v] of [...fs.slice(0, 10), ['$status', '']]) { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip2'; b.textContent = k; b.addEventListener('click', () => commit({ k: 'str', id, f: 'x', v: (str.x[id] || '').replace(/\s*$/, ' ') + `{{${k}${guessPipe(k, v)}}}` }, 'Insert field')); w.appendChild(b); }
+  body.appendChild(w);
+}
+function liveChildPanel(pane, id) {
+  const body = accordion(pane, 'data', type[id] === T.repeat ? 'Live list' : 'Sparkline', type[id] === T.repeat ? 'repeat' : 'spark', -1);
+  const D = srcOf(id);
+  if (D < 0) { const p = document.createElement('p'); p.className = 'hint warnhint'; p.textContent = 'Put this inside a Live data box to connect it to a stream.'; body.appendChild(p); }
+  if (type[id] === T.repeat) {
+    body.appendChild(rowFor(id, PI.limit, segCtl(id, PI.limit, PROPS[PI.limit][4], ['All', '3', '6', '10'])));
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Its children repeat once per item. Style the first one; the copies follow it.'; body.appendChild(p);
+  } else {
+    const nums = D >= 0 ? fieldsOf(D).filter(([, v]) => typeof v === 'number').map(([k]) => k) : [];
+    const r = document.createElement('div'); r.className = 'row'; const l = document.createElement('label'); l.textContent = 'Field'; l.htmlFor = 'sparkField';
+    const s = document.createElement('select'); s.className = 'ctl'; s.id = 'sparkField';
+    for (const k of [...new Set([str.x[id] || 'price', ...nums])]) { const o = document.createElement('option'); o.value = k; o.textContent = k; s.appendChild(o); }
+    s.value = str.x[id] || 'price'; s.addEventListener('change', () => commit({ k: 'str', id, f: 'x', v: s.value }, 'Chart field'));
+    r.append(l, s, document.createElement('span')); body.appendChild(r);
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Draws the last 240 values in the text color. Change Height under Size.'; body.appendChild(p);
+  }
+}
+setInterval(() => {
+  const st = $('liveStat'); if (st && st.isConnected) { const l = liveLine(+st.dataset.d); st.dataset.state = l.cls; st.textContent = l.text; }
+  const fl = $('liveFields'); if (fl && fl.isConnected) { const D = +fl.dataset.d, fs = fieldsOf(D); if (+fl.dataset.n !== fs.length) renderFieldList(fl, D); else for (const [k, v] of fs) { const b = fl.querySelector(`[data-k="${CSS.escape(k)}"] span`); if (b) b.textContent = LIVE.fill(`{{${k}${guessPipe(k, v)}}}`, { [k]: v }).text; } }
+}, 1000);
 function namePop(anchor, title, initial, hint, extra, onOk) {
   openPop(anchor, (p) => {
     const h = document.createElement('h4'); h.textContent = title; p.appendChild(h);
@@ -2008,7 +2648,7 @@ function thumb(M) {
   const fit = compFit(M), W = fit ? 480 : 760;
   const st = document.createElement('style'); st.textContent = stTokens.textContent + BASE_CSS + stNodes.textContent + `.site{box-sizing:border-box;padding:24px;display:flex;flex-direction:column;justify-content:center;align-items:${fit === 'fit' ? 'center' : 'stretch'};width:${W}px;min-height:100%;transform-origin:top left}`;
   const site = document.createElement('div'); site.className = 'site'; site.appendChild(buildEl(M, false));
-  sh.append(st, site);
+  sh.append(st, site); LIVE.scan(site);
   requestAnimationFrame(() => { const w = host.clientWidth || 220, sc = w / W; site.style.transform = `scale(${sc})`; site.style.minHeight = (96 / sc) + 'px'; });
   return host;
 }
@@ -2121,7 +2761,7 @@ function renderPageSettings(pane, id) {
   const li = linkIndex(), inb = li.filter((l) => l.tgt === id && l.ok && l.page !== id), out = li.filter((l) => l.page === id && l.src !== 'nav');
   const st = document.createElement('p'); st.className = 'hint'; st.innerHTML = `<b>${inb.length}</b> links point here · <b>${out.length}</b> links leave this page · <b>${children(id).filter((c) => !isShared(c)).length}</b> sections`; body.appendChild(st);
   const g = document.createElement('div'); g.style.display = 'flex'; g.style.gap = '6px'; g.style.flexWrap = 'wrap';
-  for (const [l, icon, fn, cls] of [['Duplicate', 'copy', () => duplicatePage(id), ''], ['Sitemap', 'sitemap', () => setView('map'), ''], ['Delete', 'trash', () => deletePage(id), 'danger']]) { const b = document.createElement('button'); b.className = 'btn small ' + cls; b.type = 'button'; b.innerHTML = ic(icon, 'sm') + l; if (l === 'Delete' && id === homePage()) b.disabled = true; b.addEventListener('click', fn); g.appendChild(b); }
+  for (const [l, icon, fn, cls] of [['Search & AI', 'search', () => showTab('tabSeo'), ''], ['Duplicate', 'copy', () => duplicatePage(id), ''], ['Sitemap', 'sitemap', () => setView('map'), ''], ['Delete', 'trash', () => deletePage(id), 'danger']]) { const b = document.createElement('button'); b.className = 'btn small ' + cls; b.type = 'button'; b.innerHTML = ic(icon, 'sm') + l; if (l === 'Delete' && id === homePage()) b.disabled = true; b.addEventListener('click', fn); g.appendChild(b); }
   body.appendChild(g);
   const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = 'Select an element on the canvas to style it, or use Add to put new sections on this page.'; pane.appendChild(Object.assign(document.createElement('div'), { className: 'sect' })).appendChild(tip);
 }
@@ -2210,12 +2850,187 @@ function renderThemePane() {
   sr.append(sl, sg, document.createElement('span')); ss.appendChild(sr);
 }
 function showTab(which, quiet) {
-  for (const [t, p] of [['tabEl', 'paneEl'], ['tabTheme', 'paneTheme'], ['tabVer', 'paneVer']]) { $(t).setAttribute('aria-selected', String(t === which)); $(p).hidden = t !== which; }
+  for (const [t, p] of [['tabEl', 'paneEl'], ['tabTheme', 'paneTheme'], ['tabSeo', 'paneSeo'], ['tabVer', 'paneVer']]) { $(t).setAttribute('aria-selected', String(t === which)); $(p).hidden = t !== which; }
   themeDirty = true; if (!quiet) renderInspector();
 }
 $('tabEl').addEventListener('click', () => showTab('tabEl'));
 $('tabTheme').addEventListener('click', () => showTab('tabTheme'));
+$('tabSeo').addEventListener('click', () => showTab('tabSeo'));
 $('tabVer').addEventListener('click', () => showTab('tabVer'));
+
+/* Access gates in exported pages. Email gates are soft: the content ships in
+   the page and opens once a visitor leaves an address. Password gates are
+   real: the content ships only as AES-256-GCM ciphertext under a key derived
+   from the password (PBKDF2-SHA-256), and is decrypted in the browser. */
+function FluxGate(onOpen) {
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  for (const g of document.querySelectorAll('.fx-gate')) {
+    const f = g.querySelector('form'), err = g.querySelector('.fx-gate-e'), id = g.dataset.id, mode = g.dataset.gate, host = g.parentElement;
+    const open = (html) => {
+      if (html != null) { const t = document.createElement('template'); t.innerHTML = html; g.replaceWith(t.content); }
+      else { const c = g.nextElementSibling; if (c && c.classList.contains('fx-gated')) c.replaceWith(...c.childNodes); g.remove(); }
+      if (onOpen) onOpen(host);
+    };
+    if (mode === 'email') { try { if (localStorage.getItem('fx-gate-' + id)) { open(); continue; } } catch (e) {} }
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = f.querySelector('input').value.trim();
+      if (mode === 'email') {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { err.textContent = 'Enter a valid email address.'; return; }
+        if (g.dataset.act) { try { await fetch(g.dataset.act, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ email: v, page: location.pathname }) }); } catch (x) {} }
+        try { localStorage.setItem('fx-gate-' + id, '1'); } catch (x) {}
+        open(); return;
+      }
+      if (!window.crypto || !crypto.subtle) { err.textContent = 'This page must be opened over https to unlock.'; return; }
+      try {
+        err.textContent = 'Unlocking…';
+        const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(v), 'PBKDF2', false, ['deriveKey']);
+        const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(g.dataset.salt), iterations: +g.dataset.it, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(g.dataset.iv) }, key, b64(g.dataset.ct));
+        open(new TextDecoder().decode(pt));
+      } catch (x) { err.textContent = 'That password did not work.'; }
+    });
+  }
+}
+
+/* =========================================================================
+   Search and AI: per-page title, description, social image, structured data
+   and an AI summary; site-wide address, AI crawler policy and llms.txt
+   ========================================================================= */
+const AI_BOTS = [
+  ['GPTBot', 'OpenAI · trains models', 1], ['OAI-SearchBot', 'ChatGPT search answers', 0], ['ChatGPT-User', 'ChatGPT reading a page for a user', 0],
+  ['ClaudeBot', 'Anthropic · trains models', 1], ['Claude-SearchBot', 'Claude search answers', 0], ['Claude-User', 'Claude reading a page for a user', 0],
+  ['PerplexityBot', 'Perplexity answers', 0], ['Google-Extended', 'Gemini training and grounding', 1], ['Applebot-Extended', 'Apple Intelligence training', 1],
+  ['CCBot', 'Common Crawl dataset', 1], ['Bytespider', 'ByteDance training', 1], ['meta-externalagent', 'Meta AI training', 1],
+];
+const SCHEMAS = [['auto', 'Automatic'], ['WebPage', 'Web page'], ['Article', 'Article'], ['FAQPage', 'FAQ (questions as headings)'], ['AboutPage', 'About page'], ['ContactPage', 'Contact page'], ['CollectionPage', 'Collection or list']];
+const seoOf = (id) => { try { return JSON.parse(str.e[id] || '{}') || {}; } catch (e) { return {}; } };
+function setSeo(id, patch, label) { const c = { ...seoOf(id), ...patch }; for (const k of Object.keys(c)) if (c[k] === '' || c[k] == null) delete c[k]; const v = Object.keys(c).length ? JSON.stringify(c) : undefined; if (v === str.e[id]) return; commit({ k: 'str', id, f: 'e', v }, label || 'Search settings'); }
+const isH1 = (n) => type[n] === T.heading && Math.max(0, eff(n, PI.lvl, 0)) === 0;
+function inPwGate(n) { for (let c = par[n]; c >= 0; c = par[c]) { const g = gateOf(c); if (g && g.m === 'password') return true; } return false; }
+function pageH1(pg) { for (const s of pageSections(pg)) for (const n of subtree(s)) if (isH1(n) && !inPwGate(n)) return str.x[n] || ''; return ''; }
+function leadText(pg) { let seen = false; for (const s of children(pg).filter((c) => !isShared(c))) for (const n of subtree(s)) { if (inPwGate(n)) continue; if (isH1(n)) seen = true; else if (seen && type[n] === T.text && !isBound(str.x[n]) && (str.x[n] || '').length > 30) return str.x[n]; } return ''; }
+function seoTitle(pg) { const e = seoOf(pg); return e.t || (pg === homePage() ? `${str.n[0]}: ${pageH1(pg) || str.n[pg]}` : `${str.n[pg]} · ${str.n[0]}`); }
+function seoDesc(pg) { const e = seoOf(pg); return e.d || (isArticle(pg) ? str.x[pg] : leadText(pg)) || str.x[0] || ''; }
+const seoSummary = (pg) => seoOf(pg).sum || seoDesc(pg);
+const siteUrl = () => (seoOf(0).url || '').trim().replace(/\/+$/, '');
+const pageUrl = (pg) => (siteUrl() || 'https://example.com') + (str.h[pg] === '/' ? '/' : str.h[pg]);
+const schemaType = (pg) => { const s = seoOf(pg).sch; return s && s !== 'auto' ? s : isArticle(pg) ? 'Article' : pg === homePage() ? 'WebSite' : 'WebPage'; };
+const botRule = (b) => (seoOf(0).bots || {})[b] || 'allow';
+function socialImage(pg) { const e = seoOf(pg); if (e.img) return e.img; const f = firstImage(pg); return /^https?:/.test(f) ? f : ''; }
+function jsonLd(pg) {
+  const site = seoOf(0), base = siteUrl() || 'https://example.com', org = { '@type': site.org || 'Organization', name: str.n[0], url: base + '/' };
+  const typ = schemaType(pg), ctx = 'https://schema.org';
+  if (typ === 'WebSite') return { '@context': ctx, '@graph': [{ '@type': 'WebSite', name: str.n[0], url: base + '/', description: seoDesc(pg) }, { ...org, description: site.sum || str.x[0] || undefined, ...(site.org === 'LocalBusiness' && site.addr ? { address: site.addr } : {}) }] };
+  if (typ === 'Article') return { '@context': ctx, '@type': 'Article', headline: pageH1(pg) || str.n[pg], description: seoDesc(pg), abstract: seoSummary(pg), datePublished: str.d[pg] || undefined, author: org, publisher: org, mainEntityOfPage: pageUrl(pg), image: socialImage(pg) || undefined };
+  if (typ === 'FAQPage') {
+    const qa = []; let q = null;
+    for (const s of pageSections(pg)) for (const n of subtree(s)) { if (inPwGate(n)) continue; if (type[n] === T.heading && /\?\s*$/.test(str.x[n] || '')) q = str.x[n]; else if (q && type[n] === T.text && str.x[n]) { qa.push({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: str.x[n] } }); q = null; } }
+    return { '@context': ctx, '@type': 'FAQPage', name: seoTitle(pg), mainEntity: qa };
+  }
+  return { '@context': ctx, '@type': typ, name: seoTitle(pg), description: seoDesc(pg), abstract: seoSummary(pg), url: pageUrl(pg), isPartOf: { '@type': 'WebSite', name: str.n[0], url: base + '/' } };
+}
+function seoChecks(pg) {
+  const e = seoOf(pg), t = seoTitle(pg), d = seoDesc(pg), out = [];
+  const h1n = pageSections(pg).flatMap((s) => subtree(s)).filter(isH1).length;
+  const imgs = pageSections(pg).flatMap((s) => subtree(s)).filter((n) => type[n] === T.image), noAlt = imgs.filter((n) => !(str.x[n] || '').trim()).length;
+  const inbound = linkIndex().filter((l) => l.ok && l.tgt === pg && (l.page !== pg || l.src === 'nav')).length;
+  const aiOpen = AI_BOTS.filter(([b, , train]) => !train && botRule(b) === 'allow').length;
+  out.push({ ok: t.length >= 15 && t.length <= 60, label: 'Title is 15 to 60 characters', detail: `${t.length} characters${e.t ? '' : ' · written for you from the page name'}` });
+  out.push({ ok: d.length >= 50 && d.length <= 160, label: 'Description is 50 to 160 characters', detail: d ? `${d.length} characters${e.d ? '' : ' · taken from the text under the H1'}` : 'Missing' });
+  out.push({ ok: h1n === 1, label: 'Exactly one H1', detail: `${h1n} on this page` });
+  out.push({ ok: !noAlt, label: 'Images describe themselves', detail: noAlt ? `${noAlt} image${noAlt > 1 ? 's have' : ' has'} no alt text` : `${imgs.length} image${imgs.length === 1 ? '' : 's'} with alt text` });
+  out.push({ ok: /^\/[a-z0-9\-/]*$/.test(str.h[pg] || '') && (str.h[pg] || '').length <= 60, label: 'Readable address', detail: str.h[pg] });
+  out.push({ ok: pg === homePage() || inbound > 0, label: 'Linked from the site', detail: pg === homePage() ? 'Home page' : `${inbound} link${inbound === 1 ? '' : 's'} point here` });
+  out.push({ ok: !!socialImage(pg), label: 'Social image for link previews', detail: socialImage(pg) ? 'Set' : 'Add an image address (https://…) so shared links show a picture', tip: true });
+  out.push({ ok: !e.ni, label: 'Visible to search engines', detail: e.ni ? 'Hidden on purpose (noindex)' : 'Indexed', tip: true });
+  out.push({ ok: seoSummary(pg).length >= 40, label: 'AI summary an assistant can quote', detail: seoOf(pg).sum ? 'Written by you' : 'Using the description' });
+  out.push({ ok: e.ai === 'block' || aiOpen > 0, label: 'AI answer engines can read it', detail: e.ai === 'block' ? 'Blocked on this page by choice' : `${aiOpen} of ${AI_BOTS.filter((b) => !b[2]).length} answer and search bots allowed` });
+  return out;
+}
+let seoDirtyKey = '';
+function renderSeoPane() {
+  const pane = $('paneSeo'), focusId = document.activeElement && pane.contains(document.activeElement) ? document.activeElement.id : null, sc = pane.parentElement.scrollTop;
+  pane.textContent = '';
+  const pg = curPage, e = seoOf(pg), site = seoOf(0);
+  const counter = (row, len, lo, hi) => { const c = document.createElement('small'); c.className = 'cnt2' + (len && (len < lo || len > hi) ? ' bad' : ''); c.textContent = `${len} / ${hi}`; row.firstChild.appendChild(c); return row; };
+  // this page
+  const pb = accordion(pane, 'seo', `Search · ${str.n[pg]}`, 'search', -1);
+  const serp = document.createElement('div'); serp.className = 'serp'; serp.innerHTML = '<cite></cite><b></b><p></p>';
+  serp.querySelector('cite').textContent = pageUrl(pg).replace(/^https?:\/\//, '').replace(/\//g, ' › ').replace(/ › $/, ''); serp.querySelector('b').textContent = seoTitle(pg); serp.querySelector('p').textContent = seoDesc(pg);
+  pb.appendChild(serp);
+  pb.appendChild(counter(textRow('Title', e.t, (v) => setSeo(pg, { t: v.trim() }, 'Search title'), { id: 'seoT', placeholder: seoTitle(pg) }), seoTitle(pg).length, 15, 60));
+  pb.appendChild(counter(textRow('Description', e.d, (v) => setSeo(pg, { d: v.trim() }, 'Search description'), { id: 'seoD', area: true, placeholder: seoDesc(pg) }), seoDesc(pg).length, 50, 160));
+  pb.appendChild(textRow('Social image', e.img, (v) => setSeo(pg, { img: v.trim() }, 'Social image'), { id: 'seoImg', placeholder: 'https://… 1200 × 630' }));
+  const sr = document.createElement('div'); sr.className = 'row'; const sl = document.createElement('label'); sl.textContent = 'Schema'; sl.title = 'Structured data type (schema.org)'; sl.htmlFor = 'seoSch';
+  const ss = document.createElement('select'); ss.className = 'ctl'; ss.id = 'seoSch'; for (const [v, l] of SCHEMAS) { const o = document.createElement('option'); o.value = v; o.textContent = l + (v === 'auto' ? ` · ${schemaType(pg)}` : ''); ss.appendChild(o); }
+  ss.value = e.sch || 'auto'; ss.addEventListener('change', () => setSeo(pg, { sch: ss.value === 'auto' ? '' : ss.value }, 'Structured data')); sr.append(sl, ss, document.createElement('span')); pb.appendChild(sr);
+  const seg = (label, opts, cur, onPick) => { const r = document.createElement('div'); r.className = 'row'; const l = document.createElement('label'); l.textContent = label; const d = document.createElement('div'); d.className = 'ctl-seg'; for (const [v, t] of opts) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.setAttribute('aria-pressed', String(cur === v)); b.addEventListener('click', () => onPick(v)); d.appendChild(b); } r.append(l, d, document.createElement('span')); return r; };
+  pb.appendChild(seg('In search', [['', 'Show'], ['1', 'Hide']], e.ni ? '1' : '', (v) => setSeo(pg, { ni: v ? 1 : '' }, v ? 'Hide from search' : 'Show in search')));
+  // AI for this page
+  const ab = accordion(pane, 'seoai', 'AI assistants · this page', 'bot', -1);
+  ab.appendChild(counter(textRow('AI summary', e.sum, (v) => setSeo(pg, { sum: v.trim() }, 'AI summary'), { id: 'seoSum', area: true, placeholder: seoDesc(pg) }), seoSummary(pg).length, 40, 300));
+  const an = document.createElement('p'); an.className = 'hint'; an.textContent = 'One or two plain sentences an assistant can quote as the answer. It goes into llms.txt and the page’s structured data.'; ab.appendChild(an);
+  ab.appendChild(seg('AI crawlers', [['', 'Site rule'], ['block', 'Block here']], e.ai || '', (v) => setSeo(pg, { ai: v }, v ? 'Block AI on this page' : 'Follow site AI rule')));
+  // checklist
+  const cb = accordion(pane, 'seock', 'Checklist', 'check', -1), ul = document.createElement('ul'); ul.className = 'seock';
+  for (const c of seoChecks(pg)) { const li = document.createElement('li'); li.className = c.ok ? 'ok' : 'warn'; li.innerHTML = `${ic(c.ok ? 'check' : c.tip ? 'info' : 'warn', 'sm')}<span><b></b><small></small></span>`; li.querySelector('b').textContent = c.label; li.querySelector('small').textContent = c.detail; ul.appendChild(li); }
+  cb.appendChild(ul);
+  // whole site
+  const wb = accordion(pane, 'seosite', 'Whole site', 'home', -1);
+  wb.appendChild(textRow('Address', site.url, (v) => { let u = v.trim(); if (u && !/^https?:\/\//.test(u)) u = 'https://' + u; setSeo(0, { url: u.replace(/\/+$/, '') }, 'Site address'); }, { id: 'seoUrl', placeholder: 'https://yourdomain.com' }));
+  wb.appendChild(textRow('Language', site.lang, (v) => setSeo(0, { lang: v.trim().toLowerCase() }, 'Language'), { id: 'seoLang', placeholder: 'en' }));
+  const or = document.createElement('div'); or.className = 'row'; const ol = document.createElement('label'); ol.textContent = 'Who runs it'; ol.htmlFor = 'seoOrg'; const os = document.createElement('select'); os.className = 'ctl'; os.id = 'seoOrg';
+  for (const [v, l] of [['Organization', 'Organization'], ['LocalBusiness', 'Local business'], ['Person', 'Person']]) { const o = document.createElement('option'); o.value = v; o.textContent = l; os.appendChild(o); }
+  os.value = site.org || 'Organization'; os.addEventListener('change', () => setSeo(0, { org: os.value }, 'Site owner type')); or.append(ol, os, document.createElement('span')); wb.appendChild(or);
+  wb.appendChild(textRow('Social handle', site.handle, (v) => setSeo(0, { handle: v.trim() }, 'Social handle'), { id: 'seoHandle', placeholder: '@yourstudio' }));
+  wb.appendChild(counter(textRow('Site summary', site.sum, (v) => setSeo(0, { sum: v.trim() }, 'Site summary'), { id: 'seoSiteSum', area: true, placeholder: 'What the site is, who it is for and where it is, in two sentences.' }), (site.sum || '').length, 40, 400));
+  // AI crawler policy
+  const bb = accordion(pane, 'seobots', 'AI crawlers · whole site', 'bot', -1);
+  const bots = site.bots || {}, setBots = (nb, label) => setSeo(0, { bots: Object.keys(nb).length ? nb : '' }, label);
+  const allBlocked = AI_BOTS.every(([b]) => bots[b] === 'block'), trainBlocked = AI_BOTS.every(([b, , t]) => (t ? bots[b] === 'block' : bots[b] !== 'block')), allAllowed = AI_BOTS.every(([b]) => bots[b] !== 'block');
+  bb.appendChild(seg('Policy', [['all', 'Allow all'], ['answers', 'Answers, no training'], ['none', 'Block all']], allAllowed ? 'all' : trainBlocked ? 'answers' : allBlocked ? 'none' : 'custom', (v) => {
+    const nb = {}; for (const [b, , t] of AI_BOTS) if (v === 'none' || (v === 'answers' && t)) nb[b] = 'block'; setBots(nb, 'AI crawler policy'); }));
+  for (const [b, what] of AI_BOTS) {
+    const r = document.createElement('label'); r.className = 'botrow'; r.innerHTML = `<span><code></code><small></small></span>`; r.querySelector('code').textContent = b; r.querySelector('small').textContent = what;
+    const cbx = document.createElement('input'); cbx.type = 'checkbox'; cbx.checked = botRule(b) === 'allow'; cbx.setAttribute('aria-label', 'Allow ' + b);
+    cbx.addEventListener('change', () => { const nb = { ...bots }; if (cbx.checked) delete nb[b]; else nb[b] = 'block'; setBots(nb, (cbx.checked ? 'Allow ' : 'Block ') + b); });
+    r.appendChild(cbx); bb.appendChild(r);
+  }
+  const lr = document.createElement('label'); lr.className = 'botrow'; lr.innerHTML = '<span><code>llms.txt</code><small>A plain-text map of the site for AI assistants</small></span>';
+  const lc = document.createElement('input'); lc.type = 'checkbox'; lc.checked = site.llms !== 0; lc.setAttribute('aria-label', 'Publish llms.txt'); lc.addEventListener('change', () => setSeo(0, { llms: lc.checked ? '' : 0 }, lc.checked ? 'Publish llms.txt' : 'Turn off llms.txt')); lr.appendChild(lc); bb.appendChild(lr);
+  const fb = document.createElement('div'); fb.style.display = 'flex'; fb.style.gap = '6px'; fb.style.flexWrap = 'wrap'; fb.style.marginTop = '10px';
+  for (const f of ['robots.txt', 'sitemap.xml', 'llms.txt']) { const b = document.createElement('button'); b.className = 'btn small'; b.type = 'button'; b.innerHTML = ic('code', 'sm') + f; b.addEventListener('click', () => openExport('f:' + f)); fb.appendChild(b); }
+  bb.appendChild(fb);
+  if (!siteUrl()) { const w = document.createElement('p'); w.className = 'hint warnhint'; w.textContent = 'Set the site address under Whole site so the sitemap, canonical links and structured data use your real domain.'; bb.appendChild(w); }
+  if (focusId && $(focusId)) $(focusId).focus();
+  pane.parentElement.scrollTop = sc;
+}
+function robotsTxt() {
+  const lines = ['# robots.txt · generated by Flux Studio', ''];
+  const hidden = pages().filter((p) => seoOf(p).ai === 'block').map((p) => (str.h[p] === '/' ? '/$' : str.h[p]));
+  for (const [b] of AI_BOTS) {
+    if (botRule(b) === 'block') lines.push(`User-agent: ${b}`, 'Disallow: /', '');
+    else if (hidden.length) lines.push(`User-agent: ${b}`, ...hidden.map((h) => `Disallow: ${h}`), 'Allow: /', '');
+  }
+  lines.push('User-agent: *', 'Allow: /', '', `Sitemap: ${siteUrl() || 'https://example.com'}/sitemap.xml`);
+  return lines.join('\n') + '\n';
+}
+function sitemapXml() {
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = pages().filter((p) => !seoOf(p).ni).sort((a, b) => (str.h[a] || '').localeCompare(str.h[b] || '')).map((p) => `  <url>\n    <loc>${esc(pageUrl(p))}</loc>\n    <lastmod>${isArticle(p) && str.d[p] ? str.d[p] : today}</lastmod>\n  </url>`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+}
+function llmsTxt() {
+  const site = seoOf(0);
+  if (site.llms === 0) return '# llms.txt is turned off for this site.\n';
+  const ok = (p) => !seoOf(p).ni && seoOf(p).ai !== 'block';
+  const locked = (p) => subtree(p).some((n) => { const g = gateOf(n); return g && g.m === 'password'; });
+  const line = (p) => `- [${str.n[p]}](${pageUrl(p)}): ${seoSummary(p)}${locked(p) ? ' (part of this page is for members only)' : ''}`;
+  const ps = pages().filter((p) => ok(p) && !isArticle(p)).sort((a, b) => (a === homePage() ? -1 : b === homePage() ? 1 : (str.h[a] || '').localeCompare(str.h[b] || '')));
+  const arts = articles().filter(ok);
+  return `# ${str.n[0]}\n\n> ${site.sum || str.x[0] || seoDesc(homePage())}\n\n## Pages\n\n${ps.map(line).join('\n')}\n${arts.length ? `\n## Articles\n\n${arts.map(line).join('\n')}\n` : ''}`;
+}
 
 /* =========================================================================
    Sitemap: page tree by address, links on demand, problems flagged
@@ -2399,7 +3214,13 @@ function runChecks() {
   const footLinks = (() => { for (const s of sharedSections(2)) for (const n of subtree(s)) if (str.n[n] === 'Footer links') return n; return -1; })();
   add({ law: 'Friction', title: 'Every page can be reached', status: orph.length ? 'warn' : 'pass', detail: orph.length ? `Nothing links to ${orph.map((p) => str.h[p]).join(', ')}.` : 'Every page has at least one link to it.',
     fix: orph.length && footLinks >= 0 ? () => orph.map((p) => () => ({ k: 'ins', snap: freshSnap(N('link', { fs: 1 }, str.n[p], null, { h: 'page:' + str.h[p] })), parent: footLinks, index: children(footLinks).length })) : null, fixLabel: 'Add to footer' });
-  // 12 audience
+  // 12 search
+  const sc0 = seoChecks(pg), core = sc0.slice(0, 3).filter((c) => !c.ok);
+  add({ law: 'Search', title: 'Ready for search results', status: core.length ? 'warn' : 'pass', detail: core.length ? core.map((c) => `${c.label}: ${c.detail}`).join(' · ') : `“${seoTitle(pg)}” with a ${seoDesc(pg).length}-character description.`, fix: core.length ? 'seo' : null, fixLabel: 'Open SEO' });
+  // 13 AI assistants
+  const aic = sc0.slice(8).filter((c) => !c.ok);
+  add({ law: 'AI', title: 'Answer-ready for AI assistants', status: aic.length ? 'warn' : 'pass', detail: aic.length ? aic.map((c) => `${c.label}: ${c.detail}`).join(' · ') : `${schemaType(pg)} structured data, a quotable summary, and ${sc0[9].detail.toLowerCase()}.`, fix: aic.length ? 'seo' : null, fixLabel: 'Open SEO' });
+  // 14 audience
   const aud = (str.x[0] || '').trim();
   add({ law: 'Audience', title: 'Designed for the visitor', status: aud.length > 10 ? 'pass' : 'warn', detail: aud.length > 10 ? `For: ${aud}` : 'Write down who the site is for, then choose fonts, colors and layout for them.', fix: aud.length > 10 ? null : 'audience', fixLabel: 'Describe audience' });
   lastChecks = out;
@@ -2411,6 +3232,7 @@ function runChecks() {
 let checkT = 0;
 function queueCheck() { clearTimeout(checkT); checkT = setTimeout(() => { if (view === 'design' && !drag.active && editingComp < 0) { runChecks(); if (popAnchor === $('btnCheck')) refreshPop(); renderStatus(); } }, 450); }
 function applyFix(c) {
+  if (c.fix === 'seo') { closePop(); showTab('tabSeo'); return; }
   if (c.fix === 'audience') { showTab('tabTheme'); openGroups.add('site'); themeDirty = true; renderInspector(); setTimeout(() => $('siteAud') && $('siteAud').focus(), 50); closePop(); return; }
   const steps = c.fix().flat();
   if (commitSeq(steps, 'Design check: ' + c.title)) toast('Fixed: ' + c.title);
@@ -2449,7 +3271,7 @@ function encodeDense() {
   const ids = []; for (let i = 0; i < CAP; i++) if (alive[i]) ids.push(i);
   const te = new TextEncoder();
   let size = 8;
-  const rows = ids.map((id) => { const set = []; for (let p = 0; p < NP; p++) for (let bp = 0; bp < BPN; bp++) { const v = cell(id, p, bp); if (v >= 0) set.push(p, bp, v); } const s = SF.map((k) => te.encode(str[k][id] || '')); size += 10 + set.length + s.reduce((a, b) => a + 2 + b.length, 0); return { id, set, s }; });
+  const rows = ids.map((id) => { const set = []; for (let p = 0; p < NP; p++) for (let bp = 0; bp < BPN; bp++) { const v = cell(id, p, bp); if (v !== -1) set.push(p, bp, v & 255); } const s = SF.map((k) => te.encode(str[k][id] || '')); size += 10 + set.length + s.reduce((a, b) => a + 2 + b.length, 0); return { id, set, s }; });
   const tb = te.encode(JSON.stringify(theme)); size += 2 + tb.length;
   const buf = new Uint8Array(size), dv = new DataView(buf.buffer); let o = 8;
   buf.set([0x46, 0x4c, 0x58, 0x53], 0); dv.setUint16(4, ids.length, true); dv.setUint16(6, NP, true);
@@ -2463,7 +3285,7 @@ function encodeDense() {
 }
 function namedTree(id) {
   const o = { type: TYPES[type[id]], props: {} };
-  for (let p = 0; p < NP; p++) for (let bp = 0; bp < BPN; bp++) { const v = cell(id, p, bp); if (v >= 0) { const def = PROPS[p]; o.props[def[0] + ['', '@tablet', '@phone'][bp]] = def[3] === 'enum' ? def[4][v] : def[3] === 'color' ? COLORS[v] : v; } }
+  for (let p = 0; p < NP; p++) for (let bp = 0; bp < BPN; bp++) { const v = cell(id, p, bp); if (v !== -1) { const def = PROPS[p]; o.props[def[0] + ['', '@tablet', '@phone'][bp]] = def[3] === 'enum' ? def[4][v] : def[3] === 'color' ? COLORS[v] : def[3] === 'pct' ? pctDec(v) : v; } }
   for (const [k, name] of [['x', 'text'], ['h', 'href'], ['s', 'image'], ['n', 'name'], ['k', 'kind'], ['d', 'date']]) if (str[k][id]) o[name] = str[k][id];
   const k = children(id); if (k.length) o.children = k.map(namedTree);
   return o;
@@ -2500,29 +3322,78 @@ function renderVersions() {
 }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
 function exportHref(h) { const p = parseHref(h); if (p.kind === 'page') return slugFile(p.slug) + (p.anchor >= 0 ? '#n' + p.anchor : ''); if (p.kind === 'section') return '#n' + p.anchor; if (p.kind === 'web') return p.url; return '#'; }
-function exportHtml(pg) {
+const b64u = (u) => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+/* AES-256-GCM with a PBKDF2-SHA-256 key; the same parameters FluxGate uses to decrypt */
+async function encryptFor(html, pw) {
+  const te = new TextEncoder(), salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), it = 250000;
+  const secret = pw || b64u(crypto.getRandomValues(new Uint8Array(24)));
+  const km = await crypto.subtle.importKey('raw', te.encode(secret), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: it, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te.encode(html)));
+  return { ct: b64u(ct), iv: b64u(iv), salt: b64u(salt), it };
+}
+let exportWarn = '';
+async function exportHtml(pg) {
+  const enc = new Map(); exportWarn = '';
   const html = (id, ind) => {
     const t = type[id], tag = TAGS(id), pad = '  '.repeat(ind);
     let attrs = ` class="t-${TYPES[t]} n${id}"`;
     if (t === T.section) attrs += ` id="n${id}"`;
     if (LINKY.has(t)) attrs += ` href="${esc(exportHref(str.h[id]))}"${/^https?:/.test(str.h[id] || '') ? ' target="_blank" rel="noopener"' : ''}`;
-    if (t === T.image) attrs += ` role="img" aria-label="${esc(str.x[id] || 'Image')}"${str.s[id] ? ` style="background-image:url('${str.s[id]}')"` : ''}`;
+    if (t === T.image) attrs += ` role="img" aria-label="${esc(str.x[id] || 'Image')}"${isBound(str.s[id]) ? ` data-bind-img="${esc(str.s[id])}"` : str.s[id] ? ` style="background-image:url('${str.s[id]}')"` : ''}`;
+    if (t === T.data) attrs += ` data-src="${esc(str.q[id] || '{}')}"`;
+    if (t === T.repeat) { const l = eff(id, PI.limit, 0); attrs += ` data-repeat="${l > 0 ? PROPS[PI.limit][4][l] : ''}"`; }
+    const bound = TEXTUAL.has(t) && isBound(str.x[id]);
+    if (bound) attrs += ` data-bind="${esc(str.x[id])}"`;
+    if (t === T.spark) return `${pad}<canvas${attrs} data-spark="${esc(str.x[id] || 'price')}" role="img" aria-label="Live chart of ${esc(str.x[id] || 'price')}"></canvas>`;
     if (t === T.divider) return `${pad}<hr${attrs}>`;
     if (t === T.field) return `${pad}<input${attrs} placeholder="${esc(str.x[id])}" aria-label="${esc(str.x[id])}">`;
     if (t === T.list) return `${pad}<div${attrs}>${listCards(id, true)}</div>`;
-    if (CONTAINER.has(t)) return `${pad}<${tag}${attrs}>\n${children(id).map((c) => html(c, ind + 1)).join('\n')}\n${pad}</${tag}>`;
-    return `${pad}<${tag}${attrs}>${TEXTUAL.has(t) ? esc(str.x[id]) : ''}</${tag}>`;
+    if (CONTAINER.has(t)) {
+      const kids = children(id).map((c) => html(c, ind + 1)).join('\n'), g = (t === T.section || t === T.box) ? gateOf(id) : null;
+      let inner = kids;
+      if (g && g.m === 'password' && enc.has(id)) { const x = enc.get(id); inner = `${pad}  ${gateMarkup(id, g, ` data-ct="${x.ct}" data-iv="${x.iv}" data-salt="${x.salt}" data-it="${x.it}"`)}`; }
+      else if (g && g.m === 'email') inner = `${pad}  ${gateMarkup(id, g, g.act ? ` data-act="${esc(g.act)}"` : '')}\n${pad}  <div class="fx-gated" hidden>\n${kids}\n${pad}  </div>`;
+      return `${pad}<${tag}${attrs}>\n${inner}\n${pad}</${tag}>`;
+    }
+    return `${pad}<${tag}${attrs}>${TEXTUAL.has(t) ? (bound ? '' : esc(str.x[id])) : ''}</${tag}>`;
   };
   const used = [pg, ...pageSections(pg).flatMap((s) => subtree(s))];
+  // encrypt the deepest password gates first, so an outer gate wraps the inner ciphertext
+  const pwGates = used.filter((n) => (type[n] === T.section || type[n] === T.box) && gateOf(n) && gateOf(n).m === 'password');
+  const depth = (n) => { let d = 0; for (let c = n; c >= 0; c = par[c]) d++; return d; };
+  for (const n of pwGates.sort((a, b) => depth(b) - depth(a))) {
+    const g = gateOf(n); if (!g.pw) exportWarn = 'A password gate has no password, so nobody can open it.';
+    enc.set(n, await encryptFor(children(n).map((c) => html(c, 0)).join('\n'), g.pw || ''));
+  }
   let nodeCss = ''; for (const i of used) { compileNode(i); nodeCss += cssCache[i] + '\n'; }
   const css = (tokenCss('.site') + '\n' + tokenCssNarrow('.site *') + '\n' + BASE_CSS.split('\n').filter((l) => !/\.edit |dragging|comp-board/.test(l)).join('\n') + nodeCss).replace(/\}(?=\.)/g, '}\n');
-  const desc = isArticle(pg) ? str.x[pg] : str.x[0];
+  const e = seoOf(pg), site = seoOf(0), title = seoTitle(pg), desc = seoDesc(pg), img = socialImage(pg), url = pageUrl(pg);
+  const hasLive = used.some((n) => type[n] === T.data), hasGate = used.some((n) => (type[n] === T.section || type[n] === T.box) && gateOf(n));
+  const head = [
+    `<title>${esc(title)}</title>`,
+    desc ? `<meta name="description" content="${esc(desc)}">` : '',
+    siteUrl() ? `<link rel="canonical" href="${esc(url)}">` : '',
+    e.ni ? '<meta name="robots" content="noindex, nofollow">' : '',
+    e.ai === 'block' ? '<meta name="robots" content="noai, noimageai">' : '',
+    `<meta property="og:type" content="${isArticle(pg) ? 'article' : 'website'}">`,
+    `<meta property="og:site_name" content="${esc(str.n[0])}">`,
+    `<meta property="og:title" content="${esc(title)}">`,
+    desc ? `<meta property="og:description" content="${esc(desc)}">` : '',
+    siteUrl() ? `<meta property="og:url" content="${esc(url)}">` : '',
+    img ? `<meta property="og:image" content="${esc(img)}">` : '',
+    `<meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}">`,
+    site.handle ? `<meta name="twitter:site" content="${esc(site.handle)}">` : '',
+    isArticle(pg) && str.d[pg] ? `<meta property="article:published_time" content="${esc(str.d[pg])}">` : '',
+    `<script type="application/ld+json">${JSON.stringify(jsonLd(pg)).replace(/</g, '\\u003c')}<\/script>`,
+  ].filter(Boolean).join('\n');
+  const scripts = hasLive || hasGate ? `\n<script>\n${hasLive ? FluxLive.toString() + '\n' : ''}${hasGate ? FluxGate.toString() + '\n' : ''}${hasLive ? 'const live = FluxLive();\nlive.scan(document);\n' : ''}${hasGate ? `FluxGate(${hasLive ? '(host) => live.scan(host)' : ''});\n` : ''}<\/script>` : '';
   return `<!doctype html>
-<html lang="en">
+<html lang="${esc(site.lang || 'en')}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(str.n[pg])} · ${esc(str.n[0])}</title>${desc ? `\n<meta name="description" content="${esc(desc)}">` : ''}
+${head}
 <link rel="stylesheet" href="${fontHref([theme.display, theme.body])}">
 <style>
 html,body{margin:0;height:100%}
@@ -2534,20 +3405,40 @@ ${css}
 <div class="t-page n${pg}">
 ${pageSections(pg).map((s) => html(s, 1)).join('\n')}
 </div>
-</div>
+</div>${scripts}
 </body>
 </html>
 `;
 }
-function openExport() {
+const SITE_FILES = { 'robots.txt': robotsTxt, 'sitemap.xml': sitemapXml, 'llms.txt': llmsTxt };
+let exportSeq = 0;
+function openExport(which) {
   closePop();
   const sel0 = $('mPage'); sel0.textContent = '';
-  for (const pg of pages()) { const o = document.createElement('option'); o.value = pg; o.textContent = `${slugFile(str.h[pg])} · ${str.n[pg]}`; sel0.appendChild(o); }
-  sel0.value = String(curPage);
-  const show = () => { const h = exportHtml(+sel0.value); $('mCode').value = h; $('mNote').textContent = `${fmtBytes(new TextEncoder().encode(h).length)} · one file per page, links between them already point to the right files`; };
+  const og = document.createElement('optgroup'); og.label = 'Pages';
+  for (const pg of pages()) { const o = document.createElement('option'); o.value = pg; o.textContent = `${slugFile(str.h[pg])} · ${str.n[pg]}`; og.appendChild(o); }
+  const of = document.createElement('optgroup'); of.label = 'Site files';
+  for (const f of Object.keys(SITE_FILES)) { const o = document.createElement('option'); o.value = 'f:' + f; o.textContent = f; of.appendChild(o); }
+  sel0.append(og, of);
+  sel0.value = typeof which === 'string' ? which : String(curPage);
+  const show = async () => {
+    const my = ++exportSeq, v = sel0.value;
+    $('mTitle').textContent = v.startsWith('f:') ? 'Site files' : 'Export HTML';
+    if (v.startsWith('f:')) { const txt = SITE_FILES[v.slice(2)](); $('mCode').value = txt; $('mNote').textContent = `${fmtBytes(new TextEncoder().encode(txt).length)} · put it at the root of your domain${siteUrl() ? '' : '. Set the site address in SEO first'}`; return; }
+    $('mNote').textContent = 'Building…';
+    try {
+      const h = await exportHtml(+v); if (my !== exportSeq) return;
+      $('mCode').value = h; $('mNote').textContent = `${fmtBytes(new TextEncoder().encode(h).length)} · one file per page, links between them already point to the right files${exportWarn ? ' · ' + exportWarn : ''}`;
+    } catch (err) { $('mNote').textContent = 'Export failed: ' + err.message; }
+  };
   sel0.onchange = show; show();
   $('modal').hidden = false; $('mCopy').focus();
 }
+$('mDown').addEventListener('click', () => {
+  const v = $('mPage').value, name = v.startsWith('f:') ? v.slice(2) : slugFile(str.h[+v] || '/');
+  const type0 = name.endsWith('.xml') ? 'application/xml' : name.endsWith('.txt') ? 'text/plain' : 'text/html';
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([$('mCode').value], { type: type0 + ';charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); $('mNote').textContent = 'Downloading ' + name; } catch (e) { $('mNote').textContent = 'This browser blocked the download. Use Copy instead.'; }
+});
 $('mClose').addEventListener('click', () => { $('modal').hidden = true; });
 $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) $('modal').hidden = true; });
 $('mCopy').addEventListener('click', () => {
@@ -2557,14 +3448,15 @@ $('mCopy').addEventListener('click', () => {
 $('btnPublish').addEventListener('click', publish);
 $('btnMore').addEventListener('click', (e) => openPop(e.currentTarget, (p) => {
   menu(p, [
-    { icon: 'code', label: 'Export HTML', hint: 'per page', run: openExport },
+    { icon: 'code', label: 'Export HTML', hint: 'per page', run: () => openExport() },
+    { icon: 'search', label: 'robots.txt, sitemap, llms.txt', run: () => openExport('f:robots.txt') },
     { icon: 'clock', label: 'Versions and edit history', run: () => showTab('tabVer') },
     { icon: 'palette', label: 'Theme and audience', run: () => showTab('tabTheme') },
     '-',
     { icon: 'home', label: 'Load the sample site', run: () => replaceSite(sampleSite(), DEFAULT_THEME, 'Load sample site', componentizeSample) },
     { icon: 'page', label: 'Start from a blank site', run: () => replaceSite(blankSite(), DEFAULT_THEME, 'Blank site') },
   ]);
-  const k = document.createElement('p'); k.className = 'hint'; k.style.padding = '6px 8px 2px'; k.innerHTML = '<b>Shortcuts</b> · Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+D duplicate · Del delete · Esc parent · Alt+↑/↓ move · double-click to edit text';
+  const k = document.createElement('p'); k.className = 'hint'; k.style.padding = '6px 8px 2px'; k.innerHTML = '<b>Shortcuts</b> · Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+D duplicate · Del delete · Esc parent · arrows nudge (Shift ×10) · drag the grip on the selection tag · double-click to edit text';
   p.appendChild(k);
 }, 'right'));
 
@@ -2579,7 +3471,7 @@ function renderStatus() {
   $('status').innerHTML = `<span><b>${pages().length}</b> pages · <b>${comps().length}</b> components · <b>${nodeCount()}</b> nodes</span><span>site <b>${fmtBytes(dense)}</b> dense</span><span>last edit <b>${lastStyleMs.toFixed(2)} ms</b></span><span>${undoStack.length} undo</span><span>${versions[0] ? `published <b>v${versions[0].n}</b>` : 'not published'}</span>`;
 }
 let saveT = 0;
-function saveNow() { clearTimeout(saveT); saveT = 0; try { localStorage.setItem('flux-studio-site-v4', JSON.stringify(docSnapshot())); } catch (e) {} }
+function saveNow() { clearTimeout(saveT); saveT = 0; try { localStorage.setItem('flux-studio-site-v5', JSON.stringify(docSnapshot())); } catch (e) {} }
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 700); }
 window.addEventListener('pagehide', () => { if (saveT) saveNow(); });
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2600); }
@@ -2588,7 +3480,7 @@ $('devices').addEventListener('click', (e) => { const b = e.target.closest('butt
 $('mode').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   live = b.dataset.m === 'live'; for (const x of $('mode').children) x.setAttribute('aria-pressed', String(x === b));
-  $('shell').classList.toggle('live', live); siteEl.classList.toggle('edit', !live); closePop();
+  $('shell').classList.toggle('live', live); siteEl.classList.toggle('edit', !live); closePop(); gateOpen.clear();
   if (live && editingComp >= 0) { editingComp = -1; sel = curPage; }
   if (live && view !== 'design') setView('design');
   structDirty = true; layoutStage(); schedule();
@@ -2600,6 +3492,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && popEl) { const a = popAnchor; closePop(); if (a) a.focus(); return; }
   const tag = (e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable || editing >= 0;
   const mod = e.ctrlKey || e.metaKey;
+  if (!$('askModal').hidden) { if (e.key === 'Escape') closeAsk(); return; }
   if (!$('modal').hidden) { if (e.key === 'Escape') $('modal').hidden = true; return; }
   if (mod && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && e.key.toLowerCase() === 'y' && !typing) { e.preventDefault(); redo(); return; }
@@ -2609,13 +3502,24 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'Escape') { if (editingComp >= 0 && (sel === editingComp || sel < 0)) exitComp(); else if (sel >= 0 && par[sel] > 0 && (editingComp < 0 || isAncestor(editingComp, par[sel]))) select(par[sel]); }
   else if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
   else if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
+  else if (e.key.startsWith('Arrow') && sel >= 0 && sel !== curPage) { e.preventDefault(); nudge(e.key, e.shiftKey ? 10 : 1); }
 });
+/* arrows nudge a freely placed element; in the flow they move it to the previous or next spot */
+function nudge(key, step) {
+  const id = sel;
+  if (eff(id, PI.pos, device) === 2 && Math.max(0, eff(id, PI.anchor, device)) === 0) {
+    const ax = key === 'ArrowLeft' ? -step : key === 'ArrowRight' ? step : 0, ay = key === 'ArrowUp' ? -step : key === 'ArrowDown' ? step : 0;
+    const x = pctOf(id, PI.x, device) + ax, y = pctOf(id, PI.y, device) + ay;
+    commitSeq([() => (ax ? { k: 'set', id, p: PI.x, bp: device, v: pctEnc(x) } : null), () => (ay ? { k: 'set', id, p: PI.y, bp: device, v: pctEnc(y) } : null)], 'Nudge');
+    toast(`X ${Math.max(PCT_MIN, Math.min(PCT_MAX, x))} % · Y ${Math.max(PCT_MIN, Math.min(PCT_MAX, y))} %`);
+  } else moveSel(key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : 1);
+}
 setInterval(() => { if (sel >= 0 && !live && view === 'design') placeOverlays(); }, 400);
 window.addEventListener('resize', layoutStage);
 
 /* boot: the saved site if there is one, otherwise the sample site */
 let restored = false;
-try { const s = localStorage.getItem('flux-studio-site-v4'); if (s) { const d = JSON.parse(s); if (d && d.v === 4) { loadDoc(d); restored = true; } } } catch (e) { restored = false; }
+try { const s = localStorage.getItem('flux-studio-site-v5'); if (s) { const d = JSON.parse(s); if (d && d.v === 5) { loadDoc(d); restored = true; } } } catch (e) { restored = false; }
 if (!restored) { buildFresh(sampleSite()); componentizeSample(); }
 sel = curPage;
 render(); layoutStage(); renderLayers(); renderInspector(); renderPageBtn(); renderStatus();
