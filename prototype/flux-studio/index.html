@@ -3434,8 +3434,17 @@ function openExport(which) {
   sel0.onchange = show; show();
   $('modal').hidden = false; $('mCopy').focus();
 }
-$('mDown').addEventListener('click', () => {
+/* inside the claude.ai viewer, files go through its downloads capability; opened as a plain file, a normal download link works */
+let DL = null;
+try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then((d) => { DL = d; }, () => {}); } catch (e) {}
+$('mDown').addEventListener('click', async () => {
   const v = $('mPage').value, name = v.startsWith('f:') ? v.slice(2) : slugFile(str.h[+v] || '/');
+  if (DL) {
+    if (name.endsWith('.xml')) { $('mNote').textContent = 'This viewer cannot save .xml files. Use Copy and paste it into sitemap.xml.'; return; }
+    try { await DL.save({ filename: name, data: $('mCode').value }); $('mNote').textContent = 'Saved ' + name; }
+    catch (err) { $('mNote').textContent = err && err.code === 'declined' ? 'Download cancelled.' : err && err.code === 'rate_limited' ? 'A save prompt is already open.' : 'Saving is not available here. Use Copy instead.'; }
+    return;
+  }
   const type0 = name.endsWith('.xml') ? 'application/xml' : name.endsWith('.txt') ? 'text/plain' : 'text/html';
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([$('mCode').value], { type: type0 + ';charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); $('mNote').textContent = 'Downloading ' + name; } catch (e) { $('mNote').textContent = 'This browser blocked the download. Use Copy instead.'; }
 });
