@@ -41,24 +41,27 @@ RECORD_GATES.push((all, P) => {
     return null;
   };
 });
-// the suggestions waiting, with the zone each sits in
-function suggestions(){
-  const out = [], P = S.P || { owner: null }, zones = zonesOf([...S.records.values()].sort(byZ), P);
-  for (const c of S.D.pending || []){ const r = S.records.get(c); if (!r) continue; const a = anchorOf(r), z = a && zones.find(z => inZone(z, a.x, a.y)); if (z) out.push({ r, z }); }
-  return out.sort((a, b) => a.r.z - b.r.z);
-}
+// computed once per change, not per frame: each frame's zone (latest valid), the active zones, and the suggestions waiting
+DERIVE_HOOKS.push((D, by) => {
+  const byFrame = new Map(), P = S.P || { owner: null };
+  for (const r of by.ZONE || []){ const fr = S.records.get(r.f.R); if (fr && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) byFrame.set(r.f.R, r); }
+  const active = [...byFrame.values()].filter(r => r.mode !== 'open'), sug = [];
+  if (active.length) for (const c of D.pending){ const r = S.records.get(c), a = r && anchorOf(r), z = a && active.find(z => inZone(z, a.x, a.y)); if (z) sug.push({ r, z }); }
+  D.zoneByFrame = byFrame; D.zones = active; D.suggestions = sug.sort((a, b) => a.r.z - b.r.z);
+});
+const suggestions = () => S.D.suggestions || [];
 const answer = async (cid, yes) => publish(await signed('ACCEPT', [['I', S.me.id], ['R', cid], ['S', yes ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
 async function setZone(frame, mode){
   const b = box(frame); if (!b) return;
   await publish(await signed('ZONE', [['I', S.me.id], ['R', frame.cid], ['S', mode], ['X', encInt(Math.round(b.x))], ['Y', encInt(Math.round(b.y))], ['W', Math.round(b.w)], ['H', Math.round(b.h)], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(mode === 'open' ? 'Zone opened: anyone may change it.' : mode === 'suggest' ? 'Suggest zone: others’ changes wait for you to accept them.' : 'Locked zone: only you change what’s inside.');
 }
-const zoneOfFrame = cid => [...S.records.values()].filter(r => r.type === 'ZONE' && r.f.R === cid).sort(byZ).at(-1);
+const zoneOfFrame = cid => S.D.zoneByFrame?.get(cid);
 // tell people before they sign something a zone won't take as is
 const warnedZones = new Set();
 PUBLISH_FILTERS.push(async raw => {
   const t = raw.slice(0, raw.indexOf('-')); if (!GATED.has(t)) return undefined;
-  const zones = zonesOf([...S.records.values()].sort(byZ), S.P || { owner: null }); if (!zones.length) return undefined;
+  const zones = S.D.zones || []; if (!zones.length) return undefined;
   let r; try { r = toRec(parse(raw), 'pending'); } catch { return undefined; }
   const a = anchorOf(r), z = a && zones.find(z => inZone(z, a.x, a.y) && !samePerson(z.author, S.me.id)); if (!z) return undefined;
   if (z.mode === 'locked'){ toast(`${whoName(z.author)} has locked this area. Comment or take a stance instead.`); return null; }
@@ -80,7 +83,7 @@ RENDER_HOOKS.screen.push(() => {
     const w = drawBadge(s.x, s.y - 26, `${whoName(r.author)} suggests ${what === 'addition' ? 'an' : 'a'} ${what}${own ? '' : ' · waiting'}`, 'acc', own ? () => openPanel('zones') : null);
     if (own){ drawBadge(s.x + w + 4, s.y - 26, '✓ Accept', 'good', () => answer(r.cid, true)); drawBadge(s.x + w + 76, s.y - 26, '✕', 'bad', () => answer(r.cid, false)); }
   }
-  for (const r of S.records.values()) if (r.type === 'ZONE' && r.mode !== 'open' && zoneOfFrame(r.f.R) === r){ const fr = current(r.f.R), sb = fr && screenBox(fr); if (sb) drawBadge(sb.x + sb.w - 120, sb.y + 6, `${r.mode === 'locked' ? '🔒' : '✎'} ${whoName(r.author)}’s ${r.mode === 'locked' ? 'zone' : 'suggest zone'}`, r.mode === 'locked' ? 'warn' : 'acc'); }
+  for (const r of S.D.zones || []){ const fr = current(r.f.R), sb = fr && screenBox(fr); if (sb) drawBadge(sb.x + sb.w - 120, sb.y + 6, `${r.mode === 'locked' ? '🔒' : '✎'} ${whoName(r.author)}’s ${r.mode === 'locked' ? 'zone' : 'suggest zone'}`, r.mode === 'locked' ? 'warn' : 'acc'); }
 });
 const isFrameRec = r => r?.type === 'NODE' && (r.ek || r.k) === 'frame';
 TOOLBAR_HOOKS.push((rs, one, B) => isFrameRec(one) && (samePerson(one.author, S.me.id) || samePerson(S.P?.owner, S.me.id)) ? B('zone', 'zone', `Zone: ${zoneOfFrame(one.cid)?.mode || 'open'}…`, 'aria-haspopup="menu"') : '');
@@ -90,7 +93,7 @@ registerPanel({
   id: 'zones', title: 'Zones and suggestions', blurb: 'Areas people own: changes others make inside them wait as suggestions, or don’t count when the area is locked.',
   paint(body){
     const sug = suggestions(), mine = sug.filter(s => samePerson(s.z.author, S.me.id)), waiting = sug.filter(s => samePerson(s.r.author, S.me.id));
-    const zones = [...S.records.values()].filter(r => r.type === 'ZONE' && zoneOfFrame(r.f.R) === r && r.mode !== 'open');
+    const zones = S.D.zones || [];
     const row = ({ r, z }, own) => `<li class="row2"><span class="pill acc">${esc(r.type === 'MOVE' ? 'Move' : r.type === 'STYLE' ? 'Restyle' : r.edits ? 'Edit' : r.neg ? 'Removal' : 'Addition')}</span><span class="grow">${esc(elTitle(r.edits || r.f.R || r.cid))} <small>by ${esc(whoName(r.author))} in ${esc(elTitle(z.f.R))}</small></span>${own ? `<button class="btn" data-yes="${r.cid}">Accept</button><button class="btn" data-no="${r.cid}">Decline</button>` : '<small>waiting</small>'}</li>`;
     body.innerHTML = `${mine.length ? `<h3>For you to answer <span class="n">${mine.length}</span></h3><ul class="plain">${mine.map(s => row(s, true)).join('')}</ul><div class="acts"><button class="btn" data-all>Accept all</button></div>` : ''}
       ${waiting.length ? `<h3>Your suggestions <span class="n">${waiting.length}</span></h3><ul class="plain">${waiting.map(s => row(s, false)).join('')}</ul>` : ''}

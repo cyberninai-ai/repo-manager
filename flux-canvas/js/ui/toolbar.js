@@ -111,6 +111,7 @@ function openMenu(anchor, items, at = null){
     const r = anchor.getBoundingClientRect();
     m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
   }
+  m.style.maxHeight = Math.max(160, innerHeight - m.getBoundingClientRect().top - 12) + 'px';   // long menus (the Team hub) scroll
   m.querySelector('[role^=menuitem]')?.focus();
 }
 function closeMenu(back = true){

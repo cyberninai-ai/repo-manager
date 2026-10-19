@@ -22,7 +22,10 @@ const KIND_COL = { added: 'good', edited: 'acc', moved: 'warn', removed: 'bad', 
 const KIND_NAME = { added: 'Added', edited: 'Edited', moved: 'Moved', removed: 'Removed', discussed: 'Discussed' };
 const ON_TYPES = new Set(['COMMENT', 'STANCE', 'REACT', 'CLAIM', 'EVIDENCE', 'CHECK', 'TASK']);
 // changes since the baseline, one entry per element: its strongest kind of change, who changed it, when
-function changesSince(){
+let sinceKey = null, sinceMemo = null;
+function changesSince(){ const k = `${SN.base}:${SN.ref}:${SN.visit?.z}`; if (sinceKey === k && sinceFor === S.D) return sinceMemo; sinceKey = k; sinceFor = S.D; return sinceMemo = changesNow(); }
+let sinceFor = null;
+function changesNow(){
   const b = baseline(), after = r => b.t != null ? r.t > b.t : r.z > b.z, out = new Map();
   const touch = (cid, kind, r) => { if (!cid) return; const c = kind === 'removed' ? cid : current(cid)?.cid || cid; const o = out.get(c) || { cid: c, kinds: new Set(), who: new Set(), t: 0 }; o.kinds.add(kind); o.who.add(personOf(r.author)); o.t = Math.max(o.t, r.t); out.set(c, o); };
   for (const r of S.records.values()){

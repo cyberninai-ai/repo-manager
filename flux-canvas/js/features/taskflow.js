@@ -15,7 +15,9 @@ function taskEdges(){
   }
   return out;
 }
-function plan(){
+let planFor = null, planMemo = null;
+function plan(){ if (planFor === S.D) return planMemo; planFor = S.D; return planMemo = planNow(); }   // once per change, not per frame
+function planNow(){
   const t = S.D.tasks || new Map(), edges = taskEdges(), before = new Map(), after = new Map();
   for (const [a, b] of edges){ (before.get(b) || before.set(b, []).get(b)).push(a); (after.get(a) || after.set(a, []).get(a)).push(b); }
   const open = c => t.get(c)?.status !== 'done';

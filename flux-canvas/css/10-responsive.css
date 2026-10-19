@@ -13,7 +13,8 @@
 
 /* phones: dock along the bottom, style bar above it */
 @media (max-width:640px){
-  #titlebar{max-width:calc(100% - 156px);top:max(10px,env(safe-area-inset-top));left:10px}
+  #titlebar{max-width:calc(100% - 252px);top:max(10px,env(safe-area-inset-top));left:10px}
+  .live{width:36px;padding:0;justify-content:center} .live span{display:none}   /* the dot and its label (aria-label) carry the state */
   .tbtn{max-width:44vw;font-size:13px;padding:0 6px}
   #titlebar .chip{display:none}
   #corner{top:max(10px,env(safe-area-inset-top));right:10px;gap:6px}
