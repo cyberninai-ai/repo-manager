@@ -3,9 +3,8 @@
 // @uses pointer
 /* ---------- eraser ---------- */
 function setErasing(on){
-  erasing = on; if (on){ setPlacing(null); S.sel.clear(); }
-  $('eraseBtn').setAttribute('aria-pressed', String(on)); $('eraseBtn').classList.toggle('on', on);
-  setCursor(); dirty = true;
+  erasing = on; if (on){ setPlacing(null); S.sel.clear(); S.shapeTool = null; S.handTool = false; }
+  setCursor(); dirty = true; paintTools();
   say(on ? 'Eraser: drag across your own elements to revoke them. Escape or P returns to the pen.' : 'Eraser off.');
 }
 function eraseAt(p){

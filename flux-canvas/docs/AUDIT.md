@@ -42,7 +42,8 @@ The core idea works: every element is a signed, content-addressed record, and th
 | U5 | UX | No audit flow, even though the app's purpose is provable decisions | High | **Fixed in this pass**: audit walk, verdicts, signed sign-off bundle, history scrubber |
 | B1 | Bug | SVG export drew node-to-node arrows twice (curve + straight) and dropped the line of labelled non-node arrows | Medium | **Fixed in this pass**: one connector geometry (`connGeom`) for canvas and SVG |
 | B2 | Bug | `[hidden]` lost to component `display` rules, so hidden pills showed as empty buttons | Low | **Fixed in this pass**: global `[hidden]{display:none!important}` |
-| T1 | Testing | Tests print what they checked; most don't assert values | Medium | Partly: the runner fails on page errors and axe violations; turning prints into assertions is next |
+| U6 | UX | The interface read as a developer console: monospace type, glyph icons, hidden modes (pen vs select), an always-on bottom bar with every control, no real tools, a weak empty state, dashed selection boxes | High | **Fixed in the design pass**: design tokens and sans type, a 78-icon set, a tool dock (select, hand, draw, eraser, rectangle, ellipse, line, note, shapes, text, image, comment), a contextual style bar, Share menu, tooltips with shortcuts, a welcome card with quick starts, dot grid, solid selection, panels below the top bar, responsive dock. See [DESIGN.md](DESIGN.md) |
+| T1 | Testing | Tests print what they checked; most don't assert values | Medium | Partly: the runner fails on page errors and axe violations; `tests/tools.mjs` asserts (25 checks) and is the pattern for the rest |
 
 ## Architecture
 

@@ -36,7 +36,7 @@ function paintVotes(){
   el.hidden = !show; if (!show) return;
   const left = S.voteBudget ? Math.max(0, S.voteBudget - myVotes()) : '∞';
   el.textContent = `● ${left} vote${left === 1 ? '' : 's'} left`;
-  el.title = `${left} of ${S.voteBudget || 'unlimited'} votes left · click to change the budget`;
+  el.dataset.tip = `${left} of ${S.voteBudget || 'unlimited'} votes left · click to change the budget`;
 }
 async function setReact(cid, kind, on){
   const rs = on ? [cid] : (S.D.reactKeys?.get(`${cid}|${kind}|${S.me.id}`) || [cid]);   // switch off every version I voted on
@@ -103,7 +103,7 @@ function paintTimer(){
   const left = Math.max(0, timerEnd - Date.now()), m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
   el.hidden = false; el.textContent = `⏱ ${m}:${String(s).padStart(2, '0')}`;
   el.classList.toggle('alarm', left === 0);
-  el.title = left ? 'Shared timer · click to stop' : 'Time is up · click to dismiss';
+  el.dataset.tip = left ? 'Shared timer · click to stop' : 'Time is up · click to dismiss';
   if (!left && !timerDone){ timerDone = true; toast('⏱ Time’s up!'); }
 }
 setInterval(paintTimer, 500);
@@ -144,10 +144,10 @@ let reactRow = false;
 TOOLBAR_HOOKS.push((rs, one, B) => {
   const els = rs.filter(r => r.type !== 'ARROW'); if (!els.length) return '';
   const allVoted = els.every(e => reacted(e.cid, 'vote'));
-  let h = B('vote', '●', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}"`)
-    + B('react', '☺', 'React', `aria-pressed="${reactRow}"`);
+  let h = B('vote', 'vote', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}"`)
+    + B('react', 'smile', 'React', `aria-pressed="${reactRow}"`);
   if (reactRow) h += Object.entries(REACTIONS).filter(([k]) => k !== 'vote').map(([k, r]) => B('re:' + k, r.icon, r.name[0].toUpperCase() + r.name.slice(1), `aria-pressed="${els.every(e => reacted(e.cid, k))}"`)).join('');
-  if (els.length >= 2) h += '<span class="vs" aria-hidden="true"></span>' + B('grid', '▦', 'Arrange in a grid') + B('sortv', '⇅', 'Sort by votes') + B('cluster', '⬚', 'Cluster into a frame');
+  if (els.length >= 2) h += '<span class="vs" aria-hidden="true"></span>' + B('grid', 'grid', 'Arrange in a grid') + B('sortv', 'sort', 'Sort by votes') + B('cluster', 'frame', 'Cluster into a frame');
   return h;
 });
 TOOLBAR_ACTIONS.vote = rs => toggleReact('vote', rs);

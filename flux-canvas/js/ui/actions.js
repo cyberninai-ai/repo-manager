@@ -6,8 +6,11 @@ function selectAll(){ S.sel = new Set(S.D.els.filter(visible).map(e => e.cid)); 
 function zoomFit(){
   let b = null; for (const el of S.D.els) if (visible(el)){ const x = box(el); if (!x) continue; b = b ? norm({ x: Math.min(b.x, x.x), y: Math.min(b.y, x.y) }, { x: Math.max(b.x + b.w, x.x + x.w), y: Math.max(b.y + b.h, x.y + x.h) }) : x; }
   if (!b) return;
-  const z = clampZ(Math.min(innerWidth / (b.w + 120), innerHeight / (b.h + 120), 2));
-  S.view = { zoom: z, x: b.x + b.w / 2 - innerWidth / 2 / z, y: b.y + b.h / 2 - innerHeight / 2 / z };
+  // fit inside the area the chrome leaves free: title, dock and collaborators on top, style bar and zoom below
+  const T = 76, Bo = 64 + barH(), L = innerWidth > 640 && innerWidth <= 1100 ? 72 : 32, R = 32;
+  const w = Math.max(80, innerWidth - L - R), h = Math.max(80, innerHeight - T - Bo);
+  const z = clampZ(Math.min(w / b.w, h / b.h, 2));
+  S.view = { zoom: z, x: b.x + b.w / 2 - (L + w / 2) / z, y: b.y + b.h / 2 - (T + h / 2) / z };
 }
 function cycleTheme(){
   const cur = document.documentElement.dataset.theme || 'system', next = { system: 'light', light: 'dark', dark: 'system' }[cur];

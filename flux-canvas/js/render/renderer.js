@@ -73,6 +73,21 @@ function dashedBox(b, color, z){
   ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 4 / z]);
   ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore();
 }
+function selOutline(b, color, z, alpha = 1){
+  ctx.save(); ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = 1.5 / z;
+  rr(ctx, b.x, b.y, b.w, b.h, 4 / z); ctx.stroke(); ctx.restore();
+}
+/* dot grid: one dot every 24 world units, thinned out as you zoom out so it never turns into noise */
+S.grid = (() => { try { return localStorage.getItem('flux:grid') !== '0'; } catch { return true; } })();
+function drawGrid(vp, z){
+  if (!S.grid) return;
+  let step = 24; while (step * z < 14) step *= 2;
+  const r = Math.min(1.6, Math.max(0.9, step * z / 18)) / z;
+  ctx.save(); ctx.fillStyle = TH.dot || TH.line; ctx.beginPath();
+  const x0 = Math.floor(vp.x / step) * step, y0 = Math.floor(vp.y / step) * step;
+  for (let x = x0; x < vp.x + vp.w + step; x += step) for (let y = y0; y < vp.y + vp.h + step; y += step){ ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); }
+  ctx.fill(); ctx.restore();
+}
 function selBox(){
   let b = null;
   for (const c of S.sel){
@@ -89,7 +104,7 @@ function render(){
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(dpr * z, 0, 0, dpr * z, -S.view.x * z * dpr, -S.view.y * z * dpr);
   const vp = { x: S.view.x, y: S.view.y, w: innerWidth / z, h: innerHeight / z };
-  readTheme(); drawTreeLinks();
+  readTheme(); drawGrid(vp, z); drawTreeLinks();
   for (const el of S.D.els){
     if (!visible(el)) continue;
     const b = box(el);
@@ -104,7 +119,7 @@ function render(){
     if ((G.kind === 'stroke' || G.kind === 'arrow') && G.pts.length){
       if (G.kind === 'arrow'){
         const sb = box(G.from);
-        if (sb){ dashedBox(grow(sb, 4 / z), accent, z); const tgt = G.target && box(G.target); if (tgt) dashedBox(grow(tgt, 4 / z), accent, z);
+        if (sb){ selOutline(grow(sb, 4 / z), accent, z, .7); const tgt = G.target && box(G.target); if (tgt) selOutline(grow(tgt, 4 / z), accent, z);
           const a = edgePoint(sb, tgt ? center(tgt) : G.cur, 6), b = tgt ? edgePoint(tgt, center(sb), 6) : G.cur;
           ctx.lineWidth = Math.max(2, S.width / 2); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); drawArrowHead(a, b, 8 + ctx.lineWidth * 2); }
       } else ctx.stroke(pathOf(G.pts));
@@ -113,6 +128,12 @@ function render(){
       if (G.kind === 'circle') ctx.ellipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, b.h / 2, 0, 0, Math.PI * 2); else ctx.rect(b.x, b.y, b.w, b.h);
       if (S.fill){ ctx.save(); ctx.globalAlpha = .16; ctx.fillStyle = colorOf(S.color); ctx.fill(); ctx.restore(); }
       ctx.stroke();
+    } else if (G.kind === 'line'){
+      const sb = G.from && box(G.from), tgt = G.target && box(G.target);
+      if (sb) selOutline(grow(sb, 4 / z), accent, z, .7); if (tgt) selOutline(grow(tgt, 4 / z), accent, z);
+      ctx.lineCap = 'round'; ctx.beginPath();
+      if (sb && tgt){ const a = edgePoint(sb, center(tgt), 6), b = edgePoint(tgt, center(sb), 6); ctx.lineWidth = Math.max(2, S.width / 2); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); drawArrowHead(a, b, 8 + ctx.lineWidth * 2); }
+      else { ctx.moveTo(G.a.x, G.a.y); ctx.lineTo(G.b.x, G.b.y); ctx.stroke(); }
     } else if (G.kind === 'lasso' && G.pts.length > 1){
       ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1.2 / z; ctx.setLineDash([5 / z, 4 / z]);
       ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath(); ctx.stroke();
@@ -127,16 +148,17 @@ function render(){
   if (G?.kind === 'move' && G.guides) for (const gd of G.guides){ ctx.save(); ctx.strokeStyle = '#e64980'; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 3 / z]); ctx.beginPath();
     if (gd.x != null){ ctx.moveTo(gd.x, gd.a); ctx.lineTo(gd.x, gd.b); } else { ctx.moveTo(gd.a, gd.y); ctx.lineTo(gd.b, gd.y); } ctx.stroke(); ctx.restore(); }
   // hover: connectable edge
-  if (!G && hoverEdge){ const b = box(hoverEdge); if (b) dashedBox(grow(b, 4 / z), accent, z); }
+  if (!G && hoverEdge){ const b = box(hoverEdge); if (b) selOutline(grow(b, 4 / z), accent, z, .45); }
   // selection
   if (S.sel.size){
-    for (const c of S.sel){ const el = S.records.get(c); const b = el && box(el); if (b) dashedBox(grow(b, 3 / z), accent, z); }
+    for (const c of S.sel){ const el = S.records.get(c); const b = el && box(el); if (b) selOutline(grow(b, 3 / z), accent, z, S.sel.size > 1 ? .55 : 1); }
     for (const c of S.sel){ const el = S.records.get(c), b = el?.locked && box(el); if (b){ ctx.save(); ctx.font = `${12 / z}px ${FONTS.sans}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('🔒', b.x + b.w, b.y - 4 / z); ctx.restore(); } }
     const sb = selBox();
-    if (sb && S.sel.size > 1){ ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z; ctx.strokeRect(sb.x - 8 / z, sb.y - 8 / z, sb.w + 16 / z, sb.h + 16 / z); ctx.restore(); }
+    if (sb && S.sel.size > 1){ ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 3 / z]); ctx.strokeRect(sb.x - 8 / z, sb.y - 8 / z, sb.w + 16 / z, sb.h + 16 / z); ctx.restore(); }
     const h = S.lassoMode && resizeHandle();
     if (h){ ctx.save(); ctx.fillStyle = accent; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(); ctx.lineWidth = 2 / z;
-      ctx.beginPath(); ctx.rect(h.x - 6 / z, h.y - 6 / z, 12 / z, 12 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
+      ctx.fillStyle = TH.paper; ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z;
+      rr(ctx, h.x - 5 / z, h.y - 5 / z, 10 / z, 10 / z, 2.5 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
   }
   drawPins();
   drawPeers();

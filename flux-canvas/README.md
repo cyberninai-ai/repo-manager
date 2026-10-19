@@ -19,6 +19,7 @@ npm run check        # CI: fail if the bundle is stale
 |---|---|
 | [docs/AUDIT.md](docs/AUDIT.md) | Findings by area and severity, what this pass fixed, what's open |
 | [docs/PLAN.md](docs/PLAN.md) | The phased plan: principles, what each phase delivers, acceptance checks, next work |
+| [docs/DESIGN.md](docs/DESIGN.md) | The design system: layout, tools, contextual style bar, tokens, components, accessibility |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layout, load order, data flow, global state, extension hooks, component table, module map, how to add a feature |
 | [docs/PATTERNS.md](docs/PATTERNS.md) | The record format: grammar, every record type, authority rules |
 | [docs/USE-CASES.md](docs/USE-CASES.md) | Each use case: its template, its worked example, what to try |

@@ -86,6 +86,7 @@ await p.keyboard.press('Control+z'); await W(400); console.log('undo erase ->', 
 // 10. zoom controls + minimap
 await p.click('#zIn'); await W(); console.log('zoom', await p.evaluate(()=>document.getElementById('zPct').textContent));
 await p.click('#zPct'); await W();
+await p.click('#zMini'); await W(); console.log('overview on', await p.evaluate(()=>document.getElementById('zMini').getAttribute('aria-pressed')));
 const mr = await p.evaluate(()=>{ const r=document.getElementById('mini').getBoundingClientRect(); return {x:r.left+10, y:r.top+10} });
 const v0 = await p.evaluate(()=>({...S.view})); await p.mouse.click(mr.x, mr.y); await W();
 console.log('minimap pans', await p.evaluate(v=>S.view.x!==v.x||S.view.y!==v.y, v0));

@@ -57,7 +57,7 @@ function msgHtml(c){
 }
 function paintComments(){
   const open = [...S.D.threads.values()].filter(t => !S.D.hidden.has(t.root.cid) && !t.resolved).length;
-  $('cmtN').textContent = open;
+  $('cmtN').textContent = open || '';
   if ($('comments').style.display !== 'flex') return;
   // keep what's being typed (and the caret) when records arrive while someone writes
   const ae = document.activeElement, keep = ae && ae.dataset && ae.dataset.k ? { k: ae.dataset.k, a: ae.selectionStart, b: ae.selectionEnd } : null;
@@ -80,7 +80,7 @@ function paintComments(){
         <button class="btn" data-a="${t.resolved ? 'reopen' : 'resolve'}" data-id="${id}">${t.resolved ? 'reopen' : 'resolve'}</button>
         <button class="btn" data-a="reply" data-id="${id}">reply</button></div></article>`;
   }).join('');
-  if (!html) html = '<div class="empty">No comments yet. Press M or use the 💬 button, then click an element or a spot.</div>';
+  if (!html) html = '<div class="empty">No comments yet. Pick the Comment tool (M), then click an element or a spot.</div>';
   $('cmList').innerHTML = html;
   if (keep){ const t = document.querySelector(`#cmList textarea[data-k="${keep.k}"]`); if (t){ t.focus(); t.setSelectionRange(keep.a, keep.b); } }
   document.querySelectorAll('#cmList canvas[data-thumb]').forEach(cnv => { const t = S.D.threads.get(cnv.dataset.thumb); if (t) drawThumb(cnv, t); });

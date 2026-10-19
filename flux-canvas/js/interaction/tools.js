@@ -12,10 +12,8 @@ function onHandle(w){ const h = resizeHandle(); return h && Math.hypot(w.x - h.x
 let placing = null, hoverGrow = false;
 function setPlacing(kind){
   placing = kind;
-  $('textBtn').setAttribute('aria-pressed', String(kind === 'text')); $('textBtn').classList.toggle('on', kind === 'text');
-  $('cmtBtn').setAttribute('aria-pressed', String(kind === 'comment')); $('cmtBtn').classList.toggle('on', kind === 'comment');
-  $('nodeBtn').setAttribute('aria-pressed', String(kind === 'node')); $('nodeBtn').classList.toggle('on', kind === 'node');
-  setCursor();
+  if (kind){ erasing = false; S.shapeTool = null; S.handTool = false; }
+  setCursor(); paintTools();
   if (kind === 'node'){ say(`Diagram tool: click to place a ${NODE_KINDS[S.nodeKind].name}. Pick another shape in the bottom bar. Escape cancels.`); return; }
   if (kind) say(kind === 'text' ? 'Text tool: click where the text goes.' : 'Comment tool: click an element to comment on it, or empty space. Escape cancels.');
 }

@@ -13,6 +13,7 @@ const sr = () => p.evaluate(()=>document.getElementById('sr').textContent);
 const nodes = () => p.evaluate(()=>S.D.els.filter(e=>e.type==='NODE'&&visible(e)).map(e=>({k:e.ek,t:e.text,p:e.parent?current(e.parent)?.text:null,w:box(e).w,h:box(e).h})));
 // 1. N tool → click → type → Tab (child) → type → Ctrl+Enter (sibling) → type → Enter
 await p.evaluate(()=>document.getElementById('c').focus());
+await p.click('#nodeBtn'); await W();
 await p.click('#barKinds [data-k="topic"]'); await W();
 console.log('placing:', await p.evaluate(()=>placing), '|', await sr());
 await p.mouse.click(400, 380); await W();

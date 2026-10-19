@@ -15,8 +15,8 @@ function paintTitle(){
   const t = canvasTitle();
   if ($('ctitle').textContent !== t) $('ctitle').textContent = t;
   document.title = `${t} · Flux Canvas`;
-  const empty = !S.D.els.some(el => visible(el)) && !S.records.size;
-  $('empty').hidden = !empty;
+  const empty = !S.D.els.some(el => visible(el));
+  $('empty').hidden = !empty || !!S.touched;
 }
 async function setTitle(title, tpl = S.D.meta?.tpl || ''){
   title = String(title).trim().slice(0, 120); if (!title) return;
@@ -67,10 +67,14 @@ function canvasList(){
 const ago = t => { if (!t) return 'empty'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
 
 /* the canvas home */
+const CARD_ICONS = { blank: ['plus', 'slate'], brainstorm: ['sparkle', 'amber'], offsite: ['sparkle', 'amber'], mindmap: ['mindmap', 'violet'], flow: ['flow', 'blue'],
+  wire: ['wire', 'slate'], feedback: ['columns', 'green'], retro: ['columns', 'green'], moodboard: ['palette', 'pink'], brand: ['palette', 'pink'],
+  story: ['film', 'orange'], onboarding: ['film', 'orange'], audit: ['audit', 'teal'], expense: ['audit', 'teal'] };
 let homeBack = null;
 function openHome(){
   homeBack = document.activeElement;
-  const card = (attr, x) => `<button class="card2" ${attr}><span class="ic" aria-hidden="true">${x.icon}</span><b>${esc(x.name || x.title)}</b><span>${esc(x.blurb)}</span></button>`;
+  const card = (attr, x) => { const i = CARD_ICONS[x.id] || ['blank', 'slate'];
+    return `<button class="card2 h-${i[1]}" ${attr}><span class="cic" aria-hidden="true">${face(ICON_NAMES.has(i[0]) ? i[0] : x.icon)}</span><b>${esc(x.name || x.title)}</b><span>${esc(x.blurb)}</span></button>`; };
   $('homeTpl').innerHTML = TEMPLATES.map(t => card(`data-tpl="${t.id}"`, t)).join('');
   $('homeEx').innerHTML = EXAMPLES.map(x => card(`data-ex="${x.id}"`, x)).join('');
   $('homeList').innerHTML = canvasList().map(c => `<li${c.current ? ' class="cur"' : ''}>

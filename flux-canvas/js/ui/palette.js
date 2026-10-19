@@ -107,7 +107,6 @@ $('askIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComp
 $('askNo').onclick = () => closeAsk(null);
 $('ask').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeAsk(null); });
 $('ask').addEventListener('pointerdown', e => { if (e.target.id === 'ask') closeAsk(null); });
-$('mode').onclick = () => setMode(!S.lassoMode);
 $('addImg').onclick = () => $('imgFile').click();
 $('cmdBtn').onclick = () => openPalette();
 

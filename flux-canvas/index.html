@@ -19,6 +19,87 @@
 <link rel="stylesheet" href="css/11-collab.css">
 </head>
 <body>
+<!-- icon set: one stroke style, 24px grid; use with <svg class="ic"><use href="#i-name"/></svg> -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3.5l13 7.2-5.8 1.6-2.7 5.6z"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12.5V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v7M14 10.5V5.5a1.5 1.5 0 0 1 3 0v8.5a6.5 6.5 0 0 1-6.5 6.5h-.8a6 6 0 0 1-4.9-2.6l-2.4-3.6a1.5 1.5 0 0 1 2.4-1.8L8 14.5"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M3.5 20.5l1.2-4.6L16.3 4.3a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.1 19.3z"/><path d="M14.5 6l3.5 3.5"/></symbol>
+  <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M5.2 15.8l9.4-9.4a2 2 0 0 1 2.8 0l1.9 1.9a2 2 0 0 1 0 2.8L12 18.4a2 2 0 0 1-1.4.6H8.4a2 2 0 0 1-1.4-.6l-1.8-1.8a1.2 1.2 0 0 1 0-1.8z"/><path d="M9.5 11.5l4.8 4.8"/></symbol>
+  <symbol id="i-square" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5"/></symbol>
+  <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/></symbol>
+  <symbol id="i-line" viewBox="0 0 24 24"><path d="M5 19L19 5"/><path d="M11 5h8v8"/></symbol>
+  <symbol id="i-sticky" viewBox="0 0 24 24"><path d="M4.5 4.5h15v9.8l-5.2 5.2H4.5z"/><path d="M14.3 19.5v-5.2h5.2"/></symbol>
+  <symbol id="i-shapes" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="8" height="8" rx="1.8"/><circle cx="17" cy="7.5" r="3.8"/><path d="M12 20.5l4.2-7.2 4.3 7.2z"/></symbol>
+  <symbol id="i-type" viewBox="0 0 24 24"><path d="M5 7V4.5h14V7"/><path d="M12 4.5v15"/><path d="M9 19.5h6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 15.5l-4.8-4.8-9.2 8.8"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10.5H9.5l-5 4z"/></symbol>
+  <symbol id="i-comments" viewBox="0 0 24 24"><path d="M3.5 4.5h12v8.5h-7l-5 3.8z"/><path d="M8.5 15.8v1.7h7l4.5 3.5V8.5h-4.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5"/><path d="M7.5 8L12 3.5 16.5 8"/><path d="M5 13v6.5h14V13"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3.5 6.5l5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 7.6-1.7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16"/><path d="M9 6.5V4h6v2.5"/><path d="M6 6.5l1 13.5h10l1-13.5"/><path d="M10 10.5v6M14 10.5v6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V5.5a1.5 1.5 0 0 0-1.5-1.5H5.5A1.5 1.5 0 0 0 4 5.5V14a1.5 1.5 0 0 0 1.5 1.5h3"/></symbol>
+  <symbol id="i-front" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2" fill="currentColor" fill-opacity=".22"/><path d="M15 5V4.5A1.5 1.5 0 0 0 13.5 3h-9A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15H5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" fill-opacity=".22"/><path d="M19 9h.5A1.5 1.5 0 0 1 21 10.5v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 9 19.5V19"/></symbol>
+  <symbol id="i-al-l" viewBox="0 0 24 24"><path d="M4 3.5v17"/><rect x="8" y="6" width="12" height="4.5" rx="1.2"/><rect x="8" y="13.5" width="7" height="4.5" rx="1.2"/></symbol>
+  <symbol id="i-al-c" viewBox="0 0 24 24"><path d="M12 3.5v17"/><rect x="5" y="6" width="14" height="4.5" rx="1.2"/><rect x="8" y="13.5" width="8" height="4.5" rx="1.2"/></symbol>
+  <symbol id="i-al-r" viewBox="0 0 24 24"><path d="M20 3.5v17"/><rect x="4" y="6" width="12" height="4.5" rx="1.2"/><rect x="9" y="13.5" width="7" height="4.5" rx="1.2"/></symbol>
+  <symbol id="i-al-t" viewBox="0 0 24 24"><path d="M3.5 4h17"/><rect x="6" y="8" width="4.5" height="12" rx="1.2"/><rect x="13.5" y="8" width="4.5" height="7" rx="1.2"/></symbol>
+  <symbol id="i-al-m" viewBox="0 0 24 24"><path d="M3.5 12h17"/><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="8" width="4.5" height="8" rx="1.2"/></symbol>
+  <symbol id="i-al-b" viewBox="0 0 24 24"><path d="M3.5 20h17"/><rect x="6" y="4" width="4.5" height="12" rx="1.2"/><rect x="13.5" y="9" width="4.5" height="7" rx="1.2"/></symbol>
+  <symbol id="i-dist-h" viewBox="0 0 24 24"><path d="M4 4v16M20 4v16"/><rect x="9" y="7" width="6" height="10" rx="1.2"/></symbol>
+  <symbol id="i-dist-v" viewBox="0 0 24 24"><path d="M4 4h16M4 20h16"/><rect x="7" y="9" width="10" height="6" rx="1.2"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" stroke-dasharray="3 2.6"/><rect x="7.5" y="7.5" width="5" height="5" rx="1"/><rect x="11.5" y="11.5" width="5" height="5" rx="1"/></symbol>
+  <symbol id="i-ungroup" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="8" height="8" rx="1.6"/><rect x="12.5" y="12.5" width="8" height="8" rx="1.6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12.5 20h8"/><path d="M15.8 4.3a2 2 0 0 1 2.9 2.9L7.5 18.4 3.8 19.3l.9-3.7z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.5 6.5a1.4 1.4 0 0 1-2 0z"/><circle cx="8" cy="8" r="1.4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13.5a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2"/></symbol>
+  <symbol id="i-relation" viewBox="0 0 24 24"><path d="M4 8h14"/><path d="M14.5 4.5L18 8l-3.5 3.5"/><path d="M20 16H6"/><path d="M9.5 12.5L6 16l3.5 3.5"/></symbol>
+  <symbol id="i-curve" viewBox="0 0 24 24"><path d="M4 19C5 9 19 15 20 5"/></symbol>
+  <symbol id="i-straight" viewBox="0 0 24 24"><path d="M4.5 19.5l15-15"/></symbol>
+  <symbol id="i-elbow" viewBox="0 0 24 24"><path d="M4 19h8.5V5H20"/></symbol>
+  <symbol id="i-dash" viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4"/></symbol>
+  <symbol id="i-vote" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14s1.3 2 3.5 2 3.5-2 3.5-2"/><path d="M9.2 9.6v.1M14.8 9.6v.1"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.4"/><rect x="13" y="4" width="7" height="7" rx="1.4"/><rect x="4" y="13" width="7" height="7" rx="1.4"/><rect x="13" y="13" width="7" height="7" rx="1.4"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16"/><path d="M3.5 7.5L7 4l3.5 3.5"/><path d="M14 6h6.5M14 12h4.5M14 18h2.5"/></symbol>
+  <symbol id="i-frame" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 1.9-.9 1.9-1.9 0-1.4-1-1.9-1-2.9s.8-1.9 1.9-1.9h1.9a3.8 3.8 0 0 0 3.8-3.8c0-3.8-3.8-6.5-8.5-6.5z"/><circle cx="7.6" cy="12" r="1" fill="currentColor"/><circle cx="9.3" cy="7.8" r="1" fill="currentColor"/><circle cx="14" cy="7" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-masonry" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="10" rx="1.4"/><rect x="13" y="4" width="7" height="6" rx="1.4"/><rect x="4" y="16" width="7" height="4" rx="1.4"/><rect x="13" y="12" width="7" height="8" rx="1.4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14.5L4 9.5l5-5"/><path d="M4 9.5h10.5a5 5 0 0 1 0 10H12"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14.5l5-5-5-5"/><path d="M20 9.5H9.5a5 5 0 0 0 0 10H12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 19V8"/><path d="M7.5 12.5L12 8l4.5 4.5"/><path d="M5 4.5h14"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7.5 4.5l12 7.5-12 7.5z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 3.5v5h5"/><path d="M12 7.5V12l3 2.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19.5 7"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6"/><path d="M12 16.8v.2"/></symbol>
+  <symbol id="i-ledger" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8z"/><path d="M9 8.5h6M9 12.5h6"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3.5h8.5l3.5 3.5v13.5H6z"/><path d="M14 3.5V7.5h4"/><path d="M9 12.5h6M9 16h4"/></symbol>
+  <symbol id="i-present" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="12" rx="2"/><path d="M12 16v4M8.5 20h7"/><path d="M10.5 8.2l3.8 1.8-3.8 1.8z" fill="currentColor"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></symbol>
+  <symbol id="i-chev-up" viewBox="0 0 24 24"><path d="M6.5 14.5l5.5-5.5 5.5 5.5"/></symbol>
+  <symbol id="i-chev-left" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></symbol>
+  <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5l1.8 5 5 1.8-5 1.8-1.8 5-1.8-5-5-1.8 5-1.8z"/></symbol>
+  <symbol id="i-mindmap" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="2"/><circle cx="19.5" cy="6" r="2"/><circle cx="4.5" cy="18" r="2"/><circle cx="19.5" cy="18" r="2"/><path d="M6.2 7.2L9.6 10.2M17.8 7.2l-3.4 3M6.2 16.8l3.4-3M17.8 16.8l-3.4-3"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3.5" y="4" width="5" height="16" rx="1.4"/><rect x="9.5" y="4" width="5" height="11" rx="1.4"/><rect x="15.5" y="4" width="5" height="13" rx="1.4"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M8 5v14M16 5v14M3.5 9.5H8M3.5 14.5H8M16 9.5h4.5M16 14.5h4.5"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="5" rx="1.4"/><path d="M12 8v3"/><path d="M12 11l4 3-4 3-4-3z"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-audit" viewBox="0 0 24 24"><path d="M9 4.5h6a1 1 0 0 1 1 1v1H8v-1a1 1 0 0 1 1-1z"/><path d="M8 5.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5V7A1.5 1.5 0 0 0 18 5.5h-2"/><path d="M8.5 13l2.3 2.3 4.7-4.6"/></symbol>
+  <symbol id="i-wire" viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="2.2"/><path d="M9.5 7.5h5M9.5 11h5M9.5 15.5h5"/></symbol>
+  <symbol id="i-blank" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="2.5" stroke-dasharray="3 2.4"/></symbol>
+</svg>
 <main>
 <h1 class="sr">Flux Canvas</h1>
 <canvas id="c" tabindex="0" role="application" aria-roledescription="drawing canvas" aria-describedby="summary"
@@ -27,77 +108,101 @@
 <div id="sr" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <div id="titlebar" role="group" aria-label="Canvas">
-  <button class="pill" id="homeBtn" title="Canvases, templates and examples (H)"><span aria-hidden="true">☰</span><span class="sr">Canvases, templates and examples</span></button>
-  <button class="pill tt" id="ctitle" title="Rename this canvas">Untitled canvas</button>
-  <button class="pill" id="votes" hidden></button>
-  <button class="pill" id="timer" hidden></button>
+  <button class="ibtn" id="homeBtn" aria-label="Canvases, templates and examples" data-key="H"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></button>
+  <button class="tbtn" id="ctitle" data-tip="Rename this canvas">Untitled canvas</button>
+  <button class="chip" id="votes" hidden></button>
+  <button class="chip" id="timer" hidden></button>
 </div>
-<div id="empty" hidden><b>Empty canvas.</b> Draw freely, double-click in select mode for a note, or <button class="btn" id="emptyBtn">start from a template or an example</button></div>
+<div id="empty" hidden>
+  <div class="em-card" role="region" aria-labelledby="emT">
+    <h2 id="emT">Start your canvas</h2>
+    <p>Draw anywhere, drop a sticky note, or begin from a template.</p>
+    <div class="em-q">
+      <button data-q="brainstorm"><svg class="ic" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Brainstorm</span></button>
+      <button data-q="mindmap"><svg class="ic" aria-hidden="true"><use href="#i-mindmap"/></svg><span>Mind map</span></button>
+      <button data-q="feedback"><svg class="ic" aria-hidden="true"><use href="#i-columns"/></svg><span>Feedback board</span></button>
+      <button data-q="story"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg><span>Storyboard</span></button>
+    </div>
+    <button class="link" id="emptyBtn">All templates and worked examples <svg class="ic" aria-hidden="true"><use href="#i-chev-right"/></svg></button>
+  </div>
+</div>
 <div id="present" role="toolbar" aria-label="Presentation" hidden>
-  <button class="btn" id="presentPrev" aria-label="Previous scene">‹</button>
+  <button class="ibtn" id="presentPrev" aria-label="Previous scene"><svg class="ic" aria-hidden="true"><use href="#i-chev-left"/></svg></button>
   <div class="pt"><b id="presentT"></b> <span id="presentN"></span><div id="presentCap"></div></div>
-  <button class="btn" id="presentNext" aria-label="Next scene">›</button>
+  <button class="ibtn" id="presentNext" aria-label="Next scene"><svg class="ic" aria-hidden="true"><use href="#i-chev-right"/></svg></button>
   <button class="btn" id="presentEnd">end <kbd>Esc</kbd></button>
 </div>
 <div id="history" role="region" aria-label="History" hidden>
   <b>History</b> <span class="ro">read-only</span>
-  <button class="btn" id="histPlay" aria-label="Play or pause the replay">▶</button>
+  <button class="ibtn" id="histPlay" aria-label="Play or pause the replay"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg></button>
   <input type="range" id="histRange" min="0" max="1" step="1" aria-label="Replay position">
   <span id="histLabel"></span>
   <button class="btn" id="histNow">back to now</button>
 </div>
-<div id="corner" role="toolbar" aria-label="Canvas tools">
-  <button class="pill" id="mode" aria-pressed="false" title="Pen mode · V for select"><span aria-hidden="true">✎</span><span class="lbl">pen</span></button>
-  <button class="pill" id="addImg" title="Insert image (I)" aria-label="Insert image"><span aria-hidden="true">＋</span><span class="lbl">image</span></button>
-  <button class="pill" id="textBtn" title="Text tool (T): click where it goes" aria-pressed="false"><span aria-hidden="true">T</span><span class="lbl">text</span><span class="sr"> tool</span></button>
-  <button class="pill" id="nodeBtn" title="Diagram tool (N): click to place a card, topic or shape" aria-pressed="false"><span aria-hidden="true">◇</span><span class="lbl">diagram</span><span class="sr"> tool</span></button>
-  <button class="pill" id="eraseBtn" title="Eraser (E): wipe across your own elements" aria-pressed="false"><span aria-hidden="true">⌫</span><span class="lbl">erase</span><span class="sr"> tool</span></button>
-  <button class="pill" id="cmtBtn" title="Comment (M): click an element or a spot" aria-label="Comment tool" aria-pressed="false"><span aria-hidden="true">💬</span><span class="lbl">comment</span></button>
-  <button class="pill" id="cmtList" title="Comments panel" aria-expanded="false"><span class="lbl">comments</span> <span class="n" id="cmtN">0</span><span class="sr"> open</span></button>
-  <button class="pill" id="cmdBtn" title="Commands (⌘K or /)" aria-label="⌘K commands"><span aria-hidden="true">⌘K</span></button>
-  <div id="authors" role="group" aria-label="Authors, filter by author"></div>
-  <button id="auth" title="Auth Kit signing status · opens the ledger"><i aria-hidden="true"></i><span id="authTxt">locked</span></button>
+<div id="tools" role="toolbar" aria-label="Tools">
+  <button class="ibtn" data-tool="select" aria-label="Select" data-key="V"><svg class="ic" aria-hidden="true"><use href="#i-cursor"/></svg></button>
+  <button class="ibtn" data-tool="hand" aria-label="Hand: pan the canvas" data-key="Space"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg></button>
+  <span class="tsep" aria-hidden="true"></span>
+  <button class="ibtn" data-tool="pen" aria-label="Draw" data-key="P"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg></button>
+  <button class="ibtn" data-tool="eraser" id="eraseBtn" aria-label="Eraser" data-key="E"><svg class="ic" aria-hidden="true"><use href="#i-eraser"/></svg></button>
+  <span class="tsep" aria-hidden="true"></span>
+  <button class="ibtn" data-tool="rect" aria-label="Rectangle" data-key="⇧ drag"><svg class="ic" aria-hidden="true"><use href="#i-square"/></svg></button>
+  <button class="ibtn" data-tool="ellipse" aria-label="Ellipse" data-key="⌥ drag"><svg class="ic" aria-hidden="true"><use href="#i-circle"/></svg></button>
+  <button class="ibtn" data-tool="line" aria-label="Line and connector"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
+  <span class="tsep" aria-hidden="true"></span>
+  <button class="ibtn" data-tool="note" aria-label="Sticky note" data-key="double-click"><svg class="ic" aria-hidden="true"><use href="#i-sticky"/></svg></button>
+  <button class="ibtn" data-tool="node" id="nodeBtn" aria-label="Shapes and cards" data-key="N"><svg class="ic" aria-hidden="true"><use href="#i-shapes"/></svg></button>
+  <button class="ibtn" data-tool="text" id="textBtn" aria-label="Text" data-key="T"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg></button>
+  <button class="ibtn" id="addImg" aria-label="Image" data-key="I"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></button>
+  <span class="tsep" aria-hidden="true"></span>
+  <button class="ibtn" data-tool="comment" id="cmtBtn" aria-label="Comment" data-key="M"><svg class="ic" aria-hidden="true"><use href="#i-comment"/></svg></button>
 </div>
-<div id="bar" role="toolbar" aria-label="Drawing options">
-  <div class="grp" role="radiogroup" aria-label="Colour" id="barColors"></div>
-  <span class="sep" aria-hidden="true"></span>
-  <div class="grp" role="radiogroup" aria-label="Diagram shape" id="barKinds"></div>
-  <span class="sep" aria-hidden="true"></span>
+<div id="corner" role="group" aria-label="Collaboration">
+  <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
-    <label class="lbl2" for="brush">Brush</label>
+  <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
+  <button class="ibtn" id="cmdBtn" aria-label="Search and commands" data-key="⌘K"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
+  <button class="ibtn" id="auth" data-tip="Signatures and ledger"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><i class="sdot" aria-hidden="true"></i><span id="authTxt" class="sr">locked</span></button>
+  </div>
+  <button class="share" id="shareBtn" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
+</div>
+<div id="bar" role="toolbar" aria-label="Style">
+  <div class="grp" id="gColor"><span class="lbl2" aria-hidden="true">Colour</span><div class="sws" role="radiogroup" aria-label="Colour" id="barColors"></div></div>
+  <div class="grp" id="gKind"><span class="lbl2" aria-hidden="true">Shape</span><div class="sws" role="radiogroup" aria-label="Shape" id="barKinds"></div></div>
+  <div class="grp" id="gBrush">
+    <label class="lbl2" for="brush">Stroke</label>
     <input type="range" id="brush" min="1" max="80" step="1" aria-describedby="brushHint">
     <span class="pre" aria-hidden="true" id="brushPre"><i></i></span>
     <span class="val" id="brushVal" aria-hidden="true"></span>
+    <button class="tog" id="fillBtn" aria-pressed="false" data-tip="Fill new shapes">Fill</button>
     <span class="tgt" id="brushTgt"></span>
     <span class="sr" id="brushHint">Shortcut: open and close square brackets. Also restyles the selected lines you drew</span>
   </div>
-  <span class="sep" aria-hidden="true"></span>
-  <div class="grp">
+  <div class="grp" id="gText">
     <label class="lbl2" for="tsize">Text</label>
     <input type="range" id="tsize" min="10" max="400" step="2" aria-describedby="tsizeHint">
     <span class="pre" aria-hidden="true" id="tsizePre"><b>Aa</b></span>
     <span class="val" id="tsizeVal" aria-hidden="true"></span>
+    <div class="fonts" role="radiogroup" aria-label="Font" id="barFonts"></div>
     <span class="tgt" id="tsizeTgt"></span>
     <span class="sr" id="tsizeHint">Shortcut: open and close curly braces. Resizes the selected text if it is yours, otherwise sets the size for new text</span>
   </div>
-  <button class="fold" id="barFold" aria-expanded="true" aria-label="Hide drawing options" title="Hide / show this bar">▾</button>
+  <button class="fold" id="barFold" aria-expanded="true" aria-label="Hide style panel"><svg class="ic" aria-hidden="true"><use href="#i-chev-down"/></svg></button>
 </div>
 <div id="zoomui" role="group" aria-label="Zoom and overview">
-  <canvas id="mini" width="200" height="130" aria-hidden="true" title="Overview: click or drag to move the view"></canvas>
+  <canvas id="mini" width="200" height="130" aria-hidden="true"></canvas>
   <div class="row">
-    <button id="zOut" aria-label="Zoom out" title="Zoom out (−)">−</button>
-    <button id="zPct" aria-label="100% zoom, reset to 100%" title="Reset to 100%">100%</button>
-    <button id="zIn" aria-label="Zoom in" title="Zoom in (+)">+</button>
-    <button id="zFit" aria-label="Zoom to fit" title="Fit everything (0)">⤢</button>
-    <button id="zMini" aria-label="Overview map" aria-pressed="true" title="Show or hide the overview map">▣</button>
+    <button class="ibtn" id="zOut" aria-label="Zoom out" data-key="−"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button>
+    <button id="zPct" class="pct" aria-label="100% zoom, reset to 100%" data-key="1">100%</button>
+    <button class="ibtn" id="zIn" aria-label="Zoom in" data-key="+"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    <button class="ibtn" id="zFit" aria-label="Zoom to fit" data-key="0"><svg class="ic" aria-hidden="true"><use href="#i-fit"/></svg></button>
+    <button class="ibtn" id="zMini" aria-label="Overview map" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg></button>
   </div>
 </div>
+<div id="menu" role="menu" hidden></div>
 </main>
 
-<div id="hint" aria-hidden="true">
-  draw freely · <kbd>shift</kbd> rect · <kbd>alt</kbd> circle · drag from an edge to connect · double-tap for text
-  <span class="wide">· <kbd>ctrl</kbd>-drag lasso · drop or paste an image</span> · <kbd>⌘K</kbd> commands
-</div>
+<div id="hint" aria-hidden="true"></div>
 
 <textarea id="ta" spellcheck="false" aria-label="Text to place on the canvas. Enter to sign, Shift+Enter for a new line, Escape to cancel"></textarea>
 <div id="insp" role="region" aria-label="Selection"></div>
@@ -113,42 +218,43 @@
 
 <aside class="ledger au" id="audit" aria-label="Audit">
   <header>
-    <h2><span>Audit</span><button class="btn" id="auditClose">close</button></h2>
+    <h2><span>Audit</span><button class="ibtn sm" id="auditClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
     <div class="stats">Walk the flow step by step. Each verdict is signed; a sign-off fences them all.</div>
   </header>
   <div class="list" id="auditBody"></div>
 </aside>
 <aside class="ledger cm" id="comments" aria-label="Comments">
   <header>
-    <h2><span>Comments</span><button class="btn" id="cmClose">close</button></h2>
+    <h2><span>Comments</span><button class="ibtn sm" id="cmClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
     <div class="stats"><label><input type="checkbox" id="cmShowDone"> show resolved</label> · <label><input type="checkbox" id="cmPrev" checked> previews on canvas</label> · every comment and reply is a signed record</div>
   </header>
   <div class="list" id="cmList"></div>
 </aside>
 <aside class="ledger" id="ledger" aria-label="Ledger of signed records">
   <header>
-    <h2><span>Ledger</span><button class="btn" id="ledgerClose">close</button></h2>
+    <h2><span>Ledger</span><button class="ibtn sm" id="ledgerClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
     <div class="stats" id="ledgerStats"></div>
   </header>
   <div class="list" id="ledgerList"></div>
 </aside>
 
 <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" tabindex="-1">
-  <button class="btn close" id="helpClose">close</button>
-  <h1 id="helpT">Flux Canvas</h1>
+  <button class="ibtn sm close" id="helpClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+  <h1 id="helpT">Keyboard shortcuts</h1>
   <p>Every stroke is a signed pattern. The canvas is the union of its records. Nothing here is a file until you export it.</p>
   <table>
     <tr><td>Pen down + move</td><td>Freehand stroke</td></tr>
     <tr><td>Shift + drag</td><td>Rectangle</td></tr>
     <tr><td>Alt + drag</td><td>Circle</td></tr>
     <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
-    <tr><td>Double-tap · T · the T button</td><td>Text. Double-tap your own text (or Enter on it) to edit it</td></tr>
-    <tr><td>N · ◇ diagram · a shape in the bottom bar</td><td>Place a card, mind-map topic, flowchart shape, sticky or wireframe piece. It sizes itself to its label</td></tr>
+    <tr><td>T · the Text tool · double-tap</td><td>Text. Double-tap your own text (or Enter on it) to edit it</td></tr>
+    <tr><td>N · the Shapes and cards tool</td><td>Pick a kind in the style bar, then place a card, mind-map topic, flowchart shape, sticky or wireframe piece. It sizes itself to its label</td></tr>
     <tr><td>“+” handles on a selected node</td><td>Click: new connected node in that direction. Drag: to another element to connect it, or to empty space for a new node there</td></tr>
     <tr><td>While typing a node label</td><td>Enter saves · Tab saves and adds a child · ⌘/Ctrl+Enter saves and adds a sibling</td></tr>
-    <tr><td>M · the 💬 button</td><td>Comment: click an element to pin it there (it follows the element) or empty space. Threads, replies and resolve live in the comments panel</td></tr>
+    <tr><td>M · the Comment tool</td><td>Comment: click an element to pin it there (it follows the element) or empty space. Threads, replies and resolve live in the comments panel</td></tr>
     <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Draw on it right away with the pen. To move or resize it, switch to select mode (V), drag it, or pull the corner handle</td></tr>
-    <tr><td>V · select mode (or the pen/select button)</td><td>Tap any element to select it, shift-tap to add, drag it to move, drag on empty paper to lasso. P returns to the pen</td></tr>
+    <tr><td>V · P · Space · E</td><td>Select · Draw · Hand (hold Space with any tool) · Eraser. Esc returns to Select from the shape and hand tools</td></tr>
+    <tr><td>Rectangle · Ellipse · Line tools</td><td>Drag to draw; you are back in Select with the new shape selected. A line dragged from one element to another becomes a bound connector</td></tr>
     <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode; Ctrl/⌘-drag inside the selection moves it</td></tr>
     <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
     <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
@@ -178,9 +284,9 @@
     <tr><td>⌘⇧↑ · ⌘⇧↓ · ⌘⇧L</td><td>Bring to front · send to back · lock or unlock (locked elements can be drawn over but not moved)</td></tr>
     <tr><td>Dragging</td><td>Snaps to the edges and centres of nearby elements; press ⌘/Ctrl during the drag to place freely</td></tr>
     <tr><td>Paste an indented list</td><td>Becomes a connected mind map (also ⌘K → Mind map from outline)</td></tr>
-    <tr><td>H · ☰</td><td>Canvas home: your canvases, templates and worked examples</td></tr>
+    <tr><td>H · the menu button</td><td>Canvas home: your canvases, templates and worked examples</td></tr>
     <tr><td>Double-click empty space (select mode)</td><td>A sticky note, ready to type</td></tr>
-    <tr><td>D · ☺ in the toolbar</td><td>Dot-vote the selection (within your vote budget) · react with 👍 💡 ❤️ ❓ ⚠️. Click a chip under a note to toggle yours</td></tr>
+    <tr><td>D · vote and react on the selection toolbar</td><td>Dot-vote the selection (within your vote budget) · react with 👍 💡 ❤️ ❓ ⚠️. Click a chip under a note to toggle yours</td></tr>
     <tr><td>⇧S</td><td>Summary of notes, votes, reactions and comments as Markdown</td></tr>
     <tr><td>F5 · ⇧P</td><td>Present frames as a story (← → Space, Esc to end)</td></tr>
     <tr><td>A</td><td>Audit the flow from the selected step: 1 pass · 2 fail · 3 needs info, then sign off</td></tr>
@@ -191,9 +297,10 @@
 </div>
 
 <div id="toast" aria-hidden="true"></div>
+<div id="tip" role="tooltip" aria-hidden="true" hidden></div>
 <div id="home" role="dialog" aria-modal="true" aria-labelledby="homeT" hidden>
   <div class="hm">
-    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">A collaborative canvas where every note, vote and decision is signed.</span><button class="btn" id="homeClose">close</button></header>
+    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">A collaborative canvas where every note, vote and decision is signed.</span><button class="ibtn sm" id="homeClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
     <section aria-labelledby="homeS1"><h3 id="homeS1">Start something</h3><div class="cards" id="homeTpl"></div></section>
     <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. They are signed by three example authors (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
     <section aria-labelledby="homeS3"><h3 id="homeS3">Your canvases <span class="sub">in this browser</span></h3><ul class="clist" id="homeList"></ul></section>
@@ -201,7 +308,7 @@
 </div>
 <div id="report" role="dialog" aria-modal="true" aria-labelledby="reportT" hidden>
   <div class="rp">
-    <header><h2 id="reportT"></h2><button class="btn" id="reportClose">close</button></header>
+    <header><h2 id="reportT"></h2><button class="ibtn sm" id="reportClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
     <pre id="reportBody" tabindex="0"></pre>
     <div class="acts"><button class="btn" id="reportCopy">copy Markdown</button><button class="btn" id="reportSave">download .md</button></div>
   </div>
@@ -211,6 +318,7 @@
 
 <!-- load order matters: classic scripts share one global scope (works from file:// too) -->
 <script src="js/core/hooks.js"></script>
+<script src="js/ui/icons.js"></script>
 <script src="js/core/encoding.js"></script>
 <script src="js/core/grammar.js"></script>
 <script src="js/core/identity.js"></script>
@@ -251,6 +359,7 @@
 <script src="js/features/story.js"></script>
 <script src="js/features/moodboard.js"></script>
 <script src="js/features/audit.js"></script>
+<script src="js/ui/toolbar.js"></script>
 <script src="js/interaction/keyboard.js"></script>
 <script src="js/boot.js"></script>
 </body>

@@ -3,8 +3,8 @@
 // @uses selection, tools
 function setCursor(){
   cv.style.cursor = erasing ? 'cell' : G?.kind === 'grow' ? 'crosshair' : hoverGrow ? 'copy' : placing === 'node' ? 'cell' : G?.kind === 'pin' ? (G.moved ? 'grabbing' : 'grab') : hoverPin ? 'grab' : placing === 'text' ? 'text' : placing === 'comment' ? 'copy'
-    : spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
-    : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
+    : spaceDown || S.handTool || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
+    : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : S.shapeTool ? 'crosshair' : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
 }
 let lastEmpty = null;
 let hoverSel = false, hoverHandle = false, hoverPick = false, hoverPin = false, lastPick = null, lastPointer = null, erasing = false;
@@ -15,7 +15,6 @@ cv.addEventListener('pointerdown', e => {
   cv.focus({ preventScroll: true });
   cv.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  document.getElementById('hint').classList.add('gone');
   if (pointers.size === 2){
     const [p, q] = [...pointers.values()];
     G = { kind: 'pinch', d0: Math.hypot(p.x - q.x, p.y - q.y) || 1, m0: toWorld((p.x + q.x) / 2, (p.y + q.y) / 2), z0: S.view.zoom };
@@ -34,7 +33,7 @@ cv.addEventListener('pointerdown', e => {
     if (gh){ G = { kind: 'grow', from: gh.el, dir: gh.dir, start: w, cur: w, moved: false, sx: e.clientX, sy: e.clientY }; dirty = true; return; }
     if (placing === 'comment'){ G = { kind: 'none' }; startComment(w, hitTest(w)); setPlacing(null); return; }
   }
-  if (e.button === 1 || e.button === 2 || spaceDown){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
+  if (e.button === 1 || e.button === 2 || spaceDown || S.handTool){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
   if (e.button !== 0) return;
   if (S.lassoMode && !e.ctrlKey && !e.metaKey && !onHandle(w)){
     const hit = hitTest(w);
@@ -67,6 +66,9 @@ cv.addEventListener('pointerdown', e => {
     } else { S.sel.clear(); announceSel(); dirty = true; }   // pen mode: the pen always draws, even over a selection
   }
   if (e.ctrlKey || e.metaKey || S.lassoMode){ G = { kind: 'lasso', pts: [w] }; return; }
+  if (S.shapeTool === 'rect'){ G = { kind: 'rect', a: w, b: w, viaTool: true }; return; }
+  if (S.shapeTool === 'ellipse'){ G = { kind: 'circle', a: w, b: w, viaTool: true }; return; }
+  if (S.shapeTool === 'line'){ G = { kind: 'line', a: w, b: w, from: elementAt(w), viaTool: true }; dirty = true; return; }
   if (e.shiftKey){ G = { kind: 'rect', a: w, b: w }; return; }
   if (e.altKey){ G = { kind: 'circle', a: w, b: w }; return; }
   const p0 = performance.now(), pt = { x: w.x, y: w.y, t: 0 };
@@ -117,6 +119,11 @@ cv.addEventListener('pointermove', e => {
       G.dw = Math.round(dw); G.dh = Math.round(dw / G.aspect); break;
     }
     case 'rect': case 'circle': G.b = w; break;
+    case 'line': {   // Shift snaps to 45°
+      G.b = e.shiftKey ? snap45(G.a, w) : w;
+      G.target = G.from ? elementAt(w, G.from) : null;
+      break;
+    }
     case 'lasso': G.pts.push(w); break;
     case 'stroke': case 'arrow': {
       const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
@@ -162,8 +169,14 @@ function endPointer(e, cancelled){
       if (to) commitArrow(g.from, to); else if (g.pts.length > 1) commitStroke(g.pts, g.t0);   // released on empty paper: it was a stroke
       return;
     }
-    case 'rect': commitShape('rect', g.a, g.b); return;
-    case 'circle': commitShape('circle', g.a, g.b); return;
+    case 'rect': commitShape('rect', g.a, g.b).then(c => afterToolCreate(g, c)); return;
+    case 'circle': commitShape('circle', g.a, g.b).then(c => afterToolCreate(g, c)); return;
+    case 'line': {
+      const to = elementAt(w, g.from);
+      if (g.from && to){ commitArrow(g.from, to).then(c => { afterToolCreate(g, c); if (c) say(`Connected ${describe(g.from)} to ${describe(to)}. Signed.`); }); return; }
+      if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) * S.view.zoom < 4) return;
+      commitStroke([{ x: g.a.x, y: g.a.y, t: 0 }, { x: g.b.x, y: g.b.y, t: 1 }], Date.now()); return;
+    }
     case 'lasso': {
       if (g.pts.length < 3) return;
       for (const el of S.D.els){
@@ -221,6 +234,10 @@ function endPointer(e, cancelled){
 }
 cv.addEventListener('pointerup', e => endPointer(e, false));
 cv.addEventListener('pointercancel', e => endPointer(e, true));
+function snap45(a, b){
+  const d = Math.hypot(b.x - a.x, b.y - a.y), t = Math.round(Math.atan2(b.y - a.y, b.x - a.x) / (Math.PI / 4)) * Math.PI / 4;
+  return { x: a.x + d * Math.cos(t), y: a.y + d * Math.sin(t) };
+}
 const clampZ = z => Math.min(8, Math.max(0.1, z));
 cv.addEventListener('wheel', e => {
   e.preventDefault();

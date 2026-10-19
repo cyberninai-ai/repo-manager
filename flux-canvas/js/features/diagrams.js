@@ -63,7 +63,7 @@ function nodeBox(el){
 let TH = {};
 function readTheme(){
   const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
-  TH = { ink: INK, panel: v('--panel'), line: v('--line'), muted: v('--muted'), paper: v('--paper'), accent: v('--cyan') };
+  TH = { ink: INK, panel: v('--panel'), line: v('--line'), muted: v('--muted'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot') };
 }
 function rr(c, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 // colour blending in JS: canvas and SVG consumers can't be relied on to understand color-mix()

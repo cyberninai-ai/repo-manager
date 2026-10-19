@@ -2,8 +2,8 @@
 // @module ui/zoom-minimap — Zoom controls and the overview map
 // @uses renderer
 /* ---------- zoom controls and overview map ---------- */
-let miniOn = true;
-try { if (localStorage.getItem('flux:mini') === '0') miniOn = false; } catch {}
+let miniOn = false;   // the overview is on demand (▣); remembered per browser
+try { if (localStorage.getItem('flux:mini') === '1') miniOn = true; } catch {}
 function zoomTo(z, at = viewCenter()){
   z = clampZ(z); const s = toScreen(at.x, at.y);
   S.view = { zoom: z, x: at.x - s.x / z, y: at.y - s.y / z }; dirty = true; say(`Zoom ${Math.round(z * 100)} percent`);
@@ -13,7 +13,7 @@ $('zOut').onclick = () => zoomTo(S.view.zoom / 1.25);
 $('zPct').onclick = () => zoomTo(1);
 $('zFit').onclick = () => { zoomFit(); dirty = true; };
 $('zMini').onclick = () => { miniOn = !miniOn; $('mini').style.display = miniOn ? '' : 'none'; $('zMini').setAttribute('aria-pressed', String(miniOn)); try { localStorage.setItem('flux:mini', miniOn ? '1' : '0'); } catch {} dirty = true; };
-if (!miniOn){ $('mini').style.display = 'none'; $('zMini').setAttribute('aria-pressed', 'false'); }
+$('mini').style.display = miniOn ? '' : 'none'; $('zMini').setAttribute('aria-pressed', String(miniOn));
 let miniT = null;
 function paintMini(){
   const pct = Math.round(S.view.zoom * 100) + '%'; if ($('zPct').textContent !== pct){ $('zPct').textContent = pct; $('zPct').setAttribute('aria-label', `${pct} zoom, reset to 100%`); }

@@ -45,8 +45,8 @@ async function masonry(rs){
 }
 TOOLBAR_HOOKS.push((rs, one, B) => {
   let h = '';
-  if (one && one.type === 'IMAGE') h += B('palette', '🎨', 'Extract colour palette');
-  if (rs.filter(r => r.type !== 'ARROW').length >= 3) h += B('masonry', '▥', 'Masonry layout');
+  if (one && one.type === 'IMAGE') h += B('palette', 'palette', 'Extract colour palette');
+  if (rs.filter(r => r.type !== 'ARROW').length >= 3) h += B('masonry', 'masonry', 'Masonry layout');
   return h;
 });
 TOOLBAR_ACTIONS.palette = rs => extractPalette(rs[0]);

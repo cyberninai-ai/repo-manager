@@ -1,16 +1,61 @@
-/* @module css/toolbar — Top toolbar: tool pills, author badges, signing pill */
-/* corner cluster: the only standing chrome */
-#corner{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;align-items:center;z-index:5}
-#authors{display:flex;gap:4px}
-@media (min-width:820px){ body.drawer #corner{right:412px} }
-#authors button{width:22px;height:22px;border-radius:50%;border:2px solid var(--paper);padding:0;cursor:pointer;
-  font-size:9px;font-weight:700;color:#fff;box-shadow:0 0 0 1px var(--line);opacity:.95}
-#authors button.off{opacity:.25}
-#authors button.solo{box-shadow:0 0 0 2px var(--cyan)}
-#auth{white-space:nowrap;display:flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--line);
-  background:var(--panel);cursor:pointer;font-size:11px;color:var(--muted);box-shadow:var(--shadow)}
-#auth i{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
-#auth.open i{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 25%,transparent)}
-#auth.open{color:var(--ink)}
-#auth b{font-weight:600;color:var(--ink)}
+/* @module css/toolbar — Top chrome: title bar, the tool dock, collaborators and Share, tool hint, tooltips, menus */
+#titlebar{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;z-index:5;display:flex;gap:2px;align-items:center;padding:4px;border-radius:var(--r-lg);max-width:calc(50% - 276px)}
+.tbtn{height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;cursor:pointer;font-size:14px;font-weight:600;
+  max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tbtn:hover{background:var(--hover)}
+#titlebar .chip{margin-left:2px}
+#votes{color:var(--cyan)}
+#timer{font-variant-numeric:tabular-nums}
+#timer.alarm{border-color:var(--red);color:var(--red)}
 
+/* the tool dock */
+#tools{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:2px;padding:4px;border-radius:var(--r-lg)}
+#tools .tsep{width:1px;height:22px;background:var(--line);margin:0 4px;flex:none}
+#tools .ibtn[aria-pressed="true"]{background:var(--cyan);color:var(--accent-ink)}
+
+/* collaborators + actions */
+#corner{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;align-items:center;z-index:5}
+#corner .grp{display:flex;gap:2px;align-items:center;padding:4px;border-radius:var(--r-lg)}
+#authors{display:flex;align-items:center;padding-left:6px}
+#authors:empty{display:none}
+#authors button{width:30px;height:30px;border-radius:50%;border:2px solid var(--paper);margin-left:-6px;padding:0;cursor:pointer;
+  font-size:11px;font-weight:700;color:#fff;letter-spacing:.02em;text-transform:uppercase;transition:transform .12s}
+#authors button:hover{transform:translateY(-1px);z-index:1}
+#authors button.off{opacity:.3}
+#authors button.solo{box-shadow:0 0 0 2px var(--cyan)}
+#authors button.live{box-shadow:0 0 0 2px var(--green)}
+.ibtn.cnt{width:auto;padding:0 8px 0 9px}
+.ibtn.cnt .n{font-size:12px;font-weight:600;min-width:10px;font-variant-numeric:tabular-nums}
+.ibtn.cnt .n:empty,.ibtn.cnt .n[data-z]{display:none}
+#cmtList.on{color:var(--amber)}
+#auth .sdot{position:absolute;right:6px;bottom:7px;width:8px;height:8px;border-radius:50%;background:var(--faint);border:2px solid var(--panel)}
+#auth.open .sdot{background:var(--green)}
+.share{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px 0 12px;border:0;border-radius:var(--r);background:var(--cyan);color:var(--accent-ink);
+  font-weight:600;font-size:14px;cursor:pointer;box-shadow:var(--shadow)}
+.share:hover{filter:brightness(1.06)}
+.share .ic{width:16px;height:16px}
+
+/* tool hint: one line under the dock when the tool changes */
+#hint{position:fixed;top:calc(max(12px,env(safe-area-inset-top)) + 54px);left:50%;transform:translate(-50%,-4px);z-index:4;max-width:min(560px,calc(100% - 32px));
+  padding:6px 14px;border-radius:999px;font-size:12px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;opacity:0;transition:opacity .2s,transform .2s}
+#hint.on{opacity:1;transform:translate(-50%,0)}
+#hint:empty{display:none}
+
+/* tooltip */
+#tip{position:fixed;z-index:40;pointer-events:none;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;
+  background:#1d2129;color:#f3f4f6;font-size:12px;font-weight:500;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+#tip kbd{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);color:#d7d9de;border-bottom-width:1px}
+:root[data-theme="dark"] #tip{background:#f1f2f4;color:#1d2129}
+:root[data-theme="dark"] #tip kbd{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.12);color:#4a4f59}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #tip{background:#f1f2f4;color:#1d2129}
+  :root:not([data-theme="light"]) #tip kbd{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.12);color:#4a4f59} }
+
+/* menu */
+#menu{position:fixed;z-index:35;min-width:248px;padding:6px;border-radius:12px;box-shadow:var(--shadow-lg)}
+#menu [role=menuitem]{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:7px;background:transparent;cursor:pointer;text-align:left;font-size:13px}
+#menu [role=menuitem]:hover,#menu [role=menuitem]:focus{background:var(--hover);outline:none}
+#menu [role=menuitem]:focus-visible{box-shadow:inset 0 0 0 2px var(--cyan)}
+#menu [role=menuitem] .ic{width:16px;height:16px;color:var(--muted)}
+#menu [role=menuitem] span{flex:1}
+#menu kbd{margin-left:auto}
+#menu .msep{height:1px;background:var(--line2);margin:5px 4px}

@@ -20,10 +20,10 @@ const ownArrows = rs => rs.filter(r => r.type === 'ARROW' && r.author === S.me.i
 TOOLBAR_HOOKS.push((rs, one, B) => {
   const arrows = ownArrows(rs); if (!arrows.length) return '';
   const a = arrows[0];
-  let h = B('rel', '⇄', 'Relation: what this connection means', `aria-pressed="${relRow}"`)
-    + B('shape', { curve: '⌒', straight: '／', elbow: '⌐' }[a.eshape || 'curve'], `Line shape: ${a.eshape || 'curve'} (click to change)`)
-    + B('dash', { solid: '━', dash: '╍', dot: '┈' }[a.edash || 'solid'], `Line style: ${a.edash || 'solid'} (click to change)`);
-  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => B('rel:' + r.id, r.icon, `Mark as “${r.label}”`, `aria-pressed="${a.elabel === r.label}"`)).join('');
+  let h = B('rel', 'relation', 'Relation: what this connection means', `aria-pressed="${relRow}"`)
+    + B('shape', a.eshape || 'curve', `Line shape: ${a.eshape || 'curve'} (click to change)`)
+    + B('dash', a.edash && a.edash !== 'solid' ? 'dash' : 'straight', `Line style: ${a.edash || 'solid'} (click to change)`);
+  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => `<button class="word rel-${r.C}" data-a="rel:${r.id}" aria-pressed="${a.elabel === r.label}">${r.label}</button>`).join('');
   return h;
 });
 async function styleArrows(rs, change, msg){

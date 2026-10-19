@@ -171,11 +171,11 @@ function setHist(i){
 function closeHistory(){ clearInterval(histPlay); histPlay = 0; S.histZ = null; histRecs = null; $('history').hidden = true; document.body.classList.remove('history'); changed(); cv.focus({ preventScroll: true }); say('Back to now.'); }
 $('histRange').addEventListener('input', e => setHist(+e.target.value));
 $('histPlay').onclick = () => {
-  if (histPlay){ clearInterval(histPlay); histPlay = 0; $('histPlay').textContent = '▶'; return; }
+  if (histPlay){ clearInterval(histPlay); histPlay = 0; $('histPlay').innerHTML = ic('play'); return; }
   const r = $('histRange'); if (+r.value >= histRecs.length){ r.value = 0; setHist(0); }
   const step = Math.max(1, Math.round(histRecs.length / 80));
-  $('histPlay').textContent = '❚❚';
-  histPlay = setInterval(() => { const v = Math.min(histRecs.length, +r.value + step); r.value = v; setHist(v); if (v >= histRecs.length){ clearInterval(histPlay); histPlay = 0; $('histPlay').textContent = '▶'; } }, 90);
+  $('histPlay').innerHTML = '<span class="gl">❚❚</span>';
+  histPlay = setInterval(() => { const v = Math.min(histRecs.length, +r.value + step); r.value = v; setHist(v); if (v >= histRecs.length){ clearInterval(histPlay); histPlay = 0; $('histPlay').innerHTML = ic('play'); } }, 90);
 };
 $('histNow').onclick = closeHistory;
 $('history').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeHistory(); });

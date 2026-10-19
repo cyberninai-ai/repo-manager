@@ -54,11 +54,8 @@ function hitTest(w, tolPx = 6){
   return null;
 }
 function setMode(select){
-  S.lassoMode = select;
-  const m = $('mode'); m.setAttribute('aria-pressed', String(select));
-  m.querySelector('.lbl').textContent = select ? 'select' : 'pen'; m.firstElementChild.textContent = select ? '⬚' : '✎';
-  m.title = select ? 'Select mode · P for pen' : 'Pen mode · V for select';
-  setCursor();
+  S.lassoMode = select; S.shapeTool = null; S.handTool = false;
+  setCursor(); paintTools();
   say(select ? 'Select mode. Tap an element to select it, drag to move it, drag on empty space to lasso.' : 'Pen mode. Drag to draw.');
 }
 function ensureVisible(el){

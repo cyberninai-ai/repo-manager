@@ -13,12 +13,12 @@ flux-canvas/
     render/           geometry and the frame renderer
     model/            commands: gestures and actions → signed records; undo/redo
     interaction/      selection, pointer, text editor, tools, keyboard
-    ui/               chrome, bottom bar, palette, ledger, zoom + overview, dialogs, ask dialog, actions
+    ui/               icons, tool dock + menus + tooltips, chrome, style bar, palette, ledger, zoom, dialogs, actions
     features/         one file per capability (diagrams, comments, brainstorm, audit …)
     boot.js
   tools/build.mjs     inlines everything into ../flux-canvas.html (the shipped single file)
   tests/              Playwright suites + runner (bundle or source target)
-  docs/               this file, PATTERNS, PLAN, AUDIT, USE-CASES
+  docs/               this file, DESIGN, PATTERNS, PLAN, AUDIT, USE-CASES
 ```
 
 **Commands**
@@ -116,9 +116,12 @@ Each row is one user-facing surface, with the files that own it.
 | Component | DOM | JS | CSS | Accessibility contract |
 |---|---|---|---|---|
 | Canvas | `#c` (role application) | render/*, interaction/* | 01-base | Tab steps through elements; arrows move; every action is announced via `#sr` |
-| Top toolbar | `#corner` | ui/chrome, interaction/tools | 02-toolbar | Labelled buttons; `aria-pressed` on tools |
-| Title bar | `#titlebar` | features/canvases, brainstorm | 11-collab | The title button renames; the vote and timer pills are buttons |
-| Bottom bar | `#bar` | ui/bottom-bar | 03-bottom-bar | Colour and shape are radio groups (arrow keys); sliders have value text |
+| Tool dock | `#tools` | ui/toolbar (`setTool`, `currentTool`) | 02-toolbar | `role=toolbar`; each tool is a labelled toggle (`aria-pressed`); the tool hint is announced through `#sr` |
+| Collaborators + Share | `#corner`, `#menu` | ui/chrome (authors), ui/toolbar (menu) | 02-toolbar | Share is a menu button (`aria-haspopup`, `aria-expanded`); menu has arrow keys, Home/End, Esc returns focus |
+| Tooltips | `#tip` | ui/toolbar | 02-toolbar | `aria-hidden`: the button already carries the name; shows on hover and on keyboard focus |
+| Title bar | `#titlebar` | features/canvases, brainstorm | 02-toolbar | The title button renames; the vote and timer chips are buttons |
+| Welcome card | `#empty` | ui/toolbar, features/canvases | 11-collab | A region with four quick starts; it steps aside on the first touch or key |
+| Style bar | `#bar` | ui/bottom-bar (`barGroups`) | 03-bottom-bar | Shows only the groups the tool or selection can use; colour, shape and font are radio groups (arrow keys); sliders have value text |
 | Selection toolbar | `#insp` | ui/chrome + `TOOLBAR_HOOKS` | 04-overlays | Labelled icon buttons; ⓘ shows provenance |
 | Zoom + overview | `#zoomui`, `#mini` | ui/zoom-minimap | 04-overlays | The overview is decorative; the buttons are labelled |
 | Command palette | `#pal` | ui/palette | 05-palette | Combobox and listbox; focus trapped |
@@ -137,6 +140,7 @@ Each row is one user-facing surface, with the files that own it.
 | File | Responsibility |
 |---|---|
 | core/hooks.js | Extension points |
+| ui/icons.js | The icon sprite helpers: `ic(name)`, `face(name or glyph)` |
 | core/encoding.js | base58 / base32 / base64, CIDv1, ints and text escaping, point-array codec, RDP simplification |
 | core/grammar.js | `build()` / `parse()` of `ACTION-KEY-VALUE…-SIG` patterns with `.` fences |
 | core/identity.js | Keys (Ed25519, ECDSA fallback), storage, verify, Auth Kit signing |
@@ -163,7 +167,7 @@ Each row is one user-facing surface, with the files that own it.
 | features/presence.js | Live cursors |
 | features/diagrams.js | NODE kinds, auto-size, connector geometry, `+` handles, node editor, tidy, templates |
 | features/export-svg.js | SVG export |
-| ui/bottom-bar.js | Colour, shape, brush and text size |
+| ui/bottom-bar.js | Contextual style bar: colour, shape kind, stroke and fill, text size and font |
 | features/comments.js | Comments panel |
 | ui/ledger.js | Ledger |
 | ui/palette.js | Command palette |
@@ -177,5 +181,6 @@ Each row is one user-facing surface, with the files that own it.
 | features/story.js | Storyboard, story order, presentation |
 | features/moodboard.js | Palette extraction, masonry, swatches |
 | features/audit.js | AUDIT verdicts, audit walk, report, SIGNOFF, history |
+| ui/toolbar.js | Tool model and dock, tool hints, tooltips, the menu component and Share menu, welcome card |
 | interaction/keyboard.js | Global keymap (feature keys come first via `KEY_HOOKS`) |
 | boot.js | Identity, saved records, first render |

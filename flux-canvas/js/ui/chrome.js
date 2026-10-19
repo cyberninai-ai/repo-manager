@@ -46,10 +46,10 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = authorColor(id); b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.style.background = `hsl(${authorHue(id)} 58% 36%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
     b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
-    b.title = `${id === S.me?.id ? 'you · ' : ''}${short(id)} · ${n} element${n === 1 ? '' : 's'}\nclick: show only this author · shift-click: add/remove`;
+    b.dataset.tip = `${id === S.me?.id ? 'You' : NAMES.get(id) || short(id)} · ${n} element${n === 1 ? '' : 's'} · click to show only theirs`;
     if (S.filter){ b.classList.toggle('off', !S.filter.has(id)); b.classList.toggle('solo', S.filter.has(id)); }
     b.classList.toggle('live', peers.has(id));
     b.onclick = e => {
@@ -69,21 +69,21 @@ function paintInspector(){
   const sb = selBox(); if (!sb){ el.style.display = 'none'; return; }
   const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean), one = rs.length === 1 ? rs[0] : null;
   const mine = rs.filter(r => r.author === S.me.id), anyLocked = rs.some(r => r.locked), allLocked = rs.every(r => r.locked);
-  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" title="${label}" ${extra}>${icon}</button>`;
+  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" ${extra}>${face(icon)}</button>`;   // tooltips come from ui/tooltip
   const V = '<span class="vs" aria-hidden="true"></span>';
   let tb = '';
-  if (one && (one.type === 'TEXT' || one.type === 'NODE') && one.author === S.me.id) tb += B('edit', '✎', 'Edit (Enter)');
-  if (one && one.type === 'ARROW' && one.author === S.me.id) tb += B('label', '🏷', 'Label this connector');
-  if (rs.length === 2 && rs.every(r => r.type !== 'ARROW')) tb += B('connect', '↗', 'Connect first to second (C)');
-  tb += B('comment', '💬', 'Comment (M)') + B('dup', '⧉', 'Duplicate (⌘D)') + V;
-  if (rs.length >= 2) tb += B('al-l', '⇤', 'Align left') + B('al-c', '⇹', 'Align centres') + B('al-r', '⇥', 'Align right') + B('al-t', '⤒', 'Align top') + B('al-m', '⇕', 'Align middles') + B('al-b', '⤓', 'Align bottom') + V;
-  if (rs.length >= 3) tb += B('dist-h', '⇿', 'Distribute horizontally') + B('dist-v', '↕', 'Distribute vertically') + V;
-  if (mine.length) tb += B('front', '⬆', 'Bring to front (⌘⇧↑)') + B('back', '⬇', 'Send to back (⌘⇧↓)') + B('lock', allLocked ? '🔓' : '🔒', allLocked ? 'Unlock (⌘⇧L)' : 'Lock (⌘⇧L)', `aria-pressed="${allLocked}"`);
-  if (rs.length >= 2) tb += B('group', '▣', 'Group (⌘G)');
-  if (rs.some(r => S.D.groupOf.has(r.cid))) tb += B('ungroup', '▢', 'Ungroup (⌘⇧G)');
+  if (one && (one.type === 'TEXT' || one.type === 'NODE') && one.author === S.me.id) tb += B('edit', 'edit', 'Edit (Enter)');
+  if (one && one.type === 'ARROW' && one.author === S.me.id) tb += B('label', 'tag', 'Label this connector');
+  if (rs.length === 2 && rs.every(r => r.type !== 'ARROW')) tb += B('connect', 'link', 'Connect first to second (C)');
+  tb += B('comment', 'comment', 'Comment (M)') + B('dup', 'copy', 'Duplicate (⌘D)') + V;
+  if (rs.length >= 2) tb += B('al-l', 'al-l', 'Align left') + B('al-c', 'al-c', 'Align centres') + B('al-r', 'al-r', 'Align right') + B('al-t', 'al-t', 'Align top') + B('al-m', 'al-m', 'Align middles') + B('al-b', 'al-b', 'Align bottom') + V;
+  if (rs.length >= 3) tb += B('dist-h', 'dist-h', 'Distribute horizontally') + B('dist-v', 'dist-v', 'Distribute vertically') + V;
+  if (mine.length) tb += B('front', 'front', 'Bring to front (⌘⇧↑)') + B('back', 'back', 'Send to back (⌘⇧↓)') + B('lock', allLocked ? 'unlock' : 'lock', allLocked ? 'Unlock (⌘⇧L)' : 'Lock (⌘⇧L)', `aria-pressed="${allLocked}"`);
+  if (rs.length >= 2) tb += B('group', 'group', 'Group (⌘G)');
+  if (rs.some(r => S.D.groupOf.has(r.cid))) tb += B('ungroup', 'ungroup', 'Ungroup (⌘⇧G)');
   for (const h of TOOLBAR_HOOKS){ try { tb += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }   // feature buttons (core/hooks)
-  tb += B('info', 'ⓘ', 'Details and signature', `aria-pressed="${inspInfo}"`);
-  if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? '↺' : '🗑', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Revoke (Delete)', 'class="danger"');
+  tb += B('info', 'info', 'Details and signature', `aria-pressed="${inspInfo}"`);
+  if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? 'undo' : 'trash', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Revoke (Delete)', 'class="danger"');
   let html = `<div class="tb" role="toolbar" aria-label="Selection actions">${tb}</div>`;
   if (inspInfo) html += `<div class="info">${inspDetails()}</div>`;
   void anyLocked;
@@ -92,7 +92,7 @@ function paintInspector(){
   // sit above the selection (clear of a node's top “+” handle); drop below if there's no room
   const top = toScreen(sb.x + sb.w / 2, sb.y), bot = toScreen(sb.x, sb.y + sb.h), lift = soleNode() ? 34 : 12;
   let y = top.y - el.offsetHeight - lift;
-  if (y < 56) y = Math.min(bot.y + (soleNode() ? 40 : 14), innerHeight - el.offsetHeight - 8 - barH());
+  if (y < 64) y = Math.min(bot.y + (soleNode() ? 40 : 14), innerHeight - el.offsetHeight - 8 - barH());
   y = Math.min(y, innerHeight - barH() - el.offsetHeight - 8);
   const x = Math.min(Math.max(8, top.x - el.offsetWidth / 2), innerWidth - el.offsetWidth - 8);
   el.style.left = x + 'px'; el.style.top = Math.max(8, y) + 'px';
