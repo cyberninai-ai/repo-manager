@@ -1,0 +1,33 @@
+/* @module css/overlays — Canvas overlays: text editor, selection toolbar, zoom + overview, buttons */
+/* text entry */
+#ta{position:fixed;display:none;z-index:4;border:none;outline:1px dashed var(--cyan);outline-offset:4px;background:transparent;
+  resize:none;overflow:hidden;padding:0;margin:0;white-space:pre;line-height:1.25;min-width:2ch}
+
+/* inspector */
+#insp{position:fixed;z-index:4;display:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);
+  padding:4px;font-size:11px;max-width:calc(100vw - 16px);pointer-events:auto}
+#insp .tb{display:flex;gap:2px;align-items:center;flex-wrap:wrap}
+#insp .tb button{min-width:28px;height:28px;border:1px solid transparent;border-radius:7px;background:transparent;cursor:pointer;font-size:13px;color:var(--ink);padding:0 6px}
+#insp .tb button:hover{border-color:var(--line);background:color-mix(in srgb,var(--cyan) 8%,transparent)}
+#insp .tb button[aria-pressed="true"]{border-color:var(--cyan)}
+#insp .tb button.danger:hover{border-color:var(--red);color:var(--red)}
+#insp .tb .vs{width:1px;height:18px;background:var(--line);margin:0 3px}
+#insp .info{padding:6px 6px 4px;border-top:1px solid var(--line);margin-top:4px;max-width:340px}
+#zoomui{position:fixed;right:12px;bottom:calc(var(--barH, 0px) + max(12px,env(safe-area-inset-bottom)));z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#zoomui .row{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:3px}
+#zoomui button{min-width:28px;height:26px;border:0;background:transparent;border-radius:6px;cursor:pointer;color:var(--ink);font-size:13px;padding:0 6px}
+#zoomui button:hover{background:color-mix(in srgb,var(--cyan) 10%,transparent)}
+#zoomui button[aria-pressed="true"]{color:var(--cyan)}
+#mini{width:200px;height:130px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);cursor:pointer;touch-action:none}
+@media (max-width:820px){ #mini{display:none} }
+#authors button.live{box-shadow:0 0 0 2px var(--green)}
+#askTa{width:100%;min-height:160px;font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);resize:vertical}
+#insp .who{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+#insp .dot,.ledger .dot{width:9px;height:9px;border-radius:50%;flex:none}
+#insp .meta{color:var(--muted)}
+#insp .acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:transparent;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:11px}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.ok{color:var(--green)} .bad{color:var(--red)}
+

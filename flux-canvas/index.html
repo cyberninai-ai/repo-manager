@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Flux Canvas</title>
+<!-- Flux Canvas · modular source. tools/build.mjs inlines these files into ../flux-canvas.html -->
+<link rel="stylesheet" href="css/00-tokens.css">
+<link rel="stylesheet" href="css/01-base.css">
+<link rel="stylesheet" href="css/02-toolbar.css">
+<link rel="stylesheet" href="css/03-bottom-bar.css">
+<link rel="stylesheet" href="css/04-overlays.css">
+<link rel="stylesheet" href="css/05-palette.css">
+<link rel="stylesheet" href="css/06-panels.css">
+<link rel="stylesheet" href="css/07-help-toast.css">
+<link rel="stylesheet" href="css/08-a11y-dialogs.css">
+<link rel="stylesheet" href="css/09-comments.css">
+<link rel="stylesheet" href="css/10-responsive.css">
+</head>
+<body>
+<main>
+<h1 class="sr">Flux Canvas</h1>
+<canvas id="c" tabindex="0" role="application" aria-roledescription="drawing canvas" aria-describedby="summary"
+  aria-label="Flux Canvas. Draw with a pointer. Keyboard: Tab steps through elements, arrow keys move the selection, Delete revokes it, R rectangle, O circle, T text, I image, C connects two selected elements, V select mode, question mark lists every shortcut."></canvas>
+<p id="summary" class="sr">Empty canvas.</p>
+<div id="sr" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<div id="corner" role="toolbar" aria-label="Canvas tools">
+  <button class="pill" id="mode" aria-pressed="false" title="Pen mode · V for select"><span aria-hidden="true">✎</span><span class="lbl">pen</span></button>
+  <button class="pill" id="addImg" title="Insert image (I)" aria-label="Insert image"><span aria-hidden="true">＋</span><span class="lbl">image</span></button>
+  <button class="pill" id="textBtn" title="Text tool (T): click where it goes" aria-pressed="false"><span aria-hidden="true">T</span><span class="lbl">text</span><span class="sr"> tool</span></button>
+  <button class="pill" id="nodeBtn" title="Diagram tool (N): click to place a card, topic or shape" aria-pressed="false"><span aria-hidden="true">◇</span><span class="lbl">diagram</span><span class="sr"> tool</span></button>
+  <button class="pill" id="eraseBtn" title="Eraser (E): wipe across your own elements" aria-pressed="false"><span aria-hidden="true">⌫</span><span class="lbl">erase</span><span class="sr"> tool</span></button>
+  <button class="pill" id="cmtBtn" title="Comment (M): click an element or a spot" aria-label="Comment tool" aria-pressed="false"><span aria-hidden="true">💬</span><span class="lbl">comment</span></button>
+  <button class="pill" id="cmtList" title="Comments panel" aria-expanded="false"><span class="lbl">comments</span> <span class="n" id="cmtN">0</span><span class="sr"> open</span></button>
+  <button class="pill" id="cmdBtn" title="Commands (⌘K or /)" aria-label="⌘K commands"><span aria-hidden="true">⌘K</span></button>
+  <div id="authors" role="group" aria-label="Authors, filter by author"></div>
+  <button id="auth" title="Auth Kit signing status · opens the ledger"><i aria-hidden="true"></i><span id="authTxt">locked</span></button>
+</div>
+<div id="bar" role="toolbar" aria-label="Drawing options">
+  <div class="grp" role="radiogroup" aria-label="Colour" id="barColors"></div>
+  <span class="sep" aria-hidden="true"></span>
+  <div class="grp" role="radiogroup" aria-label="Diagram shape" id="barKinds"></div>
+  <span class="sep" aria-hidden="true"></span>
+  <div class="grp">
+    <label class="lbl2" for="brush">Brush</label>
+    <input type="range" id="brush" min="1" max="80" step="1" aria-describedby="brushHint">
+    <span class="pre" aria-hidden="true" id="brushPre"><i></i></span>
+    <span class="val" id="brushVal" aria-hidden="true"></span>
+    <span class="tgt" id="brushTgt"></span>
+    <span class="sr" id="brushHint">Shortcut: open and close square brackets. Also restyles the selected lines you drew</span>
+  </div>
+  <span class="sep" aria-hidden="true"></span>
+  <div class="grp">
+    <label class="lbl2" for="tsize">Text</label>
+    <input type="range" id="tsize" min="10" max="400" step="2" aria-describedby="tsizeHint">
+    <span class="pre" aria-hidden="true" id="tsizePre"><b>Aa</b></span>
+    <span class="val" id="tsizeVal" aria-hidden="true"></span>
+    <span class="tgt" id="tsizeTgt"></span>
+    <span class="sr" id="tsizeHint">Shortcut: open and close curly braces. Resizes the selected text if it is yours, otherwise sets the size for new text</span>
+  </div>
+  <button class="fold" id="barFold" aria-expanded="true" aria-label="Hide drawing options" title="Hide / show this bar">▾</button>
+</div>
+<div id="zoomui" role="group" aria-label="Zoom and overview">
+  <canvas id="mini" width="200" height="130" aria-hidden="true" title="Overview: click or drag to move the view"></canvas>
+  <div class="row">
+    <button id="zOut" aria-label="Zoom out" title="Zoom out (−)">−</button>
+    <button id="zPct" aria-label="100% zoom, reset to 100%" title="Reset to 100%">100%</button>
+    <button id="zIn" aria-label="Zoom in" title="Zoom in (+)">+</button>
+    <button id="zFit" aria-label="Zoom to fit" title="Fit everything (0)">⤢</button>
+    <button id="zMini" aria-label="Overview map" aria-pressed="true" title="Show or hide the overview map">▣</button>
+  </div>
+</div>
+</main>
+
+<div id="hint" aria-hidden="true">
+  draw freely · <kbd>shift</kbd> rect · <kbd>alt</kbd> circle · drag from an edge to connect · double-tap for text
+  <span class="wide">· <kbd>ctrl</kbd>-drag lasso · drop or paste an image</span> · <kbd>⌘K</kbd> commands
+</div>
+
+<textarea id="ta" spellcheck="false" aria-label="Text to place on the canvas. Enter to sign, Shift+Enter for a new line, Escape to cancel"></textarea>
+<div id="insp" role="region" aria-label="Selection"></div>
+<div id="previews" aria-hidden="true"></div>
+
+<div id="pal"><div class="box" role="dialog" aria-modal="true" aria-label="Command palette">
+  <input id="palIn" placeholder="Type a command…" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" aria-label="Command">
+  <ul id="palList" role="listbox" aria-label="Commands"></ul></div></div>
+<div id="ask"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="askT">
+  <canvas id="askImg" aria-hidden="true" hidden></canvas>
+  <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off"><textarea id="askTa" hidden aria-labelledby="askT"></textarea>
+  <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="button" class="btn" id="askOk">OK</button></div></div></div>
+
+<aside class="ledger cm" id="comments" aria-label="Comments">
+  <header>
+    <h2><span>Comments</span><button class="btn" id="cmClose">close</button></h2>
+    <div class="stats"><label><input type="checkbox" id="cmShowDone"> show resolved</label> · <label><input type="checkbox" id="cmPrev" checked> previews on canvas</label> · every comment and reply is a signed record</div>
+  </header>
+  <div class="list" id="cmList"></div>
+</aside>
+<aside class="ledger" id="ledger" aria-label="Ledger of signed records">
+  <header>
+    <h2><span>Ledger</span><button class="btn" id="ledgerClose">close</button></h2>
+    <div class="stats" id="ledgerStats"></div>
+  </header>
+  <div class="list" id="ledgerList"></div>
+</aside>
+
+<div id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" tabindex="-1">
+  <button class="btn close" id="helpClose">close</button>
+  <h1 id="helpT">Flux Canvas</h1>
+  <p>Every stroke is a signed pattern. The canvas is the union of its records. Nothing here is a file until you export it.</p>
+  <table>
+    <tr><td>Pen down + move</td><td>Freehand stroke</td></tr>
+    <tr><td>Shift + drag</td><td>Rectangle</td></tr>
+    <tr><td>Alt + drag</td><td>Circle</td></tr>
+    <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
+    <tr><td>Double-tap · T · the T button</td><td>Text. Double-tap your own text (or Enter on it) to edit it</td></tr>
+    <tr><td>N · ◇ diagram · a shape in the bottom bar</td><td>Place a card, mind-map topic, flowchart shape, sticky or wireframe piece. It sizes itself to its label</td></tr>
+    <tr><td>“+” handles on a selected node</td><td>Click: new connected node in that direction. Drag: to another element to connect it, or to empty space for a new node there</td></tr>
+    <tr><td>While typing a node label</td><td>Enter saves · Tab saves and adds a child · ⌘/Ctrl+Enter saves and adds a sibling</td></tr>
+    <tr><td>M · the 💬 button</td><td>Comment: click an element to pin it there (it follows the element) or empty space. Threads, replies and resolve live in the comments panel</td></tr>
+    <tr><td>Drop / paste an image (or ⌘K → Insert image)</td><td>Image. Draw on it right away with the pen. To move or resize it, switch to select mode (V), drag it, or pull the corner handle</td></tr>
+    <tr><td>V · select mode (or the pen/select button)</td><td>Tap any element to select it, shift-tap to add, drag it to move, drag on empty paper to lasso. P returns to the pen</td></tr>
+    <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode; Ctrl/⌘-drag inside the selection moves it</td></tr>
+    <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
+    <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
+    <tr><td>Delete</td><td>Revoke selection (<span class="kbd">-N-1</span>, only your own)</td></tr>
+    <tr><td>⌘G / ⇧⌘G</td><td>Group / ungroup</td></tr>
+    <tr><td>⌘V a pattern</td><td>Import signed records from the clipboard</td></tr>
+    <tr><td>` (backtick)</td><td>Ledger</td></tr>
+    <tr><td>⌘K or /</td><td>Command palette</td></tr>
+  </table>
+  <h2>Keyboard only</h2>
+  <table>
+    <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
+    <tr><td>Arrow keys (Shift = ×10)</td><td>Move the selection, or pan when nothing is selected</td></tr>
+    <tr><td>Delete / Backspace</td><td>Revoke the selection</td></tr>
+    <tr><td>+ / −</td><td>Resize a selected image, otherwise zoom</td></tr>
+    <tr><td>R · O · T · I</td><td>Insert rectangle · circle · text · image at the centre</td></tr>
+    <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
+    <tr><td>Alt + arrow · ⌘/Ctrl + Enter · Enter</td><td>On a selected node: new connected child in that direction · new sibling · edit its label</td></tr>
+    <tr><td>N · L</td><td>Diagram tool · tidy the selected node's diagram</td></tr>
+    <tr><td>Drag a comment pin · “move pin” in its thread</td><td>Move the pin (arrow keys after “move pin”, Enter when done). A pin on an element keeps following it</td></tr>
+    <tr><td>M · Enter</td><td>Comment on the selection (or the centre) · edit the selected text if it's yours</td></tr>
+    <tr><td>[ · ]</td><td>Brush thinner · thicker (bottom bar slider, 1–80). With your lines selected, restyles them too</td></tr>
+    <tr><td>{ · }</td><td>Text smaller · bigger (10–400): resizes your selected text, otherwise new text</td></tr>
+    <tr><td>Colour swatch</td><td>Colour for new work; also recolours your selected strokes, shapes, arrows and text</td></tr>
+    <tr><td>⌘C · ⌘X · ⌘V · ⌘D</td><td>Copy · cut · paste (at the pointer) · duplicate. Alt-drag a selection to duplicate it</td></tr>
+    <tr><td>E</td><td>Eraser: wipe across your own elements (each is revoked, undo brings it back)</td></tr>
+    <tr><td>⌘⇧↑ · ⌘⇧↓ · ⌘⇧L</td><td>Bring to front · send to back · lock or unlock (locked elements can be drawn over but not moved)</td></tr>
+    <tr><td>Dragging</td><td>Snaps to the edges and centres of nearby elements; press ⌘/Ctrl during the drag to place freely</td></tr>
+    <tr><td>Paste an indented list</td><td>Becomes a connected mind map (also ⌘K → Mind map from outline)</td></tr>
+    <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
+  </table>
+  <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
+</div>
+
+<div id="toast" aria-hidden="true"></div>
+<input type="file" id="file" accept=".flux,.txt,text/plain">
+<input type="file" id="imgFile" accept="image/*" style="display:none">
+
+<!-- load order matters: classic scripts share one global scope (works from file:// too) -->
+<script src="js/core/encoding.js"></script>
+<script src="js/core/grammar.js"></script>
+<script src="js/core/identity.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/core/blobs.js"></script>
+<script src="js/core/records.js"></script>
+<script src="js/core/persistence.js"></script>
+<script src="js/core/derive.js"></script>
+<script src="js/render/geometry.js"></script>
+<script src="js/render/renderer.js"></script>
+<script src="js/model/commands.js"></script>
+<script src="js/interaction/selection.js"></script>
+<script src="js/ui/ask-dialog.js"></script>
+<script src="js/interaction/tools.js"></script>
+<script src="js/features/comment-pins.js"></script>
+<script src="js/interaction/pointer.js"></script>
+<script src="js/interaction/text-editor.js"></script>
+<script src="js/ui/chrome.js"></script>
+<script src="js/features/clipboard.js"></script>
+<script src="js/features/arrange.js"></script>
+<script src="js/features/eraser.js"></script>
+<script src="js/ui/zoom-minimap.js"></script>
+<script src="js/features/outline.js"></script>
+<script src="js/features/presence.js"></script>
+<script src="js/features/diagrams.js"></script>
+<script src="js/features/export-svg.js"></script>
+<script src="js/ui/bottom-bar.js"></script>
+<script src="js/features/comments.js"></script>
+<script src="js/ui/ledger.js"></script>
+<script src="js/ui/palette.js"></script>
+<script src="js/ui/actions.js"></script>
+<script src="js/interaction/keyboard.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>

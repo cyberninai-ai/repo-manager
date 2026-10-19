@@ -1,0 +1,13 @@
+/* @module css/help-toast — Help dialog and toast */
+/* help */
+#help{position:fixed;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:18px 20px;display:none}
+#help h1{font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px}
+#help p{color:var(--muted);margin:0 0 12px}
+#help table{width:100%;border-collapse:collapse;font-size:12px}
+#help td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+#help td:first-child{width:46%;color:var(--muted)}
+
+#toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translate(-50%,-8px);background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:7px 12px;font-size:12px;box-shadow:var(--shadow);opacity:0;transition:.2s;pointer-events:none;z-index:20;max-width:calc(100% - 32px)}
+#toast.on{opacity:1;transform:translate(-50%,0)}

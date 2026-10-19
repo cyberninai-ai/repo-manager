@@ -1,0 +1,16 @@
+/* @module css/toolbar — Top toolbar: tool pills, author badges, signing pill */
+/* corner cluster: the only standing chrome */
+#corner{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;align-items:center;z-index:5}
+#authors{display:flex;gap:4px}
+@media (min-width:820px){ body.drawer #corner{right:412px} }
+#authors button{width:22px;height:22px;border-radius:50%;border:2px solid var(--paper);padding:0;cursor:pointer;
+  font-size:9px;font-weight:700;color:#fff;box-shadow:0 0 0 1px var(--line);opacity:.95}
+#authors button.off{opacity:.25}
+#authors button.solo{box-shadow:0 0 0 2px var(--cyan)}
+#auth{white-space:nowrap;display:flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--line);
+  background:var(--panel);cursor:pointer;font-size:11px;color:var(--muted);box-shadow:var(--shadow)}
+#auth i{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+#auth.open i{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 25%,transparent)}
+#auth.open{color:var(--ink)}
+#auth b{font-weight:600;color:var(--ink)}
+

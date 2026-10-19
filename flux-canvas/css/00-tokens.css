@@ -1,0 +1,18 @@
+/* @module css/tokens — Design tokens: colour, shadow, light/dark themes */
+:root{
+  --paper:#f7f6f2; --ink:#14181f; --muted:#5b6775; --line:#d9dee5; --panel:#ffffff;
+  --cyan:#007c8c; --green:#08703a; --amber:#9a6200; --red:#c4183a; --magenta:#b00f95;
+  --shadow:0 8px 30px -10px rgba(0,0,0,.25); color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0b0e13; --ink:#e3e9f0; --muted:#7b8a9c; --line:#1f2834; --panel:#10151c;
+    --cyan:#00e5ff; --green:#39ff88; --amber:#ffb020; --red:#ff3b5c; --magenta:#ff2bd6;
+    --shadow:0 10px 40px -10px rgba(0,0,0,.8); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0b0e13; --ink:#e3e9f0; --muted:#7b8a9c; --line:#1f2834; --panel:#10151c;
+  --cyan:#00e5ff; --green:#39ff88; --amber:#ffb020; --red:#ff3b5c; --magenta:#ff2bd6;
+  --shadow:0 10px 40px -10px rgba(0,0,0,.8); color-scheme:dark;
+}

@@ -1,0 +1,7 @@
+/* @module css/base — Reset, page and canvas element */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+  font:13px/1.45 ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+

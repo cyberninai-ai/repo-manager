@@ -1,0 +1,4 @@
+/* @module css/responsive — Reduced motion and small screens */
+#help h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 4px}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+@media (max-width:600px){ #hint .wide{display:none} .pill .lbl{display:none} }
