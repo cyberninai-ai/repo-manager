@@ -8,16 +8,18 @@
 const ymd = s => /^\d{8}$/.test(s || '') ? s : null;
 const today = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
 const ymdText = d => d ? new Date(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6)).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-registerRecord('DECISION', { parse(r, f){ if (!f.R || !f.M) throw Error('decision'); r.text = decTxt(f.M); r.on = f.ON && f.ON !== '0' ? f.ON : null;
+registerRecord('DECISION', { parse(r, f){ must(f.R && f.M && (!f.ON || f.ON === '0' || isCid(f.ON)) && (!f.P || f.P === '0' || isCid(f.P)) && (!f.E || f.E === '0' || cidList(f.E)), 'decision'); r.text = decTxt(f.M); r.on = f.ON && f.ON !== '0' ? f.ON : null;
   r.evidence = f.E && f.E !== '0' ? f.E.split('_').filter(Boolean) : []; r.reversible = f.V !== '0'; r.review = ymd(f.W); r.supersedes = f.P && f.P !== '0' ? f.P : null; } });
-registerRecord('REVIEW', { parse(r, f){ if (!f.R || !['keep', 'reverse'].includes(f.S)) throw Error('review'); r.keep = f.S === 'keep'; r.note = decTxt(f.M || ''); r.review = ymd(f.W); } });
+registerRecord('REVIEW', { parse(r, f){ must(isCid(f.R) && ['keep', 'reverse'].includes(f.S), 'review'); r.keep = f.S === 'keep'; r.note = decTxt(f.M || ''); r.review = ymd(f.W); } });
 Object.assign(PERM_OF, { DECISION: 'comment', REVIEW: 'comment' });
 
 DERIVE_HOOKS.push((D, by) => {
   const list = [], byCid = new Map();
   for (const d of by.DECISION || []){ if (D.hidden.has(d.cid)) continue; const x = { d, status: 'active', reviews: [], review: d.review, by: null }; list.push(x); byCid.set(d.cid, x); }
-  for (const x of list) if (x.d.supersedes && byCid.has(x.d.supersedes)){ const o = byCid.get(x.d.supersedes); o.status = 'superseded'; o.by = x.d.cid; }
-  for (const r of by.REVIEW || []){ const x = byCid.get(r.f.R); if (!x || D.hidden.has(r.cid)) continue; x.reviews.push(r); if (r.keep) x.review = r.review; else if (x.status === 'active') x.status = 'reversed'; }
+  // only a decision's author or the canvas owner can replace it, keep it or reverse it; a one-way door can't be reversed
+  const may = (r, d) => samePerson(r.author, d.author) || S.P?.owner && samePerson(r.author, S.P.owner);
+  for (const x of list) if (x.d.supersedes && byCid.has(x.d.supersedes)){ const o = byCid.get(x.d.supersedes); if (!may(x.d, o.d)) continue; o.status = 'superseded'; o.by = x.d.cid; }
+  for (const r of by.REVIEW || []){ const x = byCid.get(r.f.R); if (!x || r.neg !== null || D.hidden.has(r.cid) || !may(r, x.d)) continue; if (!r.keep && !x.d.reversible) continue; x.reviews.push(r); if (r.keep) x.review = r.review; else if (x.status === 'active') x.status = 'reversed'; }
   D.decisions = list; D.decisionOf = new Map(list.filter(x => x.d.on && x.status === 'active').map(x => [x.d.on, x]));
 });
 const reviewDue = x => x.status === 'active' && x.review && x.review <= today();

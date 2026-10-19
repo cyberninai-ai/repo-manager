@@ -88,9 +88,9 @@ On an owned canvas, "anyone" in the table above means "anyone the owner allows".
 
 | Action | Fields | Effect |
 |---|---|---|
-| `TASK` | `I R S A D Z T` | `R` = element; `S` `todo`, `doing`, `done`, or `x` (no longer a task); `A` owner key or `0`; `D` due date `yyyymmdd` or `0`; latest per element wins; needs `comment` |
-| `DELIVER` | `I R M A Q H X Z T` | `R` = nonce; `M` title; `A` = approver keys joined by `_`; `Q` quorum; `H` = the state root being delivered; `X` = a frame it covers or `0`; needs `draw` |
-| `APPROVE` | `I R H S M Z T` | `R` = the delivery; `H` = the root as the approver computed it; `S` 1 approve / 0 request changes; `M` note; counts only from named approvers, latest per approver wins; needs no grant |
+| `TASK` | `I R S A D Z T` | `R` = element; `S` `todo`, `doing`, `done`, or `x` (no longer a task); `A` owner key or `0`; `D` due date `yyyymmdd` or `0`; latest per element wins; once it exists, only its creator, owner, the element's author or the canvas owner change it; needs `comment` |
+| `DELIVER` | `I R M A Q H X [F] [V] Z T` | `R` = nonce; `M` title; `A` = approver keys joined by `_`; `Q` quorum; `H` = the root of the version; `X` = a frame it covers or `0`; `F` an approval flow; `V` = a blob listing the version's CIDs (sorted, one per line; `H` is its SHA-256), so records signed later can't join it; needs `draw` |
+| `APPROVE` | `I R H S M [P] [G] Z T` | `R` = the delivery; `H` = the root as the approver computed it; `S` 1 approve / 0 request changes; `M` note; `P` the payment terms it covers; `G` the approvals it came after; counts only from named approvers, latest per approver wins; needs no grant |
 
 A delivery is **approved** when `Q` approvers sign `S-1` with an `H` equal to the delivery's root. It is **changed** when records signed after it alter what it covers; approvals then no longer match the canvas people see.
 
@@ -103,17 +103,17 @@ Twenty-one features add their own records; each is specified in its module heade
 | `STANCE` | `I R S M` | `S` agree, disagree, unsure, alt, abstain; per person and target the latest wins · comment |
 | `DECISION` / `REVIEW` | `I R M ON E V W P` / `I R S M W` | evidence `E`, reversible `V`, review date `W`, supersedes `P`; reviews keep or reverse · comment |
 | `CLAIM` / `EVIDENCE` / `CHECK` | `I R S` / `I R E U S M` / `I R S M` | evidence is an element `E` or a source `U`, supports or refutes; checks by others than the claim's author ground it · comment |
-| `SEAL` / `REVEAL` | `I R K C B V W O X Y` / `I R K` | `C` = CID of the sealed record, `B` ciphertext, `V` iv, `W` reveal time, `O` round; only the sealer's reveal counts, opened from `W` on |
-| `ROUND` | `I R M E A K ON` | prompt, end, participants, ideas or stances; the starter may end it early · draw |
-| `FACIL` `AGENDA` `NEXT` `HAND` `FLOOR` `SCRIBE` | | facilitator by the owner or by handover; agenda, next item `J`, floor, note-taker `J` by the facilitator; hands by anyone |
-| `RITUAL` / `CLOSE` | `I R M U Q E` / `I R O K M` | required outputs `U`, people `Q`, time box `E`; a success close counts only if the outputs existed |
-| `FLOW` | `I R M G Q C E D` | groups `name~need~key+key`, in order `Q`, conditions `C`, escalation `E` after `D` hours · draw |
-| `METHOD` / `CREDIT` | `I R M W` / `I R H L K` | weights per kind of work; credit shares (basis points) signed by the delivery's author, must recompute |
-| `FUND` / `PAY` / `SETTLE` | `I R A U M` / `I R A U S P` / `I R H L U` | amounts in cents; terms by the delivery's author; a settlement counts only if its lines recompute |
-| `WITNESS` | `I R H C M` | the root of the version as of its own place in the order; each peer checks it |
-| `INHERIT` / `LINEAGE` / `FORKED` | `I R S Y` / `I R P H C K` / `I R H M` | fork terms by the owner (royalty `Y` in basis points); lineage in the fork; descendants in the parent |
-| `LINK` / `GUARD` / `RECOVER` | `I R S` / `I R S Q` / `I R K` | mutual links join keys into a person; guardians and threshold; enough guardians confirm a new key |
-| `ZONE` / `ACCEPT` | `I R S X Y W H` / `I R S` | open, suggest or locked area of a frame, by its owner; the zone owner accepts or declines suggestions |
+| `SEAL` / `REVEAL` | `I R K C B V W O X Y` / `I R K` | `C` = CID of the sealed record, `B` ciphertext (padded to 512-byte steps), `V` iv, `W` reveal time, `O` the round's CID; only the sealer's reveal counts, opened from `W` on |
+| `ROUND` | `I R M E A K ON [P]` | prompt, end, participants, ideas or stances; a round is its first record; only its starter changes its end, with `P` naming it · draw |
+| `FACIL` `AGENDA` `NEXT` `HAND` `FLOOR` `SCRIBE` | `P` = role | the role is a chain: the owner's appointment, then handovers each naming the record they continue (`P`); agenda, next item `J`, floor and note-taker `J` name the role they act under; hands by anyone |
+| `RITUAL` / `CLOSE` | `I R M U Q E` / `I R O K M` | required outputs `U` (at least one), people `Q`, time box `E`; the starter closes, or a participant after the time box; a success counts only on the outputs `K` names |
+| `FLOW` | `I R M G Q C E D` | groups `name~need~key+key`, in order `Q` (a later group's approval must name earlier ones in `G`), conditions `C`, escalation `E` after `D` hours from the first approval · draw |
+| `METHOD` / `CREDIT` | `I R M W` / `I R H L K G` | weights per kind of work; credit shares (basis points) over the delivered version, signed by the delivery's author with the approvals `G` it counted; must recompute |
+| `FUND` / `PAY` / `SETTLE` | `I R A U M` / `I R A U S P` / `I R H L K U` | amounts in cents; terms by the delivery's author; a settlement names its terms `K`, needs an approved delivery whose approvals name those terms, and lines that recompute |
+| `WITNESS` | `I R H C M [D]` | the root of a delivery's version (`D`) or of every record before it; each peer checks it against its own records |
+| `INHERIT` / `LINEAGE` / `FORKED` | `I R S Y` / `I R P H C K` / `I R H M` | fork terms by the owner (royalty `Y` in basis points); lineage only from the fork's owner, the first fixes the parent; royalty only if signed by the parent's proven owner |
+| `LINK` / `GUARD` / `RECOVER` | `I R S C` / `I R S Q C` / `I R K C` | `C` = the canvas they apply to; mutual links join keys into a person; guardians and threshold; enough guardians (matched by device links only) confirm a new key |
+| `ZONE` / `ACCEPT` | `I R S` / `I R S` | open, suggest or locked; the area is the frame's own; by the frame's author or the canvas owner, who is never gated; every overlapping zone's owner must accept |
 | `RESULT` | `I Q H C K` | a signed canvas-graph result; never stored on a canvas |
 
 `N` is reserved on every record (revoke or restore). Records marked `inherit: false` (ownership, grants, titles, deliveries, approvals, payments, meetings, identity) stay out of forks.

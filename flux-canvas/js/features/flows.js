@@ -5,37 +5,45 @@
 // an escalation flow that applies when a group stalls. A delivery names its flow; every peer evaluates it the same way.
 // @uses features/work (DELIVERY_HOOKS), FLOW_CONDITIONS from other features, ui/panels, ui/form
 // FLOW-I-R-{nonce}-M-{name}-G-{group~need~key+key… _ …}-Q-{1 in order|0}-C-{condition _ …|0}-E-{escalation flow|0}-D-{after hours|0}-Z-T-SIG
-registerRecord('FLOW', { parse(r, f){ if (!f.R || !f.G) throw Error('flow'); r.name = decTxt(f.M || 'Approval flow');
-  r.groups = f.G.split('_').filter(Boolean).map(g => { const [n, need, ks] = g.split('~'); const members = (ks || '').split('+').filter(Boolean); return { name: decTxt(n || ''), need: Math.max(1, Math.min(members.length || 1, +need || 1)), members }; }).filter(g => g.members.length);
-  if (!r.groups.length) throw Error('flow'); r.ordered = f.Q === '1'; r.conds = f.C && f.C !== '0' ? f.C.split('_').filter(Boolean) : []; r.esc = f.E && f.E !== '0' ? f.E : null; r.after = Math.max(0, +f.D || 0); }, inherit: true });
+registerRecord('FLOW', { parse(r, f){ must(f.R && f.G, 'flow'); r.name = decTxt(f.M || 'Approval flow');
+  r.groups = f.G.split('_').filter(Boolean).map(g => { const [n, need, ks] = g.split('~'); const members = keyList(ks, '+'); return { name: decTxt(n || ''), need: Math.max(1, Math.min(members.length || 1, +need || 1)), members }; }).filter(g => g.members.length);
+  must(r.groups.length, 'flow'); r.ordered = f.Q === '1'; r.conds = f.C && f.C !== '0' ? f.C.split('_').filter(Boolean) : []; must(r.conds.every(c => /^[a-z]{1,24}$/.test(c)), 'conditions');
+  r.esc = f.E && f.E !== '0' ? f.E : null; must(!r.esc || isCid(r.esc), 'escalation'); r.after = Math.max(0, +f.D || 0); }, inherit: true });
 PERM_OF.FLOW = 'draw';
 FLOW_CONDITIONS.tasks = { label: 'Every task is done', test: () => { const n = [...(S.D.tasks?.values() || [])].filter(t => t.status !== 'done').length; return n ? `${plural(n, 'task')} not done` : true; } };
-FLOW_CONDITIONS.signoff = { label: 'An audit was signed off', test: () => [...S.records.values()].some(r => r.type === 'SIGNOFF' && !S.D.hidden.has(r.cid)) || 'no audit sign-off yet' };
+FLOW_CONDITIONS.signoff = { label: 'An audit was signed off', test: () => [...S.records.values()].some(r => r.type === 'SIGNOFF' && r.neg === null && inView(r)) || 'no audit sign-off yet' };
 
-// a flow against a delivery's approvals: each group's valid signatures, in order when the flow says so
+// a flow against a delivery's approvals. One person counts once per group, whichever of their devices signed.
+// In an ordered flow a signature counts for a later group only if it names (G) enough signatures of every earlier group:
+// a CID can only be named after it exists, so the order is proven, not claimed through Z
 function evalFlow(flow, x){
-  const votes = [...x.votes.values()].filter(a => a.ok && a.root === x.d.root).sort(byZ);
-  let gate = -Infinity; const groups = [];
-  for (const g of flow.groups){
-    const valid = votes.filter(a => g.members.some(m => samePerson(m, a.author)) && (!flow.ordered || a.z > gate));
-    const done = valid.length >= g.need;
-    groups.push({ g, valid, done, waiting: flow.ordered && gate === Infinity });
-    gate = !flow.ordered ? gate : done ? valid[g.need - 1].z : Infinity;
+  const votes = [...x.votes.values()].filter(a => a.ok && a.root === x.d.root).sort(byZ), groups = [];
+  for (const [i, g] of flow.groups.entries()){
+    const seen = new Set(), valid = [];
+    for (const a of votes){
+      if (!g.members.some(m => samePerson(m, a.author)) || seen.has(personOf(a.author))) continue;
+      if (flow.ordered && groups.some(p => p.valid.filter(v => a.after.includes(v.cid)).length < p.g.need)) continue;
+      seen.add(personOf(a.author)); valid.push(a);
+    }
+    groups.push({ g, valid, done: valid.length >= g.need, waiting: flow.ordered && i > 0 && !groups.every(p => p.done) });
   }
-  const conds = flow.conds.map(id => ({ id, c: FLOW_CONDITIONS[id], r: FLOW_CONDITIONS[id] ? FLOW_CONDITIONS[id].test(S.D) : `unknown condition ${id}` }));
+  const conds = flow.conds.map(id => { const c = own(FLOW_CONDITIONS, id) ? FLOW_CONDITIONS[id] : null; return { id, c, r: c ? c.test(S.D) : `unknown condition “${id}”` }; });
   return { groups, conds, done: groups.every(g => g.done) && conds.every(c => c.r === true) };
 }
+const liveFlow = cid => { const f = cid && S.records.get(cid); return f && f.type === 'FLOW' && inView(f) ? f : null; };
 DELIVERY_HOOKS.evaluate.push(x => {
   if (!x.d.flow) return;
-  const flow = S.records.get(x.d.flow);
-  if (!flow || flow.type !== 'FLOW' || S.D.hidden.has(flow.cid)){ x.done = false; x.blockers.push('Its approval flow isn’t on this canvas'); return; }
+  x.done = false;   // a delivery that names a flow is done only when the flow says so
+  const flow = liveFlow(x.d.flow);
+  if (!flow){ x.blockers.push('Its approval flow isn’t on this canvas'); return; }
   let ev = evalFlow(flow, x), via = flow;
-  const up = flow.esc && S.records.get(flow.esc);
-  if (!ev.done && up?.type === 'FLOW' && Date.now() > x.d.t + flow.after * 36e5){ const e2 = evalFlow(up, x); if (e2.done){ ev = e2; via = up; } else x.blockers.push(`Escalated to “${up.name}”`); }
+  // escalation: counted from the first approval (approvers' clocks), not from the delivery's own claimed time
+  const up = flow.esc && liveFlow(flow.esc), first = Math.min(...[...x.votes.values()].map(a => a.t));
+  if (!ev.done && up && Number.isFinite(first) && Date.now() > first + flow.after * 36e5){ const e2 = evalFlow(up, x); if (e2.done){ ev = e2; via = up; } else x.blockers.push(`Escalated to “${up.name}”`); }
   x.flow = { flow: via, ...ev };
   x.done = ev.done;
   x.label = ev.groups.map(g => `${g.g.name} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}`).join(' · ');
-  for (const g of ev.groups) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[ev.groups.indexOf(g) - 1].g.name}`);
+  for (const [i, g] of ev.groups.entries()) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[i - 1].g.name}`);
   for (const c of ev.conds) if (c.r !== true) x.blockers.push(`${c.c?.label || c.id}: ${c.r}`);
 });
 DELIVERY_HOOKS.row.push(x => x.flow ? `<div class="wk-ap">${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}</div><small class="wk-note">Flow: ${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>` : '');
@@ -46,7 +54,7 @@ DELIVERY_HOOKS.proof.push((x, out) => {
     ...x.flow.conds.map(c => `- **Condition:** ${c.c?.label || c.id} — ${c.r === true ? 'met' : c.r}`));
 });
 DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
-const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && !S.D.hidden.has(r.cid)).sort(byZ);
+const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && r.neg === null && inView(r)).sort(byZ);
 
 async function flowForm(){
   const ppl = people(), conds = Object.entries(FLOW_CONDITIONS);

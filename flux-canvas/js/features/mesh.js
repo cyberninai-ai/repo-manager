@@ -12,18 +12,22 @@ WIRE_INGEST_HOOKS.push((msg, from, chan) => {
   if (msg.records){ post({ records: msg.records }, { from, chan }); MESH.records += msg.records.length; }
   else { post({ raw: msg.raw, blobs: msg.blobs || {} }, { from, chan }); MESH.records++; }
 });
-// ephemeral signals: forwarded once each, at most three hops
+// ephemeral signals: forwarded once each, at most three hops. What a peer hears directly is always delivered; copies that
+// came through others are delivered once. The memory of what was seen is bounded and pruned on a timer, not per message.
 const MESH_KEYS = ['presence', 'spotlight', 'ask', 'roundStart'];
-function remember(key){ const now = Date.now(); for (const [k, t] of MESH.seen) if (now - t > 10000) MESH.seen.delete(k); if (MESH.seen.has(key)) return false; MESH.seen.set(key, now); return true; }
+const MESH_CAP = 5000;
+function remember(key){ if (MESH.seen.has(key)) return false; if (MESH.seen.size >= MESH_CAP) MESH.seen.delete(MESH.seen.keys().next().value); MESH.seen.set(key, Date.now()); return true; }
+setInterval(() => { const now = Date.now(); for (const [k, t] of MESH.seen) if (now - t > 10000) MESH.seen.delete(k); }, 5000);
 for (const k of MESH_KEYS){
   const base = WIRE_HOOKS[k]; if (!base) continue;
   WIRE_HOOKS[k] = (p, from, chan) => {
-    const hop = p?.hop | 0, { hop: _h, through: _t, ...body } = p || {};
+    if (!p || typeof p !== 'object') return;
+    const hop = Math.max(0, Math.min(3, p.hop | 0)), { hop: _h, through: _t, ...body } = p;
     const fresh = remember(k + JSON.stringify(body));
     // hearing someone directly beats hearing them through someone else
     const direct = k === 'presence' && hop > 0 && peers.get(p.id)?.via !== 'mesh' && Date.now() - (peers.get(p.id)?.t || 0) < 5000;
-    if (fresh && !direct) base(p, from, chan);
-    if (MESH.on && fresh && from && hop < 3 && p?.id !== S.me?.id){ post({ [k]: { ...p, hop: hop + 1, through: hop ? p.through : S.me?.id } }, { from, chan }); MESH.signals++; }
+    if (hop === 0 || fresh && !direct) base(hop === p.hop ? p : { ...p, hop }, from, chan);
+    if (MESH.on && fresh && from && hop < 3 && p.id !== S.me?.id){ post({ [k]: { ...p, hop: hop + 1, through: hop ? p.through : S.me?.id } }, { from, chan }); MESH.signals++; }
   };
 }
 registerPanel({

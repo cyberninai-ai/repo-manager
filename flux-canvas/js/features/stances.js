@@ -8,7 +8,7 @@ const STANCES = {
   agree: { name: 'Agree', mark: '✓', tone: 'good' }, disagree: { name: 'Disagree', mark: '✕', tone: 'bad' },
   unsure: { name: 'Unsure', mark: '?', tone: 'warn' }, alt: { name: 'Have an alternative', mark: '↺', tone: 'acc' }, abstain: { name: 'Abstain', mark: '–', tone: null },
 };
-registerRecord('STANCE', { parse(r, f){ if (!f.R || !(f.S in STANCES)) throw Error('stance'); r.stance = f.S; r.note = decTxt(f.M || ''); } });
+registerRecord('STANCE', { parse(r, f){ must(isCid(f.R) && own(STANCES, f.S), 'stance'); r.stance = f.S; r.note = decTxt(f.M || ''); } });
 PERM_OF.STANCE = 'comment';
 
 DERIVE_HOOKS.push((D, by) => {

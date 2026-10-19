@@ -14,30 +14,37 @@ const WORK_KINDS = {
 const KIND_OF = { DRAW: 'create', SHAPE: 'create', IMAGE: 'create', ARROW: 'create', MOVE: 'move', STYLE: 'edit', COMMENT: 'comment', STANCE: 'stance', REACT: 'vote',
   EVIDENCE: 'ground', CHECK: 'ground', DECISION: 'decide', AGENDA: 'facilitate', NEXT: 'facilitate', FLOOR: 'facilitate' };
 const DEFAULT_METHOD = { cid: 'default', name: 'Default', w: Object.fromEntries(Object.entries(WORK_KINDS).map(([k, v]) => [k, v.w])) };
-registerRecord('METHOD', { parse(r, f){ if (!f.R || !f.W) throw Error('method'); r.name = decTxt(f.M || 'Method'); r.w = { ...Object.fromEntries(Object.keys(WORK_KINDS).map(k => [k, 0])), ...Object.fromEntries(f.W.split('_').map(p => p.split('~')).filter(([k]) => k in WORK_KINDS).map(([k, n]) => [k, Math.max(0, Math.min(1000, +n || 0))])) }; } });
-registerRecord('CREDIT', { parse(r, f){ if (!f.R || !f.H || !f.L) throw Error('credit'); r.shares = new Map(f.L.split('_').map(p => p.split('~')).map(([k, n]) => [k, Math.max(0, +n || 0)])); r.method = f.K || 'default'; }, inherit: false });
+registerRecord('METHOD', { parse(r, f){ must(f.R && f.W, 'method'); r.name = decTxt(f.M || 'Method'); r.w = { ...Object.fromEntries(Object.keys(WORK_KINDS).map(k => [k, 0])), ...Object.fromEntries(f.W.split('_').map(p => p.split('~')).filter(([k]) => own(WORK_KINDS, k)).map(([k, n]) => [k, Math.max(0, Math.min(1000, +n || 0))])) }; } });
+registerRecord('CREDIT', { parse(r, f){ must(isCid(f.R) && isRoot(f.H) && f.L, 'credit'); r.shares = new Map(f.L.split('_').map(p => p.split('~')).map(([k, n]) => { must(isKey(k), 'credit key'); return [k, Math.max(0, Math.min(10000, +n || 0))]; }));
+  r.method = f.K || 'default'; must(r.method === 'default' || isCid(r.method), 'method'); r.approvals = f.G && f.G !== '0' ? cidList(f.G) : []; }, inherit: false });
 Object.assign(PERM_OF, { METHOD: 'comment', CREDIT: null });
 
 // the method in use: the owner's latest; on an open canvas, the proposal the most people agree with; else the default
 function methodInUse(){
-  const ms = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
+  const ms = [...S.records.values()].filter(r => r.type === 'METHOD' && r.neg === null && inView(r)).sort(byZ);
   const owner = S.P?.owner;
   if (owner){ const m = ms.filter(r => samePerson(r.author, owner)).at(-1); if (m) return m; }
   let best = null, n = 0; for (const m of ms){ const a = consensus(m.cid).c.agree; if (a > n || a === n && a > 0){ best = m; n = a; } }
   return best || DEFAULT_METHOD;
 }
-// each person's work in the records before order z, weighted by a method; returns person → { pts, by: { kind: count } }
-function workUpTo(z, method, extra = []){
-  const D = S.D, out = new Map(), add = (who, kind) => { if (!who || !method.w[kind]) return; const p = personOf(who), o = out.get(p) || { pts: 0, by: {} }; o.pts += method.w[kind]; o.by[kind] = (o.by[kind] || 0) + 1; out.set(p, o); };
-  const done = new Map();   // element → owner of a task that was done before z
-  for (const r of [...S.records.values()].filter(r => r.z < z && !D.hidden.has(r.cid)).sort(byZ)){
-    if (r.neg !== null) continue;
+const methodRec = c => c === 'default' ? DEFAULT_METHOD : (r => r && r.type === 'METHOD' && r.neg === null ? r : null)(S.records.get(c));
+// each person's work in a set of records, weighted by a method; returns person → { pts, by: { kind: count } }.
+// Only records that count in the view; a finished task credits its owner only if the task's own rules let that TASK count.
+function workIn(recs, method, approvers = []){
+  const out = new Map(), add = (who, kind) => { if (!who || !method.w[kind]) return; const p = personOf(who), o = out.get(p) || { pts: 0, by: {} }; o.pts += method.w[kind]; o.by[kind] = (o.by[kind] || 0) + 1; out.set(p, o); };
+  const done = new Map(), made = new Map(), owners = new Map();
+  for (const r of recs.filter(r => r.neg === null && inView(r)).sort(byZ)){
     if (r.type === 'TEXT' || r.type === 'NODE') add(r.author, r.edits ? 'edit' : 'create');
-    else if (r.type === 'TASK'){ if (r.status === 'done' && r.owner) done.set(r.f.R, r.owner); else done.delete(r.f.R); }
-    else if (KIND_OF[r.type]) add(r.author, KIND_OF[r.type]);
+    else if (r.type === 'TASK'){
+      const el = S.records.get(r.f.R), maker = made.get(r.f.R), cur = owners.get(r.f.R);
+      if (maker && ![maker, cur, el?.author, S.P?.owner].some(k => k && samePerson(k, r.author))) continue;
+      if (!maker) made.set(r.f.R, r.author);
+      owners.set(r.f.R, r.owner); if (r.status === 'done' && r.owner) done.set(r.f.R, r.owner); else done.delete(r.f.R);
+    }
+    else if (own(KIND_OF, r.type)) add(r.author, KIND_OF[r.type]);
   }
   for (const who of done.values()) add(who, 'task');
-  for (const who of extra) add(who, 'approve');
+  for (const who of new Set(approvers.map(personOf))) add(who, 'approve');
   return out;
 }
 // shares in basis points (sum 10000), largest remainder so they always add up
@@ -47,26 +54,33 @@ function toShares(work){
   let left = 10000 - floor.reduce((a, [, v]) => a + v, 0);
   const order = raw.map(([k, v], i) => [i, v - Math.floor(v)]).sort((a, b) => b[1] - a[1] || (raw[a[0]][0] < raw[b[0]][0] ? -1 : 1));
   for (const [i] of order){ if (left <= 0) break; floor[i][1]++; left--; }
-  return new Map(floor.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]));
+  return new Map(floor.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)));
 }
+// a delivery's shares over its exact version (features/work), with its approvers credited for approving
+const sharesFor = (x, method, approvals) => toShares(workIn(versionRecs(x.d), method, approvals.map(a => a.author)));
 // a delivery's shares: the signed CREDIT if there is a valid one, else computed now
-function contributionShares(x){
-  const signedOne = creditOf(x); if (signedOne) return signedOne.shares;
-  return toShares(workUpTo(x.d.z, methodInUse(), x.ok.map(a => a.author)));
-}
-const creditOf = x => [...S.records.values()].filter(r => r.type === 'CREDIT' && r.f.R === x.d.cid && r.f.H === x.d.root && samePerson(r.author, x.d.author) && !S.D.hidden.has(r.cid) && r.valid !== false).sort(byZ).at(-1) || null;
+function contributionShares(x){ const c = creditOf(x); return c ? c.shares : sharesFor(x, methodInUse(), x.ok); }
+const creditOf = x => S.D.credits?.get(x.d.cid) || null;
 const sameShares = (a, b) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
-// a CREDIT must recompute: same method, same version, same approvals → same shares
-DERIVE_HOOKS.push(() => {
-  for (const r of S.records.values()) if (r.type === 'CREDIT' && r.valid === undefined){
-    const x = S.D.deliveries?.find(v => v.d.cid === r.f.R), m = r.method === 'default' ? DEFAULT_METHOD : S.records.get(r.method);
-    if (!x || !m) continue;
-    r.valid = sameShares(r.shares, toShares(workUpTo(x.d.z, m, x.ok.filter(a => a.z < r.z).map(a => a.author))));
+// a CREDIT counts only if it recomputes, on every derive: its author made the delivery, its method is a method, its approvals
+// are this delivery's valid approvals, and those give exactly its shares. Judged after the deliveries (DERIVE_FINAL)
+DERIVE_FINAL.push(D => {
+  const credits = new Map();
+  for (const r of S.records.values()){
+    if (r.type !== 'CREDIT' || r.neg !== null || !inView(r)) continue;
+    try {
+      const x = D.deliveries?.find(v => v.d.cid === r.f.R), m = methodRec(r.method);
+      if (!x || !m || r.f.H !== x.d.root || !samePerson(r.author, x.d.author)) continue;
+      const apps = r.approvals.map(c => x.ok.find(a => a.cid === c)); if (apps.some(a => !a)) continue;
+      if (sameShares(r.shares, sharesFor(x, m, apps)) && (!credits.has(x.d.cid) || byZ(credits.get(x.d.cid), r) < 0)) credits.set(x.d.cid, r);
+    } catch {}
   }
+  D.credits = credits;
 });
 async function signCredit(x){
-  const m = methodInUse(), shares = toShares(workUpTo(x.d.z, m, x.ok.map(a => a.author)));
-  await publish(await signed('CREDIT', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', [...shares].map(([k, v]) => `${k}~${v}`).join('_')], ['K', m.cid], ['Z', ++S.lamport], ['T', Date.now()]]));
+  const m = methodInUse(), shares = sharesFor(x, m, x.ok);
+  if (!shares.size){ toast('No work in this version to credit yet.'); return; }
+  await publish(await signed('CREDIT', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', [...shares].map(([k, v]) => `${k}~${v}`).join('_')], ['K', m.cid], ['G', x.ok.map(a => a.cid).join('_') || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast('Contribution record signed. Anyone can recompute it from the records.');
 }
 const pct = bp => `${(bp / 100).toFixed(bp % 100 ? 1 : 0)}%`;
@@ -90,7 +104,7 @@ async function methodForm(){
 registerPanel({
   id: 'contribution', title: 'Contribution', blurb: 'Who did how much, from the signed records. The method is a record too: propose another and the room decides.',
   paint(body){
-    const m = methodInUse(), now = toShares(workUpTo(Infinity, m)), work = workUpTo(Infinity, m), props = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
+    const m = methodInUse(), work = workIn([...S.records.values()], m), now = toShares(work), props = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
     const bars = sh => `<ul class="plain">${[...sh].map(([k, v]) => `<li class="row2">${avatar(k)}<span class="grow">${esc(whoName(k))}<small> · ${Object.entries(work.get(k)?.by || {}).map(([kk, n]) => `${n} ${kk}`).join(', ')}</small></span><b>${pct(v)}</b></li><li><div class="bar"><i style="width:${v / 100}%;background:hsl(${authorHue(k)} 55% 40%)"></i></div></li>`).join('')}</ul>`;
     body.innerHTML = `<div class="card"><div class="hd"><b>Method: ${esc(m.name)}</b>${m.cid === 'default' ? '<span class="pill">Default</span>' : `<span class="pill acc">by ${esc(whoName(m.author))}</span>`}</div>
         <small>${Object.entries(m.w).filter(([, w]) => w).map(([k, w]) => `${WORK_KINDS[k].label.split(' (')[0].toLowerCase()} ${w / 10}`).join(' · ')}</small>

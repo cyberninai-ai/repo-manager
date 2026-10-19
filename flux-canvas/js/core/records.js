@@ -2,7 +2,9 @@
 // @module core/records — Record ingest: parse, verify, address, union-merge; publish; channel wire
 // @uses blobs, grammar, identity
 function toRec(node, cid){
-  const f = node.fields, r = { cid, raw: node.raw, type: node.action, f, author: f.I, z: decInt(f.Z), t: f.T ? +f.T : 0, neg: null, size: node.raw.length };
+  const f = node.fields;
+  if (f.T != null && !/^\d{1,16}$/.test(f.T)) throw Error('time');   // a time that isn't a number would compare differently on each peer
+  const r = { cid, raw: node.raw, type: node.action, f, author: f.I, z: decInt(f.Z), t: f.T ? +f.T : 0, neg: null, size: node.raw.length };
   if ('N' in f){ if (f.N !== '0' && f.N !== '1' || !f.R) throw Error('neg'); r.neg = f.N === '1'; return r; }
   switch (r.type){
     case 'DRAW': if (!f.R || !f.C) throw Error('draw'); r.w = Math.max(1, decInt(f.W)); break;

@@ -112,6 +112,7 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 
 ### 18. Zones and suggestions
 - **Who:** the owner of a frame (its author, or the canvas owner) makes it a zone.
+- **The area:** always the frame itself, wherever it has moved. The canvas owner is never gated, and where zones overlap every owner must accept.
 - **Suggest zone:** others' additions, moves and edits inside it are held as suggestions, drawn ghosted with the suggester's name, until the owner accepts or declines.
 - **Locked zone:** others' changes there don't count, and their client says so before signing.
 - **Never gated:** comments, stances, claims and tasks. Discussion stays open.
@@ -121,7 +122,9 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 ### 2. Canvas-to-Cash
 - **Pool:** backers sign pledges (`FUND`) to a canvas's pool.
 - **Terms:** a delivery carries terms (`PAY`): an amount and unit, split evenly, by contribution, or by fixed shares.
+- **Approvals cover the terms:** each approval names the payment terms it was signed with. Terms changed afterwards must be approved again before anything can be released.
 - **Settlement:** when the delivery's approvals are complete, its author signs a `SETTLE` with the payout lines.
+- **The pool pays** only settlements that the canvas owner or a backer approved.
   - Every peer recomputes the lines from the terms, so a settlement that pays the wrong people doesn't count.
   - Template royalties (feature 4) are paid first.
 - **Executing it:** payment connectors (`PAYOUT_CONNECTORS`: an FXN service-pool resolver, a payment API, a chain) execute it. Without one, Flux gives a payout manifest with the settlement, lines and approvals.
@@ -150,7 +153,7 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 
 ### 16. Peer witnesses
 - **What it does:** anyone countersigns "I hold exactly this version, now". Several independent witnesses date a version without a chain: to deny it existed, every witness would have had to lie.
-- **Checking:** each peer recomputes the version from its own records and checks every witness.
+- **Checking:** each peer recomputes the version from its own records and checks every witness. Only checked witnesses count, one per person, and you can witness a delivery only once your browser holds its exact version.
 - **Deliveries:** witnesses show on deliveries and in the proof. Optionally, witness every delivery that completes while you're there.
 
 ### 19. Dependencies and critical path
@@ -175,7 +178,7 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 ### 4. Lineage forks
 - **Forking:** copies a canvas's work **as the original signed records**, so every author keeps their signature and credit, and starts a canvas you own.
 - **Links both ways:** `LINEAGE` in the fork names its parent and the version it started from. `FORKED` in the parent lists descendants, and people can endorse them.
-- **Royalties:** the parent's owner can set terms (`INHERIT`): open or closed to forks, and a royalty on payouts. The terms record travels into the fork signed by the parent's owner, so the royalty can't be dropped.
+- **Royalties:** the parent's owner can set terms (`INHERIT`): open or closed to forks, and a royalty on payouts. The terms and the parent's ownership proof travel into the fork, so a royalty counts only if the parent's real owner signed it, and nobody can drop or redirect it.
 - **Pulling updates:** forks can pull later changes from their parent.
 - **Not copied:** governance (ownership, grants, deliveries, payments, meetings). A fork inherits the work and the reasoning, not the authority.
 
@@ -210,6 +213,7 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 
 ### 17. Devices and recovery
 - **Linking:** one person, several keys. Two devices that link to each other (a code, then a confirmation) become one person. Their names, approvals, credit and grants count together.
+- **Per canvas:** links, guardians and recoveries name the canvas they apply to, so they can't be replayed into another.
 - **Guardians:** name guardians and a threshold. If you lose a device, a new key asks to be you; once enough guardians confirm (from any of their devices), it is.
 - **Keys:** stay non-extractable; nothing secret moves between devices.
 - **Answers the old gap:** this answers "clearing the browser loses your identity".
@@ -276,11 +280,13 @@ features/*.js     one file per feature; each declares its records, its panel and
 | Suite | Checks | Covers |
 |---|---|---|
 | `tests/reason.mjs` | 22 | Stances and convergence, decision ledger and reviews, claim grounding end to end, the Team hub |
-| `tests/meeting.mjs` | 27 | Sealed bids, silent and blind-stance rounds, facilitation and handover, ritual contracts, structural presence (three people) |
+| `tests/meeting.mjs` | 28 | Sealed bids, silent and blind-stance rounds, facilitation and handover, ritual contracts, structural presence (three people) |
 | `tests/economy.mjs` | 25 | Mesh sync, ordered approval flows with conditions, contribution and methods, payouts and pool, witnesses, excerpts and tampering (three people) |
-| `tests/memory.mjs` | 25 | Zones, dependencies, linked devices and guardian recovery, what changed, replay, lineage with royalties, the canvas graph (four people) |
+| `tests/memory.mjs` | 29 | Zones, dependencies, linked devices and guardian recovery, what changed, replay, lineage with royalties, the canvas graph (four people) |
 
-Every suite runs people in separate browser contexts connected peer to peer, and scans each feature panel with axe.
+| `tests/attacks.mjs` | 17 | The attacks from the round-4 audit, replayed: zone blanking, flow conditions, backdated versions, forged credits and settlements, round hijacking, seal length, facilitation rerouting, decision and claim tampering, malformed records, markup in presence ids |
+
+Every suite runs people in separate browser contexts connected peer to peer, and scans each feature panel with axe. The rules each feature enforces against a malicious peer are listed in [AUDIT.md](AUDIT.md), round 4.
 
 ## Words, mapped from the FLX briefs
 

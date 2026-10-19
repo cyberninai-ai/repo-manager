@@ -1,7 +1,7 @@
 # Flux Canvas — audit
 
 **Scope.** The whole app, first as one 3,100-line `flux-canvas.html` (205 KB), then re-checked after every pass. The audit covers architecture, data model and security, performance, accessibility, UX and testing. Every finding below is now fixed or accepted with a reason.
-**Date.** October 2026 (re-audited after the fixes).
+**Date.** October 2026 (re-audited after the fixes; round 4 covers the team features).
 **Method.** I read the code end to end and ran it in headless Chromium: 24 browser suites in `tests/`, an axe-core accessibility scan, a sandboxed `srcdoc` frame with a strict CSP, two-tab sync, two-browser sync through the relay, and a 5,000-record benchmark. Both the bundle and the modular source were tested.
 
 Severity: **High** = can lose or forge data, or blocks the product goal. **Medium** = visible defect or scaling limit. **Low** = polish or debt.
@@ -85,6 +85,73 @@ The core idea works: every element is a signed, content-addressed record, and th
 - **Not a blockchain.** The proof is verifiable offline, but nothing timestamps it publicly. Anchoring a delivery's root on a public chain is the next step (see PRODUCT).
 - **Presence is unsigned** (S6 still holds). Names on cursors come from signed `PROFILE` records, but a peer could send a fake cursor.
 - **Direct connections need a code swap.** Two people must exchange codes through some other channel. With a relay or a hosted link, joining is one click.
+
+## Round 4: the twenty-one team features under attack
+
+**Method.** Three independent adversarial reviews read every team module with one question: what can a peer with their own key and a modified client sign, and what does that do to honest peers? They reported about 40 issues. Each was fixed or is listed below as accepted, and each fixed attack is now replayed in `tests/attacks.mjs`, with the expectation that it fails.
+
+### Critical and high (all fixed)
+
+| # | Finding | Fix |
+|---|---|---|
+| T1 | Anyone could blank the canvas: a `ZONE` carried its own area, so a 2-billion-unit "locked" zone denied everyone's work, the owner's included | A zone's area is the frame's real position (base plus moves); only permitted, unrevoked zones count; the canvas owner is never gated; every overlapping zone's owner must accept |
+| T2 | Approval-flow conditions on claims, stances and decisions always passed, because flows were judged before those views existed | A `DERIVE_FINAL` phase judges deliveries after every feature's view; a rule that throws or names an unknown condition (`constructor`) fails closed |
+| T3 | A record signed later with a low Z changed a delivered version: approvals got stuck, shares were inflated | `DELIVER` carries its exact version as a content-addressed blob (the sorted CID list, whose hash is the root). Approvals, credit, payouts, witnesses and excerpts use that list. Compaction keeps delivered records |
+| T4 | Forged credits counted (`valid` was undefined), settlements counted without approval, and validity was cached on records | Credits and settlements are recomputed every derive. A settlement needs an approved delivery, terms (`PAY`) named by every counted approval, and lines that recompute |
+| T5 | XSS: presence ids and lineage fields reached HTML attributes | Presence ids must be keys, selections must be CIDs; every record parser checks its IDs (`isKey`, `isCid`, `isCanvas`, `isRoot`); panels escape anyway |
+| T6 | Anyone could redirect or drop a template royalty with their own `LINEAGE` and `INHERIT` | `LINEAGE` counts only from the fork's owner, and the first one fixes the parent; royalty terms count only if signed by the parent's proven owner (its `OWNER` record travels with the fork) |
+| T7 | Identity records replayed across canvases (an old link or guardian list into a canvas the victim owns) | `LINK`, `GUARD` and `RECOVER` name their canvas (`C`) and count only there; guardians are matched through device links only, never through other recoveries (no guardian-of-a-guardian takeover); the main key is the smallest one, which no signer can steer |
+| T8 | Anyone could end or extend someone's silent round, opening sealed ideas early | A round is its first record; seals name its CID; only its starter can change its end |
+| T9 | Blind stances leaked through ciphertext length ("agree" vs "disagree") | Sealed content is padded to 512-byte steps |
+| T10 | A ritual could be closed by anyone with a backdated record, and outputs could be backdated in | Only the starter closes before the time box ends; a success counts only on the outputs its `CLOSE` names (CIDs prove they existed) |
+| T11 | A former facilitator could reroute the role by backdating | The role is a chain: each handover names the record it continues; meeting records name the role they act under; once a successor acts, a second handover by the previous holder doesn't stand |
+| T12 | Decisions and claims could be reversed, superseded, unmarked or self-grounded by anyone | Only the author or owner reverses or replaces a decision; one-way doors can't be reversed; only the marker, author or owner unmarks a claim; neither the author nor the marker can ground it |
+| T13 | Prototype names (`__proto__`, `toString`) as stance kinds, ritual outputs or conditions crashed panels or disabled checks | `own(o, k)` (own properties only) everywhere a record names a key |
+| T14 | Records with a non-numeric time compared differently on each peer | `toRec` refuses a `T` that isn't a number |
+
+### Medium and low (fixed)
+
+- **Tasks:** anyone could tick off anyone's task. Only its creator, its owner, the element's author or the canvas owner can change it once it exists.
+- **Witnesses:** unchecked witnesses counted, and results were cached forever. Now only witnesses checked against this browser's records count, they are rechecked when records change, and witnessing a delivery first checks the version locally.
+- **Excerpts:**
+  - only each approver's latest approval counts, and a withdrawal cancels it;
+  - the quorum is clamped;
+  - the approval flow's groups and order are checked;
+  - the verdict says the approvals are the ones the sharer included.
+- **Escalation:**
+  - it was timed from the delivery's self-claimed time; now it runs from the first approval;
+  - a revoked escalation flow no longer counts.
+- **Ordered flows:** these relied on Z. A later group's signature now counts only if it names enough earlier-group approvals (`G`), and one person counts once per group across devices.
+- **Rounding:** with nothing to split, payout lines didn't add up. Now the remainder goes to the delivery's author.
+- **Pool spending:** a settlement counts against the pool only if the canvas owner or a backer approved it.
+- **Critical path:**
+  - a loop let the "critical path" condition pass, and the recursion could overflow;
+  - ordering is now iterative and loops fail the condition.
+- **Forks and graph:**
+  - forks brought back refused or pending content;
+  - pulling from the parent now asks first;
+  - the graph counted revoked records and could hang on a revoked credit.
+- **Replay:** crashed on a revoked decision.
+- **Mesh:**
+  - its dedupe scan was quadratic, hop counts could be negative, and duplicates of direct messages were dropped;
+  - the memory is now bounded and pruned on a timer, hops are clamped to 0–3, and direct messages are always delivered.
+
+### Accepted, with reasons
+
+- **Clocks:**
+  - ordering the hand queue by Z and timing reviews or escalation by local clocks remain self-reported;
+  - they decide display and convenience, not who may do what.
+- **Overlapping groups:** one person in two groups of a flow counts for both, which is intended (a lead can be in Engineering and in Leads).
+- **Offline sealers:** a sealer who stays offline can't be forced to reveal; the panel names who owes a reveal.
+- **Excerpt completeness:** an excerpt proves membership, not completeness; the sharer chooses what to include, and the verdict says so.
+- **Parked records:** these aren't forwarded by the mesh when they finally ingest; peers get them on their next sync.
+
+### Performance
+
+- Zones re-sorted every record twice per frame, even with no zones; they are now computed once per change.
+- Dependencies and "what changed" are memoised per change.
+- `tests/perf.mjs` also measures a 5,360-record canvas with tasks, stances, claims, decisions and a zone in use, within the same budget as before.
+
 
 ## Residual risks (accepted, documented)
 

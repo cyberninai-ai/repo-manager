@@ -7,48 +7,57 @@
 // LINK-I-R-{other key}-S-{1|0}-Z-T-SIG              mutual links join two keys; a one-way link from a new key asks to recover
 // GUARD-I-R-{guardian}-S-{1|0}-Q-{threshold}-Z-T-SIG   your guardians and how many must agree (your latest Q)
 // RECOVER-I-R-{lost key}-K-{new key}-Z-T-SIG          a guardian confirms the new key is the same person
-registerRecord('LINK', { parse(r, f){ if (!f.R) throw Error('link'); r.to = f.R; r.on = f.S !== '0'; }, inherit: false });
-registerRecord('GUARD', { parse(r, f){ if (!f.R) throw Error('guard'); r.who = f.R; r.on = f.S !== '0'; r.q = Math.max(1, +f.Q || 1); }, inherit: false });
-registerRecord('RECOVER', { parse(r, f){ if (!f.R || !f.K) throw Error('recover'); r.lost = f.R; r.key = f.K; }, inherit: false });
+// every identity record names the canvas it applies to (C): a link, guardian list or recovery can't be replayed into another
+registerRecord('LINK', { parse(r, f){ must(isKey(f.R) && isCanvas(f.C), 'link'); r.to = f.R; r.on = f.S !== '0'; }, inherit: false });
+registerRecord('GUARD', { parse(r, f){ must(isKey(f.R) && isCanvas(f.C), 'guard'); r.who = f.R; r.on = f.S !== '0'; r.q = Math.max(1, Math.min(99, +f.Q || 1)); }, inherit: false });
+registerRecord('RECOVER', { parse(r, f){ must(isKey(f.R) && isKey(f.K) && isCanvas(f.C), 'recover'); r.lost = f.R; r.key = f.K; }, inherit: false });
 Object.assign(PERM_OF, { LINK: null, GUARD: null, RECOVER: null });
 let aliasSig = '';
+const here = r => r.neg === null && r.f.C === canvasId;
+function unionFind(){ const parent = new Map(), find = k => { while (parent.has(k) && parent.get(k) !== k) k = parent.get(k); return k; };
+  const join = (a, b) => { const x = find(a), y = find(b); if (x !== y){ const [lo, hi] = x < y ? [x, y] : [y, x]; parent.set(hi, lo); parent.set(lo, lo); } };
+  return { parent, find, join }; }
 // runs first among derive hooks: everything after it (approvals, credit, names) sees people, not keys
 DERIVE_HOOKS.unshift((D, by) => {
-  const links = new Map();   // "a>b" → on, latest per direction
-  for (const r of by.LINK || []) if (!D.hidden.has(r.cid)) links.set(`${r.author}>${r.to}`, r.on);
-  const parent = new Map(), find = k => { while (parent.has(k) && parent.get(k) !== k) k = parent.get(k); return k; };
-  const join = (a, b) => { const x = find(a), y = find(b); if (x !== y){ const [lo, hi] = x < y ? [x, y] : [y, x]; parent.set(hi, lo); parent.set(lo, lo); } };
-  for (const [k, on] of links){ const [a, b] = k.split('>'); if (on && links.get(`${b}>${a}`)) join(a, b); }
-  // guardians: per person their active guardians and threshold; a recovery joins the new key once enough of them confirm
+  const links = new Map();   // "a>b" → on, latest per direction (z order)
+  for (const r of by.LINK || []) if (here(r) && !D.hidden.has(r.cid)) links.set(`${r.author}>${r.to}`, r.on);
+  // 1. devices: two keys that link to each other
+  const dev = unionFind();
+  for (const [k, on] of links){ const [a, b] = k.split('>'); if (on && links.get(`${b}>${a}`)) dev.join(a, b); }
+  // 2. guardians: the lost key's own latest list and threshold
   const guards = new Map();
-  for (const r of by.GUARD || []){ if (D.hidden.has(r.cid)) continue; const g = guards.get(r.author) || { who: new Set(), q: 1 }; if (r.on) g.who.add(r.who); else g.who.delete(r.who); g.q = r.q; guards.set(r.author, g); }
+  for (const r of by.GUARD || []){ if (!here(r) || D.hidden.has(r.cid)) continue; const g = guards.get(r.author) || { who: new Set(), q: 1 }; if (r.on) g.who.add(r.who); else g.who.delete(r.who); g.q = r.q; guards.set(r.author, g); }
+  // 3. recoveries: a guardian counts once per person, matched through device links only, never through other recoveries,
+  //    so a guardian's own guardians can't reach you; the new key must have asked (a one-way LINK to the lost key)
   const rec = new Map(); D.recoveries = [];
-  for (const r of by.RECOVER || []){ if (D.hidden.has(r.cid)) continue; const k = `${r.lost}>${r.key}`; if (!rec.has(k)) rec.set(k, new Set()); rec.get(k).add(r.author); }
-  for (const [k, by2] of rec){
+  for (const r of by.RECOVER || []){ if (!here(r) || D.hidden.has(r.cid)) continue; const k = `${r.lost}>${r.key}`; if (!rec.has(k)) rec.set(k, new Set()); rec.get(k).add(r.author); }
+  const all = unionFind(); for (const [k, v] of dev.parent) all.parent.set(k, v);
+  for (const [k, by2] of [...rec].sort((a, b) => a[0] < b[0] ? -1 : 1)){
     const [lost, key] = k.split('>'), g = guards.get(lost), asked = links.get(`${key}>${lost}`);
-    const ok = g ? new Set([...by2].filter(a => [...g.who].some(w => find(w) === find(a))).map(a => find(a))).size : 0;   // distinct guardians (any of their devices)
-    D.recoveries.push({ lost, key, ok, need: g?.q || Infinity, asked: !!asked, done: !!asked && g && ok >= g.q });
-    if (asked && g && ok >= g.q) join(lost, key);
+    const ok = g ? new Set([...by2].filter(a => [...g.who].some(w => dev.find(w) === dev.find(a))).map(a => dev.find(a))).size : 0;
+    const done = !!asked && !!g && ok >= g.q;
+    D.recoveries.push({ lost, key, ok, need: g?.q || Infinity, asked: !!asked, done });
+    if (done) all.join(lost, key);
   }
   // pending requests: a one-way link from a key that hasn't been joined (to show the guardians and the other device)
-  D.linkAsks = [...links].filter(([k, on]) => { const [a, b] = k.split('>'); return on && !links.get(`${b}>${a}`) && find(a) !== find(b); }).map(([k]) => k.split('>'));
-  // a one-way link to someone with guardians is a recovery request, even before any guardian has answered
+  D.linkAsks = [...links].filter(([k, on]) => { const [a, b] = k.split('>'); return on && !links.get(`${b}>${a}`) && all.find(a) !== all.find(b); }).map(([k]) => k.split('>'));
   for (const [a, b] of D.linkAsks) if (guards.get(b)?.who.size && !D.recoveries.some(r => r.lost === b && r.key === a)) D.recoveries.push({ lost: b, key: a, ok: 0, need: guards.get(b).q, asked: true, done: false });
   D.guards = guards;
-  // each person is named after their original key: the one whose first work (not identity records) is earliest
-  const first = new Map(), keys = new Set(parent.keys()), ID_TYPES = new Set(['PROFILE', 'LINK', 'GUARD', 'RECOVER']);
-  if (keys.size) for (const r of S.records.values()) if (keys.has(r.author) && !ID_TYPES.has(r.type) && (!first.has(r.author) || r.t < first.get(r.author))) first.set(r.author, r.t);
-  const groups = new Map(); for (const k of keys){ const g = find(k); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); }
-  const alias = new Map();
-  for (const ks of groups.values()){ const root = ks.slice().sort((a, b) => (first.get(a) ?? Infinity) - (first.get(b) ?? Infinity) || (a < b ? -1 : 1))[0]; for (const k of ks) alias.set(k, root); }
+  // a person is known by the smallest of their keys: a rule no signer can steer (names come from their latest profile, below)
+  const alias = new Map(); for (const k of all.parent.keys()) alias.set(k, all.find(k));
   IDENTITY.of = k => alias.get(k) || k;
-  // one name per person: the latest profile among their keys
-  for (const [k, root] of alias){ const n = NAMES.get(k); if (n && !NAMES.has(root)) NAMES.set(root, n); }
+  D.alias = alias;
   const sig = [...alias].map(p => p.join('=')).sort().join(',');
   if (sig !== aliasSig){ aliasSig = sig; queueMicrotask(changed); }   // permissions were filtered with the old map: once more
 });
+// one name per person: the latest profile signed by any of their keys (profiles are derived by then)
+DERIVE_HOOKS.push(D => {
+  const best = new Map();
+  for (const [k, root] of D.alias || []){ const p = D.profiles?.get(k); if (p && p.name && (!best.has(root) || byZ(best.get(root), p) < 0)) best.set(root, p); }
+  for (const [root, p] of best) NAMES.set(root, p.name);
+});
 const myKeys = () => [...new Set([S.me.id, ...[...S.records.values()].filter(r => r.author && samePerson(r.author, S.me.id)).map(r => r.author)])];
-const devSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
+const devSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['C', canvasId], ['Z', ++S.lamport], ['T', Date.now()]]));
 async function linkCode(){ return packCode({ t: 'link', key: S.me.id, room: canvasId }); }
 // the other device pastes the code: it asks to link, the first device confirms
 async function useLinkCode(code){

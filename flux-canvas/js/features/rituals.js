@@ -18,28 +18,35 @@ const RITUAL_KINDS = {
   review: { name: 'Design review', need: { stance: 3, decision: 1 }, people: 3, min: 30, blurb: 'Everyone takes a stance; it ends with a recorded decision.' },
   kickoff: { name: 'Kickoff', need: { decision: 2, task: 3 }, people: 3, min: 60, blurb: 'Goals decided, first tasks owned.' },
 };
-registerRecord('RITUAL', { parse(r, f){ if (!f.R || !f.M) throw Error('ritual'); r.name = decTxt(f.M); r.need = Object.fromEntries((f.U || '').split('_').filter(Boolean).map(p => p.split('~')).filter(([k]) => k in RITUAL_OUTPUTS).map(([k, n]) => [k, Math.max(0, Math.min(99, +n || 0))]));
-  r.people = Math.max(1, +f.Q || 1); r.min = Math.max(1, Math.min(600, +f.E || 30)); r.ends = r.t + r.min * 6e4; }, inherit: false });
-registerRecord('CLOSE', { parse(r, f){ if (!f.R || !['success', 'incomplete', 'aborted'].includes(f.O)) throw Error('close'); r.outcome = f.O; r.outputs = f.K && f.K !== '0' ? f.K.split('_') : []; r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('RITUAL', { parse(r, f){ must(f.R && f.M, 'ritual'); r.name = decTxt(f.M); r.need = Object.fromEntries((f.U || '').split('_').filter(Boolean).map(p => p.split('~')).filter(([k]) => own(RITUAL_OUTPUTS, k)).map(([k, n]) => [k, Math.max(0, Math.min(99, +n || 0))]).filter(([, n]) => n > 0));
+  must(Object.keys(r.need).length, 'a ritual must require something'); r.people = Math.max(1, Math.min(99, +f.Q || 1)); r.min = Math.max(1, Math.min(600, +f.E || 30)); r.ends = r.t + r.min * 6e4; }, inherit: false });
+registerRecord('CLOSE', { parse(r, f){ must(isCid(f.R) && ['success', 'incomplete', 'aborted'].includes(f.O), 'close'); r.outcome = f.O; r.outputs = f.K && f.K !== '0' ? cidList(f.K) : []; r.note = decTxt(f.M || ''); }, inherit: false });
 Object.assign(PERM_OF, { RITUAL: 'draw', CLOSE: 'comment' });
 
-// progress of a ritual up to record order z: the outputs made since it started, and who took part
-function ritualProgress(rit, z = Infinity){
-  const recs = [...S.records.values()].filter(r => r.z > rit.z && r.z < z && r.t >= rit.t && !S.D.hidden.has(r.cid) && r.type !== 'CLOSE');
-  const got = {}, out = new Set(), who = new Set();
-  for (const r of recs) who.add(personOf(r.author));
+// progress of a ritual: the outputs made since it started (only records that count in the view), and who took part.
+// Given a list (a CLOSE's K), only those records count: a CID can only be named once it exists, so they were there when it closed
+function ritualProgress(rit, list = null){
+  const pool = list ? list.map(c => S.records.get(c)).filter(Boolean) : [...S.records.values()];
+  const recs = pool.filter(r => r.z > rit.z && r.t >= rit.t && r.neg === null && inView(r) && r.type !== 'CLOSE');
+  const got = {}, out = new Set(), who = new Map();
+  for (const r of recs) if (!who.has(personOf(r.author))) who.set(personOf(r.author), r.cid);
   for (const [k, n] of Object.entries(rit.need)){ const spec = RITUAL_OUTPUTS[k], hits = recs.filter(r => spec.types.includes(r.type) && (!spec.ok || spec.ok(r))); got[k] = hits.length; hits.slice(0, n).forEach(r => out.add(r.cid)); }
   const met = Object.entries(rit.need).every(([k, n]) => got[k] >= n) && who.size >= rit.people;
-  return { got, who, met, outputs: [...out] };
+  return { got, who: new Set(who.keys()), met, outputs: [...new Set([...out, ...who.values()])] };   // outputs plus one record per participant
 }
+// who may close: the ritual's starter at any time; a participant only once its time box is over; never before the ritual itself
 DERIVE_HOOKS.push((D, by) => {
-  const list = (by.RITUAL || []).filter(r => !D.hidden.has(r.cid)).map(r => ({ r, close: null }));
+  const list = (by.RITUAL || []).filter(r => r.neg === null && !D.hidden.has(r.cid)).map(r => ({ r, close: null }));
   const byCid = new Map(list.map(x => [x.r.cid, x]));
-  for (const c of by.CLOSE || []){ const x = byCid.get(c.f.R); if (!x || x.close || D.hidden.has(c.cid)) continue; x.close = c; }
+  for (const c of by.CLOSE || []){
+    const x = byCid.get(c.f.R); if (!x || x.close || c.neg !== null || !inView(c) || c.z <= x.r.z) continue;
+    const starter = samePerson(c.author, x.r.author), took = !starter && c.t >= x.r.ends && ritualProgress(x.r).who.has(personOf(c.author));
+    if (starter || took) x.close = c;
+  }
   D.rituals = list;
 });
 // a "success" close only counts if the outputs were really there when it was signed; otherwise it reads as incomplete
-const outcomeOf = x => !x.close ? null : x.close.outcome === 'success' && !ritualProgress(x.r, x.close.z).met ? 'incomplete' : x.close.outcome;
+const outcomeOf = x => !x.close ? null : x.close.outcome === 'success' && !ritualProgress(x.r, x.close.outputs).met ? 'incomplete' : x.close.outcome;
 const openRitual = () => (S.D.rituals || []).filter(x => !x.close).at(-1) || null;
 async function startRitual(kind, { name, need, people: n, min } = {}){
   const k = RITUAL_KINDS[kind] || {}; need ||= k.need; n ||= k.people; min ||= k.min;
@@ -80,7 +87,7 @@ registerPanel({
       : `<div class="acts">${Object.entries(RITUAL_KINDS).map(([k, r]) => `<button class="btn" data-start="${k}">${ic('target')}${esc(r.name)}</button>`).join('')}<button class="btn" data-start="custom">Custom…</button></div>`;
     body.innerHTML = `${cur}
       ${closed.length ? `<h3>Record <span class="n">${okN} of ${closed.length} closed as a success</span></h3><ul class="plain">${closed.map(y => { const o = outcomeOf(y);
-        return `<li class="row2"><span class="pill ${o === 'success' ? 'good' : o === 'aborted' ? '' : 'bad'}">${o}</span><span class="grow">${esc(y.r.name)} · ${when(y.r.t)}</span><small>${needText(y.r, ritualProgress(y.r, y.close.z).got)}</small></li>`; }).join('')}</ul>` : ''}`;
+        return `<li class="row2"><span class="pill ${o === 'success' ? 'good' : o === 'aborted' ? '' : 'bad'}">${o}</span><span class="grow">${esc(y.r.name)} · ${when(y.r.t)}</span><small>${needText(y.r, ritualProgress(y.r, y.close.outputs).got)}</small></li>`; }).join('')}</ul>` : ''}`;
   },
   async click(e, b){
     const x = openRitual();

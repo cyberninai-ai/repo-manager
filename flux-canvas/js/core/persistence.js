@@ -4,7 +4,8 @@
 /* ---------- persistence: each record is stored once, as signed; blobs beside it. The export form is the same lines. ---------- */
 let saveT = 0;
 const pendingSave = new Set();
-const blobOf = r => (r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null ? r.f.R : null;
+// the blob a record names: points and images in R; feature records name theirs with registerRecord(…, { blob: field })
+const blobOf = r => r.neg !== null ? null : r.type === 'DRAW' || r.type === 'IMAGE' ? r.f.R : RECORD_TYPES[r.type]?.blob ? r.f[RECORD_TYPES[r.type].blob] || null : null;
 function lines(recs){
   const out = recs.map(r => r.raw);
   const seen = new Set();

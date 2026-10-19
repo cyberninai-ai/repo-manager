@@ -56,8 +56,10 @@ await A.evaluate(() => openPanel('meeting')); await A.waitForTimeout(150); v.pus
 // 5. ritual contracts: a "success" without the outputs reads as incomplete; with them, it is a success
 await A.evaluate(() => startRitual('retro'));
 ok(await until(B, () => !!openRitual()), 'the retro reaches Ben');
-await B.evaluate(() => closeRitual(openRitual(), 'success'));
-ok(await until(A, () => S.D.rituals[0].close && outcomeOf(S.D.rituals[0]) === 'incomplete'), 'closing as a success without its outputs counts as incomplete');
+await B.evaluate(() => closeRitual(openRitual(), 'success')); await A.waitForTimeout(500);
+ok(await A.evaluate(() => !S.D.rituals[0].close), 'a participant can’t close someone’s ritual before its time box is over');
+await A.evaluate(() => closeRitual(openRitual(), 'success'));
+ok(await until(B, () => S.D.rituals[0].close && outcomeOf(S.D.rituals[0]) === 'incomplete'), 'closing as a success without its outputs counts as incomplete');
 await A.evaluate(() => startRitual('custom', { name: 'Go/no-go', need: { decision: 1 }, people: 2, min: 10 }));
 await until(B, () => openRitual()?.r.name === 'Go/no-go');
 await B.evaluate(() => recordDecision({ text: 'Go for the beta' })); await until(A, () => S.D.decisions?.length === 1); await A.evaluate(() => takeStance([S.D.decisions[0].d.cid], 'agree'));

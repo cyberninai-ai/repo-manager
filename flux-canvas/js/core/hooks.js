@@ -10,7 +10,8 @@ const RECORD_TYPES = {};
 const NAMES = new Map();           // author key → display name (example authors; profiles later)
 function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(action); }
 
-const DERIVE_HOOKS = [];        // (D, byType) after the core derive; byType[action] = that action's records in z order
+const DERIVE_HOOKS = [];
+const DERIVE_FINAL = [];        // (D, byType) after every DERIVE_HOOKS entry: judgements that read other features' views (deliveries)        // (D, byType) after the core derive; byType[action] = that action's records in z order
 const RENDER_HOOKS = {
   under: [],                    // () drawn in canvas coordinates below the elements (diagram tree links)
   world: [],                    // (z) drawn in canvas coordinates above elements
@@ -41,6 +42,16 @@ const WIRE_INGEST_HOOKS = [];   // (msg, from, chan) after a wire message brough
 const PRESENCE_FIELDS = [];     // () → fields merged into your presence (attention)
 const IDENTITY = { of: k => k };   // key → the person it belongs to; linked devices and recovery (features/devices) replace it
 const personOf = k => IDENTITY.of(k);
+// a signing key as it appears in records and presence (Ed25519 or ECDSA, base58): anything else is refused before it reaches HTML
+const isKey = k => typeof k === 'string' && /^(ed|ec)[1-9A-HJ-NP-Za-km-z]{20,120}$/.test(k);
+const isCid = c => typeof c === 'string' && /^bafk[a-z2-7]{20,80}$/.test(c);
+const isCanvas = c => typeof c === 'string' && /^[a-z0-9]{6,32}$/.test(c);
+const isRoot = h => typeof h === 'string' && /^[a-z2-7]{20,64}$/.test(h);
+const must = (ok, what) => { if (!ok) throw Error(what); };   // parse checks: a record that fails one is refused as malformed
+const cidList = v => { const l = String(v || '').split('_').filter(Boolean); must(l.every(isCid), 'cid list'); return l; };
+const keyList = (v, sep = '_') => { const l = String(v || '').split(sep).filter(Boolean); must(l.every(isKey), 'key list'); return l; };
+// a key named only for its own type: "toString" or "__proto__" are not stances, kinds or conditions
+const own = (o, k) => typeof k === 'string' && Object.hasOwn(o, k);
 const samePerson = (a, b) => !!a && !!b && personOf(a) === personOf(b);
 // The feature catalogue: every feature module describes itself once; the hub, the palette and the docs read it.
 const FEATURES = [];            // { id, name, group, icon, blurb, records: [ACTION…], open?: () }

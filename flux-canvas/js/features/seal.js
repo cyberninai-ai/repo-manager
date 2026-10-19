@@ -9,9 +9,9 @@
 // What it can't: force a sealer who goes offline to reveal. The panel shows who still owes a reveal.
 const SEAL_KINDS = { note: 'Sealed note', bid: 'Sealed bid', stance: 'Blind stance', commitment: 'Pre-commitment' };
 const SEAL_CLOCKS = [];   // (seal) → its reveal time when something else decides it (a silent round's end), or undefined
-registerRecord('SEAL', { parse(r, f){ if (!f.R || !f.C || !f.B || !f.V || !(f.K in SEAL_KINDS)) throw Error('seal'); if (f.B.length > 24000) throw Error('too big');
+registerRecord('SEAL', { parse(r, f){ must(f.R && isCid(f.C) && f.B && f.V && own(SEAL_KINDS, f.K) && (!f.O || f.O === '0' || isCid(f.O)), 'seal'); if (f.B.length > 24000) throw Error('too big');
   r.kind = f.K; r.inner = f.C; r.at = Math.max(0, +f.W || 0); r.round = f.O && f.O !== '0' ? f.O : null; r.x = decInt(f.X || '0'); r.y = decInt(f.Y || '0'); } });
-registerRecord('REVEAL', { parse(r, f){ if (!f.R || !f.K) throw Error('reveal'); } });
+registerRecord('REVEAL', { parse(r, f){ must(isCid(f.R) && /^[A-Za-z0-9+/=]{20,64}$/.test(f.K || ''), 'reveal'); } });
 Object.assign(PERM_OF, { SEAL: 'comment', REVEAL: null });
 
 const sealKeys = new Map();   // seal CID → raw key, for the seals you made (kept in IndexedDB, or this tab when it can't)
@@ -35,7 +35,9 @@ const sealOpen = x => S.records.has(x.s.inner);
 async function sealRecord(innerRaw, { kind = 'note', at, round = null, x = 0, y = 0 }){
   const key = crypto.getRandomValues(new Uint8Array(32)), iv = crypto.getRandomValues(new Uint8Array(12));
   const k = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt']);
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(innerRaw)));
+  // padded to 512-byte steps: otherwise the ciphertext's length gives away a blind "agree" from a "disagree", or a bid's digits
+  const body = innerRaw + '\n', padded = body + ' '.repeat((512 - body.length % 512) % 512);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(padded)));
   const inner = await cidOf(te.encode(innerRaw));
   const raw = await signed('SEAL', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['K', kind], ['C', inner], ['B', b64enc(ct)], ['V', b64enc(iv)],
     ['W', Math.round(at || 0)], ['O', round || '0'], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))], ['Z', ++S.lamport], ['T', Date.now()]]);
@@ -51,18 +53,18 @@ async function revealSeal(cid){
   return true;
 }
 // open revealed seals whose time has come: decrypt, check the plaintext is the committed record, ingest it like any record
-const opening = new Set();
+const opening = new Set(), badSeals = new Set();   // a seal whose reveal doesn't open to its commitment is tried once
 async function openSeals(){
   for (const [cid, x] of S.D.seals || []){
-    if (!x.reveal || sealOpen(x) || opening.has(cid) || Date.now() < sealTime(x.s)) continue;
+    if (!x.reveal || sealOpen(x) || opening.has(cid) || badSeals.has(cid) || Date.now() < sealTime(x.s)) continue;
     opening.add(cid);
     try {
       const k = await crypto.subtle.importKey('raw', b64dec(x.reveal.f.K), 'AES-GCM', false, ['decrypt']);
-      const plain = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64dec(x.s.f.V) }, k, b64dec(x.s.f.B)));
+      const plain = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64dec(x.s.f.V) }, k, b64dec(x.s.f.B))).split('\n')[0];
       const node = parse(plain);
-      if (await cidOf(te.encode(plain)) !== x.s.inner || !samePerson(node.fields.I, x.s.author)){ x.bad = true; continue; }
+      if (await cidOf(te.encode(plain)) !== x.s.inner || !samePerson(node.fields.I, x.s.author)){ badSeals.add(cid); continue; }
       await ingest(plain);
-    } catch { x.bad = true; } finally { opening.delete(cid); }
+    } catch { badSeals.add(cid); } finally { opening.delete(cid); }
   }
 }
 // your own seals reveal themselves when their time comes, if this browser is open
@@ -108,7 +110,7 @@ registerPanel({
   paint(body){
     const all = [...(S.D.seals?.values() || [])].sort((a, b) => sealTime(a.s) - sealTime(b.s));
     const row = x => { const t = sealTime(x.s), open = sealOpen(x), mine = samePerson(x.s.author, S.me.id), el = open && S.records.get(x.s.inner);
-      return `<li class="card${open ? '' : ' hot'}"><div class="hd"><b>${esc(SEAL_KINDS[x.s.kind])} · ${esc(whoName(x.s.author))}</b><span class="pill ${open ? 'good' : x.bad ? 'bad' : 'acc'}">${open ? 'Opened ✓' : x.bad ? 'Doesn’t match its seal' : Date.now() < t ? `Opens in ${clock(t - Date.now())}` : x.reveal ? 'Opening…' : 'Waiting for reveal'}</span></div>
+      return `<li class="card${open ? '' : ' hot'}"><div class="hd"><b>${esc(SEAL_KINDS[x.s.kind])} · ${esc(whoName(x.s.author))}</b><span class="pill ${open ? 'good' : badSeals.has(x.s.cid) ? 'bad' : 'acc'}">${open ? 'Opened ✓' : badSeals.has(x.s.cid) ? 'Doesn’t match its seal' : Date.now() < t ? `Opens in ${clock(t - Date.now())}` : x.reveal ? 'Opening…' : 'Waiting for reveal'}</span></div>
         ${open ? `<p>${esc(el?.text || KIND(el))}</p><small>Matches the commitment it was sealed with (${x.s.inner.slice(-10)}).</small>` : `<small>Sealed ${when(x.s.t)} · commitment ${x.s.inner.slice(-10)}</small>`}
         ${!open && mine && Date.now() >= t && !x.reveal ? '<div class="acts"><button class="btn primary" data-rv="' + x.s.cid + '">Reveal now</button></div>' : ''}${open ? `<div class="acts"><button class="btn" data-go="${x.s.inner}">Show</button></div>` : ''}</li>`; };
     body.innerHTML = `<div class="acts"><button class="btn" data-new="note" data-autofocus>${ic('lock')}Seal a note…</button><button class="btn" data-new="bid">${ic('coin')}Seal a bid…</button></div>

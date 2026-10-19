@@ -5,7 +5,7 @@
 // the version's root from the IDs, and confirms each excerpt record is in it. Nothing outside the excerpt is revealed but its hash.
 // @uses features/work (deliveries, rootAt), core identity (verifyRaw), ui/panels, ui/form
 // The excerpt file: { flux: 'excerpt', v: 1, canvas, title, delivery, approvals: [raw], ids: [CID…], records: [raw], blobs: { cid: base64 } }
-function versionRecords(x){ return [...S.records.values()].filter(r => r.z < x.d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE'); }
+const versionRecords = x => versionRecs(x.d);   // the delivery's exact version (features/work)
 // what to include for the chosen elements: the elements and every change in the version that targets them (moves, styles, edits)
 function excerptOf(x, cids){
   const inV = versionRecords(x), want = new Set(cids), out = new Map();
@@ -17,7 +17,8 @@ function excerptOf(x, cids){
 function makeExcerpt(x, cids){
   const recs = excerptOf(x, cids), blobs = {};
   for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b)) blobs[b] = b64enc(S.blobs.get(b)); }
-  return { flux: 'excerpt', v: 1, canvas: canvasId, title: canvasTitle(), delivery: x.d.raw, approvals: x.ok.map(a => a.raw), ids: versionRecords(x).map(r => r.cid).sort(), records: recs.map(r => r.raw), blobs };
+  const ids = versionOf(x.d) ? [...versionOf(x.d)].sort() : versionRecords(x).map(r => r.cid).sort(), flow = x.d.flow && S.records.get(x.d.flow);
+  return { flux: 'excerpt', v: 1, canvas: canvasId, title: canvasTitle(), delivery: x.d.raw, approvals: x.ok.map(a => a.raw), ...(flow ? { flow: flow.raw } : {}), ids, records: recs.map(r => r.raw), blobs };
 }
 async function shareExcerpt(x){
   const cids = [...S.sel].filter(c => S.records.has(c));
@@ -37,14 +38,30 @@ async function verifyExcerpt(ex){
   const root = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...ex.ids].sort().join('\n')))));
   if (root !== d.n.fields.H) return fail('The record IDs don’t add up to the delivered version.');
   res.lines.push(`✓ The ${ex.ids.length} record IDs recompute to the delivered version ${root.slice(0, 10)}…`);
-  const ids = new Set(ex.ids), approvers = (d.n.fields.A || '').split('_'), quorum = +d.n.fields.Q || 1, seen = new Set();
-  for (const raw of ex.approvals || []){ const a = await check(raw); if (a && a.n.action === 'APPROVE' && a.n.fields.R === d.cid && a.n.fields.H === root && a.n.fields.S !== '0' && approvers.includes(a.n.fields.I)) seen.add(a.n.fields.I); }
+  const ids = new Set(ex.ids), approvers = (d.n.fields.A || '').split('_').filter(Boolean), quorum = Math.max(1, Math.min(approvers.length, +d.n.fields.Q || 1));
+  // each approver's latest approval in the file counts; a withdrawal (S-0) cancels it
+  const latest = new Map();
+  for (const raw of ex.approvals || []){ const a = await check(raw); if (!a || a.n.action !== 'APPROVE' || a.n.fields.R !== d.cid || !approvers.includes(a.n.fields.I)) continue; const o = latest.get(a.n.fields.I); if (!o || decInt(a.n.fields.Z) > decInt(o.n.fields.Z)) latest.set(a.n.fields.I, a); }
+  const good = [...latest.values()].filter(a => a.n.fields.S !== '0' && a.n.fields.H === root), seen = new Set(good.map(a => a.n.fields.I));
   res.approvals = seen.size; res.quorum = quorum; res.approvers = [...seen];
-  res.lines.push(`${seen.size >= quorum ? '✓' : '✕'} ${seen.size} of ${quorum} required approvals are signed on exactly this version`);
+  let enough = seen.size >= quorum;
+  res.lines.push(`${enough ? '✓' : '✕'} ${seen.size} of ${quorum} required approvals are signed on exactly this version`);
+  // a delivery under an approval flow: its groups and their order are checked too (conditions on the canvas can't be, from a file)
+  if (d.n.fields.F && d.n.fields.F !== '0'){
+    const f = ex.flow && await check(ex.flow);
+    if (!f || f.cid !== d.n.fields.F || f.n.action !== 'FLOW'){ enough = false; res.lines.push('✕ The delivery names an approval flow the excerpt doesn’t carry'); }
+    else {
+      const rec = toRec(f.n, f.cid), done = [];
+      for (const g of rec.groups){ const v = good.filter(a => g.members.includes(a.n.fields.I) && (!rec.ordered || done.every(p => p.v.filter(o => (a.n.fields.G || '').split('_').includes(o.cid)).length >= p.g.need))); done.push({ g, v }); }
+      const met = done.every(p => p.v.length >= p.g.need); enough = enough && met;
+      res.lines.push(`${met ? '✓' : '✕'} Approval flow “${rec.name}”: ${done.map(p => `${p.g.name} ${Math.min(p.v.length, p.g.need)}/${p.g.need}`).join(', ')}${rec.ordered ? ', in order' : ''}${rec.conds.length ? ' · its conditions on the canvas can only be checked on the canvas' : ''}`);
+    }
+  }
   for (const raw of ex.records){ const r = await check(raw); if (!r) return fail('A record’s signature doesn’t verify.'); if (!ids.has(r.cid)) return fail('A record isn’t part of the delivered version.'); res.records++; }
   for (const [c, b] of Object.entries(ex.blobs || {})) if (await cidOf(b64dec(b)) !== c) return fail('An attached image or drawing doesn’t match its ID.');
-  res.lines.push(`✓ All ${res.records} records in the excerpt are signed and part of that version`, `• ${ex.ids.length - res.records} other records stay private: only their hashes are shared`);
-  res.ok = seen.size >= quorum; res.title = decTxt(d.n.fields.M || ''); return res;
+  res.lines.push(`✓ All ${res.records} records in the excerpt are signed and part of that version`, `• ${ex.ids.length - res.records} other records stay private: only their hashes are shared`,
+    '• Approvals are the ones the sharer included: a withdrawal signed later would only show on the canvas itself');
+  res.ok = enough; res.title = decTxt(d.n.fields.M || ''); return res;
 }
 async function openExcerptFile(){
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';

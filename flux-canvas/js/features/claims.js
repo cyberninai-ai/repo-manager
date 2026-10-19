@@ -8,24 +8,29 @@
 // CLAIM-I-R-{element}-S-{1 claim|0 not}-Z-T-SIG                      latest per element wins
 // EVIDENCE-I-R-{claim element}-E-{evidence element|0}-U-{source url|0}-S-{supports|refutes}-M-{quote or note}-Z-T-SIG
 // CHECK-I-R-{claim element}-S-{ok|no|unsure}-M-{note}-Z-T-SIG          per reviewer the latest wins; the claim's author doesn't count
-registerRecord('CLAIM', { parse(r, f){ if (!f.R) throw Error('claim'); r.on = f.S !== '0'; } });
-registerRecord('EVIDENCE', { parse(r, f){ if (!f.R || !['supports', 'refutes'].includes(f.S)) throw Error('evidence'); r.ev = f.E && f.E !== '0' ? f.E : null; r.url = f.U && f.U !== '0' ? decTxt(f.U) : null; r.supports = f.S === 'supports'; r.note = decTxt(f.M || ''); if (!r.ev && !r.url) throw Error('evidence'); } });
-registerRecord('CHECK', { parse(r, f){ if (!f.R || !['ok', 'no', 'unsure'].includes(f.S)) throw Error('check'); r.verdict = f.S; r.note = decTxt(f.M || ''); } });
+registerRecord('CLAIM', { parse(r, f){ must(isCid(f.R), 'claim'); r.on = f.S !== '0'; } });
+registerRecord('EVIDENCE', { parse(r, f){ must(isCid(f.R) && ['supports', 'refutes'].includes(f.S) && (!f.E || f.E === '0' || isCid(f.E)), 'evidence'); r.ev = f.E && f.E !== '0' ? f.E : null; r.url = f.U && f.U !== '0' ? decTxt(f.U) : null; r.supports = f.S === 'supports'; r.note = decTxt(f.M || ''); if (!r.ev && !r.url) throw Error('evidence'); if (r.url && !/^https?:\/\//i.test(r.url)) throw Error('only web sources'); } });
+registerRecord('CHECK', { parse(r, f){ must(isCid(f.R) && ['ok', 'no', 'unsure'].includes(f.S), 'check'); r.verdict = f.S; r.note = decTxt(f.M || ''); } });
 Object.assign(PERM_OF, { CLAIM: 'comment', EVIDENCE: 'comment', CHECK: 'comment' });
 const GROUNDERS = [];   // { name, run: async ({ text, evidence: [{ text, url, supports }] }) → a signed CHECK record (raw) from the grounder's key }
 const CLAIM_STATE = { grounded: ['Grounded', 'good'], evidenced: ['Evidence, unchecked', 'acc'], asserted: ['Asserted, no evidence', 'warn'], contradicted: ['Contradicted', 'bad'] };
 
-// claim state as of record order z (null = now): the proof uses the state at the moment of delivery
-function claimsAt(by, D, z = null){
+// claim state, from all records or only those in a delivered version (inV): the proof shows what was believed then.
+// A claim can be unmarked only by whoever marked it, the element's author or the canvas owner; neither of the first two can
+// ground it: checks count only from other people
+function claimsAt(by, D, inV = null){
   const cur = c => { let n = 0; while (D.next.has(c) && n++ < 1000) c = D.next.get(c); return c; };
-  const ok = r => !D.hidden.has(r.cid) && (z == null || r.z < z);
-  const marks = new Map(); for (const r of by.CLAIM || []) if (ok(r)) marks.set(cur(r.f.R), r.on);
+  const ok = r => !D.hidden.has(r.cid) && (!inV || inV(r));
+  const marks = new Map();
+  for (const r of by.CLAIM || []) if (ok(r)){ const t = cur(r.f.R), m = marks.get(t), el = S.records.get(t);
+    if (!r.on && m?.on && ![m.by, el?.author, S.P?.owner].some(k => k && samePerson(k, r.author))) continue;
+    marks.set(t, { on: r.on, by: r.on ? r.author : null }); }
   const out = new Map();
-  for (const [t, on] of marks) if (on) out.set(t, { t, ev: [], checks: new Map() });
+  for (const [t, m] of marks) if (m.on) out.set(t, { t, by: m.by, ev: [], checks: new Map() });
   for (const r of by.EVIDENCE || []) if (ok(r)) out.get(cur(r.f.R))?.ev.push(r);
   for (const r of by.CHECK || []) if (ok(r)){ const c = out.get(cur(r.f.R)); if (c) c.checks.set(personOf(r.author), r); }
   for (const c of out.values()){
-    const author = S.records.get(c.t)?.author, indep = [...c.checks.values()].filter(r => !samePerson(r.author, author));
+    const author = S.records.get(c.t)?.author, indep = [...c.checks.values()].filter(r => !samePerson(r.author, author) && !samePerson(r.author, c.by));
     c.ok = indep.filter(r => r.verdict === 'ok').length; c.no = indep.filter(r => r.verdict === 'no').length;
     c.score = c.ok + c.no ? c.ok / (c.ok + c.no) : null;
     const sup = c.ev.filter(e => e.supports).length, ref = c.ev.length - sup;
@@ -45,7 +50,7 @@ async function addEvidence(claim, { ev = null, url = null, supports = true, note
   toast(supports ? 'Evidence attached.' : 'Counter-evidence attached.');
 }
 async function checkClaim(claim, verdict, note = ''){
-  if (samePerson(S.records.get(claim)?.author, S.me.id)) toast('You made this claim, so your own check doesn’t count toward grounding. Ask someone else to check it.');
+  if (samePerson(S.records.get(claim)?.author, S.me.id) || samePerson(S.D.claims?.get(claim)?.by, S.me.id)) toast('You wrote or marked this claim, so your own check doesn’t count toward grounding. Ask someone else to check it.');
   await publish(await signed('CHECK', [['I', S.me.id], ['R', claim], ['S', verdict], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 async function evidenceForm(claim, others){
@@ -138,6 +143,6 @@ registerFeature({ id: 'claims', name: 'Claim grounding', group: 'decide', icon: 
 FLOW_CONDITIONS.claims = { label: 'Every claim is grounded', test: () => { const n = [...(S.D.claims?.values() || [])].filter(c => S.records.has(c.t) && !S.D.hidden.has(c.t) && c.state !== 'grounded').length; return n ? `${plural(n, 'claim')} not grounded` : true; } };
 // the proof records what was believed at the moment of delivery, and on what evidence
 DELIVERY_HOOKS.proof.push((x, out) => {
-  const at = claimsAt(claimBy, S.D, x.d.z); if (!at.size) return;
+  const v = versionOf(x.d), at = claimsAt(claimBy, S.D, v ? r => v.has(r.cid) : r => r.z < x.d.z); if (!at.size) return;
   out.push('', '## Claims at the time of delivery', '', ...[...at.values()].map(c => `- ${CLAIM_STATE[c.state][0]}${c.score != null ? ` (${c.score.toFixed(2)})` : ''}: “${elTitle(c.t)}” — ${c.ev.length} evidence, ${c.ok} independent check${c.ok === 1 ? '' : 's'} holding, ${c.no} not`));
 });

@@ -32,7 +32,7 @@ function policyOf(recs){
   const can = (author, perm) => {
     if (!owner || samePerson(author, owner) || perm === null) return true;
     if (perm === 'owner') return false;
-    const g = grants.get(author) || grants.get(personOf(author)) || grants.get('all');
+    const g = grants.get(author) || [...grants].find(([k]) => k !== 'all' && samePerson(k, author))?.[1] || grants.get('all');   // a grant to any of the person's keys
     return !g || g.perms.has(perm);
   };
   return { owner, grants, can };

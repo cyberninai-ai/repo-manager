@@ -22,16 +22,19 @@ function planNow(){
   for (const [a, b] of edges){ (before.get(b) || before.set(b, []).get(b)).push(a); (after.get(a) || after.set(a, []).get(a)).push(b); }
   const open = c => t.get(c)?.status !== 'done';
   const blocked = new Map(); for (const [c, bs] of before) if (open(c)){ const w = bs.filter(open); if (w.length) blocked.set(c, w); }
-  // cycles: a task that (through others) waits on itself
-  const cyc = new Set(), state = new Map();
-  const visit = c => { state.set(c, 1); for (const n of after.get(c) || []){ if (state.get(n) === 1) cyc.add(n).add(c); else if (!state.has(n)) visit(n); } state.set(c, 2); };
-  for (const c of t.keys()) if (!state.has(c)) visit(c);
-  // the critical path: the longest chain of unfinished tasks (memoised; cycles cut)
-  const memo = new Map(), longest = (c, seen = new Set()) => { if (memo.has(c)) return memo.get(c); if (seen.has(c) || !open(c)) return []; seen.add(c);
-    let best = []; for (const n of after.get(c) || []){ const p = longest(n, seen); if (p.length > best.length) best = p; } seen.delete(c); const r = [c, ...best]; memo.set(c, r); return r; };
-  let path = []; for (const c of t.keys()) if (open(c) && !(before.get(c) || []).some(open)){ const p = longest(c); if (p.length > path.length) path = p; }
+  // ordering the unfinished tasks (no recursion, so long chains are fine): what can't be ordered waits on a loop
+  const nodes = [...t.keys()].filter(open).sort(), indeg = new Map(nodes.map(c => [c, 0]));
+  for (const c of nodes) for (const n of after.get(c) || []) if (indeg.has(n)) indeg.set(n, indeg.get(n) + 1);
+  const queue = nodes.filter(c => !indeg.get(c)), order = [];
+  while (queue.length){ const c = queue.shift(); order.push(c); for (const n of after.get(c) || []) if (indeg.has(n)){ indeg.set(n, indeg.get(n) - 1); if (!indeg.get(n)) queue.push(n); } }
+  const cyc = new Set(nodes.filter(c => !order.includes(c)));
+  // the critical path: the longest chain through that order
+  const dist = new Map(), prev = new Map();
+  for (const c of order){ const d = (dist.get(c) || 1); dist.set(c, d); for (const n of after.get(c) || []) if (indeg.has(n) && !cyc.has(n) && d + 1 > (dist.get(n) || 1)){ dist.set(n, d + 1); prev.set(n, c); } }
+  let end = null; for (const c of order) if (!end || dist.get(c) > dist.get(end)) end = c;
+  const path = []; for (let c = end; c; c = prev.get(c)) path.unshift(c);
   const ready = [...t].filter(([c, x]) => x.status !== 'done' && !blocked.has(c)).map(([c]) => c);
-  return { edges, blocked, ready, path: path.length > 1 ? path : [], cycles: cyc };
+  return { edges, blocked, ready, path: path.length > 1 ? path : [], longest: path.length, cycles: cyc };
 }
 RENDER_HOOKS.screen.push(() => {
   if (!S.D.tasks?.size) return;
@@ -49,7 +52,7 @@ WORK_SECTIONS.push(() => {
     ${p.blocked.size ? `<h3>Blocked <span class="n">${p.blocked.size}</span></h3><ul class="wk-list">${[...p.blocked.keys()].map(li).join('')}</ul>` : ''}
     ${p.cycles.size ? `<p class="wk-note">${plural(p.cycles.size, 'task')} wait on each other in a loop.</p>` : ''}`;
 });
-FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.path.length ? `${plural(p.path.length, 'task')} on the critical path` : true; } };
+FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.cycles.size ? `${plural(p.cycles.size, 'task')} wait on each other in a loop` : p.longest ? `${plural(p.longest, 'task')} still open on the critical path` : true; } };
 registerFeature({ id: 'taskflow', name: 'Dependencies and critical path', group: 'deliver', icon: 'deps', records: [],
   blurb: 'Connect tasks to order them: what is blocked, what is ready, and the chain that sets the date',
   status: () => { if (!S.D.tasks?.size) return ''; const p = plan(); return p.blocked.size ? `${p.blocked.size} blocked` : ''; },

@@ -19,16 +19,16 @@ function sendPresence(gone, beat = false){
 }
 setInterval(() => sendPresence(false, true), 2000);   // a heartbeat: people who are reading, not moving, stay visible
 function onPresence(p, via){
-  if (!p || typeof p.id !== 'string' || p.id === S.me?.id) return;
+  if (!p || !isKey(p.id) || p.id === S.me?.id) return;   // presence is unsigned: only key-shaped ids, never markup
   if (p.gone){ peers.delete(p.id); if (S.follow === p.id) stopFollow(); paintAuthors(); paintSession(); dirty = true; return; }
   const had = peers.has(p.id), prev = peers.get(p.id) || {};
   const name = typeof p.name === 'string' ? p.name.slice(0, 40) : '';
   if (name && !S.D.profiles?.has(p.id)) NAMES.set(p.id, name);   // a name before their first record arrives
   peers.set(p.id, { x: Number.isFinite(p.x) ? p.x : prev.x, y: Number.isFinite(p.y) ? p.y : prev.y, t: Date.now(), name,
-    sel: Array.isArray(p.sel) ? p.sel.filter(c => typeof c === 'string').slice(0, 40) : [], edit: typeof p.edit === 'string' ? p.edit : null,
-    view: p.view && Number.isFinite(p.view.x) && Number.isFinite(p.view.zoom) ? p.view : prev.view, root: typeof p.root === 'string' ? p.root : prev.root,
-    n: Number.isFinite(p.n) ? p.n : prev.n, tool: typeof p.tool === 'string' ? p.tool : '', via: p.hop > 0 ? 'mesh' : via || prev.via || 'tab',
-    through: p.hop > 0 && typeof p.through === 'string' ? p.through : null, att: p.att && typeof p.att === 'object' ? p.att : null });
+    sel: Array.isArray(p.sel) ? p.sel.filter(isCid).slice(0, 40) : [], edit: isCid(p.edit) ? p.edit : null,
+    view: p.view && Number.isFinite(p.view.x) && Number.isFinite(p.view.zoom) ? p.view : prev.view, root: typeof p.root === 'string' && /^[a-z2-7]{6,16}$/.test(p.root) ? p.root : prev.root,
+    n: Number.isFinite(p.n) ? p.n : prev.n, tool: typeof p.tool === 'string' ? p.tool.slice(0, 20) : '', via: p.hop > 0 ? 'mesh' : via || prev.via || 'tab',
+    through: p.hop > 0 && isKey(p.through) ? p.through : null, att: p.att && typeof p.att === 'object' ? { on: isCid(p.att.on) ? p.att.on : null, for: +p.att.for || 0, idle: +p.att.idle || 0, off: !!p.att.off } : null });
   if (S.follow === p.id) followView(peers.get(p.id).view);
   dirty = true;
   if (!had){ paintAuthors(); toast(`${short(p.id)} joined`); sendPresence(false, true); }

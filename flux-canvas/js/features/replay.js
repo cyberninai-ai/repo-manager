@@ -21,11 +21,11 @@ function openHistory(){
     <input type="range" id="histRange" min="0" max="${RP.recs.length}" step="1" value="${RP.recs.length}" aria-label="Replay position">
     <span id="histLabel"></span>
     <label class="sr" for="rpScope">Replay what</label><select id="rpScope">${Object.entries(RP_SCOPES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
-    <label class="sr" for="rpWho">Whose work</label><select id="rpWho" hidden>${ppl.map(p => `<option value="${p}">${esc(whoName(p))}</option>`).join('')}</select>
+    <label class="sr" for="rpWho">Whose work</label><select id="rpWho" hidden>${ppl.map(p => `<option value="${esc(p)}">${esc(whoName(p))}</option>`).join('')}</select>
     <label class="sr" for="rpSpeed">Speed</label><select id="rpSpeed"><option value="fit">Each session in 30 s</option><option value="4">4×</option><option value="16">16×</option><option value="60">60×</option><option value="step">One step a second</option></select>
     <button class="btn" id="histNow">Back to now</button>
     <div class="rp-marks" role="group" aria-label="Sessions and moments">${sess.length > 1 ? sess.map((s, i) => `<button class="pill" data-jump="${s.from}">Session ${i + 1} · ${when(RP.recs[s.from].t)} · ${plural(s.to - s.from + 1, 'change')}</button>`).join('') : ''}
-      ${RP.recs.map((r, i) => RP_MOMENTS.has(r.type) && r.type !== 'CHECK' ? `<button class="pill acc" data-jump="${i}">${{ DECISION: '⚑', APPROVE: '✓', DELIVER: '↗', REVEAL: '🔓', CLOSE: '◎', SETTLE: '💰', SIGNOFF: '✓' }[r.type]} ${esc(r.type === 'DECISION' ? r.text.slice(0, 28) : activityText(r).slice(0, 28))}</button>` : '').join('')}</div>`;
+      ${RP.recs.map((r, i) => RP_MOMENTS.has(r.type) && r.neg === null && r.type !== 'CHECK' ? `<button class="pill acc" data-jump="${i}">${{ DECISION: '⚑', APPROVE: '✓', DELIVER: '↗', REVEAL: '🔓', CLOSE: '◎', SETTLE: '💰', SIGNOFF: '✓' }[r.type]} ${esc(r.type === 'DECISION' ? r.text.slice(0, 28) : activityText(r).slice(0, 28))}</button>` : '').join('')}</div>`;
   $('histRange').addEventListener('input', e => { stopPlay(); setHist(+e.target.value); });
   h.hidden = false; document.body.classList.add('history');
   setHist(RP.recs.length); setTimeout(() => $('histRange').focus(), 0);

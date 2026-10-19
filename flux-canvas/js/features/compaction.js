@@ -8,7 +8,9 @@
 // The history scrubber can no longer replay the steps that were folded together.
 const STYLE_FIELDS = { W: 'sw2', C: 'sc', K: 'sk', O: 'so', L: 'sl', M: 'sm', Y: 'sy', D: 'sd', F: 'sf', S: 'ss' };
 function compactionPlan(){
-  const mine = [...S.records.values()].filter(r => r.author === S.me?.id).sort(byZ);
+  // records inside a delivered version stay: approvers and witnesses must be able to find every one of them
+  const pinned = new Set(); for (const x of S.D.deliveries || []){ for (const c of versionOf(x.d) || []) pinned.add(c); if (!x.d.version) for (const r of versionRecs(x.d)) pinned.add(r.cid); }
+  const mine = [...S.records.values()].filter(r => r.author === S.me?.id && !pinned.has(r.cid)).sort(byZ);
   const moves = new Map(), lastField = new Map(), lastNeg = new Map();
   for (const r of mine){
     if (r.neg !== null) lastNeg.set(r.f.R + r.type, r.cid);

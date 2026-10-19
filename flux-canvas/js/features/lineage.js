@@ -9,28 +9,34 @@
 // INHERIT-I-R-{canvas}-S-{open|closed}-Y-{royalty, basis points}-Z-T-SIG          the canvas owner's terms for forks
 // LINEAGE-I-R-{fork}-P-{parent}-H-{parent version}-C-{records copied}-K-{the parent's INHERIT|0}-Z-T-SIG   signed in the fork
 // FORKED-I-R-{fork}-H-{parent version}-M-{title}-Z-T-SIG                           signed in the parent
-// The parent's INHERIT record is itself copied into the fork, signed by the parent's owner, so the royalty can't be dropped.
-registerRecord('INHERIT', { parse(r, f){ if (!f.R || !['open', 'closed'].includes(f.S)) throw Error('inherit'); r.open = f.S === 'open'; r.bp = Math.max(0, Math.min(5000, +f.Y || 0)); } });
-registerRecord('LINEAGE', { parse(r, f){ if (!f.R || !f.P || !f.H) throw Error('lineage'); r.parent = f.P; r.root = f.H; r.n = Math.max(0, +f.C || 0); r.terms = f.K && f.K !== '0' ? f.K : null; }, inherit: false });
-registerRecord('FORKED', { parse(r, f){ if (!f.R || !f.H) throw Error('forked'); r.child = f.R; r.root = f.H; r.title = decTxt(f.M || ''); }, inherit: false });
+// The parent's INHERIT and OWNER records are copied into the fork: the OWNER record proves who owns the parent (its id commits to
+// that key), so only royalty terms that key signed count. LINEAGE counts only from the fork's owner; the first one fixes the parent.
+registerRecord('INHERIT', { parse(r, f){ must(isCanvas(f.R) && ['open', 'closed'].includes(f.S), 'inherit'); r.open = f.S === 'open'; r.bp = Math.max(0, Math.min(5000, +f.Y || 0)); } });
+registerRecord('LINEAGE', { parse(r, f){ must(isCanvas(f.R) && isCanvas(f.P) && isRoot(f.H), 'lineage'); r.parent = f.P; r.root = f.H; r.n = Math.max(0, +f.C || 0); r.terms = f.K && f.K !== '0' ? f.K : null; must(!r.terms || isCid(r.terms), 'terms'); }, inherit: false });
+registerRecord('FORKED', { parse(r, f){ must(isCanvas(f.R) && isRoot(f.H), 'forked'); r.child = f.R; r.root = f.H; r.title = decTxt(f.M || ''); }, inherit: false });
 Object.assign(PERM_OF, { INHERIT: null, LINEAGE: null, FORKED: 'comment' });   // INHERIT counts only from the owner (derive below)
 // core element records and most feature records travel with a fork; governance doesn't
 const NO_INHERIT = new Set(['OWNER', 'GRANT', 'META', 'PROFILE']);
 const inheritable = r => !NO_INHERIT.has(r.type) && RECORD_TYPES[r.type]?.inherit !== false;
 DERIVE_HOOKS.push((D, by) => {
-  const lin = (by.LINEAGE || []).filter(r => r.f.R === canvasId && !D.hidden.has(r.cid));
-  D.lineage = lin.at(-1) || null; D.lineageAll = lin;
-  D.forks = (by.FORKED || []).filter(r => !D.hidden.has(r.cid));
-  D.inherit = (by.INHERIT || []).filter(r => r.f.R === canvasId && (!S.P?.owner || samePerson(r.author, S.P.owner))).at(-1) || null;
+  const owner = S.P?.owner, lin = owner ? (by.LINEAGE || []).filter(r => r.f.R === canvasId && r.neg === null && !D.hidden.has(r.cid) && samePerson(r.author, owner)) : [];
+  const parent = lin[0]?.parent, same = lin.filter(r => r.parent === parent);
+  D.lineage = same.at(-1) || null; D.lineageAll = same;
+  D.forks = (by.FORKED || []).filter(r => r.neg === null && inView(r));
+  D.inherit = owner ? (by.INHERIT || []).filter(r => r.f.R === canvasId && r.neg === null && samePerson(r.author, owner)).at(-1) || null : null;
 });
-const parentTerms = () => { const l = S.D.lineage; const t = l?.terms && S.records.get(l.terms); return t && t.type === 'INHERIT' && t.f.R === l.parent ? t : null; };
+// the parent's owner, proven by its OWNER record (core/permissions checks the id commits to that key on arrival)
+const parentOwner = id => [...S.records.values()].find(r => r.type === 'OWNER' && r.f.R === id && r.neg === null)?.author || null;
+const parentTerms = () => { const l = S.D.lineage, t = l?.terms && S.records.get(l.terms), o = l && parentOwner(l.parent);
+  return t && t.type === 'INHERIT' && t.f.R === l.parent && o && samePerson(t.author, o) ? t : null; };
 // a fork's payouts pay the template's owner its royalty first
 SETTLE_HOOKS.push(() => { const t = parentTerms(); return t && t.bp ? [{ to: t.author, bp: t.bp, why: 'royalty' }] : []; });
 const fullRoot = async () => b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...S.records.keys()].sort().join('\n')))));
 async function forkCanvas(){
   if (S.D.inherit && !S.D.inherit.open && !samePerson(S.P?.owner, S.me.id)){ toast('The owner has closed this canvas to forks.'); return null; }
   const parent = canvasId, title = canvasTitle(), root = await fullRoot(), terms = S.D.inherit;
-  const recs = [...S.records.values()].filter(inheritable).sort(byZ), blobs = new Map();
+  // the work as everyone sees it (nothing permissions refused or still waiting as a suggestion), plus the proof of ownership
+  const recs = [...S.records.values()].filter(r => inheritable(r) && !S.D.denied.has(r.cid) && !S.D.pending?.has(r.cid) || r.type === 'OWNER' && r.f.R === parent).sort(byZ), blobs = new Map();
   for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b)) blobs.set(b, S.blobs.get(b)); }
   const { nonce, id } = await ownedCanvasId();
   try { await publish(await signed('FORKED', [['I', S.me.id], ['R', id], ['H', root], ['M', encTxt(title)], ['Z', ++S.lamport], ['T', Date.now()]])); } catch {}   // the parent may not let you comment: the fork still links back
@@ -51,6 +57,7 @@ async function parentNews(){
 }
 async function pullParent(){
   const news = await parentNews(); if (!news.length){ toast('Nothing new in the parent (from what this browser has of it).'); return; }
+  if (!await formDialog('Pull from the parent', [{ id: 'i', type: 'info', label: `Copy ${plural(news.length, 'record')} from canvas ${S.D.lineage.parent} into this one? Everyone on this canvas will see them.` }], { ok: 'Pull' })) return;
   for (const b of await dbAll('blobs', S.D.lineage.parent)) if (!S.blobs.has(b.cid)) try { await addBlob(b.cid, b.bytes); } catch {}
   await bulk(async () => { for (const raw of news) await ingest(raw); });
   const l = S.D.lineage, rows = await dbAll('records', l.parent);
@@ -73,11 +80,11 @@ registerPanel({
   paint(body){
     const l = S.D.lineage, t = parentTerms(), forks = S.D.forks || [], mine = S.D.inherit, owner = !S.P?.owner || samePerson(S.P.owner, S.me.id);
     body.innerHTML = `${l ? `<div class="card"><div class="hd"><b>Forked from</b><span class="pill acc">${plural(l.n, 'record')}</span></div>
-        <div class="row2"><button class="link" data-open="${l.parent}">${esc(l.parent)}</button><small>at version ${l.root.slice(0, 8)} · ${when(l.t)} by ${esc(whoName(l.author))}</small></div>
+        <div class="row2"><button class="link" data-open="${esc(l.parent)}">${esc(l.parent)}</button><small>at version ${esc(l.root.slice(0, 8))} · ${when(l.t)} by ${esc(whoName(l.author))}</small></div>
         ${t ? `<small>${t.bp ? `Royalty: ${pct(t.bp)} of payouts here goes to ${esc(whoName(t.author))}, the template’s owner` : 'No royalty'}${t.open ? '' : ' · the owner asked not to fork it'}</small>` : ''}
         <div class="acts"><button class="btn" data-pull${newsN ? '' : ' disabled'}>${newsN == null ? 'Checking the parent…' : newsN ? `Pull ${plural(newsN, 'new change')}` : 'Up to date with the parent'}</button></div></div>` : ''}
       <h3>Forks of this canvas <span class="n">${forks.length}</span></h3>
-      ${forks.length ? `<ul class="plain">${forks.map(f => { const c = consensus(f.cid); return `<li class="card"><div class="hd"><button class="link" data-open="${f.child}">${esc(f.title || f.child)}</button><small>${esc(whoName(f.author))} · ${when(f.t)}</small></div>
+      ${forks.length ? `<ul class="plain">${forks.map(f => { const c = consensus(f.cid); return `<li class="card"><div class="hd"><button class="link" data-open="${esc(f.child)}">${esc(f.title || f.child)}</button><small>${esc(whoName(f.author))} · ${when(f.t)}</small></div>
         <div class="acts"><button class="btn" data-st="agree" data-t="${f.cid}" aria-pressed="${c.mine === 'agree'}">Endorse ${c.c.agree || ''}</button></div></li>`; }).sort().join('')}</ul>` : '<p class="empty">No forks yet.</p>'}
       ${owner ? `<div class="card"><b>Terms for forks</b><small>${mine ? `${mine.open ? 'Open to forks' : 'Closed to forks'} · royalty ${pct(mine.bp)}` : 'Open to forks, no royalty.'}</small><div class="acts"><button class="btn" data-terms>Set the terms…</button></div></div>` : ''}
       <div class="acts"><button class="btn primary" data-fork data-autofocus>${ic('fork')}Fork this canvas</button></div>`;

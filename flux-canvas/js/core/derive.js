@@ -58,8 +58,11 @@ function derive(){
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
   S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids, denied, pending };
   runHooks(DERIVE_HOOKS, S.D, byType);
+  runHooks(DERIVE_FINAL, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
+// does a record count in the view: not revoked, not refused by permissions, not held as a suggestion
+const inView = r => !!r && !S.D.hidden.has(r.cid) && !S.D.denied?.has(r.cid) && !S.D.pending?.has(r.cid);
 // a node's branch: every node below it in the tree (through P links), visible or not revoked
 function descendants(cid){
   const out = [], seen = new Set([cid]), q = [cid];

@@ -971,7 +971,8 @@ const RECORD_TYPES = {};
 const NAMES = new Map();           // author key → display name (example authors; profiles later)
 function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(action); }
 
-const DERIVE_HOOKS = [];        // (D, byType) after the core derive; byType[action] = that action's records in z order
+const DERIVE_HOOKS = [];
+const DERIVE_FINAL = [];        // (D, byType) after every DERIVE_HOOKS entry: judgements that read other features' views (deliveries)        // (D, byType) after the core derive; byType[action] = that action's records in z order
 const RENDER_HOOKS = {
   under: [],                    // () drawn in canvas coordinates below the elements (diagram tree links)
   world: [],                    // (z) drawn in canvas coordinates above elements
@@ -1002,6 +1003,16 @@ const WIRE_INGEST_HOOKS = [];   // (msg, from, chan) after a wire message brough
 const PRESENCE_FIELDS = [];     // () → fields merged into your presence (attention)
 const IDENTITY = { of: k => k };   // key → the person it belongs to; linked devices and recovery (features/devices) replace it
 const personOf = k => IDENTITY.of(k);
+// a signing key as it appears in records and presence (Ed25519 or ECDSA, base58): anything else is refused before it reaches HTML
+const isKey = k => typeof k === 'string' && /^(ed|ec)[1-9A-HJ-NP-Za-km-z]{20,120}$/.test(k);
+const isCid = c => typeof c === 'string' && /^bafk[a-z2-7]{20,80}$/.test(c);
+const isCanvas = c => typeof c === 'string' && /^[a-z0-9]{6,32}$/.test(c);
+const isRoot = h => typeof h === 'string' && /^[a-z2-7]{20,64}$/.test(h);
+const must = (ok, what) => { if (!ok) throw Error(what); };   // parse checks: a record that fails one is refused as malformed
+const cidList = v => { const l = String(v || '').split('_').filter(Boolean); must(l.every(isCid), 'cid list'); return l; };
+const keyList = (v, sep = '_') => { const l = String(v || '').split(sep).filter(Boolean); must(l.every(isKey), 'key list'); return l; };
+// a key named only for its own type: "toString" or "__proto__" are not stances, kinds or conditions
+const own = (o, k) => typeof k === 'string' && Object.hasOwn(o, k);
 const samePerson = (a, b) => !!a && !!b && personOf(a) === personOf(b);
 // The feature catalogue: every feature module describes itself once; the hub, the palette and the docs read it.
 const FEATURES = [];            // { id, name, group, icon, blurb, records: [ACTION…], open?: () }
@@ -1574,7 +1585,9 @@ function imageOf(cid){
   return null;
 }
 function toRec(node, cid){
-  const f = node.fields, r = { cid, raw: node.raw, type: node.action, f, author: f.I, z: decInt(f.Z), t: f.T ? +f.T : 0, neg: null, size: node.raw.length };
+  const f = node.fields;
+  if (f.T != null && !/^\d{1,16}$/.test(f.T)) throw Error('time');   // a time that isn't a number would compare differently on each peer
+  const r = { cid, raw: node.raw, type: node.action, f, author: f.I, z: decInt(f.Z), t: f.T ? +f.T : 0, neg: null, size: node.raw.length };
   if ('N' in f){ if (f.N !== '0' && f.N !== '1' || !f.R) throw Error('neg'); r.neg = f.N === '1'; return r; }
   switch (r.type){
     case 'DRAW': if (!f.R || !f.C) throw Error('draw'); r.w = Math.max(1, decInt(f.W)); break;
@@ -1680,7 +1693,8 @@ openChannel();
 /* ---------- persistence: each record is stored once, as signed; blobs beside it. The export form is the same lines. ---------- */
 let saveT = 0;
 const pendingSave = new Set();
-const blobOf = r => (r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null ? r.f.R : null;
+// the blob a record names: points and images in R; feature records name theirs with registerRecord(…, { blob: field })
+const blobOf = r => r.neg !== null ? null : r.type === 'DRAW' || r.type === 'IMAGE' ? r.f.R : RECORD_TYPES[r.type]?.blob ? r.f[RECORD_TYPES[r.type].blob] || null : null;
 function lines(recs){
   const out = recs.map(r => r.raw);
   const seen = new Set();
@@ -1792,7 +1806,7 @@ function policyOf(recs){
   const can = (author, perm) => {
     if (!owner || samePerson(author, owner) || perm === null) return true;
     if (perm === 'owner') return false;
-    const g = grants.get(author) || grants.get(personOf(author)) || grants.get('all');
+    const g = grants.get(author) || [...grants].find(([k]) => k !== 'all' && samePerson(k, author))?.[1] || grants.get('all');   // a grant to any of the person's keys
     return !g || g.perms.has(perm);
   };
   return { owner, grants, can };
@@ -1878,8 +1892,11 @@ function derive(){
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
   S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids, denied, pending };
   runHooks(DERIVE_HOOKS, S.D, byType);
+  runHooks(DERIVE_FINAL, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
+// does a record count in the view: not revoked, not refused by permissions, not held as a suggestion
+const inView = r => !!r && !S.D.hidden.has(r.cid) && !S.D.denied?.has(r.cid) && !S.D.pending?.has(r.cid);
 // a node's branch: every node below it in the tree (through P links), visible or not revoked
 function descendants(cid){
   const out = [], seen = new Set([cid]), q = [cid];
@@ -3545,16 +3562,16 @@ function sendPresence(gone, beat = false){
 }
 setInterval(() => sendPresence(false, true), 2000);   // a heartbeat: people who are reading, not moving, stay visible
 function onPresence(p, via){
-  if (!p || typeof p.id !== 'string' || p.id === S.me?.id) return;
+  if (!p || !isKey(p.id) || p.id === S.me?.id) return;   // presence is unsigned: only key-shaped ids, never markup
   if (p.gone){ peers.delete(p.id); if (S.follow === p.id) stopFollow(); paintAuthors(); paintSession(); dirty = true; return; }
   const had = peers.has(p.id), prev = peers.get(p.id) || {};
   const name = typeof p.name === 'string' ? p.name.slice(0, 40) : '';
   if (name && !S.D.profiles?.has(p.id)) NAMES.set(p.id, name);   // a name before their first record arrives
   peers.set(p.id, { x: Number.isFinite(p.x) ? p.x : prev.x, y: Number.isFinite(p.y) ? p.y : prev.y, t: Date.now(), name,
-    sel: Array.isArray(p.sel) ? p.sel.filter(c => typeof c === 'string').slice(0, 40) : [], edit: typeof p.edit === 'string' ? p.edit : null,
-    view: p.view && Number.isFinite(p.view.x) && Number.isFinite(p.view.zoom) ? p.view : prev.view, root: typeof p.root === 'string' ? p.root : prev.root,
-    n: Number.isFinite(p.n) ? p.n : prev.n, tool: typeof p.tool === 'string' ? p.tool : '', via: p.hop > 0 ? 'mesh' : via || prev.via || 'tab',
-    through: p.hop > 0 && typeof p.through === 'string' ? p.through : null, att: p.att && typeof p.att === 'object' ? p.att : null });
+    sel: Array.isArray(p.sel) ? p.sel.filter(isCid).slice(0, 40) : [], edit: isCid(p.edit) ? p.edit : null,
+    view: p.view && Number.isFinite(p.view.x) && Number.isFinite(p.view.zoom) ? p.view : prev.view, root: typeof p.root === 'string' && /^[a-z2-7]{6,16}$/.test(p.root) ? p.root : prev.root,
+    n: Number.isFinite(p.n) ? p.n : prev.n, tool: typeof p.tool === 'string' ? p.tool.slice(0, 20) : '', via: p.hop > 0 ? 'mesh' : via || prev.via || 'tab',
+    through: p.hop > 0 && isKey(p.through) ? p.through : null, att: p.att && typeof p.att === 'object' ? { on: isCid(p.att.on) ? p.att.on : null, for: +p.att.for || 0, idle: +p.att.idle || 0, off: !!p.att.off } : null });
   if (S.follow === p.id) followView(peers.get(p.id).view);
   dirty = true;
   if (!had){ paintAuthors(); toast(`${short(p.id)} joined`); sendPresence(false, true); }
@@ -5683,7 +5700,9 @@ PALETTE_HOOKS.push(add => { add('share', 'Live session and invites', () => toggl
 // The history scrubber can no longer replay the steps that were folded together.
 const STYLE_FIELDS = { W: 'sw2', C: 'sc', K: 'sk', O: 'so', L: 'sl', M: 'sm', Y: 'sy', D: 'sd', F: 'sf', S: 'ss' };
 function compactionPlan(){
-  const mine = [...S.records.values()].filter(r => r.author === S.me?.id).sort(byZ);
+  // records inside a delivered version stay: approvers and witnesses must be able to find every one of them
+  const pinned = new Set(); for (const x of S.D.deliveries || []){ for (const c of versionOf(x.d) || []) pinned.add(c); if (!x.d.version) for (const r of versionRecs(x.d)) pinned.add(r.cid); }
+  const mine = [...S.records.values()].filter(r => r.author === S.me?.id && !pinned.has(r.cid)).sort(byZ);
   const moves = new Map(), lastField = new Map(), lastNeg = new Map();
   for (const r of mine){
     if (r.neg !== null) lastNeg.set(r.f.R + r.type, r.cid);
@@ -5841,20 +5860,30 @@ PALETTE_HOOKS.push(add => add('view', 'Outline of the canvas', () => toggleStruc
 // with progress, and deliveries sealed by the canvas state and approved by the people named on them (a quorum, like a multisig)
 // @uses records, derive, permissions, profiles, chrome, toolbar (menus), dialogs (report)
 // TASK-I-R-{element}-S-{todo|doing|done|x}-A-{owner key|0}-D-{yyyymmdd|0}-Z-T-SIG   latest per element wins; x = not a task
-// DELIVER-I-R-{nonce}-M-{title}-A-{approver_approver…}-Q-{quorum}-H-{root}-X-{frame|0}[-F-{approval flow}]-Z-T-SIG
-//   H = sha256 over the sorted CIDs of every record before this one (z below its own): the exact version being delivered
-// APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}-Z-T-SIG
-//   counts only from approvers named on the delivery, and only when H matches; latest per approver wins
+//   anyone may make something a task; after that only its creator, its owner, the element's author or the canvas owner change it
+// DELIVER-I-R-{nonce}-M-{title}-A-{approver_approver…}-Q-{quorum}-H-{root}-X-{frame|0}[-F-{approval flow}][-V-{version blob}]-Z-T-SIG
+//   V names a blob listing the CIDs of the exact version (sorted, one per line); H = sha256 of that list. Records signed later,
+//   whatever Z they claim, are not part of it. (Older deliveries without V: every record with z below the delivery's.)
+// APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}[-P-{payment terms seen}][-G-{approvals seen}]-Z-T-SIG
+//   counts only from approvers named on the delivery, and only when H matches; latest per approver wins. P binds the approval to
+//   the payment terms on screen (features/payouts); G lists the approvals it came after (ordered flows, features/flows)
 const WORK_SECTIONS = [];   // () → HTML sections other features add to the Work panel (features/taskflow)
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
-registerRecord('TASK', { parse(r, f){ if (!f.R || !['todo', 'doing', 'done', 'x'].includes(f.S)) throw Error('task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
-registerRecord('DELIVER', { parse(r, f){ if (!f.R || !f.H || !f.A) throw Error('deliver'); r.title = decTxt(f.M || ''); r.approvers = f.A.split('_').filter(Boolean); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1'))); r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; }, inherit: false });
-registerRecord('APPROVE', { parse(r, f){ if (!f.R || !f.H) throw Error('approve'); r.root = f.H; r.ok = f.S !== '0'; r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('TASK', { parse(r, f){ must(isCid(f.R) && ['todo', 'doing', 'done', 'x'].includes(f.S), 'task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; must(!r.owner || isKey(r.owner), 'task owner'); r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
+registerRecord('DELIVER', { parse(r, f){ must(f.R && isRoot(f.H) && f.A, 'deliver'); r.title = decTxt(f.M || ''); r.approvers = keyList(f.A); must(r.approvers.length, 'approvers'); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1')));
+  r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; r.version = f.V && f.V !== '0' ? f.V : null; must((!r.scope || isCid(r.scope)) && (!r.flow || isCid(r.flow)) && (!r.version || isCid(r.version)), 'deliver refs'); }, inherit: false, blob: 'V' });
+registerRecord('APPROVE', { parse(r, f){ must(isCid(f.R) && isRoot(f.H), 'approve'); r.root = f.H; r.ok = f.S !== '0'; r.note = decTxt(f.M || ''); r.terms = f.P && f.P !== '0' ? f.P : null; r.after = f.G && f.G !== '0' ? cidList(f.G) : []; must(!r.terms || isCid(r.terms), 'terms'); }, inherit: false });
 Object.assign(PERM_OF, { TASK: 'comment', DELIVER: 'draw', APPROVE: null });
 
 DERIVE_HOOKS.push((D, by) => {
-  const tasks = new Map();
-  for (const r of by.TASK || []){ if (D.hidden.has(r.cid)) continue; const t = current(r.f.R); if (!t || D.hidden.has(t.cid)) continue; if (r.status === 'x') tasks.delete(t.cid); else tasks.set(t.cid, { status: r.status, owner: r.owner, due: r.due, by: r.author, t: r.t, cid: t.cid }); }
+  const tasks = new Map(), made = new Map();   // element → who made it a task first
+  for (const r of by.TASK || []){
+    if (D.hidden.has(r.cid)) continue; const t = current(r.f.R); if (!t || D.hidden.has(t.cid)) continue;
+    const cur = tasks.get(t.cid), maker = made.get(t.cid);
+    if (cur || maker){ const may = [maker, cur?.owner, t.author, S.P?.owner].some(k => k && samePerson(k, r.author)); if (!may) continue; }   // a stranger can't tick off someone's task
+    else made.set(t.cid, r.author);
+    if (r.status === 'x') tasks.delete(t.cid); else tasks.set(t.cid, { status: r.status, owner: r.owner, due: r.due, by: r.author, t: r.t, cid: t.cid });
+  }
   D.tasks = tasks;
   const deliveries = [];
   for (const d of by.DELIVER || []){
@@ -5867,8 +5896,25 @@ DERIVE_HOOKS.push((D, by) => {
     deliveries.push(x);
   }
   D.deliveries = deliveries;
-  for (const x of deliveries) runHooks(DELIVERY_HOOKS.evaluate, x, D, by);   // approval flows and conditions (features/flows)
 });
+// judged last, once every feature's view (claims, stances, decisions, rituals…) exists; a rule that fails to evaluate fails closed
+DERIVE_FINAL.push((D, by) => {
+  for (const x of D.deliveries || []) for (const h of DELIVERY_HOOKS.evaluate){ try { h(x, D, by); } catch (err){ x.done = false; x.blockers.push('A rule of this delivery could not be checked'); console.warn(err); } }
+});
+/* the exact version a delivery covers: the CIDs in its version blob (or, for older deliveries, every record before it) */
+const versionCache = new Map();
+function versionOf(d){
+  if (d.version && S.blobs.has(d.version)){ if (!versionCache.has(d.version)) versionCache.set(d.version, new Set(new TextDecoder().decode(S.blobs.get(d.version)).split('\n').filter(Boolean))); return versionCache.get(d.version); }
+  return null;
+}
+// the records of that version this browser holds (missing ones are simply absent)
+function versionRecs(d){ const v = versionOf(d); return v ? [...v].map(c => S.records.get(c)).filter(Boolean) : [...S.records.values()].filter(r => r.z < d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE'); }
+async function versionCheck(d){   // → { root, missing }: what this browser computes for the delivered version
+  const v = versionOf(d);
+  if (!v) return { root: await rootAt(d.z), missing: 0 };
+  const list = [...v].sort(), bytes = te.encode(list.join('\n'));
+  return { root: b32(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))), missing: list.filter(c => !S.records.has(c)).length };
+}
 
 /* the version a delivery seals: every record before it, as CIDs, hashed */
 async function rootAt(z){
@@ -6013,17 +6059,27 @@ async function openDeliver(){
   ])) : { approvers: [S.me.id] };
   if (!pick) return;
   const picks = pick.approvers;
-  const z = S.lamport + 1, root = await rootAt(z), scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
-  await publish(await signed('DELIVER', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['M', encTxt(title.trim() || 'Delivery')], ['A', picks.join('_')], ['Q', pick.quorum || picks.length], ['H', root], ['X', scope], ...(pick.flow ? [['F', pick.flow]] : []), ['Z', z], ['T', Date.now()]]));
+  const scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
+  await deliver({ title: title.trim() || 'Delivery', approvers: picks, quorum: pick.quorum || picks.length, flow: pick.flow, scope });
   post({ ask: { to: picks, title: title.trim() } });
   toWork(); toast(`Sent for approval to ${picks.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
+}
+// sign a delivery of the canvas as it is now: the version list goes with it as a blob, its hash is the root
+async function deliver({ title, approvers, quorum = approvers.length, flow = null, scope = '0', nonce = null }){
+  const z = S.lamport + 1, list = [...S.records.values()].filter(r => r.z < z && r.type !== 'DELIVER' && r.type !== 'APPROVE').map(r => r.cid).sort();
+  const bytes = te.encode(list.join('\n')), vb = await cidOf(bytes), root = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
+  return publish(await signed('DELIVER', [['I', S.me.id], ['R', nonce || b32(crypto.getRandomValues(new Uint8Array(8)))], ['M', encTxt(title)], ['A', approvers.join('_')], ['Q', quorum], ['H', root], ['X', scope || '0'],
+    ...(flow ? [['F', flow]] : []), ['V', vb], ['Z', z], ['T', Date.now()]]), { [vb]: bytes });
 }
 function toWork(){ if (!WK.on) toggleWork(true); else paintWork(); }
 async function approve(cid, ok, note = ''){
   const d = S.records.get(cid); if (!d) return;
-  const root = await rootAt(d.z);
-  if (ok && root !== d.root){ toast('You don’t have this exact version yet. Syncing first…'); sendHello(false); return; }
-  await publish(await signed('APPROVE', [['I', S.me.id], ['R', cid], ['H', root], ['S', ok ? '1' : '0'], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  if (d.version && !S.blobs.has(d.version)){ toast('The version list hasn’t arrived yet. Syncing first…'); sendHello(false); return; }
+  const { root, missing } = await versionCheck(d);
+  if (ok && (root !== d.root || missing)){ toast(missing ? `You’re missing ${plural(missing, 'record')} of this version. Syncing first…` : 'This version doesn’t match what you have. Syncing first…'); sendHello(false); return; }
+  const x = S.D.deliveries.find(v => v.d.cid === cid), terms = S.D.pays?.get(cid)?.cid;
+  await publish(await signed('APPROVE', [['I', S.me.id], ['R', cid], ['H', root], ['S', ok ? '1' : '0'], ['M', encTxt(note)], ...(terms ? [['P', terms]] : []),
+    ...(x?.ok.length ? [['G', x.ok.map(a => a.cid).join('_')]] : []), ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(ok ? 'Approved. Your signature is on this version.' : 'Changes requested.');
 }
 WIRE_HOOKS.ask = a => { if (a?.to?.includes(S.me?.id)) toast(`You’ve been asked to approve “${a.title}” · open Work`); };
@@ -6031,8 +6087,8 @@ WIRE_HOOKS.ask = a => { if (a?.to?.includes(S.me?.id)) toast(`You’ve been aske
 /* the proof: who made the delivered version, who approved it, and the signed records anyone can verify */
 function showProof(cid){
   const x = S.D.deliveries.find(v => v.d.cid === cid); if (!x) return;
-  const recs = [...S.records.values()].filter(r => r.z < x.d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE');
-  const by = new Map(); for (const r of recs) by.set(r.author, (by.get(r.author) || 0) + 1);
+  const recs = versionRecs(x.d);
+  const by = new Map(); for (const r of recs) by.set(personOf(r.author), (by.get(personOf(r.author)) || 0) + 1);
   const out = [`# ${x.d.title || 'Delivery'}`, '', `- **Status:** ${x.done ? `Delivered — ${x.ok.length} of ${x.d.quorum} approvals on this exact version` : `Waiting — ${x.ok.length} of ${x.d.quorum} approvals`}`,
     `- **Canvas:** ${canvasTitle()} (\`${canvasId}\`)`, `- **Version (state root):** \`${x.d.root}\` — the SHA-256 of the ${recs.length} record CIDs it contains`,
     `- **Requested by:** ${short(x.d.author)} · ${new Date(x.d.t).toLocaleString()}`, '', '## Contributors', '',
@@ -6220,7 +6276,7 @@ const STANCES = {
   agree: { name: 'Agree', mark: '✓', tone: 'good' }, disagree: { name: 'Disagree', mark: '✕', tone: 'bad' },
   unsure: { name: 'Unsure', mark: '?', tone: 'warn' }, alt: { name: 'Have an alternative', mark: '↺', tone: 'acc' }, abstain: { name: 'Abstain', mark: '–', tone: null },
 };
-registerRecord('STANCE', { parse(r, f){ if (!f.R || !(f.S in STANCES)) throw Error('stance'); r.stance = f.S; r.note = decTxt(f.M || ''); } });
+registerRecord('STANCE', { parse(r, f){ must(isCid(f.R) && own(STANCES, f.S), 'stance'); r.stance = f.S; r.note = decTxt(f.M || ''); } });
 PERM_OF.STANCE = 'comment';
 
 DERIVE_HOOKS.push((D, by) => {
@@ -6335,16 +6391,18 @@ FLOW_CONDITIONS.consensus = { label: 'No split items (under 30% disagreement eve
 const ymd = s => /^\d{8}$/.test(s || '') ? s : null;
 const today = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
 const ymdText = d => d ? new Date(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6)).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-registerRecord('DECISION', { parse(r, f){ if (!f.R || !f.M) throw Error('decision'); r.text = decTxt(f.M); r.on = f.ON && f.ON !== '0' ? f.ON : null;
+registerRecord('DECISION', { parse(r, f){ must(f.R && f.M && (!f.ON || f.ON === '0' || isCid(f.ON)) && (!f.P || f.P === '0' || isCid(f.P)) && (!f.E || f.E === '0' || cidList(f.E)), 'decision'); r.text = decTxt(f.M); r.on = f.ON && f.ON !== '0' ? f.ON : null;
   r.evidence = f.E && f.E !== '0' ? f.E.split('_').filter(Boolean) : []; r.reversible = f.V !== '0'; r.review = ymd(f.W); r.supersedes = f.P && f.P !== '0' ? f.P : null; } });
-registerRecord('REVIEW', { parse(r, f){ if (!f.R || !['keep', 'reverse'].includes(f.S)) throw Error('review'); r.keep = f.S === 'keep'; r.note = decTxt(f.M || ''); r.review = ymd(f.W); } });
+registerRecord('REVIEW', { parse(r, f){ must(isCid(f.R) && ['keep', 'reverse'].includes(f.S), 'review'); r.keep = f.S === 'keep'; r.note = decTxt(f.M || ''); r.review = ymd(f.W); } });
 Object.assign(PERM_OF, { DECISION: 'comment', REVIEW: 'comment' });
 
 DERIVE_HOOKS.push((D, by) => {
   const list = [], byCid = new Map();
   for (const d of by.DECISION || []){ if (D.hidden.has(d.cid)) continue; const x = { d, status: 'active', reviews: [], review: d.review, by: null }; list.push(x); byCid.set(d.cid, x); }
-  for (const x of list) if (x.d.supersedes && byCid.has(x.d.supersedes)){ const o = byCid.get(x.d.supersedes); o.status = 'superseded'; o.by = x.d.cid; }
-  for (const r of by.REVIEW || []){ const x = byCid.get(r.f.R); if (!x || D.hidden.has(r.cid)) continue; x.reviews.push(r); if (r.keep) x.review = r.review; else if (x.status === 'active') x.status = 'reversed'; }
+  // only a decision's author or the canvas owner can replace it, keep it or reverse it; a one-way door can't be reversed
+  const may = (r, d) => samePerson(r.author, d.author) || S.P?.owner && samePerson(r.author, S.P.owner);
+  for (const x of list) if (x.d.supersedes && byCid.has(x.d.supersedes)){ const o = byCid.get(x.d.supersedes); if (!may(x.d, o.d)) continue; o.status = 'superseded'; o.by = x.d.cid; }
+  for (const r of by.REVIEW || []){ const x = byCid.get(r.f.R); if (!x || r.neg !== null || D.hidden.has(r.cid) || !may(r, x.d)) continue; if (!r.keep && !x.d.reversible) continue; x.reviews.push(r); if (r.keep) x.review = r.review; else if (x.status === 'active') x.status = 'reversed'; }
   D.decisions = list; D.decisionOf = new Map(list.filter(x => x.d.on && x.status === 'active').map(x => [x.d.on, x]));
 });
 const reviewDue = x => x.status === 'active' && x.review && x.review <= today();
@@ -6448,24 +6506,29 @@ CHANGE_HOOKS.push(() => { if (reviewNagged || !S.me) return; const n = (S.D.deci
 // CLAIM-I-R-{element}-S-{1 claim|0 not}-Z-T-SIG                      latest per element wins
 // EVIDENCE-I-R-{claim element}-E-{evidence element|0}-U-{source url|0}-S-{supports|refutes}-M-{quote or note}-Z-T-SIG
 // CHECK-I-R-{claim element}-S-{ok|no|unsure}-M-{note}-Z-T-SIG          per reviewer the latest wins; the claim's author doesn't count
-registerRecord('CLAIM', { parse(r, f){ if (!f.R) throw Error('claim'); r.on = f.S !== '0'; } });
-registerRecord('EVIDENCE', { parse(r, f){ if (!f.R || !['supports', 'refutes'].includes(f.S)) throw Error('evidence'); r.ev = f.E && f.E !== '0' ? f.E : null; r.url = f.U && f.U !== '0' ? decTxt(f.U) : null; r.supports = f.S === 'supports'; r.note = decTxt(f.M || ''); if (!r.ev && !r.url) throw Error('evidence'); } });
-registerRecord('CHECK', { parse(r, f){ if (!f.R || !['ok', 'no', 'unsure'].includes(f.S)) throw Error('check'); r.verdict = f.S; r.note = decTxt(f.M || ''); } });
+registerRecord('CLAIM', { parse(r, f){ must(isCid(f.R), 'claim'); r.on = f.S !== '0'; } });
+registerRecord('EVIDENCE', { parse(r, f){ must(isCid(f.R) && ['supports', 'refutes'].includes(f.S) && (!f.E || f.E === '0' || isCid(f.E)), 'evidence'); r.ev = f.E && f.E !== '0' ? f.E : null; r.url = f.U && f.U !== '0' ? decTxt(f.U) : null; r.supports = f.S === 'supports'; r.note = decTxt(f.M || ''); if (!r.ev && !r.url) throw Error('evidence'); if (r.url && !/^https?:\/\//i.test(r.url)) throw Error('only web sources'); } });
+registerRecord('CHECK', { parse(r, f){ must(isCid(f.R) && ['ok', 'no', 'unsure'].includes(f.S), 'check'); r.verdict = f.S; r.note = decTxt(f.M || ''); } });
 Object.assign(PERM_OF, { CLAIM: 'comment', EVIDENCE: 'comment', CHECK: 'comment' });
 const GROUNDERS = [];   // { name, run: async ({ text, evidence: [{ text, url, supports }] }) → a signed CHECK record (raw) from the grounder's key }
 const CLAIM_STATE = { grounded: ['Grounded', 'good'], evidenced: ['Evidence, unchecked', 'acc'], asserted: ['Asserted, no evidence', 'warn'], contradicted: ['Contradicted', 'bad'] };
 
-// claim state as of record order z (null = now): the proof uses the state at the moment of delivery
-function claimsAt(by, D, z = null){
+// claim state, from all records or only those in a delivered version (inV): the proof shows what was believed then.
+// A claim can be unmarked only by whoever marked it, the element's author or the canvas owner; neither of the first two can
+// ground it: checks count only from other people
+function claimsAt(by, D, inV = null){
   const cur = c => { let n = 0; while (D.next.has(c) && n++ < 1000) c = D.next.get(c); return c; };
-  const ok = r => !D.hidden.has(r.cid) && (z == null || r.z < z);
-  const marks = new Map(); for (const r of by.CLAIM || []) if (ok(r)) marks.set(cur(r.f.R), r.on);
+  const ok = r => !D.hidden.has(r.cid) && (!inV || inV(r));
+  const marks = new Map();
+  for (const r of by.CLAIM || []) if (ok(r)){ const t = cur(r.f.R), m = marks.get(t), el = S.records.get(t);
+    if (!r.on && m?.on && ![m.by, el?.author, S.P?.owner].some(k => k && samePerson(k, r.author))) continue;
+    marks.set(t, { on: r.on, by: r.on ? r.author : null }); }
   const out = new Map();
-  for (const [t, on] of marks) if (on) out.set(t, { t, ev: [], checks: new Map() });
+  for (const [t, m] of marks) if (m.on) out.set(t, { t, by: m.by, ev: [], checks: new Map() });
   for (const r of by.EVIDENCE || []) if (ok(r)) out.get(cur(r.f.R))?.ev.push(r);
   for (const r of by.CHECK || []) if (ok(r)){ const c = out.get(cur(r.f.R)); if (c) c.checks.set(personOf(r.author), r); }
   for (const c of out.values()){
-    const author = S.records.get(c.t)?.author, indep = [...c.checks.values()].filter(r => !samePerson(r.author, author));
+    const author = S.records.get(c.t)?.author, indep = [...c.checks.values()].filter(r => !samePerson(r.author, author) && !samePerson(r.author, c.by));
     c.ok = indep.filter(r => r.verdict === 'ok').length; c.no = indep.filter(r => r.verdict === 'no').length;
     c.score = c.ok + c.no ? c.ok / (c.ok + c.no) : null;
     const sup = c.ev.filter(e => e.supports).length, ref = c.ev.length - sup;
@@ -6485,7 +6548,7 @@ async function addEvidence(claim, { ev = null, url = null, supports = true, note
   toast(supports ? 'Evidence attached.' : 'Counter-evidence attached.');
 }
 async function checkClaim(claim, verdict, note = ''){
-  if (samePerson(S.records.get(claim)?.author, S.me.id)) toast('You made this claim, so your own check doesn’t count toward grounding. Ask someone else to check it.');
+  if (samePerson(S.records.get(claim)?.author, S.me.id) || samePerson(S.D.claims?.get(claim)?.by, S.me.id)) toast('You wrote or marked this claim, so your own check doesn’t count toward grounding. Ask someone else to check it.');
   await publish(await signed('CHECK', [['I', S.me.id], ['R', claim], ['S', verdict], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 async function evidenceForm(claim, others){
@@ -6578,7 +6641,7 @@ registerFeature({ id: 'claims', name: 'Claim grounding', group: 'decide', icon: 
 FLOW_CONDITIONS.claims = { label: 'Every claim is grounded', test: () => { const n = [...(S.D.claims?.values() || [])].filter(c => S.records.has(c.t) && !S.D.hidden.has(c.t) && c.state !== 'grounded').length; return n ? `${plural(n, 'claim')} not grounded` : true; } };
 // the proof records what was believed at the moment of delivery, and on what evidence
 DELIVERY_HOOKS.proof.push((x, out) => {
-  const at = claimsAt(claimBy, S.D, x.d.z); if (!at.size) return;
+  const v = versionOf(x.d), at = claimsAt(claimBy, S.D, v ? r => v.has(r.cid) : r => r.z < x.d.z); if (!at.size) return;
   out.push('', '## Claims at the time of delivery', '', ...[...at.values()].map(c => `- ${CLAIM_STATE[c.state][0]}${c.score != null ? ` (${c.score.toFixed(2)})` : ''}: “${elTitle(c.t)}” — ${c.ev.length} evidence, ${c.ok} independent check${c.ok === 1 ? '' : 's'} holding, ${c.no} not`));
 });
 // commits to the exact record (its CID), so nobody, not even its author, can change it after sealing, and nobody but its author
@@ -6590,9 +6653,9 @@ DELIVERY_HOOKS.proof.push((x, out) => {
 // What it can't: force a sealer who goes offline to reveal. The panel shows who still owes a reveal.
 const SEAL_KINDS = { note: 'Sealed note', bid: 'Sealed bid', stance: 'Blind stance', commitment: 'Pre-commitment' };
 const SEAL_CLOCKS = [];   // (seal) → its reveal time when something else decides it (a silent round's end), or undefined
-registerRecord('SEAL', { parse(r, f){ if (!f.R || !f.C || !f.B || !f.V || !(f.K in SEAL_KINDS)) throw Error('seal'); if (f.B.length > 24000) throw Error('too big');
+registerRecord('SEAL', { parse(r, f){ must(f.R && isCid(f.C) && f.B && f.V && own(SEAL_KINDS, f.K) && (!f.O || f.O === '0' || isCid(f.O)), 'seal'); if (f.B.length > 24000) throw Error('too big');
   r.kind = f.K; r.inner = f.C; r.at = Math.max(0, +f.W || 0); r.round = f.O && f.O !== '0' ? f.O : null; r.x = decInt(f.X || '0'); r.y = decInt(f.Y || '0'); } });
-registerRecord('REVEAL', { parse(r, f){ if (!f.R || !f.K) throw Error('reveal'); } });
+registerRecord('REVEAL', { parse(r, f){ must(isCid(f.R) && /^[A-Za-z0-9+/=]{20,64}$/.test(f.K || ''), 'reveal'); } });
 Object.assign(PERM_OF, { SEAL: 'comment', REVEAL: null });
 
 const sealKeys = new Map();   // seal CID → raw key, for the seals you made (kept in IndexedDB, or this tab when it can't)
@@ -6616,7 +6679,9 @@ const sealOpen = x => S.records.has(x.s.inner);
 async function sealRecord(innerRaw, { kind = 'note', at, round = null, x = 0, y = 0 }){
   const key = crypto.getRandomValues(new Uint8Array(32)), iv = crypto.getRandomValues(new Uint8Array(12));
   const k = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt']);
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(innerRaw)));
+  // padded to 512-byte steps: otherwise the ciphertext's length gives away a blind "agree" from a "disagree", or a bid's digits
+  const body = innerRaw + '\n', padded = body + ' '.repeat((512 - body.length % 512) % 512);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(padded)));
   const inner = await cidOf(te.encode(innerRaw));
   const raw = await signed('SEAL', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['K', kind], ['C', inner], ['B', b64enc(ct)], ['V', b64enc(iv)],
     ['W', Math.round(at || 0)], ['O', round || '0'], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))], ['Z', ++S.lamport], ['T', Date.now()]]);
@@ -6632,18 +6697,18 @@ async function revealSeal(cid){
   return true;
 }
 // open revealed seals whose time has come: decrypt, check the plaintext is the committed record, ingest it like any record
-const opening = new Set();
+const opening = new Set(), badSeals = new Set();   // a seal whose reveal doesn't open to its commitment is tried once
 async function openSeals(){
   for (const [cid, x] of S.D.seals || []){
-    if (!x.reveal || sealOpen(x) || opening.has(cid) || Date.now() < sealTime(x.s)) continue;
+    if (!x.reveal || sealOpen(x) || opening.has(cid) || badSeals.has(cid) || Date.now() < sealTime(x.s)) continue;
     opening.add(cid);
     try {
       const k = await crypto.subtle.importKey('raw', b64dec(x.reveal.f.K), 'AES-GCM', false, ['decrypt']);
-      const plain = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64dec(x.s.f.V) }, k, b64dec(x.s.f.B)));
+      const plain = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64dec(x.s.f.V) }, k, b64dec(x.s.f.B))).split('\n')[0];
       const node = parse(plain);
-      if (await cidOf(te.encode(plain)) !== x.s.inner || !samePerson(node.fields.I, x.s.author)){ x.bad = true; continue; }
+      if (await cidOf(te.encode(plain)) !== x.s.inner || !samePerson(node.fields.I, x.s.author)){ badSeals.add(cid); continue; }
       await ingest(plain);
-    } catch { x.bad = true; } finally { opening.delete(cid); }
+    } catch { badSeals.add(cid); } finally { opening.delete(cid); }
   }
 }
 // your own seals reveal themselves when their time comes, if this browser is open
@@ -6689,7 +6754,7 @@ registerPanel({
   paint(body){
     const all = [...(S.D.seals?.values() || [])].sort((a, b) => sealTime(a.s) - sealTime(b.s));
     const row = x => { const t = sealTime(x.s), open = sealOpen(x), mine = samePerson(x.s.author, S.me.id), el = open && S.records.get(x.s.inner);
-      return `<li class="card${open ? '' : ' hot'}"><div class="hd"><b>${esc(SEAL_KINDS[x.s.kind])} · ${esc(whoName(x.s.author))}</b><span class="pill ${open ? 'good' : x.bad ? 'bad' : 'acc'}">${open ? 'Opened ✓' : x.bad ? 'Doesn’t match its seal' : Date.now() < t ? `Opens in ${clock(t - Date.now())}` : x.reveal ? 'Opening…' : 'Waiting for reveal'}</span></div>
+      return `<li class="card${open ? '' : ' hot'}"><div class="hd"><b>${esc(SEAL_KINDS[x.s.kind])} · ${esc(whoName(x.s.author))}</b><span class="pill ${open ? 'good' : badSeals.has(x.s.cid) ? 'bad' : 'acc'}">${open ? 'Opened ✓' : badSeals.has(x.s.cid) ? 'Doesn’t match its seal' : Date.now() < t ? `Opens in ${clock(t - Date.now())}` : x.reveal ? 'Opening…' : 'Waiting for reveal'}</span></div>
         ${open ? `<p>${esc(el?.text || KIND(el))}</p><small>Matches the commitment it was sealed with (${x.s.inner.slice(-10)}).</small>` : `<small>Sealed ${when(x.s.t)} · commitment ${x.s.inner.slice(-10)}</small>`}
         ${!open && mine && Date.now() >= t && !x.reveal ? '<div class="acts"><button class="btn primary" data-rv="' + x.s.cid + '">Reveal now</button></div>' : ''}${open ? `<div class="acts"><button class="btn" data-go="${x.s.inner}">Show</button></div>` : ''}</li>`; };
     body.innerHTML = `<div class="acts"><button class="btn" data-new="note" data-autofocus>${ic('lock')}Seal a note…</button><button class="btn" data-new="bid">${ic('coin')}Seal a bid…</button></div>
@@ -6707,15 +6772,18 @@ registerFeature({ id: 'sealed', name: 'Sealed bids and commitments', group: 'dec
 // sealed (features/seal), so nobody can read them early: not the round's starter, not the relay, not a curious participant.
 // A blind stance round does the same for stances on one item. Sealing is the primitive; the round is the ritual around it.
 // @uses features/seal, features/stances, records, ui/hub (strip), ui/form
-// ROUND-I-R-{nonce}-M-{prompt}-E-{ends at, ms}-A-{participants _|all}-K-{ideas|stances}-ON-{item for a stance round|0}-Z-T-SIG
-//   the starter may sign it again with the same R to end it early (latest by the starter wins)
-registerRecord('ROUND', { parse(r, f){ if (!f.R || !f.E || !['ideas', 'stances'].includes(f.K)) throw Error('round'); r.prompt = decTxt(f.M || ''); r.end = +f.E || 0;
+// ROUND-I-R-{nonce}-M-{prompt}-E-{ends at, ms}-A-{participants _|all}-K-{ideas|stances}-ON-{item for a stance round|0}[-P-{the round}]-Z-T-SIG
+//   a round is its first record (seals name its CID); only its starter can change its end, with a ROUND whose P names it
+registerRecord('ROUND', { parse(r, f){ must(f.R && /^\d{1,16}$/.test(f.E || '') && ['ideas', 'stances'].includes(f.K), 'round'); r.prompt = decTxt(f.M || ''); r.end = +f.E;
+  r.of = f.P && f.P !== '0' ? f.P : null; must(!r.of || isCid(r.of), 'round ref'); must(!f.A || f.A === 'all' || keyList(f.A), 'participants'); must(!f.ON || f.ON === '0' || isCid(f.ON), 'round item');
   r.who = f.A && f.A !== 'all' ? f.A.split('_').filter(Boolean) : null; r.mode = f.K; r.on = f.ON && f.ON !== '0' ? f.ON : null; } });
 PERM_OF.ROUND = 'draw';
 
 DERIVE_HOOKS.push((D, by) => {
   const rounds = new Map();
-  for (const r of by.ROUND || []){ if (D.hidden.has(r.cid)) continue; const o = rounds.get(r.f.R); if (!o) rounds.set(r.f.R, { first: r, cur: r }); else if (samePerson(r.author, o.first.author)) o.cur = r; }
+  const rs = (by.ROUND || []).filter(r => r.neg === null && !D.hidden.has(r.cid));
+  for (const r of rs) if (!r.of) rounds.set(r.cid, { first: r, cur: r, id: r.cid });
+  for (const r of rs) if (r.of){ const o = rounds.get(r.of); if (o && samePerson(r.author, o.first.author) && byZ(o.cur, r) < 0) o.cur = r; }   // only the starter moves its end
   D.rounds = rounds;
 });
 // a sealed idea opens when its round ends, wherever the round's end moved to
@@ -6727,36 +6795,36 @@ function roundSeals(nonce){ return [...(S.D.seals?.values() || [])].filter(x => 
 
 async function startRound({ prompt, minutes = 5, who = null, mode = 'ideas', on = null }){
   const R = b32(crypto.getRandomValues(new Uint8Array(8))), end = Date.now() + Math.max(.05, minutes) * 6e4;
-  await publish(await signed('ROUND', [['I', S.me.id], ['R', R], ['M', encTxt(prompt)], ['E', Math.round(end)], ['A', who?.length ? who.join('_') : 'all'], ['K', mode], ['ON', on || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+  const cid = await publish(await signed('ROUND', [['I', S.me.id], ['R', R], ['M', encTxt(prompt)], ['E', Math.round(end)], ['A', who?.length ? who.join('_') : 'all'], ['K', mode], ['ON', on || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
   post({ roundStart: { R } });
-  return R;
+  return cid;
 }
 async function endRound(o){
   const c = o.cur;
-  await publish(await signed('ROUND', [['I', S.me.id], ['R', c.f.R], ['M', c.f.M || ''], ['E', Date.now()], ['A', c.f.A], ['K', c.mode], ['ON', c.f.ON || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+  await publish(await signed('ROUND', [['I', S.me.id], ['R', c.f.R], ['M', c.f.M || ''], ['E', Date.now()], ['A', c.f.A], ['K', c.mode], ['ON', c.f.ON || '0'], ['P', o.id], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 WIRE_HOOKS.roundStart = () => setTimeout(() => { const o = activeRound(); if (o) toast(`Silent round: ${o.cur.prompt || 'write your ideas'} · what you add stays sealed until it ends`); }, 400);
 
 const toldRounds = new Set();
 // while a round runs, a note you create is sealed instead of published; edits and everything else go through as usual
 PUBLISH_FILTERS.push(async (raw, blobs) => {
-  const o = activeRound(); if (!o || o.cur.mode !== 'ideas' || !raw.startsWith('NODE-') || Object.keys(blobs).length) return undefined;
+  const o = activeRound(); if (!o || o.cur.mode !== 'ideas' || !/^(NODE|TEXT)-/.test(raw) || Object.keys(blobs).length) return undefined;
   const node = parse(raw); if (node.fields.E || !samePerson(node.fields.I, S.me.id)) return undefined;
-  const cid = await sealRecord(raw, { kind: 'note', round: o.first.f.R, at: o.cur.end, x: decInt(node.fields.X), y: decInt(node.fields.Y) });
-  if (!toldRounds.has(o.first.f.R)){ toldRounds.add(o.first.f.R); toast('Sealed until the round ends. Nobody can read it before then.'); }
+  const cid = await sealRecord(raw, { kind: 'note', round: o.id, at: o.cur.end, x: decInt(node.fields.X), y: decInt(node.fields.Y) });
+  if (!toldRounds.has(o.id)){ toldRounds.add(o.id); toast('Sealed until the round ends. Nobody can read it before then.'); }
   return cid;
 });
 // a blind stance: sealed until the round ends, then every stance opens together
 async function blindStance(o, stance){
   const raw = await signed('STANCE', [['I', S.me.id], ['R', o.cur.on], ['S', stance], ['M', ''], ['Z', ++S.lamport], ['T', Date.now()]]);
-  await sealRecord(raw, { kind: 'stance', round: o.first.f.R, at: o.cur.end });
+  await sealRecord(raw, { kind: 'stance', round: o.id, at: o.cur.end });
   toast(`${STANCES[stance].name}: sealed until the round ends.`);
 }
 
 /* the strip: the prompt, the time left, how many ideas are sealed (never whose content) */
 STRIP.push(() => {
   const o = activeRound() || (() => { const l = lastRound(); return l && Date.now() - l.cur.end < 90000 ? l : null; })(); if (!o) return '';
-  const seals = roundSeals(o.first.f.R), mine = seals.filter(x => samePerson(x.s.author, S.me.id)).length, left = o.cur.end - Date.now();
+  const seals = roundSeals(o.id), mine = seals.filter(x => samePerson(x.s.author, S.me.id)).length, left = o.cur.end - Date.now();
   if (left > 0){
     const who = new Set(seals.map(x => personOf(x.s.author))).size;
     return `<span class="sp sealed">${ic('lock')}<b>Silent round</b><span>${esc(o.cur.prompt.slice(0, 48))}</span><span class="t">${clock(left)}</span><span>${o.cur.mode === 'stances' ? `${seals.length} sealed stance${seals.length === 1 ? '' : 's'}` : `you ${mine} · room ${seals.length} from ${who}`}</span>
@@ -6770,7 +6838,7 @@ STRIP_ACTIONS.idea = async () => {
   const o = activeRound(); if (!o) return;
   const text = await ask(o.cur.prompt || 'Your idea', '', 'Sealed until the round ends: nobody sees it before then, and you can’t change it after.');
   if (!text?.trim()) return;
-  const n = roundSeals(o.first.f.R).filter(x => samePerson(x.s.author, S.me.id)).length, c = { x: S.view.x + innerWidth / 2 / S.view.zoom, y: S.view.y + innerHeight / 2 / S.view.zoom };
+  const n = roundSeals(o.id).filter(x => samePerson(x.s.author, S.me.id)).length, c = { x: S.view.x + innerWidth / 2 / S.view.zoom, y: S.view.y + innerHeight / 2 / S.view.zoom };
   await commitNode({ kind: 'sticky', x: c.x - 300 + (n % 4) * 170, y: c.y - 120 + Math.floor(n / 4) * 170, label: text.trim() });
 };
 STRIP_ACTIONS.endround = () => { const o = activeRound(); if (o) endRound(o); };
@@ -6796,25 +6864,38 @@ registerFeature({ id: 'rounds', name: 'Silent round', group: 'meet', icon: 'lock
 // boxes, pulls everyone to the next item, keeps a queue of raised hands, gives the floor and names a note-taker per item. The
 // meeting has a record of execution (planned against actual time, who spoke, what was decided) and minutes anyone can verify.
 // @uses records, derive, permissions (owner), ui/hub (strip), ui/panels, ui/form
-// FACIL-I-R-{person}-S-{1 start|0 end}-Z-T-SIG      the owner, or the current facilitator handing over (anyone, on an open canvas)
-// AGENDA-I-R-{nonce}-M-{title~minutes~frame _ …}-Z-T-SIG   NEXT-I-R-{agenda}-J-{item, or the item count when done}-Z-T-SIG
-// FLOOR-I-R-{person|0}-Z-T-SIG   SCRIBE-I-R-{person}-J-{item}-Z-T-SIG     (the facilitator's)    HAND-I-S-{1 up|0 down}-Z-T-SIG (anyone's)
-registerRecord('FACIL', { parse(r, f){ if (!f.R) throw Error('facil'); r.who = f.R; r.on = f.S !== '0'; }, inherit: false });
-registerRecord('AGENDA', { parse(r, f){ if (!f.M) throw Error('agenda'); r.items = f.M.split('_').filter(Boolean).map(it => { const [t, m, fr] = it.split('~'); return { title: decTxt(t || ''), min: Math.max(1, Math.min(240, +m || 5)), frame: fr && fr !== '0' ? fr : null }; }); if (!r.items.length) throw Error('agenda'); }, inherit: false });
-registerRecord('NEXT', { parse(r, f){ if (!f.R || f.J == null) throw Error('next'); r.n = Math.max(0, +f.J || 0); }, inherit: false });
-registerRecord('FLOOR', { parse(r, f){ r.who = f.R && f.R !== '0' ? f.R : null; }, inherit: false });
-registerRecord('SCRIBE', { parse(r, f){ if (!f.R) throw Error('scribe'); r.who = f.R; r.n = Math.max(0, +f.J || 0); }, inherit: false });
+// FACIL-I-R-{person}-S-{1 start|0 end}-P-{the role record it hands over from|0}-Z-T-SIG
+//   the role is a chain: it starts from the owner's latest appointment (on an open canvas, anyone's latest start), and each
+//   handover names the record it continues, so nobody can rewrite who held the role by backdating
+// AGENDA-I-R-{nonce}-M-{title~minutes~frame _ …}-P-{role}-Z-T-SIG   NEXT-I-R-{agenda}-J-{item, or the item count when done}-P-{role}-Z-T-SIG
+// FLOOR-I-R-{person|0}-P-{role}-Z-T-SIG   SCRIBE-I-R-{person}-J-{item}-P-{role}-Z-T-SIG   (by the facilitator holding that role)
+// HAND-I-S-{1 up|0 down}-Z-T-SIG (anyone's)
+const roleRef = f => { const p = f.P && f.P !== '0' ? f.P : null; must(!p || isCid(p), 'role'); return p; };
+registerRecord('FACIL', { parse(r, f){ must(isKey(f.R), 'facil'); r.who = f.R; r.on = f.S !== '0'; r.prev = roleRef(f); }, inherit: false });
+registerRecord('AGENDA', { parse(r, f){ must(f.M, 'agenda'); r.role = roleRef(f); r.items = f.M.split('_').filter(Boolean).map(it => { const [t, m, fr] = it.split('~'); must(!fr || fr === '0' || isCid(fr), 'frame'); return { title: decTxt(t || ''), min: Math.max(1, Math.min(240, +m || 5)), frame: fr && fr !== '0' ? fr : null }; }); must(r.items.length, 'agenda'); }, inherit: false });
+registerRecord('NEXT', { parse(r, f){ must(isCid(f.R) && f.J != null, 'next'); r.role = roleRef(f); r.n = Math.max(0, +f.J || 0); }, inherit: false });
+registerRecord('FLOOR', { parse(r, f){ r.who = f.R && f.R !== '0' ? f.R : null; must(!r.who || isKey(r.who), 'floor'); r.role = roleRef(f); }, inherit: false });
+registerRecord('SCRIBE', { parse(r, f){ must(isKey(f.R), 'scribe'); r.who = f.R; r.n = Math.max(0, +f.J || 0); r.role = roleRef(f); }, inherit: false });
 registerRecord('HAND', { parse(r, f){ r.up = f.S !== '0'; }, inherit: false });
 Object.assign(PERM_OF, { FACIL: null, AGENDA: null, NEXT: null, FLOOR: null, SCRIBE: null, HAND: 'comment' });
 
 DERIVE_HOOKS.push((D, by) => {
-  const owner = S.P?.owner, recs = ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'].flatMap(t => by[t] || []).filter(r => !D.hidden.has(r.cid)).sort(byZ);
-  const m = { fac: null, roles: [], agenda: null, at: null, started: 0, floor: null, scribes: new Map(), hands: new Map(), log: [] };
-  const isFac = r => m.fac && samePerson(r.author, m.fac);
+  const owner = S.P?.owner, live = r => r.neg === null && !D.hidden.has(r.cid);
+  const facils = (by.FACIL || []).filter(live);
+  // the role chain
+  const roots = facils.filter(r => owner ? samePerson(r.author, owner) : !r.prev);
+  const chain = []; let head = roots.at(-1) || null;
+  // a holder who signs two handovers: the one the successor already acted under stands; otherwise the earliest
+  const used = new Set([...facils.map(r => r.prev), ...['AGENDA', 'NEXT', 'FLOOR', 'SCRIBE'].flatMap(t => by[t] || []).map(r => r.role)].filter(Boolean));
+  while (head && chain.length < 500){ chain.push(head); const h = head, next = h.on ? facils.filter(r => r.prev === h.cid && samePerson(r.author, h.who)) : [];
+    head = next.find(r => used.has(r.cid)) || next[0] || null; }
+  const cur = chain.at(-1), tenure = new Map(chain.map((r, i) => [r.cid, { who: r.who, until: chain[i + 1]?.z ?? Infinity, on: r.on }]));
+  // meeting records count only under a role in the chain, signed by its holder, within its tenure
+  const acts = ['AGENDA', 'NEXT', 'FLOOR', 'SCRIBE'].flatMap(t => by[t] || []).filter(live).filter(r => { const t = r.role && tenure.get(r.role); return t && t.on && samePerson(r.author, t.who) && r.z < t.until; });
+  const recs = [...acts, ...(by.HAND || []).filter(live)].sort(byZ);
+  const m = { fac: cur?.on ? cur.who : null, role: cur?.on ? cur.cid : null, roles: chain, agenda: null, at: null, started: 0, floor: null, scribes: new Map(), hands: new Map(), log: [] };
   for (const r of recs){
-    if (r.type === 'FACIL'){ if (!owner || samePerson(r.author, owner) || isFac(r)){ m.fac = r.on ? r.who : null; m.roles.push(r); } }
-    else if (r.type === 'HAND'){ const p = personOf(r.author); if (r.up) m.hands.set(p, r.t); else m.hands.delete(p); }   // the queue goes by when hands went up
-    else if (!isFac(r)) continue;
+    if (r.type === 'HAND'){ const p = personOf(r.author); if (r.up) m.hands.set(p, r.z); else m.hands.delete(p); }   // the queue goes by order of raised hands
     else if (r.type === 'AGENDA'){ m.agenda = r; m.at = null; m.log = []; m.scribes = new Map(); }
     else if (r.type === 'NEXT' && m.agenda && r.f.R === m.agenda.cid){
       const last = m.log.at(-1); if (last && !last.end) last.end = r.t;
@@ -6833,11 +6914,12 @@ const amFac = () => !!meet().fac && samePerson(meet().fac, S.me?.id);
 const canFacilitate = () => !S.P?.owner || samePerson(S.P.owner, S.me?.id) || amFac();
 const item = () => { const m = meet(); return m.agenda && m.at != null && m.at < m.agenda.items.length ? m.agenda.items[m.at] : null; };
 const meetSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
-const facilitate = who => meetSign('FACIL', [['R', who], ['S', '1']]);
+const facilitate = who => meetSign('FACIL', [['R', who], ['S', '1'], ['P', amFac() ? meet().role : '0']]);   // a handover names the role it continues
+const act = (type, pairs) => meetSign(type, [...pairs, ['P', meet().role || '0']]);
 const raiseHand = up => meetSign('HAND', [['S', up ? '1' : '0']]);
-const giveFloor = who => meetSign('FLOOR', [['R', who || '0']]);
-async function nextItem(n = null){ const m = meet(); if (!m.agenda) return; await meetSign('NEXT', [['R', m.agenda.cid], ['J', n ?? (m.at == null ? 0 : m.at + 1)]]); }
-async function setAgenda(items){ await meetSign('AGENDA', [['R', b32(crypto.getRandomValues(new Uint8Array(6)))], ['M', items.map(i => `${encTxt(i.title)}~${i.min}~${i.frame || '0'}`).join('_')]]); }
+const giveFloor = who => act('FLOOR', [['R', who || '0']]);
+async function nextItem(n = null){ const m = meet(); if (!m.agenda) return; await act('NEXT', [['R', m.agenda.cid], ['J', n ?? (m.at == null ? 0 : m.at + 1)]]); }
+async function setAgenda(items){ await act('AGENDA', [['R', b32(crypto.getRandomValues(new Uint8Array(6)))], ['M', items.map(i => `${encTxt(i.title)}~${i.min}~${i.frame || '0'}`).join('_')]]); }
 async function agendaForm(){
   const frames = S.D.els.filter(e => e.ek === 'frame' && !S.D.hidden.has(e.cid));
   const cur = meet().agenda?.items || frames.map(f => ({ title: f.text || 'Item', min: 10 }));
@@ -6890,7 +6972,7 @@ registerPanel({
         <div class="acts">${canFacilitate() && !fac ? '<button class="btn primary" data-fac="me" data-autofocus>Facilitate</button>' : ''}${canFacilitate() ? here.filter(id => !samePerson(id, m.fac)).filter(id => id !== S.me.id).map(id => `<button class="btn" data-fac="${id}">Hand to ${esc(short(id))}</button>`).join('') : ''}${fac ? '<button class="btn" data-fac="end">Stop facilitating</button>' : ''}</div></div>
       <h3>Agenda</h3>${items.length ? `<table><tr><th>#</th><th>Item</th><th>Planned</th><th>Actual</th><th>Notes</th></tr>${items.map((it, i) => { const l = done.get(i), act = l ? Math.round(((l.end || Date.now()) - l.start) / 6e4) : null;
         return `<tr${m.at === i ? ' style="font-weight:600"' : ''}><td>${i + 1}</td><td>${it.frame ? `<button class="link" data-go="${it.frame}">${esc(it.title)}</button>` : esc(it.title)}</td><td>${it.min} min</td><td>${act == null ? '–' : `<span class="${act > it.min ? 'pill warn' : ''}">${act} min</span>`}</td>
-          <td>${m.scribes.get(i) ? esc(whoName(m.scribes.get(i))) : fac ? `<select data-k="sc${i}" data-scribe="${i}" aria-label="Note-taker for ${esc(it.title)}"><option value="">Pick…</option>${here.map(id => `<option value="${id}">${esc(whoName(id))}</option>`).join('')}</select>` : '–'}</td></tr>`; }).join('')}</table>`
+          <td>${m.scribes.get(i) ? esc(whoName(m.scribes.get(i))) : fac ? `<select data-k="sc${i}" data-scribe="${i}" aria-label="Note-taker for ${esc(it.title)}"><option value="">Pick…</option>${here.map(id => `<option value="${esc(id)}">${esc(whoName(id))}</option>`).join('')}</select>` : '–'}</td></tr>`; }).join('')}</table>`
         : '<p class="empty">No agenda yet.</p>'}
       ${fac ? `<div class="acts"><button class="btn" data-agenda>${ic('list')}${items.length ? 'Change the agenda…' : 'Write the agenda…'}</button>${items.length && !m.done ? `<button class="btn primary" data-next>${m.at == null ? 'Start the meeting' : m.at + 1 < items.length ? 'Next item' : 'Finish the meeting'}</button>` : ''}<label class="muted"><input type="checkbox" data-k="stay"${MEET.stay ? ' checked' : ''}> Don’t move my view</label></div>` : `<label class="muted"><input type="checkbox" data-k="stay"${MEET.stay ? ' checked' : ''}> Don’t move my view when the item changes</label>`}
       <h3>Queue for the floor <span class="n">${m.queue.length}</span></h3>
@@ -6901,7 +6983,7 @@ registerPanel({
   click(e, b){
     if (b.dataset.go) return goTo(b.dataset.go);
     if (b.dataset.fac === 'me') return facilitate(S.me.id);
-    if (b.dataset.fac === 'end') return meetSign('FACIL', [['R', S.me.id], ['S', '0']]);
+    if (b.dataset.fac === 'end') return meetSign('FACIL', [['R', S.me.id], ['S', '0'], ['P', meet().role || '0']]);
     if (b.dataset.fac) return facilitate(b.dataset.fac);
     if (b.hasAttribute('data-agenda')) return agendaForm();
     if (b.hasAttribute('data-next')) return nextItem();
@@ -6909,7 +6991,7 @@ registerPanel({
     if (b.dataset.floor !== undefined) return giveFloor(b.dataset.floor || null);
     if (b.hasAttribute('data-minutes')) return openReport(`Minutes — ${canvasTitle()}`, minutes(), 'minutes.md');
   },
-  change(e){ const t = e.target; if (t.dataset.k === 'stay') MEET.stay = t.checked; if (t.dataset.scribe && t.value) meetSign('SCRIBE', [['R', t.value], ['J', +t.dataset.scribe]]); },
+  change(e){ const t = e.target; if (t.dataset.k === 'stay') MEET.stay = t.checked; if (t.dataset.scribe && t.value) act('SCRIBE', [['R', t.value], ['J', +t.dataset.scribe]]); },
 });
 // minutes: per item what happened in its time slot, from the signed records themselves
 function minutes(){
@@ -6948,28 +7030,35 @@ const RITUAL_KINDS = {
   review: { name: 'Design review', need: { stance: 3, decision: 1 }, people: 3, min: 30, blurb: 'Everyone takes a stance; it ends with a recorded decision.' },
   kickoff: { name: 'Kickoff', need: { decision: 2, task: 3 }, people: 3, min: 60, blurb: 'Goals decided, first tasks owned.' },
 };
-registerRecord('RITUAL', { parse(r, f){ if (!f.R || !f.M) throw Error('ritual'); r.name = decTxt(f.M); r.need = Object.fromEntries((f.U || '').split('_').filter(Boolean).map(p => p.split('~')).filter(([k]) => k in RITUAL_OUTPUTS).map(([k, n]) => [k, Math.max(0, Math.min(99, +n || 0))]));
-  r.people = Math.max(1, +f.Q || 1); r.min = Math.max(1, Math.min(600, +f.E || 30)); r.ends = r.t + r.min * 6e4; }, inherit: false });
-registerRecord('CLOSE', { parse(r, f){ if (!f.R || !['success', 'incomplete', 'aborted'].includes(f.O)) throw Error('close'); r.outcome = f.O; r.outputs = f.K && f.K !== '0' ? f.K.split('_') : []; r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('RITUAL', { parse(r, f){ must(f.R && f.M, 'ritual'); r.name = decTxt(f.M); r.need = Object.fromEntries((f.U || '').split('_').filter(Boolean).map(p => p.split('~')).filter(([k]) => own(RITUAL_OUTPUTS, k)).map(([k, n]) => [k, Math.max(0, Math.min(99, +n || 0))]).filter(([, n]) => n > 0));
+  must(Object.keys(r.need).length, 'a ritual must require something'); r.people = Math.max(1, Math.min(99, +f.Q || 1)); r.min = Math.max(1, Math.min(600, +f.E || 30)); r.ends = r.t + r.min * 6e4; }, inherit: false });
+registerRecord('CLOSE', { parse(r, f){ must(isCid(f.R) && ['success', 'incomplete', 'aborted'].includes(f.O), 'close'); r.outcome = f.O; r.outputs = f.K && f.K !== '0' ? cidList(f.K) : []; r.note = decTxt(f.M || ''); }, inherit: false });
 Object.assign(PERM_OF, { RITUAL: 'draw', CLOSE: 'comment' });
 
-// progress of a ritual up to record order z: the outputs made since it started, and who took part
-function ritualProgress(rit, z = Infinity){
-  const recs = [...S.records.values()].filter(r => r.z > rit.z && r.z < z && r.t >= rit.t && !S.D.hidden.has(r.cid) && r.type !== 'CLOSE');
-  const got = {}, out = new Set(), who = new Set();
-  for (const r of recs) who.add(personOf(r.author));
+// progress of a ritual: the outputs made since it started (only records that count in the view), and who took part.
+// Given a list (a CLOSE's K), only those records count: a CID can only be named once it exists, so they were there when it closed
+function ritualProgress(rit, list = null){
+  const pool = list ? list.map(c => S.records.get(c)).filter(Boolean) : [...S.records.values()];
+  const recs = pool.filter(r => r.z > rit.z && r.t >= rit.t && r.neg === null && inView(r) && r.type !== 'CLOSE');
+  const got = {}, out = new Set(), who = new Map();
+  for (const r of recs) if (!who.has(personOf(r.author))) who.set(personOf(r.author), r.cid);
   for (const [k, n] of Object.entries(rit.need)){ const spec = RITUAL_OUTPUTS[k], hits = recs.filter(r => spec.types.includes(r.type) && (!spec.ok || spec.ok(r))); got[k] = hits.length; hits.slice(0, n).forEach(r => out.add(r.cid)); }
   const met = Object.entries(rit.need).every(([k, n]) => got[k] >= n) && who.size >= rit.people;
-  return { got, who, met, outputs: [...out] };
+  return { got, who: new Set(who.keys()), met, outputs: [...new Set([...out, ...who.values()])] };   // outputs plus one record per participant
 }
+// who may close: the ritual's starter at any time; a participant only once its time box is over; never before the ritual itself
 DERIVE_HOOKS.push((D, by) => {
-  const list = (by.RITUAL || []).filter(r => !D.hidden.has(r.cid)).map(r => ({ r, close: null }));
+  const list = (by.RITUAL || []).filter(r => r.neg === null && !D.hidden.has(r.cid)).map(r => ({ r, close: null }));
   const byCid = new Map(list.map(x => [x.r.cid, x]));
-  for (const c of by.CLOSE || []){ const x = byCid.get(c.f.R); if (!x || x.close || D.hidden.has(c.cid)) continue; x.close = c; }
+  for (const c of by.CLOSE || []){
+    const x = byCid.get(c.f.R); if (!x || x.close || c.neg !== null || !inView(c) || c.z <= x.r.z) continue;
+    const starter = samePerson(c.author, x.r.author), took = !starter && c.t >= x.r.ends && ritualProgress(x.r).who.has(personOf(c.author));
+    if (starter || took) x.close = c;
+  }
   D.rituals = list;
 });
 // a "success" close only counts if the outputs were really there when it was signed; otherwise it reads as incomplete
-const outcomeOf = x => !x.close ? null : x.close.outcome === 'success' && !ritualProgress(x.r, x.close.z).met ? 'incomplete' : x.close.outcome;
+const outcomeOf = x => !x.close ? null : x.close.outcome === 'success' && !ritualProgress(x.r, x.close.outputs).met ? 'incomplete' : x.close.outcome;
 const openRitual = () => (S.D.rituals || []).filter(x => !x.close).at(-1) || null;
 async function startRitual(kind, { name, need, people: n, min } = {}){
   const k = RITUAL_KINDS[kind] || {}; need ||= k.need; n ||= k.people; min ||= k.min;
@@ -7010,7 +7099,7 @@ registerPanel({
       : `<div class="acts">${Object.entries(RITUAL_KINDS).map(([k, r]) => `<button class="btn" data-start="${k}">${ic('target')}${esc(r.name)}</button>`).join('')}<button class="btn" data-start="custom">Custom…</button></div>`;
     body.innerHTML = `${cur}
       ${closed.length ? `<h3>Record <span class="n">${okN} of ${closed.length} closed as a success</span></h3><ul class="plain">${closed.map(y => { const o = outcomeOf(y);
-        return `<li class="row2"><span class="pill ${o === 'success' ? 'good' : o === 'aborted' ? '' : 'bad'}">${o}</span><span class="grow">${esc(y.r.name)} · ${when(y.r.t)}</span><small>${needText(y.r, ritualProgress(y.r, y.close.z).got)}</small></li>`; }).join('')}</ul>` : ''}`;
+        return `<li class="row2"><span class="pill ${o === 'success' ? 'good' : o === 'aborted' ? '' : 'bad'}">${o}</span><span class="grow">${esc(y.r.name)} · ${when(y.r.t)}</span><small>${needText(y.r, ritualProgress(y.r, y.close.outputs).got)}</small></li>`; }).join('')}</ul>` : ''}`;
   },
   async click(e, b){
     const x = openRitual();
@@ -7081,7 +7170,7 @@ registerPanel({
       ${silent.length ? `<div class="card warn"><b>Looked, no stance</b>${silent.map(r => `<small>${esc(whoName(r.id))} is reading the decision “${esc(r.m.dec.d.text.slice(0, 60))}” and hasn’t said where they stand.</small>`).join('')}</div>` : ''}
       <h3>People <span class="n">${rows.length + 1}</span></h3>
       <ul class="plain">${rows.length ? rows.map(({ id, p, m }) => `<li class="row2">${avatar(id)}<span class="grow"><b>${esc(whoName(id))}</b> <small>${m.on ? `${MODE[m.mode][0].toLowerCase()} “${esc(elTitle(m.on).slice(0, 40))}”` : MODE[m.mode][0].toLowerCase()}${m.for ? ` · ${dur(m.for)}` : ''}${p.via === 'mesh' ? ' · via ' + esc(short(p.through)) : ''}</small></span><span class="pill ${MODE[m.mode][1] || ''}">${MODE[m.mode][0]}</span>${m.on ? `<button class="btn" data-go="${m.on}">Show</button>` : ''}</li>`).join('') : '<li class="empty">Nobody else is here. Invite people from the Live button.</li>'}</ul>
-      <label class="muted"><input type="checkbox" data-k="share"${ATT.share ? ' checked' : ''}> Share what I’m looking at (live only, never stored)</label>`;
+      <label class="muted"><input type="checkbox" data-k="share"${ATT.share ? ' checked' : ''}> Share what I’m looking at and for how long (live only, never stored; your selection and edits stay visible)</label>`;
   },
   click(e, b){ if (b.dataset.go) goTo(b.dataset.go); },
   change(e){ if (e.target.dataset.k === 'share'){ ATT.share = e.target.checked; try { localStorage.setItem('flux:attention', ATT.share ? 'on' : 'off'); } catch {} sendPresence(false, true); } },
@@ -7096,37 +7185,45 @@ registerFeature({ id: 'room', name: 'Room: who is doing what', group: 'meet', ic
 // an escalation flow that applies when a group stalls. A delivery names its flow; every peer evaluates it the same way.
 // @uses features/work (DELIVERY_HOOKS), FLOW_CONDITIONS from other features, ui/panels, ui/form
 // FLOW-I-R-{nonce}-M-{name}-G-{group~need~key+key… _ …}-Q-{1 in order|0}-C-{condition _ …|0}-E-{escalation flow|0}-D-{after hours|0}-Z-T-SIG
-registerRecord('FLOW', { parse(r, f){ if (!f.R || !f.G) throw Error('flow'); r.name = decTxt(f.M || 'Approval flow');
-  r.groups = f.G.split('_').filter(Boolean).map(g => { const [n, need, ks] = g.split('~'); const members = (ks || '').split('+').filter(Boolean); return { name: decTxt(n || ''), need: Math.max(1, Math.min(members.length || 1, +need || 1)), members }; }).filter(g => g.members.length);
-  if (!r.groups.length) throw Error('flow'); r.ordered = f.Q === '1'; r.conds = f.C && f.C !== '0' ? f.C.split('_').filter(Boolean) : []; r.esc = f.E && f.E !== '0' ? f.E : null; r.after = Math.max(0, +f.D || 0); }, inherit: true });
+registerRecord('FLOW', { parse(r, f){ must(f.R && f.G, 'flow'); r.name = decTxt(f.M || 'Approval flow');
+  r.groups = f.G.split('_').filter(Boolean).map(g => { const [n, need, ks] = g.split('~'); const members = keyList(ks, '+'); return { name: decTxt(n || ''), need: Math.max(1, Math.min(members.length || 1, +need || 1)), members }; }).filter(g => g.members.length);
+  must(r.groups.length, 'flow'); r.ordered = f.Q === '1'; r.conds = f.C && f.C !== '0' ? f.C.split('_').filter(Boolean) : []; must(r.conds.every(c => /^[a-z]{1,24}$/.test(c)), 'conditions');
+  r.esc = f.E && f.E !== '0' ? f.E : null; must(!r.esc || isCid(r.esc), 'escalation'); r.after = Math.max(0, +f.D || 0); }, inherit: true });
 PERM_OF.FLOW = 'draw';
 FLOW_CONDITIONS.tasks = { label: 'Every task is done', test: () => { const n = [...(S.D.tasks?.values() || [])].filter(t => t.status !== 'done').length; return n ? `${plural(n, 'task')} not done` : true; } };
-FLOW_CONDITIONS.signoff = { label: 'An audit was signed off', test: () => [...S.records.values()].some(r => r.type === 'SIGNOFF' && !S.D.hidden.has(r.cid)) || 'no audit sign-off yet' };
+FLOW_CONDITIONS.signoff = { label: 'An audit was signed off', test: () => [...S.records.values()].some(r => r.type === 'SIGNOFF' && r.neg === null && inView(r)) || 'no audit sign-off yet' };
 
-// a flow against a delivery's approvals: each group's valid signatures, in order when the flow says so
+// a flow against a delivery's approvals. One person counts once per group, whichever of their devices signed.
+// In an ordered flow a signature counts for a later group only if it names (G) enough signatures of every earlier group:
+// a CID can only be named after it exists, so the order is proven, not claimed through Z
 function evalFlow(flow, x){
-  const votes = [...x.votes.values()].filter(a => a.ok && a.root === x.d.root).sort(byZ);
-  let gate = -Infinity; const groups = [];
-  for (const g of flow.groups){
-    const valid = votes.filter(a => g.members.some(m => samePerson(m, a.author)) && (!flow.ordered || a.z > gate));
-    const done = valid.length >= g.need;
-    groups.push({ g, valid, done, waiting: flow.ordered && gate === Infinity });
-    gate = !flow.ordered ? gate : done ? valid[g.need - 1].z : Infinity;
+  const votes = [...x.votes.values()].filter(a => a.ok && a.root === x.d.root).sort(byZ), groups = [];
+  for (const [i, g] of flow.groups.entries()){
+    const seen = new Set(), valid = [];
+    for (const a of votes){
+      if (!g.members.some(m => samePerson(m, a.author)) || seen.has(personOf(a.author))) continue;
+      if (flow.ordered && groups.some(p => p.valid.filter(v => a.after.includes(v.cid)).length < p.g.need)) continue;
+      seen.add(personOf(a.author)); valid.push(a);
+    }
+    groups.push({ g, valid, done: valid.length >= g.need, waiting: flow.ordered && i > 0 && !groups.every(p => p.done) });
   }
-  const conds = flow.conds.map(id => ({ id, c: FLOW_CONDITIONS[id], r: FLOW_CONDITIONS[id] ? FLOW_CONDITIONS[id].test(S.D) : `unknown condition ${id}` }));
+  const conds = flow.conds.map(id => { const c = own(FLOW_CONDITIONS, id) ? FLOW_CONDITIONS[id] : null; return { id, c, r: c ? c.test(S.D) : `unknown condition “${id}”` }; });
   return { groups, conds, done: groups.every(g => g.done) && conds.every(c => c.r === true) };
 }
+const liveFlow = cid => { const f = cid && S.records.get(cid); return f && f.type === 'FLOW' && inView(f) ? f : null; };
 DELIVERY_HOOKS.evaluate.push(x => {
   if (!x.d.flow) return;
-  const flow = S.records.get(x.d.flow);
-  if (!flow || flow.type !== 'FLOW' || S.D.hidden.has(flow.cid)){ x.done = false; x.blockers.push('Its approval flow isn’t on this canvas'); return; }
+  x.done = false;   // a delivery that names a flow is done only when the flow says so
+  const flow = liveFlow(x.d.flow);
+  if (!flow){ x.blockers.push('Its approval flow isn’t on this canvas'); return; }
   let ev = evalFlow(flow, x), via = flow;
-  const up = flow.esc && S.records.get(flow.esc);
-  if (!ev.done && up?.type === 'FLOW' && Date.now() > x.d.t + flow.after * 36e5){ const e2 = evalFlow(up, x); if (e2.done){ ev = e2; via = up; } else x.blockers.push(`Escalated to “${up.name}”`); }
+  // escalation: counted from the first approval (approvers' clocks), not from the delivery's own claimed time
+  const up = flow.esc && liveFlow(flow.esc), first = Math.min(...[...x.votes.values()].map(a => a.t));
+  if (!ev.done && up && Number.isFinite(first) && Date.now() > first + flow.after * 36e5){ const e2 = evalFlow(up, x); if (e2.done){ ev = e2; via = up; } else x.blockers.push(`Escalated to “${up.name}”`); }
   x.flow = { flow: via, ...ev };
   x.done = ev.done;
   x.label = ev.groups.map(g => `${g.g.name} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}`).join(' · ');
-  for (const g of ev.groups) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[ev.groups.indexOf(g) - 1].g.name}`);
+  for (const [i, g] of ev.groups.entries()) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[i - 1].g.name}`);
   for (const c of ev.conds) if (c.r !== true) x.blockers.push(`${c.c?.label || c.id}: ${c.r}`);
 });
 DELIVERY_HOOKS.row.push(x => x.flow ? `<div class="wk-ap">${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}</div><small class="wk-note">Flow: ${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>` : '');
@@ -7137,7 +7234,7 @@ DELIVERY_HOOKS.proof.push((x, out) => {
     ...x.flow.conds.map(c => `- **Condition:** ${c.c?.label || c.id} — ${c.r === true ? 'met' : c.r}`));
 });
 DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
-const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && !S.D.hidden.has(r.cid)).sort(byZ);
+const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && r.neg === null && inView(r)).sort(byZ);
 
 async function flowForm(){
   const ppl = people(), conds = Object.entries(FLOW_CONDITIONS);
@@ -7185,30 +7282,37 @@ const WORK_KINDS = {
 const KIND_OF = { DRAW: 'create', SHAPE: 'create', IMAGE: 'create', ARROW: 'create', MOVE: 'move', STYLE: 'edit', COMMENT: 'comment', STANCE: 'stance', REACT: 'vote',
   EVIDENCE: 'ground', CHECK: 'ground', DECISION: 'decide', AGENDA: 'facilitate', NEXT: 'facilitate', FLOOR: 'facilitate' };
 const DEFAULT_METHOD = { cid: 'default', name: 'Default', w: Object.fromEntries(Object.entries(WORK_KINDS).map(([k, v]) => [k, v.w])) };
-registerRecord('METHOD', { parse(r, f){ if (!f.R || !f.W) throw Error('method'); r.name = decTxt(f.M || 'Method'); r.w = { ...Object.fromEntries(Object.keys(WORK_KINDS).map(k => [k, 0])), ...Object.fromEntries(f.W.split('_').map(p => p.split('~')).filter(([k]) => k in WORK_KINDS).map(([k, n]) => [k, Math.max(0, Math.min(1000, +n || 0))])) }; } });
-registerRecord('CREDIT', { parse(r, f){ if (!f.R || !f.H || !f.L) throw Error('credit'); r.shares = new Map(f.L.split('_').map(p => p.split('~')).map(([k, n]) => [k, Math.max(0, +n || 0)])); r.method = f.K || 'default'; }, inherit: false });
+registerRecord('METHOD', { parse(r, f){ must(f.R && f.W, 'method'); r.name = decTxt(f.M || 'Method'); r.w = { ...Object.fromEntries(Object.keys(WORK_KINDS).map(k => [k, 0])), ...Object.fromEntries(f.W.split('_').map(p => p.split('~')).filter(([k]) => own(WORK_KINDS, k)).map(([k, n]) => [k, Math.max(0, Math.min(1000, +n || 0))])) }; } });
+registerRecord('CREDIT', { parse(r, f){ must(isCid(f.R) && isRoot(f.H) && f.L, 'credit'); r.shares = new Map(f.L.split('_').map(p => p.split('~')).map(([k, n]) => { must(isKey(k), 'credit key'); return [k, Math.max(0, Math.min(10000, +n || 0))]; }));
+  r.method = f.K || 'default'; must(r.method === 'default' || isCid(r.method), 'method'); r.approvals = f.G && f.G !== '0' ? cidList(f.G) : []; }, inherit: false });
 Object.assign(PERM_OF, { METHOD: 'comment', CREDIT: null });
 
 // the method in use: the owner's latest; on an open canvas, the proposal the most people agree with; else the default
 function methodInUse(){
-  const ms = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
+  const ms = [...S.records.values()].filter(r => r.type === 'METHOD' && r.neg === null && inView(r)).sort(byZ);
   const owner = S.P?.owner;
   if (owner){ const m = ms.filter(r => samePerson(r.author, owner)).at(-1); if (m) return m; }
   let best = null, n = 0; for (const m of ms){ const a = consensus(m.cid).c.agree; if (a > n || a === n && a > 0){ best = m; n = a; } }
   return best || DEFAULT_METHOD;
 }
-// each person's work in the records before order z, weighted by a method; returns person → { pts, by: { kind: count } }
-function workUpTo(z, method, extra = []){
-  const D = S.D, out = new Map(), add = (who, kind) => { if (!who || !method.w[kind]) return; const p = personOf(who), o = out.get(p) || { pts: 0, by: {} }; o.pts += method.w[kind]; o.by[kind] = (o.by[kind] || 0) + 1; out.set(p, o); };
-  const done = new Map();   // element → owner of a task that was done before z
-  for (const r of [...S.records.values()].filter(r => r.z < z && !D.hidden.has(r.cid)).sort(byZ)){
-    if (r.neg !== null) continue;
+const methodRec = c => c === 'default' ? DEFAULT_METHOD : (r => r && r.type === 'METHOD' && r.neg === null ? r : null)(S.records.get(c));
+// each person's work in a set of records, weighted by a method; returns person → { pts, by: { kind: count } }.
+// Only records that count in the view; a finished task credits its owner only if the task's own rules let that TASK count.
+function workIn(recs, method, approvers = []){
+  const out = new Map(), add = (who, kind) => { if (!who || !method.w[kind]) return; const p = personOf(who), o = out.get(p) || { pts: 0, by: {} }; o.pts += method.w[kind]; o.by[kind] = (o.by[kind] || 0) + 1; out.set(p, o); };
+  const done = new Map(), made = new Map(), owners = new Map();
+  for (const r of recs.filter(r => r.neg === null && inView(r)).sort(byZ)){
     if (r.type === 'TEXT' || r.type === 'NODE') add(r.author, r.edits ? 'edit' : 'create');
-    else if (r.type === 'TASK'){ if (r.status === 'done' && r.owner) done.set(r.f.R, r.owner); else done.delete(r.f.R); }
-    else if (KIND_OF[r.type]) add(r.author, KIND_OF[r.type]);
+    else if (r.type === 'TASK'){
+      const el = S.records.get(r.f.R), maker = made.get(r.f.R), cur = owners.get(r.f.R);
+      if (maker && ![maker, cur, el?.author, S.P?.owner].some(k => k && samePerson(k, r.author))) continue;
+      if (!maker) made.set(r.f.R, r.author);
+      owners.set(r.f.R, r.owner); if (r.status === 'done' && r.owner) done.set(r.f.R, r.owner); else done.delete(r.f.R);
+    }
+    else if (own(KIND_OF, r.type)) add(r.author, KIND_OF[r.type]);
   }
   for (const who of done.values()) add(who, 'task');
-  for (const who of extra) add(who, 'approve');
+  for (const who of new Set(approvers.map(personOf))) add(who, 'approve');
   return out;
 }
 // shares in basis points (sum 10000), largest remainder so they always add up
@@ -7218,26 +7322,33 @@ function toShares(work){
   let left = 10000 - floor.reduce((a, [, v]) => a + v, 0);
   const order = raw.map(([k, v], i) => [i, v - Math.floor(v)]).sort((a, b) => b[1] - a[1] || (raw[a[0]][0] < raw[b[0]][0] ? -1 : 1));
   for (const [i] of order){ if (left <= 0) break; floor[i][1]++; left--; }
-  return new Map(floor.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]));
+  return new Map(floor.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)));
 }
+// a delivery's shares over its exact version (features/work), with its approvers credited for approving
+const sharesFor = (x, method, approvals) => toShares(workIn(versionRecs(x.d), method, approvals.map(a => a.author)));
 // a delivery's shares: the signed CREDIT if there is a valid one, else computed now
-function contributionShares(x){
-  const signedOne = creditOf(x); if (signedOne) return signedOne.shares;
-  return toShares(workUpTo(x.d.z, methodInUse(), x.ok.map(a => a.author)));
-}
-const creditOf = x => [...S.records.values()].filter(r => r.type === 'CREDIT' && r.f.R === x.d.cid && r.f.H === x.d.root && samePerson(r.author, x.d.author) && !S.D.hidden.has(r.cid) && r.valid !== false).sort(byZ).at(-1) || null;
+function contributionShares(x){ const c = creditOf(x); return c ? c.shares : sharesFor(x, methodInUse(), x.ok); }
+const creditOf = x => S.D.credits?.get(x.d.cid) || null;
 const sameShares = (a, b) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
-// a CREDIT must recompute: same method, same version, same approvals → same shares
-DERIVE_HOOKS.push(() => {
-  for (const r of S.records.values()) if (r.type === 'CREDIT' && r.valid === undefined){
-    const x = S.D.deliveries?.find(v => v.d.cid === r.f.R), m = r.method === 'default' ? DEFAULT_METHOD : S.records.get(r.method);
-    if (!x || !m) continue;
-    r.valid = sameShares(r.shares, toShares(workUpTo(x.d.z, m, x.ok.filter(a => a.z < r.z).map(a => a.author))));
+// a CREDIT counts only if it recomputes, on every derive: its author made the delivery, its method is a method, its approvals
+// are this delivery's valid approvals, and those give exactly its shares. Judged after the deliveries (DERIVE_FINAL)
+DERIVE_FINAL.push(D => {
+  const credits = new Map();
+  for (const r of S.records.values()){
+    if (r.type !== 'CREDIT' || r.neg !== null || !inView(r)) continue;
+    try {
+      const x = D.deliveries?.find(v => v.d.cid === r.f.R), m = methodRec(r.method);
+      if (!x || !m || r.f.H !== x.d.root || !samePerson(r.author, x.d.author)) continue;
+      const apps = r.approvals.map(c => x.ok.find(a => a.cid === c)); if (apps.some(a => !a)) continue;
+      if (sameShares(r.shares, sharesFor(x, m, apps)) && (!credits.has(x.d.cid) || byZ(credits.get(x.d.cid), r) < 0)) credits.set(x.d.cid, r);
+    } catch {}
   }
+  D.credits = credits;
 });
 async function signCredit(x){
-  const m = methodInUse(), shares = toShares(workUpTo(x.d.z, m, x.ok.map(a => a.author)));
-  await publish(await signed('CREDIT', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', [...shares].map(([k, v]) => `${k}~${v}`).join('_')], ['K', m.cid], ['Z', ++S.lamport], ['T', Date.now()]]));
+  const m = methodInUse(), shares = sharesFor(x, m, x.ok);
+  if (!shares.size){ toast('No work in this version to credit yet.'); return; }
+  await publish(await signed('CREDIT', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', [...shares].map(([k, v]) => `${k}~${v}`).join('_')], ['K', m.cid], ['G', x.ok.map(a => a.cid).join('_') || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast('Contribution record signed. Anyone can recompute it from the records.');
 }
 const pct = bp => `${(bp / 100).toFixed(bp % 100 ? 1 : 0)}%`;
@@ -7261,7 +7372,7 @@ async function methodForm(){
 registerPanel({
   id: 'contribution', title: 'Contribution', blurb: 'Who did how much, from the signed records. The method is a record too: propose another and the room decides.',
   paint(body){
-    const m = methodInUse(), now = toShares(workUpTo(Infinity, m)), work = workUpTo(Infinity, m), props = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
+    const m = methodInUse(), work = workIn([...S.records.values()], m), now = toShares(work), props = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
     const bars = sh => `<ul class="plain">${[...sh].map(([k, v]) => `<li class="row2">${avatar(k)}<span class="grow">${esc(whoName(k))}<small> · ${Object.entries(work.get(k)?.by || {}).map(([kk, n]) => `${n} ${kk}`).join(', ')}</small></span><b>${pct(v)}</b></li><li><div class="bar"><i style="width:${v / 100}%;background:hsl(${authorHue(k)} 55% 40%)"></i></div></li>`).join('')}</ul>`;
     body.innerHTML = `<div class="card"><div class="hd"><b>Method: ${esc(m.name)}</b>${m.cid === 'default' ? '<span class="pill">Default</span>' : `<span class="pill acc">by ${esc(whoName(m.author))}</span>`}</div>
         <small>${Object.entries(m.w).filter(([, w]) => w).map(([k, w]) => `${WORK_KINDS[k].label.split(' (')[0].toLowerCase()} ${w / 10}`).join(' · ')}</small>
@@ -7286,14 +7397,17 @@ registerFeature({ id: 'contribution', name: 'Contribution proof', group: 'delive
 const PAYOUT_CONNECTORS = [];   // { name, run: async (manifest) → receipt text }  e.g. an FXN service-pool resolver or a payment API
 const SETTLE_HOOKS = [];        // (x, amount) → [{ to, bp, why }] lines taken before the split (template royalties)
 const unitOk = u => /^[A-Za-z0-9]{1,8}$/.test(u || '');
-registerRecord('FUND', { parse(r, f){ if (!f.R || !unitOk(f.U)) throw Error('fund'); r.cents = Math.max(0, +f.A || 0); r.unit = f.U.toUpperCase(); r.note = decTxt(f.M || ''); }, inherit: false });
-registerRecord('PAY', { parse(r, f){ if (!f.R || !unitOk(f.U) || !['even', 'credit', 'fixed'].includes(f.S)) throw Error('pay'); r.cents = Math.max(0, +f.A || 0); r.unit = f.U.toUpperCase(); r.split = f.S;
-  r.fixed = f.P && f.P !== '0' ? new Map(f.P.split('_').map(p => p.split('~')).map(([k, n]) => [k, Math.max(0, +n || 0)])) : null; }, inherit: false });
-registerRecord('SETTLE', { parse(r, f){ if (!f.R || !f.H || !f.L || !unitOk(f.U)) throw Error('settle'); r.lines = f.L.split('_').map(p => p.split('~')).map(([k, n]) => ({ to: k, cents: Math.max(0, +n || 0) })); r.unit = f.U.toUpperCase(); }, inherit: false });
+const shareList = v => new Map(String(v).split('_').map(p => p.split('~')).map(([k, n]) => { must(isKey(k), 'payee'); return [k, Math.max(0, Math.min(10000, +n || 0))]; }));
+registerRecord('FUND', { parse(r, f){ must(isCanvas(f.R) && unitOk(f.U), 'fund'); r.cents = Math.max(0, Math.min(1e15, +f.A || 0)); r.unit = f.U.toUpperCase(); r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('PAY', { parse(r, f){ must(isCid(f.R) && unitOk(f.U) && ['even', 'credit', 'fixed'].includes(f.S), 'pay'); r.cents = Math.max(0, Math.min(1e15, +f.A || 0)); r.unit = f.U.toUpperCase(); r.split = f.S;
+  r.fixed = f.P && f.P !== '0' ? shareList(f.P) : null; }, inherit: false });
+registerRecord('SETTLE', { parse(r, f){ must(isCid(f.R) && isRoot(f.H) && f.L && isCid(f.K) && unitOk(f.U), 'settle'); r.terms = f.K;
+  r.lines = f.L.split('_').map(p => p.split('~')).map(([k, n]) => { must(isKey(k), 'payee'); return { to: k, cents: Math.max(0, +n || 0) }; }); r.unit = f.U.toUpperCase(); }, inherit: false });
 Object.assign(PERM_OF, { FUND: 'comment', PAY: null, SETTLE: null });
 const money = (c, u) => `${(c / 100).toLocaleString([], { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 })} ${u}`;
 
-// deterministic lines: royalties first, then the split; cents rounded down, the remainder to the largest share
+// deterministic lines: royalties first, then the split; cents rounded down, the remainder to the largest share.
+// Nobody to pay (no work, zero weights): everything goes to the delivery's author, so the lines always add up to the amount
 function payoutLines(x, pay){
   const lines = [], add = (to, cents, why) => { const l = lines.find(l => l.to === to && l.why === why); if (l) l.cents += cents; else lines.push({ to, cents, why }); };
   let rest = pay.cents;
@@ -7301,29 +7415,40 @@ function payoutLines(x, pay){
   let shares;
   if (pay.split === 'fixed' && pay.fixed) shares = pay.fixed;
   else if (pay.split === 'credit') shares = contributionShares(x);
-  else { const who = [...new Set([...S.records.values()].filter(r => r.z < x.d.z && r.neg === null && ELEMENT.has(r.type) && !S.D.hidden.has(r.cid)).map(r => personOf(r.author)))].sort(); shares = new Map(who.map(k => [k, 10000 / (who.length || 1)])); }
-  const tot = [...shares.values()].reduce((a, v) => a + v, 0) || 1, parts = [...shares].map(([k, v]) => [k, Math.floor(rest * v / tot)]);
+  else { const who = [...new Set(versionRecs(x.d).filter(r => r.neg === null && ELEMENT.has(r.type) && inView(r)).map(r => personOf(r.author)))].sort(); shares = new Map(who.map(k => [k, 1])); }
+  const tot = [...shares.values()].reduce((a, v) => a + v, 0);
+  if (!tot){ if (rest > 0) add(personOf(x.d.author), rest, 'work'); return lines; }
+  const parts = [...shares].map(([k, v]) => [k, Math.floor(rest * v / tot)]);
   let left = rest - parts.reduce((a, [, c]) => a + c, 0);
   parts.sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)); for (const p of parts){ if (left <= 0) break; p[1]++; left--; }
   for (const [k, c] of parts) if (c > 0) add(k, c, 'work');
   return lines;
 }
 const sameLines = (a, b) => { const m = new Map(); for (const l of a) m.set(l.to, (m.get(l.to) || 0) + l.cents); const n = new Map(); for (const l of b) n.set(l.to, (n.get(l.to) || 0) + l.cents); return m.size === n.size && [...m].every(([k, v]) => n.get(k) === v); };
-DERIVE_HOOKS.push((D, by) => {
+// approvals cover the terms: each approval names the PAY it was signed with (features/work), so terms changed afterwards
+// need approving again before anything can be released
+const termsApproved = (x, pay) => !!pay && x.ok.length > 0 && x.ok.every(a => a.terms === pay.cid);
+// judged after the deliveries and credits (DERIVE_FINAL), recomputed every time: nothing cached on the records
+DERIVE_FINAL.push((D, by) => {
   const pays = new Map(), settles = new Map();
   for (const x of D.deliveries || []){
-    const p = (by.PAY || []).filter(r => r.f.R === x.d.cid && samePerson(r.author, x.d.author) && !D.hidden.has(r.cid)).at(-1);
-    if (p) pays.set(x.d.cid, p);
-    const s = (by.SETTLE || []).find(r => r.f.R === x.d.cid && r.f.H === x.d.root && samePerson(r.author, x.d.author) && !D.hidden.has(r.cid));
-    if (s) settles.set(x.d.cid, s);
+    const own = r => r.f.R === x.d.cid && r.neg === null && samePerson(r.author, x.d.author) && inView(r);
+    const p = (by.PAY || []).filter(own).at(-1); if (p) pays.set(x.d.cid, p);
+    for (const st of (by.SETTLE || []).filter(own)){
+      try {
+        const terms = S.records.get(st.terms);
+        if (!x.done || st.f.H !== x.d.root || !terms || terms.type !== 'PAY' || !own(terms) || terms.unit !== st.unit || !termsApproved(x, terms)) continue;
+        if (sameLines(st.lines, payoutLines(x, terms))){ settles.set(x.d.cid, st); break; }   // the first valid release
+      } catch {}
+    }
   }
-  const pool = new Map(); for (const f of by.FUND || []) if (!D.hidden.has(f.cid) && f.f.R === canvasId){ const o = pool.get(f.unit) || { pledged: 0, paid: 0, backers: new Map() }; o.pledged += f.cents; o.backers.set(personOf(f.author), (o.backers.get(personOf(f.author)) || 0) + f.cents); pool.set(f.unit, o); }
-  for (const s of settles.values()){ const o = pool.get(s.unit); if (o) o.paid += s.lines.reduce((a, l) => a + l.cents, 0); }
-  D.pays = pays; D.settles = settles; D.pool = pool;
+  // the pool pays only what someone with a stake in it approved: the canvas owner or a backer of that unit
+  const pool = new Map(); for (const f of by.FUND || []) if (f.neg === null && inView(f) && f.f.R === canvasId){ const o = pool.get(f.unit) || { pledged: 0, paid: 0, backers: new Map() }; o.pledged += f.cents; o.backers.set(personOf(f.author), (o.backers.get(personOf(f.author)) || 0) + f.cents); pool.set(f.unit, o); }
+  const fromPool = new Set();
+  for (const x of D.deliveries || []){ const st = settles.get(x.d.cid), o = st && pool.get(st.unit); if (o && x.ok.some(a => samePerson(a.author, S.P?.owner) || o.backers.has(personOf(a.author)))){ o.paid += st.lines.reduce((a, l) => a + l.cents, 0); fromPool.add(x.d.cid); } }
+  D.pays = pays; D.settles = settles; D.pool = pool; D.fromPool = fromPool;
 });
-// a settlement counts only if its lines are what the terms give for the approved version (checked lazily: shares need derive)
-const settleValid = (x, s) => { if (!s.valid){ const p = S.D.pays.get(x.d.cid); s.valid = !!p && p.unit === s.unit && sameLines(s.lines, payoutLines(x, p)); } return s.valid; };
-
+const settleValid = (x, s) => S.D.settles?.get(x.d.cid) === s;
 async function attachPay(x){
   const v = await formDialog('Payment for this delivery', [
     { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
@@ -7336,8 +7461,9 @@ async function attachPay(x){
 }
 async function release(x){
   const p = S.D.pays.get(x.d.cid); if (!p || !x.done) return;
+  if (!termsApproved(x, p)){ toast('These terms changed after the approvals: ask the approvers to approve again first.'); return; }
   const lines = payoutLines(x, p);
-  await publish(await signed('SETTLE', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', lines.map(l => `${l.to}~${l.cents}`).join('_')], ['U', p.unit], ['Z', ++S.lamport], ['T', Date.now()]]));
+  await publish(await signed('SETTLE', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', lines.map(l => `${l.to}~${l.cents}`).join('_')], ['K', p.cid], ['U', p.unit], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(`Payment released: ${money(p.cents, p.unit)} in ${plural(lines.length, 'line')}.${PAYOUT_CONNECTORS.length ? '' : ' Hand the manifest to whoever pays.'}`);
   for (const c of PAYOUT_CONNECTORS) try { toast(`${c.name}: ${await c.run(manifest(x))}`); } catch (err){ toast(`${c.name} failed: ${err.message}`); }
 }
@@ -7350,10 +7476,11 @@ function downloadJSON(name, text){ const a = document.createElement('a'); a.href
 function payRow(x){
   const p = S.D.pays?.get(x.d.cid), s = S.D.settles?.get(x.d.cid), mine = samePerson(x.d.author, S.me.id);
   if (!p) return mine ? `<div class="acts"><button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button></div>` : '';
-  const ok = s && settleValid(x, s);
-  return `<div class="row2"><span class="pill ${ok ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
-    ${s ? (ok ? `<small>Paid: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>` : '<span class="pill bad">Settlement doesn’t match the terms</span>')
-      : x.done && mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Released when approved</small>'}</div>`;
+  const bound = termsApproved(x, p), pooled = S.D.fromPool?.has(x.d.cid);
+  return `<div class="row2"><span class="pill ${s ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
+    ${s ? `<small>Paid${pooled ? ' from the pool' : ''}: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>`
+      : !x.done ? '<small>Released when approved</small>' : !bound ? '<span class="pill warn">Terms changed after approval: approvers must approve again</span>'
+      : mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Waiting for the release</small>'}</div>`;
 }
 DELIVERY_HOOKS.row.push(payRow);
 DELIVERY_HOOKS.proof.push((x, out) => {
@@ -7392,33 +7519,45 @@ registerFeature({ id: 'funding', name: 'Canvas-to-Cash', group: 'deliver', icon:
 // The witnessed version is recomputable: the same root a delivery uses (every record before the witness, minus deliveries and
 // approvals), so each peer checks each witness against its own records.
 // @uses features/work (rootAt, deliveries), ui/panels
-// WITNESS-I-R-{canvas}-H-{root}-C-{records it covers}-M-{note}-Z-T-SIG
-registerRecord('WITNESS', { parse(r, f){ if (!f.R || !f.H) throw Error('witness'); r.root = f.H; r.n = Math.max(0, +f.C || 0); r.note = decTxt(f.M || ''); }, inherit: false });
+// WITNESS-I-R-{canvas}-H-{root}-C-{records it covers}-M-{note}[-D-{delivery}]-Z-T-SIG
+//   with D: the delivery's exact version (features/work), checked against its version list; without: every record before it
+registerRecord('WITNESS', { parse(r, f){ must(isCanvas(f.R) && isRoot(f.H), 'witness'); r.root = f.H; r.n = Math.max(0, +f.C || 0); r.note = decTxt(f.M || ''); r.of = f.D && f.D !== '0' ? f.D : null; must(!r.of || isCid(r.of), 'witness delivery'); }, inherit: false });
 PERM_OF.WITNESS = null;
-const WIT = { auto: false, checked: new Map() };   // witness CID → true / false once recomputed here
+const WIT = { auto: false, checked: new Map() };   // "witness CID:records held" → true / false, recomputed when the record set changes
 try { WIT.auto = localStorage.getItem('flux:autowitness') === 'on'; } catch {}
 DERIVE_HOOKS.push((D, by) => {
   const byRoot = new Map();
-  for (const w of by.WITNESS || []) if (!D.hidden.has(w.cid) && w.f.R === canvasId){ if (!byRoot.has(w.root)) byRoot.set(w.root, []); const l = byRoot.get(w.root); if (!l.some(o => samePerson(o.author, w.author))) l.push(w); }
+  for (const w of by.WITNESS || []) if (w.neg === null && !D.hidden.has(w.cid) && w.f.R === canvasId){ if (!byRoot.has(w.root)) byRoot.set(w.root, []); byRoot.get(w.root).push(w); }
   D.witnessed = byRoot;
 });
-// check each witness once: does its root match the version this browser computes for its place in the order?
+const witKey = w => `${w.cid}:${S.records.size}`;
+async function checkWitness(w){
+  if (w.of){ const d = S.records.get(w.of); if (!d || d.type !== 'DELIVER' || d.root !== w.root) return false; const v = await versionCheck(d); return v.root === w.root && !v.missing; }
+  return await rootAt(w.z) === w.root;
+}
 async function checkWitnesses(){
-  for (const ws of S.D.witnessed?.values() || []) for (const w of ws) if (!WIT.checked.has(w.cid)){ WIT.checked.set(w.cid, null); WIT.checked.set(w.cid, await rootAt(w.z) === w.root); if (panelOpen === 'witness') paintPanel(); }
+  if (WIT.checked.size > 5000) WIT.checked.clear();
+  for (const ws of S.D.witnessed?.values() || []) for (const w of ws){ const k = witKey(w); if (WIT.checked.has(k)) continue; WIT.checked.set(k, null); WIT.checked.set(k, await checkWitness(w)); if (panelOpen === 'witness') paintPanel(); }
 }
 CHANGE_HOOKS.push(() => { checkWitnesses(); });
-async function witnessNow(note = '', root = null, z = null){
+const witOk = w => WIT.checked.get(witKey(w));
+async function witnessNow(note = '', root = null, z = null, of = null){
   z = z ?? S.lamport + 1; root = root || await rootAt(z);
-  const n = [...S.records.values()].filter(r => r.z < z && r.type !== 'DELIVER' && r.type !== 'APPROVE').length;
-  await publish(await signed('WITNESS', [['I', S.me.id], ['R', canvasId], ['H', root], ['C', n], ['M', encTxt(note)], ['Z', z], ['T', Date.now()]]));
+  const n = of ? versionRecs(S.records.get(of)).length : [...S.records.values()].filter(r => r.z < z && r.type !== 'DELIVER' && r.type !== 'APPROVE').length;
+  await publish(await signed('WITNESS', [['I', S.me.id], ['R', canvasId], ['H', root], ['C', n], ['M', encTxt(note)], ...(of ? [['D', of]] : []), ['Z', z], ['T', Date.now()]]));
   toast(`Witnessed: ${plural(n, 'record')}, version ${root.slice(0, 8)}.`);
 }
-// a delivery's version is witnessed by signing its root at the delivery's own place in the order
-const witnessDelivery = x => witnessNow(`Delivery: ${x.d.title}`, x.d.root, x.d.z);
-const witnessesOf = root => (S.D.witnessed?.get(root) || []).filter(w => WIT.checked.get(w.cid) !== false);
+// a delivery's version is witnessed only after this browser checked it holds exactly that version
+async function witnessDelivery(x){
+  const v = await versionCheck(x.d);
+  if (v.root !== x.d.root || v.missing){ toast('You don’t hold this exact version yet, so you can’t witness it. Syncing…'); sendHello(false); return false; }
+  await witnessNow(`Delivery: ${x.d.title}`, x.d.root, null, x.d.cid); return true;
+}
+// one per person, and only witnesses this browser has checked and found matching
+const witnessesOf = root => { const seen = new Set(); return (S.D.witnessed?.get(root) || []).filter(w => witOk(w) === true && !seen.has(personOf(w.author)) && seen.add(personOf(w.author))); };
 const spread = ws => { if (!ws.length) return ''; const ts = ws.map(w => w.t).sort(), a = new Date(ts[0]), b = new Date(ts.at(-1)); const f = d => d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); return f(a) === f(b) ? f(a) : `${f(a)} – ${f(b)}`; };
 DELIVERY_HOOKS.row.push(x => {
-  const ws = witnessesOf(x.d.root), me = ws.some(w => samePerson(w.author, S.me.id));
+  const ws = witnessesOf(x.d.root), me = (S.D.witnessed?.get(x.d.root) || []).some(w => samePerson(w.author, S.me.id));
   return `<div class="row2">${ws.length ? `<span class="pill good">${ic('stamp')}Witnessed by ${ws.length}</span><small>${ws.map(w => esc(whoName(w.author))).join(', ')} · ${spread(ws)}</small>` : '<small>No witnesses yet.</small>'}${me ? '' : `<button class="btn" data-witness="${x.d.cid}">Witness this version</button>`}</div>`;
 });
 DELIVERY_HOOKS.proof.push((x, out) => {
@@ -7439,7 +7578,7 @@ registerPanel({
     body.innerHTML = `<div class="acts"><button class="btn primary" data-now data-autofocus>${ic('stamp')}Witness the canvas as it is now</button></div>
       <label class="muted"><input type="checkbox" data-k="auto"${WIT.auto ? ' checked' : ''}> Witness every delivery that completes while I’m here</label>
       ${rows.length ? `<ul class="plain">${rows.map(({ root, ws, d }) => `<li class="card"><div class="hd"><b>${d ? esc(d.d.title) : `Version ${root.slice(0, 8)}`}</b><span class="pill good">${ws.length} witness${ws.length === 1 ? '' : 'es'}</span></div>
-        <small>${ws[0].n} records · ${spread(ws)}</small>${ws.map(w => `<div class="row2">${avatar(w.author)}<span class="grow">${esc(whoName(w.author))}${w.note ? ` <small>· ${esc(w.note)}</small>` : ''}</span><span class="pill ${WIT.checked.get(w.cid) ? 'good' : WIT.checked.get(w.cid) === false ? 'bad' : ''}">${WIT.checked.get(w.cid) ? 'Matches ✓' : WIT.checked.get(w.cid) === false ? 'Doesn’t match' : 'Checking'}</span></div>`).join('')}</li>`).join('')}</ul>`
+        <small>${ws[0].n} records · ${spread(ws)}</small>${ws.map(w => `<div class="row2">${avatar(w.author)}<span class="grow">${esc(whoName(w.author))}${w.note ? ` <small>· ${esc(w.note)}</small>` : ''}</span><span class="pill ${witOk(w) ? 'good' : witOk(w) === false ? 'bad' : ''}">${witOk(w) ? 'Matches ✓' : witOk(w) === false ? 'Doesn’t match' : 'Checking'}</span></div>`).join('')}</li>`).join('')}</ul>`
       : '<p class="empty">Nothing witnessed yet. Ask people outside the work (a client, an auditor) to witness a delivery: their signatures date it.</p>'}`;
   },
   click(e, b){ if (b.hasAttribute('data-now')) witnessNow(); },
@@ -7452,7 +7591,7 @@ registerFeature({ id: 'witness', name: 'Peer witnesses', group: 'deliver', icon:
 // the version's root from the IDs, and confirms each excerpt record is in it. Nothing outside the excerpt is revealed but its hash.
 // @uses features/work (deliveries, rootAt), core identity (verifyRaw), ui/panels, ui/form
 // The excerpt file: { flux: 'excerpt', v: 1, canvas, title, delivery, approvals: [raw], ids: [CID…], records: [raw], blobs: { cid: base64 } }
-function versionRecords(x){ return [...S.records.values()].filter(r => r.z < x.d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE'); }
+const versionRecords = x => versionRecs(x.d);   // the delivery's exact version (features/work)
 // what to include for the chosen elements: the elements and every change in the version that targets them (moves, styles, edits)
 function excerptOf(x, cids){
   const inV = versionRecords(x), want = new Set(cids), out = new Map();
@@ -7464,7 +7603,8 @@ function excerptOf(x, cids){
 function makeExcerpt(x, cids){
   const recs = excerptOf(x, cids), blobs = {};
   for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b)) blobs[b] = b64enc(S.blobs.get(b)); }
-  return { flux: 'excerpt', v: 1, canvas: canvasId, title: canvasTitle(), delivery: x.d.raw, approvals: x.ok.map(a => a.raw), ids: versionRecords(x).map(r => r.cid).sort(), records: recs.map(r => r.raw), blobs };
+  const ids = versionOf(x.d) ? [...versionOf(x.d)].sort() : versionRecords(x).map(r => r.cid).sort(), flow = x.d.flow && S.records.get(x.d.flow);
+  return { flux: 'excerpt', v: 1, canvas: canvasId, title: canvasTitle(), delivery: x.d.raw, approvals: x.ok.map(a => a.raw), ...(flow ? { flow: flow.raw } : {}), ids, records: recs.map(r => r.raw), blobs };
 }
 async function shareExcerpt(x){
   const cids = [...S.sel].filter(c => S.records.has(c));
@@ -7484,14 +7624,30 @@ async function verifyExcerpt(ex){
   const root = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...ex.ids].sort().join('\n')))));
   if (root !== d.n.fields.H) return fail('The record IDs don’t add up to the delivered version.');
   res.lines.push(`✓ The ${ex.ids.length} record IDs recompute to the delivered version ${root.slice(0, 10)}…`);
-  const ids = new Set(ex.ids), approvers = (d.n.fields.A || '').split('_'), quorum = +d.n.fields.Q || 1, seen = new Set();
-  for (const raw of ex.approvals || []){ const a = await check(raw); if (a && a.n.action === 'APPROVE' && a.n.fields.R === d.cid && a.n.fields.H === root && a.n.fields.S !== '0' && approvers.includes(a.n.fields.I)) seen.add(a.n.fields.I); }
+  const ids = new Set(ex.ids), approvers = (d.n.fields.A || '').split('_').filter(Boolean), quorum = Math.max(1, Math.min(approvers.length, +d.n.fields.Q || 1));
+  // each approver's latest approval in the file counts; a withdrawal (S-0) cancels it
+  const latest = new Map();
+  for (const raw of ex.approvals || []){ const a = await check(raw); if (!a || a.n.action !== 'APPROVE' || a.n.fields.R !== d.cid || !approvers.includes(a.n.fields.I)) continue; const o = latest.get(a.n.fields.I); if (!o || decInt(a.n.fields.Z) > decInt(o.n.fields.Z)) latest.set(a.n.fields.I, a); }
+  const good = [...latest.values()].filter(a => a.n.fields.S !== '0' && a.n.fields.H === root), seen = new Set(good.map(a => a.n.fields.I));
   res.approvals = seen.size; res.quorum = quorum; res.approvers = [...seen];
-  res.lines.push(`${seen.size >= quorum ? '✓' : '✕'} ${seen.size} of ${quorum} required approvals are signed on exactly this version`);
+  let enough = seen.size >= quorum;
+  res.lines.push(`${enough ? '✓' : '✕'} ${seen.size} of ${quorum} required approvals are signed on exactly this version`);
+  // a delivery under an approval flow: its groups and their order are checked too (conditions on the canvas can't be, from a file)
+  if (d.n.fields.F && d.n.fields.F !== '0'){
+    const f = ex.flow && await check(ex.flow);
+    if (!f || f.cid !== d.n.fields.F || f.n.action !== 'FLOW'){ enough = false; res.lines.push('✕ The delivery names an approval flow the excerpt doesn’t carry'); }
+    else {
+      const rec = toRec(f.n, f.cid), done = [];
+      for (const g of rec.groups){ const v = good.filter(a => g.members.includes(a.n.fields.I) && (!rec.ordered || done.every(p => p.v.filter(o => (a.n.fields.G || '').split('_').includes(o.cid)).length >= p.g.need))); done.push({ g, v }); }
+      const met = done.every(p => p.v.length >= p.g.need); enough = enough && met;
+      res.lines.push(`${met ? '✓' : '✕'} Approval flow “${rec.name}”: ${done.map(p => `${p.g.name} ${Math.min(p.v.length, p.g.need)}/${p.g.need}`).join(', ')}${rec.ordered ? ', in order' : ''}${rec.conds.length ? ' · its conditions on the canvas can only be checked on the canvas' : ''}`);
+    }
+  }
   for (const raw of ex.records){ const r = await check(raw); if (!r) return fail('A record’s signature doesn’t verify.'); if (!ids.has(r.cid)) return fail('A record isn’t part of the delivered version.'); res.records++; }
   for (const [c, b] of Object.entries(ex.blobs || {})) if (await cidOf(b64dec(b)) !== c) return fail('An attached image or drawing doesn’t match its ID.');
-  res.lines.push(`✓ All ${res.records} records in the excerpt are signed and part of that version`, `• ${ex.ids.length - res.records} other records stay private: only their hashes are shared`);
-  res.ok = seen.size >= quorum; res.title = decTxt(d.n.fields.M || ''); return res;
+  res.lines.push(`✓ All ${res.records} records in the excerpt are signed and part of that version`, `• ${ex.ids.length - res.records} other records stay private: only their hashes are shared`,
+    '• Approvals are the ones the sharer included: a withdrawal signed later would only show on the canvas itself');
+  res.ok = enough; res.title = decTxt(d.n.fields.M || ''); return res;
 }
 async function openExcerptFile(){
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
@@ -7537,18 +7693,22 @@ WIRE_INGEST_HOOKS.push((msg, from, chan) => {
   if (msg.records){ post({ records: msg.records }, { from, chan }); MESH.records += msg.records.length; }
   else { post({ raw: msg.raw, blobs: msg.blobs || {} }, { from, chan }); MESH.records++; }
 });
-// ephemeral signals: forwarded once each, at most three hops
+// ephemeral signals: forwarded once each, at most three hops. What a peer hears directly is always delivered; copies that
+// came through others are delivered once. The memory of what was seen is bounded and pruned on a timer, not per message.
 const MESH_KEYS = ['presence', 'spotlight', 'ask', 'roundStart'];
-function remember(key){ const now = Date.now(); for (const [k, t] of MESH.seen) if (now - t > 10000) MESH.seen.delete(k); if (MESH.seen.has(key)) return false; MESH.seen.set(key, now); return true; }
+const MESH_CAP = 5000;
+function remember(key){ if (MESH.seen.has(key)) return false; if (MESH.seen.size >= MESH_CAP) MESH.seen.delete(MESH.seen.keys().next().value); MESH.seen.set(key, Date.now()); return true; }
+setInterval(() => { const now = Date.now(); for (const [k, t] of MESH.seen) if (now - t > 10000) MESH.seen.delete(k); }, 5000);
 for (const k of MESH_KEYS){
   const base = WIRE_HOOKS[k]; if (!base) continue;
   WIRE_HOOKS[k] = (p, from, chan) => {
-    const hop = p?.hop | 0, { hop: _h, through: _t, ...body } = p || {};
+    if (!p || typeof p !== 'object') return;
+    const hop = Math.max(0, Math.min(3, p.hop | 0)), { hop: _h, through: _t, ...body } = p;
     const fresh = remember(k + JSON.stringify(body));
     // hearing someone directly beats hearing them through someone else
     const direct = k === 'presence' && hop > 0 && peers.get(p.id)?.via !== 'mesh' && Date.now() - (peers.get(p.id)?.t || 0) < 5000;
-    if (fresh && !direct) base(p, from, chan);
-    if (MESH.on && fresh && from && hop < 3 && p?.id !== S.me?.id){ post({ [k]: { ...p, hop: hop + 1, through: hop ? p.through : S.me?.id } }, { from, chan }); MESH.signals++; }
+    if (hop === 0 || fresh && !direct) base(hop === p.hop ? p : { ...p, hop }, from, chan);
+    if (MESH.on && fresh && from && hop < 3 && p.id !== S.me?.id){ post({ [k]: { ...p, hop: hop + 1, through: hop ? p.through : S.me?.id } }, { from, chan }); MESH.signals++; }
   };
 }
 registerPanel({
@@ -7586,11 +7746,11 @@ function openHistory(){
     <input type="range" id="histRange" min="0" max="${RP.recs.length}" step="1" value="${RP.recs.length}" aria-label="Replay position">
     <span id="histLabel"></span>
     <label class="sr" for="rpScope">Replay what</label><select id="rpScope">${Object.entries(RP_SCOPES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
-    <label class="sr" for="rpWho">Whose work</label><select id="rpWho" hidden>${ppl.map(p => `<option value="${p}">${esc(whoName(p))}</option>`).join('')}</select>
+    <label class="sr" for="rpWho">Whose work</label><select id="rpWho" hidden>${ppl.map(p => `<option value="${esc(p)}">${esc(whoName(p))}</option>`).join('')}</select>
     <label class="sr" for="rpSpeed">Speed</label><select id="rpSpeed"><option value="fit">Each session in 30 s</option><option value="4">4×</option><option value="16">16×</option><option value="60">60×</option><option value="step">One step a second</option></select>
     <button class="btn" id="histNow">Back to now</button>
     <div class="rp-marks" role="group" aria-label="Sessions and moments">${sess.length > 1 ? sess.map((s, i) => `<button class="pill" data-jump="${s.from}">Session ${i + 1} · ${when(RP.recs[s.from].t)} · ${plural(s.to - s.from + 1, 'change')}</button>`).join('') : ''}
-      ${RP.recs.map((r, i) => RP_MOMENTS.has(r.type) && r.type !== 'CHECK' ? `<button class="pill acc" data-jump="${i}">${{ DECISION: '⚑', APPROVE: '✓', DELIVER: '↗', REVEAL: '🔓', CLOSE: '◎', SETTLE: '💰', SIGNOFF: '✓' }[r.type]} ${esc(r.type === 'DECISION' ? r.text.slice(0, 28) : activityText(r).slice(0, 28))}</button>` : '').join('')}</div>`;
+      ${RP.recs.map((r, i) => RP_MOMENTS.has(r.type) && r.neg === null && r.type !== 'CHECK' ? `<button class="pill acc" data-jump="${i}">${{ DECISION: '⚑', APPROVE: '✓', DELIVER: '↗', REVEAL: '🔓', CLOSE: '◎', SETTLE: '💰', SIGNOFF: '✓' }[r.type]} ${esc(r.type === 'DECISION' ? r.text.slice(0, 28) : activityText(r).slice(0, 28))}</button>` : '').join('')}</div>`;
   $('histRange').addEventListener('input', e => { stopPlay(); setHist(+e.target.value); });
   h.hidden = false; document.body.classList.add('history');
   setHist(RP.recs.length); setTimeout(() => $('histRange').focus(), 0);
@@ -7735,28 +7895,34 @@ registerFeature({ id: 'since', name: 'What changed', group: 'remember', icon: 'd
 // INHERIT-I-R-{canvas}-S-{open|closed}-Y-{royalty, basis points}-Z-T-SIG          the canvas owner's terms for forks
 // LINEAGE-I-R-{fork}-P-{parent}-H-{parent version}-C-{records copied}-K-{the parent's INHERIT|0}-Z-T-SIG   signed in the fork
 // FORKED-I-R-{fork}-H-{parent version}-M-{title}-Z-T-SIG                           signed in the parent
-// The parent's INHERIT record is itself copied into the fork, signed by the parent's owner, so the royalty can't be dropped.
-registerRecord('INHERIT', { parse(r, f){ if (!f.R || !['open', 'closed'].includes(f.S)) throw Error('inherit'); r.open = f.S === 'open'; r.bp = Math.max(0, Math.min(5000, +f.Y || 0)); } });
-registerRecord('LINEAGE', { parse(r, f){ if (!f.R || !f.P || !f.H) throw Error('lineage'); r.parent = f.P; r.root = f.H; r.n = Math.max(0, +f.C || 0); r.terms = f.K && f.K !== '0' ? f.K : null; }, inherit: false });
-registerRecord('FORKED', { parse(r, f){ if (!f.R || !f.H) throw Error('forked'); r.child = f.R; r.root = f.H; r.title = decTxt(f.M || ''); }, inherit: false });
+// The parent's INHERIT and OWNER records are copied into the fork: the OWNER record proves who owns the parent (its id commits to
+// that key), so only royalty terms that key signed count. LINEAGE counts only from the fork's owner; the first one fixes the parent.
+registerRecord('INHERIT', { parse(r, f){ must(isCanvas(f.R) && ['open', 'closed'].includes(f.S), 'inherit'); r.open = f.S === 'open'; r.bp = Math.max(0, Math.min(5000, +f.Y || 0)); } });
+registerRecord('LINEAGE', { parse(r, f){ must(isCanvas(f.R) && isCanvas(f.P) && isRoot(f.H), 'lineage'); r.parent = f.P; r.root = f.H; r.n = Math.max(0, +f.C || 0); r.terms = f.K && f.K !== '0' ? f.K : null; must(!r.terms || isCid(r.terms), 'terms'); }, inherit: false });
+registerRecord('FORKED', { parse(r, f){ must(isCanvas(f.R) && isRoot(f.H), 'forked'); r.child = f.R; r.root = f.H; r.title = decTxt(f.M || ''); }, inherit: false });
 Object.assign(PERM_OF, { INHERIT: null, LINEAGE: null, FORKED: 'comment' });   // INHERIT counts only from the owner (derive below)
 // core element records and most feature records travel with a fork; governance doesn't
 const NO_INHERIT = new Set(['OWNER', 'GRANT', 'META', 'PROFILE']);
 const inheritable = r => !NO_INHERIT.has(r.type) && RECORD_TYPES[r.type]?.inherit !== false;
 DERIVE_HOOKS.push((D, by) => {
-  const lin = (by.LINEAGE || []).filter(r => r.f.R === canvasId && !D.hidden.has(r.cid));
-  D.lineage = lin.at(-1) || null; D.lineageAll = lin;
-  D.forks = (by.FORKED || []).filter(r => !D.hidden.has(r.cid));
-  D.inherit = (by.INHERIT || []).filter(r => r.f.R === canvasId && (!S.P?.owner || samePerson(r.author, S.P.owner))).at(-1) || null;
+  const owner = S.P?.owner, lin = owner ? (by.LINEAGE || []).filter(r => r.f.R === canvasId && r.neg === null && !D.hidden.has(r.cid) && samePerson(r.author, owner)) : [];
+  const parent = lin[0]?.parent, same = lin.filter(r => r.parent === parent);
+  D.lineage = same.at(-1) || null; D.lineageAll = same;
+  D.forks = (by.FORKED || []).filter(r => r.neg === null && inView(r));
+  D.inherit = owner ? (by.INHERIT || []).filter(r => r.f.R === canvasId && r.neg === null && samePerson(r.author, owner)).at(-1) || null : null;
 });
-const parentTerms = () => { const l = S.D.lineage; const t = l?.terms && S.records.get(l.terms); return t && t.type === 'INHERIT' && t.f.R === l.parent ? t : null; };
+// the parent's owner, proven by its OWNER record (core/permissions checks the id commits to that key on arrival)
+const parentOwner = id => [...S.records.values()].find(r => r.type === 'OWNER' && r.f.R === id && r.neg === null)?.author || null;
+const parentTerms = () => { const l = S.D.lineage, t = l?.terms && S.records.get(l.terms), o = l && parentOwner(l.parent);
+  return t && t.type === 'INHERIT' && t.f.R === l.parent && o && samePerson(t.author, o) ? t : null; };
 // a fork's payouts pay the template's owner its royalty first
 SETTLE_HOOKS.push(() => { const t = parentTerms(); return t && t.bp ? [{ to: t.author, bp: t.bp, why: 'royalty' }] : []; });
 const fullRoot = async () => b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...S.records.keys()].sort().join('\n')))));
 async function forkCanvas(){
   if (S.D.inherit && !S.D.inherit.open && !samePerson(S.P?.owner, S.me.id)){ toast('The owner has closed this canvas to forks.'); return null; }
   const parent = canvasId, title = canvasTitle(), root = await fullRoot(), terms = S.D.inherit;
-  const recs = [...S.records.values()].filter(inheritable).sort(byZ), blobs = new Map();
+  // the work as everyone sees it (nothing permissions refused or still waiting as a suggestion), plus the proof of ownership
+  const recs = [...S.records.values()].filter(r => inheritable(r) && !S.D.denied.has(r.cid) && !S.D.pending?.has(r.cid) || r.type === 'OWNER' && r.f.R === parent).sort(byZ), blobs = new Map();
   for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b)) blobs.set(b, S.blobs.get(b)); }
   const { nonce, id } = await ownedCanvasId();
   try { await publish(await signed('FORKED', [['I', S.me.id], ['R', id], ['H', root], ['M', encTxt(title)], ['Z', ++S.lamport], ['T', Date.now()]])); } catch {}   // the parent may not let you comment: the fork still links back
@@ -7777,6 +7943,7 @@ async function parentNews(){
 }
 async function pullParent(){
   const news = await parentNews(); if (!news.length){ toast('Nothing new in the parent (from what this browser has of it).'); return; }
+  if (!await formDialog('Pull from the parent', [{ id: 'i', type: 'info', label: `Copy ${plural(news.length, 'record')} from canvas ${S.D.lineage.parent} into this one? Everyone on this canvas will see them.` }], { ok: 'Pull' })) return;
   for (const b of await dbAll('blobs', S.D.lineage.parent)) if (!S.blobs.has(b.cid)) try { await addBlob(b.cid, b.bytes); } catch {}
   await bulk(async () => { for (const raw of news) await ingest(raw); });
   const l = S.D.lineage, rows = await dbAll('records', l.parent);
@@ -7799,11 +7966,11 @@ registerPanel({
   paint(body){
     const l = S.D.lineage, t = parentTerms(), forks = S.D.forks || [], mine = S.D.inherit, owner = !S.P?.owner || samePerson(S.P.owner, S.me.id);
     body.innerHTML = `${l ? `<div class="card"><div class="hd"><b>Forked from</b><span class="pill acc">${plural(l.n, 'record')}</span></div>
-        <div class="row2"><button class="link" data-open="${l.parent}">${esc(l.parent)}</button><small>at version ${l.root.slice(0, 8)} · ${when(l.t)} by ${esc(whoName(l.author))}</small></div>
+        <div class="row2"><button class="link" data-open="${esc(l.parent)}">${esc(l.parent)}</button><small>at version ${esc(l.root.slice(0, 8))} · ${when(l.t)} by ${esc(whoName(l.author))}</small></div>
         ${t ? `<small>${t.bp ? `Royalty: ${pct(t.bp)} of payouts here goes to ${esc(whoName(t.author))}, the template’s owner` : 'No royalty'}${t.open ? '' : ' · the owner asked not to fork it'}</small>` : ''}
         <div class="acts"><button class="btn" data-pull${newsN ? '' : ' disabled'}>${newsN == null ? 'Checking the parent…' : newsN ? `Pull ${plural(newsN, 'new change')}` : 'Up to date with the parent'}</button></div></div>` : ''}
       <h3>Forks of this canvas <span class="n">${forks.length}</span></h3>
-      ${forks.length ? `<ul class="plain">${forks.map(f => { const c = consensus(f.cid); return `<li class="card"><div class="hd"><button class="link" data-open="${f.child}">${esc(f.title || f.child)}</button><small>${esc(whoName(f.author))} · ${when(f.t)}</small></div>
+      ${forks.length ? `<ul class="plain">${forks.map(f => { const c = consensus(f.cid); return `<li class="card"><div class="hd"><button class="link" data-open="${esc(f.child)}">${esc(f.title || f.child)}</button><small>${esc(whoName(f.author))} · ${when(f.t)}</small></div>
         <div class="acts"><button class="btn" data-st="agree" data-t="${f.cid}" aria-pressed="${c.mine === 'agree'}">Endorse ${c.c.agree || ''}</button></div></li>`; }).sort().join('')}</ul>` : '<p class="empty">No forks yet.</p>'}
       ${owner ? `<div class="card"><b>Terms for forks</b><small>${mine ? `${mine.open ? 'Open to forks' : 'Closed to forks'} · royalty ${pct(mine.bp)}` : 'Open to forks, no royalty.'}</small><div class="acts"><button class="btn" data-terms>Set the terms…</button></div></div>` : ''}
       <div class="acts"><button class="btn primary" data-fork data-autofocus>${ic('fork')}Fork this canvas</button></div>`;
@@ -7834,7 +8001,10 @@ async function graphLoad(){
     let recs;
     if (c.id === canvasId) recs = [...S.records.values()];
     else { recs = []; for (const row of await dbAll('records', c.id)){ if (typeof row.raw !== 'string') continue; try { recs.push(toRec(parse(row.raw), row.cid)); } catch {} } }
-    out.push({ canvas: c.id, title: c.title || 'Untitled canvas', recs });
+    // what was taken back doesn't count: a revocation by the record's own author, unless restored later
+    const byCid = new Map(recs.map(r => [r.cid, r])), last = new Map();
+    for (const r of recs.filter(r => r.neg !== null).sort(byZ)){ const t = byCid.get(r.f.R); if (t && t.author === r.author) last.set(t.cid, r.neg); }
+    out.push({ canvas: c.id, title: c.title || 'Untitled canvas', recs: recs.filter(r => r.neg === null && !last.get(r.cid)) });
   }
   return out;
 }
@@ -7843,9 +8013,9 @@ const PRESETS = {
   decisions: { name: 'Decisions everywhere', run: all => { const rows = rowsOf(all, r => r.type === 'DECISION'); return { table: [['Canvas', 'Decision', 'Who', 'When']], body: rows.map(x => [x.title, x.r.text, whoName(personOf(x.r.author)), when(x.r.t)]), rows }; } },
   approvers: { name: 'Who approves most', run: all => countBy(rowsOf(all, r => r.type === 'APPROVE' && r.f.S !== '0'), x => whoName(personOf(x.r.author))) },
   work: { name: 'Record of work, per person', run: all => { const m = new Map(); for (const c of all) for (const r of c.recs) if (r.neg === null && r.type !== 'PROFILE'){ const p = personOf(r.author), o = m.get(p) || { n: 0, canvases: new Set(), credit: 0, credits: 0 }; o.n++; o.canvases.add(c.canvas); m.set(p, o); }
-    for (const c of all) for (const r of c.recs) if (r.type === 'CREDIT') for (const [k, bp] of r.shares){ const o = m.get(personOf(k)); if (o){ o.credit += bp; o.credits++; } }
+    for (const c of all) for (const r of c.recs) if (r.type === 'CREDIT' && r.shares) for (const [k, bp] of r.shares){ const o = m.get(personOf(k)); if (o){ o.credit += bp; o.credits++; } }
     return { table: [['Person', 'Signed records', 'Canvases', 'Credited deliveries', 'Average share']], body: [...m].sort((a, b) => b[1].n - a[1].n).map(([k, o]) => [whoName(k), o.n, o.canvases.size, o.credits, o.credits ? pct(Math.round(o.credit / o.credits)) : '–']) }; } },
-  rituals: { name: 'How our rituals close', run: all => { const rows = []; for (const c of all){ const closes = c.recs.filter(r => r.type === 'CLOSE'); for (const r of c.recs.filter(r => r.type === 'RITUAL')){ const cl = closes.filter(x => x.f.R === r.cid).sort(byZ)[0]; rows.push([c.title, r.name, cl ? cl.outcome : 'open', when(r.t)]); } }
+  rituals: { name: 'How our rituals close', run: all => { const rows = []; for (const c of all){ const closes = c.recs.filter(r => r.type === 'CLOSE'); for (const r of c.recs.filter(r => r.type === 'RITUAL')){ const cl = closes.filter(x => x.f.R === r.cid).sort(byZ)[0]; rows.push([c.title, r.name || 'Ritual', cl ? cl.outcome : 'open', when(r.t)]); } }
     const done = rows.filter(r => r[2] !== 'open'); return { table: [['Canvas', 'Ritual', 'Outcome', 'When']], body: rows, note: done.length ? `${done.filter(r => r[2] === 'success').length} of ${done.length} closed as a success` : '' }; } },
   forks: { name: 'Most forked canvases', run: all => countBy(rowsOf(all, r => r.type === 'FORKED'), x => x.title) },
   claims: { name: 'Claims and their checks', run: all => { const rows = []; for (const c of all){ const checks = c.recs.filter(r => r.type === 'CHECK'); for (const r of c.recs.filter(r => r.type === 'CLAIM' && r.on)){ const t = c.recs.find(x => x.cid === r.f.R), ch = checks.filter(x => x.f.R === r.f.R); rows.push([c.title, recText(t || r).slice(0, 80), `${ch.filter(x => x.verdict === 'ok').length} ✓ · ${ch.filter(x => x.verdict === 'no').length} ✕`]); } } return { table: [['Canvas', 'Claim', 'Checks']], body: rows }; } },
@@ -7854,6 +8024,9 @@ function rowsOf(all, f){ const out = []; for (const c of all) for (const r of c.
 function countBy(rows, key){ const m = new Map(); for (const x of rows){ const k = key(x); m.set(k, (m.get(k) || 0) + 1); } return { table: [['', 'Count']], body: [...m].sort((a, b) => b[1] - a[1]), rows }; }
 async function runQuery(){
   GQ.busy = true; paintPanel();
+  try { await queryNow(); } catch (err){ GQ.rows = null; toast('That question couldn’t be answered: ' + err.message); } finally { GQ.busy = false; paintPanel(); }
+}
+async function queryNow(){
   const all = await graphLoad();
   if (GQ.preset){ GQ.rows = { ...PRESETS[GQ.preset].run(all), all }; }
   else {
@@ -7862,7 +8035,6 @@ async function runQuery(){
     GQ.rows = GQ.group === 'none' ? { table: [['Canvas', 'Kind', 'Who', 'When', 'What']], body: rows.slice(0, 300).map(x => [x.title, x.r.type.toLowerCase(), whoName(personOf(x.r.author)), when(x.r.t), recText(x.r).slice(0, 90)]), rows, all }
       : { ...countBy(rows, x => GQ.group === 'author' ? whoName(personOf(x.r.author)) : GQ.group === 'canvas' ? x.title : GQ.group === 'type' ? x.r.type.toLowerCase() : new Date(x.r.t).toISOString().slice(0, 10)), all };
   }
-  GQ.busy = false; paintPanel();
 }
 // sign what was found: anyone holding the same canvases can recompute the hash of the result's records
 async function signResult(){
@@ -7881,7 +8053,7 @@ registerPanel({
     body.innerHTML = `<div class="acts">${Object.entries(PRESETS).map(([k, p]) => `<button class="btn" data-preset="${k}" aria-pressed="${GQ.preset === k}">${esc(p.name)}</button>`).join('')}</div>
       <details data-k="custom"${GQ.preset ? '' : ' open'}><summary>Your own question</summary><div class="fx-body" style="padding:8px 0">
         <div class="row2"><label class="sr" for="gqKind">Kind</label><select id="gqKind" data-k="kind"><option value="*">Any kind</option>${kinds.map(k => `<option value="${k}"${GQ.kind === k ? ' selected' : ''}>${k.toLowerCase()}</option>`).join('')}</select>
-          <label class="sr" for="gqWho">Who</label><select id="gqWho" data-k="who"><option value="">Anyone</option>${ppl.map(p => `<option value="${p}"${GQ.who === p ? ' selected' : ''}>${esc(whoName(p))}</option>`).join('')}</select></div>
+          <label class="sr" for="gqWho">Who</label><select id="gqWho" data-k="who"><option value="">Anyone</option>${ppl.map(p => `<option value="${esc(p)}"${GQ.who === p ? ' selected' : ''}>${esc(whoName(p))}</option>`).join('')}</select></div>
         <div class="row2"><input id="gqText" data-k="text" class="grow" placeholder="Containing… (e.g. pricing)" aria-label="Containing" value="${esc(GQ.text)}">
           <label class="sr" for="gqDays">When</label><select id="gqDays" data-k="days">${[[0, 'Any time'], [7, 'Last week'], [30, 'Last month'], [90, 'Last quarter']].map(([d, n]) => `<option value="${d}"${GQ.days === d ? ' selected' : ''}>${n}</option>`).join('')}</select>
           <label class="sr" for="gqGroup">Group by</label><select id="gqGroup" data-k="group">${[['none', 'List'], ['author', 'By person'], ['canvas', 'By canvas'], ['type', 'By kind'], ['day', 'By day']].map(([g, n]) => `<option value="${g}"${GQ.group === g ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
@@ -7907,48 +8079,57 @@ registerFeature({ id: 'graph', name: 'Canvas graph', group: 'network', icon: 'gr
 // LINK-I-R-{other key}-S-{1|0}-Z-T-SIG              mutual links join two keys; a one-way link from a new key asks to recover
 // GUARD-I-R-{guardian}-S-{1|0}-Q-{threshold}-Z-T-SIG   your guardians and how many must agree (your latest Q)
 // RECOVER-I-R-{lost key}-K-{new key}-Z-T-SIG          a guardian confirms the new key is the same person
-registerRecord('LINK', { parse(r, f){ if (!f.R) throw Error('link'); r.to = f.R; r.on = f.S !== '0'; }, inherit: false });
-registerRecord('GUARD', { parse(r, f){ if (!f.R) throw Error('guard'); r.who = f.R; r.on = f.S !== '0'; r.q = Math.max(1, +f.Q || 1); }, inherit: false });
-registerRecord('RECOVER', { parse(r, f){ if (!f.R || !f.K) throw Error('recover'); r.lost = f.R; r.key = f.K; }, inherit: false });
+// every identity record names the canvas it applies to (C): a link, guardian list or recovery can't be replayed into another
+registerRecord('LINK', { parse(r, f){ must(isKey(f.R) && isCanvas(f.C), 'link'); r.to = f.R; r.on = f.S !== '0'; }, inherit: false });
+registerRecord('GUARD', { parse(r, f){ must(isKey(f.R) && isCanvas(f.C), 'guard'); r.who = f.R; r.on = f.S !== '0'; r.q = Math.max(1, Math.min(99, +f.Q || 1)); }, inherit: false });
+registerRecord('RECOVER', { parse(r, f){ must(isKey(f.R) && isKey(f.K) && isCanvas(f.C), 'recover'); r.lost = f.R; r.key = f.K; }, inherit: false });
 Object.assign(PERM_OF, { LINK: null, GUARD: null, RECOVER: null });
 let aliasSig = '';
+const here = r => r.neg === null && r.f.C === canvasId;
+function unionFind(){ const parent = new Map(), find = k => { while (parent.has(k) && parent.get(k) !== k) k = parent.get(k); return k; };
+  const join = (a, b) => { const x = find(a), y = find(b); if (x !== y){ const [lo, hi] = x < y ? [x, y] : [y, x]; parent.set(hi, lo); parent.set(lo, lo); } };
+  return { parent, find, join }; }
 // runs first among derive hooks: everything after it (approvals, credit, names) sees people, not keys
 DERIVE_HOOKS.unshift((D, by) => {
-  const links = new Map();   // "a>b" → on, latest per direction
-  for (const r of by.LINK || []) if (!D.hidden.has(r.cid)) links.set(`${r.author}>${r.to}`, r.on);
-  const parent = new Map(), find = k => { while (parent.has(k) && parent.get(k) !== k) k = parent.get(k); return k; };
-  const join = (a, b) => { const x = find(a), y = find(b); if (x !== y){ const [lo, hi] = x < y ? [x, y] : [y, x]; parent.set(hi, lo); parent.set(lo, lo); } };
-  for (const [k, on] of links){ const [a, b] = k.split('>'); if (on && links.get(`${b}>${a}`)) join(a, b); }
-  // guardians: per person their active guardians and threshold; a recovery joins the new key once enough of them confirm
+  const links = new Map();   // "a>b" → on, latest per direction (z order)
+  for (const r of by.LINK || []) if (here(r) && !D.hidden.has(r.cid)) links.set(`${r.author}>${r.to}`, r.on);
+  // 1. devices: two keys that link to each other
+  const dev = unionFind();
+  for (const [k, on] of links){ const [a, b] = k.split('>'); if (on && links.get(`${b}>${a}`)) dev.join(a, b); }
+  // 2. guardians: the lost key's own latest list and threshold
   const guards = new Map();
-  for (const r of by.GUARD || []){ if (D.hidden.has(r.cid)) continue; const g = guards.get(r.author) || { who: new Set(), q: 1 }; if (r.on) g.who.add(r.who); else g.who.delete(r.who); g.q = r.q; guards.set(r.author, g); }
+  for (const r of by.GUARD || []){ if (!here(r) || D.hidden.has(r.cid)) continue; const g = guards.get(r.author) || { who: new Set(), q: 1 }; if (r.on) g.who.add(r.who); else g.who.delete(r.who); g.q = r.q; guards.set(r.author, g); }
+  // 3. recoveries: a guardian counts once per person, matched through device links only, never through other recoveries,
+  //    so a guardian's own guardians can't reach you; the new key must have asked (a one-way LINK to the lost key)
   const rec = new Map(); D.recoveries = [];
-  for (const r of by.RECOVER || []){ if (D.hidden.has(r.cid)) continue; const k = `${r.lost}>${r.key}`; if (!rec.has(k)) rec.set(k, new Set()); rec.get(k).add(r.author); }
-  for (const [k, by2] of rec){
+  for (const r of by.RECOVER || []){ if (!here(r) || D.hidden.has(r.cid)) continue; const k = `${r.lost}>${r.key}`; if (!rec.has(k)) rec.set(k, new Set()); rec.get(k).add(r.author); }
+  const all = unionFind(); for (const [k, v] of dev.parent) all.parent.set(k, v);
+  for (const [k, by2] of [...rec].sort((a, b) => a[0] < b[0] ? -1 : 1)){
     const [lost, key] = k.split('>'), g = guards.get(lost), asked = links.get(`${key}>${lost}`);
-    const ok = g ? new Set([...by2].filter(a => [...g.who].some(w => find(w) === find(a))).map(a => find(a))).size : 0;   // distinct guardians (any of their devices)
-    D.recoveries.push({ lost, key, ok, need: g?.q || Infinity, asked: !!asked, done: !!asked && g && ok >= g.q });
-    if (asked && g && ok >= g.q) join(lost, key);
+    const ok = g ? new Set([...by2].filter(a => [...g.who].some(w => dev.find(w) === dev.find(a))).map(a => dev.find(a))).size : 0;
+    const done = !!asked && !!g && ok >= g.q;
+    D.recoveries.push({ lost, key, ok, need: g?.q || Infinity, asked: !!asked, done });
+    if (done) all.join(lost, key);
   }
   // pending requests: a one-way link from a key that hasn't been joined (to show the guardians and the other device)
-  D.linkAsks = [...links].filter(([k, on]) => { const [a, b] = k.split('>'); return on && !links.get(`${b}>${a}`) && find(a) !== find(b); }).map(([k]) => k.split('>'));
-  // a one-way link to someone with guardians is a recovery request, even before any guardian has answered
+  D.linkAsks = [...links].filter(([k, on]) => { const [a, b] = k.split('>'); return on && !links.get(`${b}>${a}`) && all.find(a) !== all.find(b); }).map(([k]) => k.split('>'));
   for (const [a, b] of D.linkAsks) if (guards.get(b)?.who.size && !D.recoveries.some(r => r.lost === b && r.key === a)) D.recoveries.push({ lost: b, key: a, ok: 0, need: guards.get(b).q, asked: true, done: false });
   D.guards = guards;
-  // each person is named after their original key: the one whose first work (not identity records) is earliest
-  const first = new Map(), keys = new Set(parent.keys()), ID_TYPES = new Set(['PROFILE', 'LINK', 'GUARD', 'RECOVER']);
-  if (keys.size) for (const r of S.records.values()) if (keys.has(r.author) && !ID_TYPES.has(r.type) && (!first.has(r.author) || r.t < first.get(r.author))) first.set(r.author, r.t);
-  const groups = new Map(); for (const k of keys){ const g = find(k); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); }
-  const alias = new Map();
-  for (const ks of groups.values()){ const root = ks.slice().sort((a, b) => (first.get(a) ?? Infinity) - (first.get(b) ?? Infinity) || (a < b ? -1 : 1))[0]; for (const k of ks) alias.set(k, root); }
+  // a person is known by the smallest of their keys: a rule no signer can steer (names come from their latest profile, below)
+  const alias = new Map(); for (const k of all.parent.keys()) alias.set(k, all.find(k));
   IDENTITY.of = k => alias.get(k) || k;
-  // one name per person: the latest profile among their keys
-  for (const [k, root] of alias){ const n = NAMES.get(k); if (n && !NAMES.has(root)) NAMES.set(root, n); }
+  D.alias = alias;
   const sig = [...alias].map(p => p.join('=')).sort().join(',');
   if (sig !== aliasSig){ aliasSig = sig; queueMicrotask(changed); }   // permissions were filtered with the old map: once more
 });
+// one name per person: the latest profile signed by any of their keys (profiles are derived by then)
+DERIVE_HOOKS.push(D => {
+  const best = new Map();
+  for (const [k, root] of D.alias || []){ const p = D.profiles?.get(k); if (p && p.name && (!best.has(root) || byZ(best.get(root), p) < 0)) best.set(root, p); }
+  for (const [root, p] of best) NAMES.set(root, p.name);
+});
 const myKeys = () => [...new Set([S.me.id, ...[...S.records.values()].filter(r => r.author && samePerson(r.author, S.me.id)).map(r => r.author)])];
-const devSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
+const devSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['C', canvasId], ['Z', ++S.lamport], ['T', Date.now()]]));
 async function linkCode(){ return packCode({ t: 'link', key: S.me.id, room: canvasId }); }
 // the other device pastes the code: it asks to link, the first device confirms
 async function useLinkCode(code){
@@ -8009,56 +8190,68 @@ registerFeature({ id: 'devices', name: 'Devices and recovery', group: 'network',
 // declines it; in a locked zone, others' changes there don't count at all. Discussion (comments, stances, claims, tasks) is
 // never gated. Co-workers stop overwriting each other's areas without anyone having to ask "who's on this?".
 // @uses core derive (RECORD_GATES, S.D.pending), records, render (drawEl), ui/panels
-// ZONE-I-R-{frame}-S-{open|suggest|locked}-X-Y-W-H-Z-T-SIG     the frame's area when it was zoned; latest per frame wins
-// ACCEPT-I-R-{record}-S-{1 accept|0 decline}-Z-T-SIG           the zone owner's answer to a suggestion
-registerRecord('ZONE', { parse(r, f){ if (!f.R || !['open', 'suggest', 'locked'].includes(f.S)) throw Error('zone'); r.mode = f.S; r.zx = decInt(f.X || '0'); r.zy = decInt(f.Y || '0'); r.zw = Math.max(0, +f.W || 0); r.zh = Math.max(0, +f.H || 0); }, inherit: false });
-registerRecord('ACCEPT', { parse(r, f){ if (!f.R) throw Error('accept'); r.yes = f.S !== '0'; }, inherit: false });
+// ZONE-I-R-{frame}-S-{open|suggest|locked}-Z-T-SIG     by the frame's author or the canvas owner; latest per frame wins.
+//   The area is the frame itself, wherever it is now: never numbers the signer chose
+// ACCEPT-I-R-{record}-S-{1 accept|0 decline}-Z-T-SIG   a zone owner's answer to a suggestion; every zone it lands in must agree
+// The canvas owner is never gated; taking back your own work never is; discussion (comments, stances, claims, tasks) never is.
+registerRecord('ZONE', { parse(r, f){ must(isCid(f.R) && ['open', 'suggest', 'locked'].includes(f.S), 'zone'); r.mode = f.S; }, inherit: false });
+registerRecord('ACCEPT', { parse(r, f){ must(isCid(f.R), 'accept'); r.yes = f.S !== '0'; }, inherit: false });
 Object.assign(PERM_OF, { ZONE: 'draw', ACCEPT: null });
-const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
-// zones from the full record set (before derive): the latest valid ZONE per frame
+const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'DRAW', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
+const isFrameNode = r => r?.type === 'NODE' && r.k === 'frame';
+// zones from the permitted records (before derive): the latest valid, unrevoked ZONE per frame, with the frame's current area
 function zonesOf(all, P){
+  const ok = all.filter(r => permitted(r, P)), revoked = new Set();
+  for (const r of ok) if (r.neg !== null){ const t = S.records.get(r.f.R); if (t && t.author === r.author){ if (r.neg) revoked.add(t.cid); else revoked.delete(t.cid); } }
+  const live = r => !revoked.has(r.cid);
   const z = new Map();
-  for (const r of all) if (r.type === 'ZONE' && r.neg === null){ const fr = S.records.get(r.f.R); if (fr && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) z.set(r.f.R, r); }
-  return [...z.values()].filter(r => r.mode !== 'open');
+  for (const r of ok) if (r.type === 'ZONE' && r.neg === null && live(r)){ const fr = S.records.get(r.f.R); if (isFrameNode(fr) && live(fr) && permitted(fr, P) && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) z.set(r.f.R, r); }
+  const out = [];
+  for (const r of z.values()){
+    if (r.mode === 'open') continue;
+    const fr = S.records.get(r.f.R); let x = fr.x, y = fr.y, w = fr.bw || 200, h = fr.bh || 140;
+    for (const m of ok) if (m.type === 'MOVE' && m.neg === null && m.f.R === fr.cid && live(m)){ x += m.dx; y += m.dy; w += m.dw; h += m.dh; }
+    out.push({ rec: r, cid: r.cid, f: r.f, author: r.author, mode: r.mode, zx: x, zy: y, zw: Math.max(0, w), zh: Math.max(0, h) });
+  }
+  return out;
 }
 const inZone = (z, x, y) => x >= z.zx && y >= z.zy && x <= z.zx + z.zw && y <= z.zy + z.zh;
-// where a record acts: a new element where it was placed; a change where its target was placed
-function anchorOf(r){
-  if (r.type === 'MOVE' || r.type === 'STYLE' || r.neg !== null){ const t = S.records.get(r.f.R); return t && Number.isFinite(t.x) ? t : null; }
-  if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits){ const t = S.records.get(r.edits); return t && Number.isFinite(t.x) ? t : r; }
-  if (r.type === 'ARROW'){ const a = S.records.get(r.f.FROM); return a && Number.isFinite(a.x) ? a : null; }
-  if (r.type === 'GROUP'){ const a = S.records.get(r.members?.[0]); return a && Number.isFinite(a.x) ? a : null; }
-  return Number.isFinite(r.x) ? r : null;
+// the points where a record acts: where a new element lands; for a change, where its target was and where a move takes it
+function anchorsOf(r){
+  const at = t => t && Number.isFinite(t.x) ? [{ x: t.x, y: t.y }] : t?.type === 'DRAW' ? (g => g ? [{ x: g.box.x, y: g.box.y }, { x: g.box.x + g.box.w, y: g.box.y + g.box.h }] : [])(strokeGeom(t.f.R)) : [];
+  if (r.type === 'MOVE'){ const t = S.records.get(r.f.R), p = at(t); return [...p, ...p.map(q => ({ x: q.x + r.dx, y: q.y + r.dy }))]; }
+  if (r.type === 'STYLE') return at(S.records.get(r.f.R));
+  if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits) return [...at(S.records.get(r.edits)), ...at(r)];
+  if (r.type === 'ARROW') return [...at(S.records.get(r.f.FROM)), ...at(S.records.get(r.f.TO))];
+  if (r.type === 'GROUP') return (r.members || []).flatMap(c => at(S.records.get(c)));
+  return at(r);
 }
+const anchorOf = r => anchorsOf(r)[0] || null;
+const zonesHit = (zones, r) => { const pts = anchorsOf(r); return zones.filter(z => r.cid !== z.f.R && !samePerson(r.author, z.author) && pts.some(p => inZone(z, p.x, p.y))); };
 RECORD_GATES.push((all, P) => {
   const zones = zonesOf(all, P); if (!zones.length) return null;
-  const answers = new Map(); for (const r of all) if (r.type === 'ACCEPT') answers.set(r.f.R, r);   // z order: the latest answer
+  const answers = new Map(); for (const r of all) if (r.type === 'ACCEPT' && r.neg === null) answers.set(`${r.f.R}|${personOf(r.author)}`, r);   // z order: each owner's latest
   return r => {
-    if (!GATED.has(r.type) && r.neg === null) return null;
-    if (r.f.R && zones.some(z => z.f.R === r.f.R) && r.type !== 'MOVE') return null;   // the frame's own record
-    const a = anchorOf(r); if (!a) return null;
-    for (const z of zones){
-      if (samePerson(r.author, z.author) || !inZone(z, a.x, a.y) || r.cid === z.f.R) continue;
-      if (z.mode === 'locked') return 'deny';
-      const ans = answers.get(r.cid); if (ans && samePerson(ans.author, z.author)) return ans.yes ? null : 'deny';
-      return 'pending';
-    }
-    return null;
+    if (r.neg !== null || !GATED.has(r.type) || P.owner && samePerson(r.author, P.owner)) return null;
+    const hit = zonesHit(zones, r); if (!hit.length) return null;
+    if (hit.some(z => z.mode === 'locked')) return 'deny';
+    const said = hit.map(z => answers.get(`${r.cid}|${personOf(z.author)}`));
+    if (said.some(a => a && !a.yes)) return 'deny';
+    return said.every(a => a?.yes) ? null : 'pending';
   };
 });
 // computed once per change, not per frame: each frame's zone (latest valid), the active zones, and the suggestions waiting
-DERIVE_HOOKS.push((D, by) => {
-  const byFrame = new Map(), P = S.P || { owner: null };
-  for (const r of by.ZONE || []){ const fr = S.records.get(r.f.R); if (fr && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) byFrame.set(r.f.R, r); }
-  const active = [...byFrame.values()].filter(r => r.mode !== 'open'), sug = [];
-  if (active.length) for (const c of D.pending){ const r = S.records.get(c), a = r && anchorOf(r), z = a && active.find(z => inZone(z, a.x, a.y)); if (z) sug.push({ r, z }); }
+DERIVE_HOOKS.push(D => {
+  const all = [...S.records.values()].sort(byZ), P = S.P || { owner: null }, active = zonesOf(all, P), byFrame = new Map(), sug = [];
+  for (const r of all) if (r.type === 'ZONE' && r.neg === null && inView(r)) byFrame.set(r.f.R, r);
+  if (active.length) for (const c of D.pending){ const r = S.records.get(c), hit = r && zonesHit(active, r); if (hit?.length) sug.push({ r, z: hit[0], zones: hit }); }
   D.zoneByFrame = byFrame; D.zones = active; D.suggestions = sug.sort((a, b) => a.r.z - b.r.z);
 });
 const suggestions = () => S.D.suggestions || [];
 const answer = async (cid, yes) => publish(await signed('ACCEPT', [['I', S.me.id], ['R', cid], ['S', yes ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
 async function setZone(frame, mode){
   const b = box(frame); if (!b) return;
-  await publish(await signed('ZONE', [['I', S.me.id], ['R', frame.cid], ['S', mode], ['X', encInt(Math.round(b.x))], ['Y', encInt(Math.round(b.y))], ['W', Math.round(b.w)], ['H', Math.round(b.h)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  await publish(await signed('ZONE', [['I', S.me.id], ['R', frame.cid], ['S', mode], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(mode === 'open' ? 'Zone opened: anyone may change it.' : mode === 'suggest' ? 'Suggest zone: others’ changes wait for you to accept them.' : 'Locked zone: only you change what’s inside.');
 }
 const zoneOfFrame = cid => S.D.zoneByFrame?.get(cid);
@@ -8068,7 +8261,8 @@ PUBLISH_FILTERS.push(async raw => {
   const t = raw.slice(0, raw.indexOf('-')); if (!GATED.has(t)) return undefined;
   const zones = S.D.zones || []; if (!zones.length) return undefined;
   let r; try { r = toRec(parse(raw), 'pending'); } catch { return undefined; }
-  const a = anchorOf(r), z = a && zones.find(z => inZone(z, a.x, a.y) && !samePerson(z.author, S.me.id)); if (!z) return undefined;
+  if (S.P?.owner && samePerson(S.P.owner, S.me.id)) return undefined;
+  const hit = zonesHit(zones, r), z = hit.find(z => z.mode === 'locked') || hit[0]; if (!z) return undefined;
   if (z.mode === 'locked'){ toast(`${whoName(z.author)} has locked this area. Comment or take a stance instead.`); return null; }
   if (!warnedZones.has(z.cid)){ warnedZones.add(z.cid); toast(`This is ${whoName(z.author)}’s area: your change is a suggestion until they accept it.`); }
   return undefined;
@@ -8082,9 +8276,9 @@ RENDER_HOOKS.world.push(() => {
   }
 });
 RENDER_HOOKS.screen.push(() => {
-  for (const { r, z } of suggestions()){
+  for (const { r, zones } of suggestions()){
     const a = anchorOf(r); if (!a) continue; const s = toScreen(a.x, a.y);
-    const own = samePerson(z.author, S.me.id), what = r.type === 'MOVE' ? 'move' : r.type === 'STYLE' ? 'restyle' : r.edits ? 'edit' : r.neg ? 'removal' : 'addition';
+    const own = zones.some(z => samePerson(z.author, S.me.id)), what = r.type === 'MOVE' ? 'move' : r.type === 'STYLE' ? 'restyle' : r.edits ? 'edit' : r.neg ? 'removal' : 'addition';
     const w = drawBadge(s.x, s.y - 26, `${whoName(r.author)} suggests ${what === 'addition' ? 'an' : 'a'} ${what}${own ? '' : ' · waiting'}`, 'acc', own ? () => openPanel('zones') : null);
     if (own){ drawBadge(s.x + w + 4, s.y - 26, '✓ Accept', 'good', () => answer(r.cid, true)); drawBadge(s.x + w + 76, s.y - 26, '✕', 'bad', () => answer(r.cid, false)); }
   }
@@ -8104,11 +8298,11 @@ registerPanel({
       ${waiting.length ? `<h3>Your suggestions <span class="n">${waiting.length}</span></h3><ul class="plain">${waiting.map(s => row(s, false)).join('')}</ul>` : ''}
       <h3>Zones <span class="n">${zones.length}</span></h3>${zones.length ? `<ul class="plain">${zones.map(z => `<li class="row2"><button class="link grow" data-go="${z.f.R}">${esc(elTitle(z.f.R))}</button><span class="pill ${z.mode === 'locked' ? 'warn' : 'acc'}">${z.mode}</span><small>${esc(whoName(z.author))}</small></li>`).join('')}</ul>` : '<p class="empty">No zones. Select a frame you made and choose “Zone…” to make it yours.</p>'}`;
   },
-  async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => samePerson(s.z.author, S.me.id))) await answer(s.r.cid, true); },
+  async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me.id)))) await answer(s.r.cid, true); },
 });
 registerFeature({ id: 'zones', name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
   blurb: 'Own an area: others’ changes inside it wait as suggestions, or are locked out',
-  status: () => { const n = suggestions().filter(s => samePerson(s.z.author, S.me?.id)).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });
+  status: () => { const n = suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me?.id))).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });
 // on" points at what must finish first; "leads to" or a plain arrow points at what comes next). Blocked tasks say what they wait
 // for, the Work panel lists what is ready now, and the critical path (the longest chain of unfinished work) is outlined, so the
 // team sees what actually delays the delivery. Nothing new is signed: it is read from tasks (TASK) and connectors (ARROW).
@@ -8131,16 +8325,19 @@ function planNow(){
   for (const [a, b] of edges){ (before.get(b) || before.set(b, []).get(b)).push(a); (after.get(a) || after.set(a, []).get(a)).push(b); }
   const open = c => t.get(c)?.status !== 'done';
   const blocked = new Map(); for (const [c, bs] of before) if (open(c)){ const w = bs.filter(open); if (w.length) blocked.set(c, w); }
-  // cycles: a task that (through others) waits on itself
-  const cyc = new Set(), state = new Map();
-  const visit = c => { state.set(c, 1); for (const n of after.get(c) || []){ if (state.get(n) === 1) cyc.add(n).add(c); else if (!state.has(n)) visit(n); } state.set(c, 2); };
-  for (const c of t.keys()) if (!state.has(c)) visit(c);
-  // the critical path: the longest chain of unfinished tasks (memoised; cycles cut)
-  const memo = new Map(), longest = (c, seen = new Set()) => { if (memo.has(c)) return memo.get(c); if (seen.has(c) || !open(c)) return []; seen.add(c);
-    let best = []; for (const n of after.get(c) || []){ const p = longest(n, seen); if (p.length > best.length) best = p; } seen.delete(c); const r = [c, ...best]; memo.set(c, r); return r; };
-  let path = []; for (const c of t.keys()) if (open(c) && !(before.get(c) || []).some(open)){ const p = longest(c); if (p.length > path.length) path = p; }
+  // ordering the unfinished tasks (no recursion, so long chains are fine): what can't be ordered waits on a loop
+  const nodes = [...t.keys()].filter(open).sort(), indeg = new Map(nodes.map(c => [c, 0]));
+  for (const c of nodes) for (const n of after.get(c) || []) if (indeg.has(n)) indeg.set(n, indeg.get(n) + 1);
+  const queue = nodes.filter(c => !indeg.get(c)), order = [];
+  while (queue.length){ const c = queue.shift(); order.push(c); for (const n of after.get(c) || []) if (indeg.has(n)){ indeg.set(n, indeg.get(n) - 1); if (!indeg.get(n)) queue.push(n); } }
+  const cyc = new Set(nodes.filter(c => !order.includes(c)));
+  // the critical path: the longest chain through that order
+  const dist = new Map(), prev = new Map();
+  for (const c of order){ const d = (dist.get(c) || 1); dist.set(c, d); for (const n of after.get(c) || []) if (indeg.has(n) && !cyc.has(n) && d + 1 > (dist.get(n) || 1)){ dist.set(n, d + 1); prev.set(n, c); } }
+  let end = null; for (const c of order) if (!end || dist.get(c) > dist.get(end)) end = c;
+  const path = []; for (let c = end; c; c = prev.get(c)) path.unshift(c);
   const ready = [...t].filter(([c, x]) => x.status !== 'done' && !blocked.has(c)).map(([c]) => c);
-  return { edges, blocked, ready, path: path.length > 1 ? path : [], cycles: cyc };
+  return { edges, blocked, ready, path: path.length > 1 ? path : [], longest: path.length, cycles: cyc };
 }
 RENDER_HOOKS.screen.push(() => {
   if (!S.D.tasks?.size) return;
@@ -8158,7 +8355,7 @@ WORK_SECTIONS.push(() => {
     ${p.blocked.size ? `<h3>Blocked <span class="n">${p.blocked.size}</span></h3><ul class="wk-list">${[...p.blocked.keys()].map(li).join('')}</ul>` : ''}
     ${p.cycles.size ? `<p class="wk-note">${plural(p.cycles.size, 'task')} wait on each other in a loop.</p>` : ''}`;
 });
-FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.path.length ? `${plural(p.path.length, 'task')} on the critical path` : true; } };
+FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.cycles.size ? `${plural(p.cycles.size, 'task')} wait on each other in a loop` : p.longest ? `${plural(p.longest, 'task')} still open on the critical path` : true; } };
 registerFeature({ id: 'taskflow', name: 'Dependencies and critical path', group: 'deliver', icon: 'deps', records: [],
   blurb: 'Connect tasks to order them: what is blocked, what is ready, and the chain that sets the date',
   status: () => { if (!S.D.tasks?.size) return ''; const p = plan(); return p.blocked.size ? `${p.blocked.size} blocked` : ''; },

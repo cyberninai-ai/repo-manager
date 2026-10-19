@@ -11,14 +11,17 @@
 const PAYOUT_CONNECTORS = [];   // { name, run: async (manifest) → receipt text }  e.g. an FXN service-pool resolver or a payment API
 const SETTLE_HOOKS = [];        // (x, amount) → [{ to, bp, why }] lines taken before the split (template royalties)
 const unitOk = u => /^[A-Za-z0-9]{1,8}$/.test(u || '');
-registerRecord('FUND', { parse(r, f){ if (!f.R || !unitOk(f.U)) throw Error('fund'); r.cents = Math.max(0, +f.A || 0); r.unit = f.U.toUpperCase(); r.note = decTxt(f.M || ''); }, inherit: false });
-registerRecord('PAY', { parse(r, f){ if (!f.R || !unitOk(f.U) || !['even', 'credit', 'fixed'].includes(f.S)) throw Error('pay'); r.cents = Math.max(0, +f.A || 0); r.unit = f.U.toUpperCase(); r.split = f.S;
-  r.fixed = f.P && f.P !== '0' ? new Map(f.P.split('_').map(p => p.split('~')).map(([k, n]) => [k, Math.max(0, +n || 0)])) : null; }, inherit: false });
-registerRecord('SETTLE', { parse(r, f){ if (!f.R || !f.H || !f.L || !unitOk(f.U)) throw Error('settle'); r.lines = f.L.split('_').map(p => p.split('~')).map(([k, n]) => ({ to: k, cents: Math.max(0, +n || 0) })); r.unit = f.U.toUpperCase(); }, inherit: false });
+const shareList = v => new Map(String(v).split('_').map(p => p.split('~')).map(([k, n]) => { must(isKey(k), 'payee'); return [k, Math.max(0, Math.min(10000, +n || 0))]; }));
+registerRecord('FUND', { parse(r, f){ must(isCanvas(f.R) && unitOk(f.U), 'fund'); r.cents = Math.max(0, Math.min(1e15, +f.A || 0)); r.unit = f.U.toUpperCase(); r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('PAY', { parse(r, f){ must(isCid(f.R) && unitOk(f.U) && ['even', 'credit', 'fixed'].includes(f.S), 'pay'); r.cents = Math.max(0, Math.min(1e15, +f.A || 0)); r.unit = f.U.toUpperCase(); r.split = f.S;
+  r.fixed = f.P && f.P !== '0' ? shareList(f.P) : null; }, inherit: false });
+registerRecord('SETTLE', { parse(r, f){ must(isCid(f.R) && isRoot(f.H) && f.L && isCid(f.K) && unitOk(f.U), 'settle'); r.terms = f.K;
+  r.lines = f.L.split('_').map(p => p.split('~')).map(([k, n]) => { must(isKey(k), 'payee'); return { to: k, cents: Math.max(0, +n || 0) }; }); r.unit = f.U.toUpperCase(); }, inherit: false });
 Object.assign(PERM_OF, { FUND: 'comment', PAY: null, SETTLE: null });
 const money = (c, u) => `${(c / 100).toLocaleString([], { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 })} ${u}`;
 
-// deterministic lines: royalties first, then the split; cents rounded down, the remainder to the largest share
+// deterministic lines: royalties first, then the split; cents rounded down, the remainder to the largest share.
+// Nobody to pay (no work, zero weights): everything goes to the delivery's author, so the lines always add up to the amount
 function payoutLines(x, pay){
   const lines = [], add = (to, cents, why) => { const l = lines.find(l => l.to === to && l.why === why); if (l) l.cents += cents; else lines.push({ to, cents, why }); };
   let rest = pay.cents;
@@ -26,29 +29,40 @@ function payoutLines(x, pay){
   let shares;
   if (pay.split === 'fixed' && pay.fixed) shares = pay.fixed;
   else if (pay.split === 'credit') shares = contributionShares(x);
-  else { const who = [...new Set([...S.records.values()].filter(r => r.z < x.d.z && r.neg === null && ELEMENT.has(r.type) && !S.D.hidden.has(r.cid)).map(r => personOf(r.author)))].sort(); shares = new Map(who.map(k => [k, 10000 / (who.length || 1)])); }
-  const tot = [...shares.values()].reduce((a, v) => a + v, 0) || 1, parts = [...shares].map(([k, v]) => [k, Math.floor(rest * v / tot)]);
+  else { const who = [...new Set(versionRecs(x.d).filter(r => r.neg === null && ELEMENT.has(r.type) && inView(r)).map(r => personOf(r.author)))].sort(); shares = new Map(who.map(k => [k, 1])); }
+  const tot = [...shares.values()].reduce((a, v) => a + v, 0);
+  if (!tot){ if (rest > 0) add(personOf(x.d.author), rest, 'work'); return lines; }
+  const parts = [...shares].map(([k, v]) => [k, Math.floor(rest * v / tot)]);
   let left = rest - parts.reduce((a, [, c]) => a + c, 0);
   parts.sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)); for (const p of parts){ if (left <= 0) break; p[1]++; left--; }
   for (const [k, c] of parts) if (c > 0) add(k, c, 'work');
   return lines;
 }
 const sameLines = (a, b) => { const m = new Map(); for (const l of a) m.set(l.to, (m.get(l.to) || 0) + l.cents); const n = new Map(); for (const l of b) n.set(l.to, (n.get(l.to) || 0) + l.cents); return m.size === n.size && [...m].every(([k, v]) => n.get(k) === v); };
-DERIVE_HOOKS.push((D, by) => {
+// approvals cover the terms: each approval names the PAY it was signed with (features/work), so terms changed afterwards
+// need approving again before anything can be released
+const termsApproved = (x, pay) => !!pay && x.ok.length > 0 && x.ok.every(a => a.terms === pay.cid);
+// judged after the deliveries and credits (DERIVE_FINAL), recomputed every time: nothing cached on the records
+DERIVE_FINAL.push((D, by) => {
   const pays = new Map(), settles = new Map();
   for (const x of D.deliveries || []){
-    const p = (by.PAY || []).filter(r => r.f.R === x.d.cid && samePerson(r.author, x.d.author) && !D.hidden.has(r.cid)).at(-1);
-    if (p) pays.set(x.d.cid, p);
-    const s = (by.SETTLE || []).find(r => r.f.R === x.d.cid && r.f.H === x.d.root && samePerson(r.author, x.d.author) && !D.hidden.has(r.cid));
-    if (s) settles.set(x.d.cid, s);
+    const own = r => r.f.R === x.d.cid && r.neg === null && samePerson(r.author, x.d.author) && inView(r);
+    const p = (by.PAY || []).filter(own).at(-1); if (p) pays.set(x.d.cid, p);
+    for (const st of (by.SETTLE || []).filter(own)){
+      try {
+        const terms = S.records.get(st.terms);
+        if (!x.done || st.f.H !== x.d.root || !terms || terms.type !== 'PAY' || !own(terms) || terms.unit !== st.unit || !termsApproved(x, terms)) continue;
+        if (sameLines(st.lines, payoutLines(x, terms))){ settles.set(x.d.cid, st); break; }   // the first valid release
+      } catch {}
+    }
   }
-  const pool = new Map(); for (const f of by.FUND || []) if (!D.hidden.has(f.cid) && f.f.R === canvasId){ const o = pool.get(f.unit) || { pledged: 0, paid: 0, backers: new Map() }; o.pledged += f.cents; o.backers.set(personOf(f.author), (o.backers.get(personOf(f.author)) || 0) + f.cents); pool.set(f.unit, o); }
-  for (const s of settles.values()){ const o = pool.get(s.unit); if (o) o.paid += s.lines.reduce((a, l) => a + l.cents, 0); }
-  D.pays = pays; D.settles = settles; D.pool = pool;
+  // the pool pays only what someone with a stake in it approved: the canvas owner or a backer of that unit
+  const pool = new Map(); for (const f of by.FUND || []) if (f.neg === null && inView(f) && f.f.R === canvasId){ const o = pool.get(f.unit) || { pledged: 0, paid: 0, backers: new Map() }; o.pledged += f.cents; o.backers.set(personOf(f.author), (o.backers.get(personOf(f.author)) || 0) + f.cents); pool.set(f.unit, o); }
+  const fromPool = new Set();
+  for (const x of D.deliveries || []){ const st = settles.get(x.d.cid), o = st && pool.get(st.unit); if (o && x.ok.some(a => samePerson(a.author, S.P?.owner) || o.backers.has(personOf(a.author)))){ o.paid += st.lines.reduce((a, l) => a + l.cents, 0); fromPool.add(x.d.cid); } }
+  D.pays = pays; D.settles = settles; D.pool = pool; D.fromPool = fromPool;
 });
-// a settlement counts only if its lines are what the terms give for the approved version (checked lazily: shares need derive)
-const settleValid = (x, s) => { if (!s.valid){ const p = S.D.pays.get(x.d.cid); s.valid = !!p && p.unit === s.unit && sameLines(s.lines, payoutLines(x, p)); } return s.valid; };
-
+const settleValid = (x, s) => S.D.settles?.get(x.d.cid) === s;
 async function attachPay(x){
   const v = await formDialog('Payment for this delivery', [
     { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
@@ -61,8 +75,9 @@ async function attachPay(x){
 }
 async function release(x){
   const p = S.D.pays.get(x.d.cid); if (!p || !x.done) return;
+  if (!termsApproved(x, p)){ toast('These terms changed after the approvals: ask the approvers to approve again first.'); return; }
   const lines = payoutLines(x, p);
-  await publish(await signed('SETTLE', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', lines.map(l => `${l.to}~${l.cents}`).join('_')], ['U', p.unit], ['Z', ++S.lamport], ['T', Date.now()]]));
+  await publish(await signed('SETTLE', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', lines.map(l => `${l.to}~${l.cents}`).join('_')], ['K', p.cid], ['U', p.unit], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(`Payment released: ${money(p.cents, p.unit)} in ${plural(lines.length, 'line')}.${PAYOUT_CONNECTORS.length ? '' : ' Hand the manifest to whoever pays.'}`);
   for (const c of PAYOUT_CONNECTORS) try { toast(`${c.name}: ${await c.run(manifest(x))}`); } catch (err){ toast(`${c.name} failed: ${err.message}`); }
 }
@@ -75,10 +90,11 @@ function downloadJSON(name, text){ const a = document.createElement('a'); a.href
 function payRow(x){
   const p = S.D.pays?.get(x.d.cid), s = S.D.settles?.get(x.d.cid), mine = samePerson(x.d.author, S.me.id);
   if (!p) return mine ? `<div class="acts"><button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button></div>` : '';
-  const ok = s && settleValid(x, s);
-  return `<div class="row2"><span class="pill ${ok ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
-    ${s ? (ok ? `<small>Paid: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>` : '<span class="pill bad">Settlement doesn’t match the terms</span>')
-      : x.done && mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Released when approved</small>'}</div>`;
+  const bound = termsApproved(x, p), pooled = S.D.fromPool?.has(x.d.cid);
+  return `<div class="row2"><span class="pill ${s ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
+    ${s ? `<small>Paid${pooled ? ' from the pool' : ''}: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>`
+      : !x.done ? '<small>Released when approved</small>' : !bound ? '<span class="pill warn">Terms changed after approval: approvers must approve again</span>'
+      : mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Waiting for the release</small>'}</div>`;
 }
 DELIVERY_HOOKS.row.push(payRow);
 DELIVERY_HOOKS.proof.push((x, out) => {

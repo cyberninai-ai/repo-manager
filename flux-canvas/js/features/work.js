@@ -3,20 +3,30 @@
 // with progress, and deliveries sealed by the canvas state and approved by the people named on them (a quorum, like a multisig)
 // @uses records, derive, permissions, profiles, chrome, toolbar (menus), dialogs (report)
 // TASK-I-R-{element}-S-{todo|doing|done|x}-A-{owner key|0}-D-{yyyymmdd|0}-Z-T-SIG   latest per element wins; x = not a task
-// DELIVER-I-R-{nonce}-M-{title}-A-{approver_approver…}-Q-{quorum}-H-{root}-X-{frame|0}[-F-{approval flow}]-Z-T-SIG
-//   H = sha256 over the sorted CIDs of every record before this one (z below its own): the exact version being delivered
-// APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}-Z-T-SIG
-//   counts only from approvers named on the delivery, and only when H matches; latest per approver wins
+//   anyone may make something a task; after that only its creator, its owner, the element's author or the canvas owner change it
+// DELIVER-I-R-{nonce}-M-{title}-A-{approver_approver…}-Q-{quorum}-H-{root}-X-{frame|0}[-F-{approval flow}][-V-{version blob}]-Z-T-SIG
+//   V names a blob listing the CIDs of the exact version (sorted, one per line); H = sha256 of that list. Records signed later,
+//   whatever Z they claim, are not part of it. (Older deliveries without V: every record with z below the delivery's.)
+// APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}[-P-{payment terms seen}][-G-{approvals seen}]-Z-T-SIG
+//   counts only from approvers named on the delivery, and only when H matches; latest per approver wins. P binds the approval to
+//   the payment terms on screen (features/payouts); G lists the approvals it came after (ordered flows, features/flows)
 const WORK_SECTIONS = [];   // () → HTML sections other features add to the Work panel (features/taskflow)
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
-registerRecord('TASK', { parse(r, f){ if (!f.R || !['todo', 'doing', 'done', 'x'].includes(f.S)) throw Error('task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
-registerRecord('DELIVER', { parse(r, f){ if (!f.R || !f.H || !f.A) throw Error('deliver'); r.title = decTxt(f.M || ''); r.approvers = f.A.split('_').filter(Boolean); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1'))); r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; }, inherit: false });
-registerRecord('APPROVE', { parse(r, f){ if (!f.R || !f.H) throw Error('approve'); r.root = f.H; r.ok = f.S !== '0'; r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('TASK', { parse(r, f){ must(isCid(f.R) && ['todo', 'doing', 'done', 'x'].includes(f.S), 'task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; must(!r.owner || isKey(r.owner), 'task owner'); r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
+registerRecord('DELIVER', { parse(r, f){ must(f.R && isRoot(f.H) && f.A, 'deliver'); r.title = decTxt(f.M || ''); r.approvers = keyList(f.A); must(r.approvers.length, 'approvers'); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1')));
+  r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; r.version = f.V && f.V !== '0' ? f.V : null; must((!r.scope || isCid(r.scope)) && (!r.flow || isCid(r.flow)) && (!r.version || isCid(r.version)), 'deliver refs'); }, inherit: false, blob: 'V' });
+registerRecord('APPROVE', { parse(r, f){ must(isCid(f.R) && isRoot(f.H), 'approve'); r.root = f.H; r.ok = f.S !== '0'; r.note = decTxt(f.M || ''); r.terms = f.P && f.P !== '0' ? f.P : null; r.after = f.G && f.G !== '0' ? cidList(f.G) : []; must(!r.terms || isCid(r.terms), 'terms'); }, inherit: false });
 Object.assign(PERM_OF, { TASK: 'comment', DELIVER: 'draw', APPROVE: null });
 
 DERIVE_HOOKS.push((D, by) => {
-  const tasks = new Map();
-  for (const r of by.TASK || []){ if (D.hidden.has(r.cid)) continue; const t = current(r.f.R); if (!t || D.hidden.has(t.cid)) continue; if (r.status === 'x') tasks.delete(t.cid); else tasks.set(t.cid, { status: r.status, owner: r.owner, due: r.due, by: r.author, t: r.t, cid: t.cid }); }
+  const tasks = new Map(), made = new Map();   // element → who made it a task first
+  for (const r of by.TASK || []){
+    if (D.hidden.has(r.cid)) continue; const t = current(r.f.R); if (!t || D.hidden.has(t.cid)) continue;
+    const cur = tasks.get(t.cid), maker = made.get(t.cid);
+    if (cur || maker){ const may = [maker, cur?.owner, t.author, S.P?.owner].some(k => k && samePerson(k, r.author)); if (!may) continue; }   // a stranger can't tick off someone's task
+    else made.set(t.cid, r.author);
+    if (r.status === 'x') tasks.delete(t.cid); else tasks.set(t.cid, { status: r.status, owner: r.owner, due: r.due, by: r.author, t: r.t, cid: t.cid });
+  }
   D.tasks = tasks;
   const deliveries = [];
   for (const d of by.DELIVER || []){
@@ -29,8 +39,25 @@ DERIVE_HOOKS.push((D, by) => {
     deliveries.push(x);
   }
   D.deliveries = deliveries;
-  for (const x of deliveries) runHooks(DELIVERY_HOOKS.evaluate, x, D, by);   // approval flows and conditions (features/flows)
 });
+// judged last, once every feature's view (claims, stances, decisions, rituals…) exists; a rule that fails to evaluate fails closed
+DERIVE_FINAL.push((D, by) => {
+  for (const x of D.deliveries || []) for (const h of DELIVERY_HOOKS.evaluate){ try { h(x, D, by); } catch (err){ x.done = false; x.blockers.push('A rule of this delivery could not be checked'); console.warn(err); } }
+});
+/* the exact version a delivery covers: the CIDs in its version blob (or, for older deliveries, every record before it) */
+const versionCache = new Map();
+function versionOf(d){
+  if (d.version && S.blobs.has(d.version)){ if (!versionCache.has(d.version)) versionCache.set(d.version, new Set(new TextDecoder().decode(S.blobs.get(d.version)).split('\n').filter(Boolean))); return versionCache.get(d.version); }
+  return null;
+}
+// the records of that version this browser holds (missing ones are simply absent)
+function versionRecs(d){ const v = versionOf(d); return v ? [...v].map(c => S.records.get(c)).filter(Boolean) : [...S.records.values()].filter(r => r.z < d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE'); }
+async function versionCheck(d){   // → { root, missing }: what this browser computes for the delivered version
+  const v = versionOf(d);
+  if (!v) return { root: await rootAt(d.z), missing: 0 };
+  const list = [...v].sort(), bytes = te.encode(list.join('\n'));
+  return { root: b32(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))), missing: list.filter(c => !S.records.has(c)).length };
+}
 
 /* the version a delivery seals: every record before it, as CIDs, hashed */
 async function rootAt(z){
@@ -175,17 +202,27 @@ async function openDeliver(){
   ])) : { approvers: [S.me.id] };
   if (!pick) return;
   const picks = pick.approvers;
-  const z = S.lamport + 1, root = await rootAt(z), scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
-  await publish(await signed('DELIVER', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['M', encTxt(title.trim() || 'Delivery')], ['A', picks.join('_')], ['Q', pick.quorum || picks.length], ['H', root], ['X', scope], ...(pick.flow ? [['F', pick.flow]] : []), ['Z', z], ['T', Date.now()]]));
+  const scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
+  await deliver({ title: title.trim() || 'Delivery', approvers: picks, quorum: pick.quorum || picks.length, flow: pick.flow, scope });
   post({ ask: { to: picks, title: title.trim() } });
   toWork(); toast(`Sent for approval to ${picks.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
+}
+// sign a delivery of the canvas as it is now: the version list goes with it as a blob, its hash is the root
+async function deliver({ title, approvers, quorum = approvers.length, flow = null, scope = '0', nonce = null }){
+  const z = S.lamport + 1, list = [...S.records.values()].filter(r => r.z < z && r.type !== 'DELIVER' && r.type !== 'APPROVE').map(r => r.cid).sort();
+  const bytes = te.encode(list.join('\n')), vb = await cidOf(bytes), root = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
+  return publish(await signed('DELIVER', [['I', S.me.id], ['R', nonce || b32(crypto.getRandomValues(new Uint8Array(8)))], ['M', encTxt(title)], ['A', approvers.join('_')], ['Q', quorum], ['H', root], ['X', scope || '0'],
+    ...(flow ? [['F', flow]] : []), ['V', vb], ['Z', z], ['T', Date.now()]]), { [vb]: bytes });
 }
 function toWork(){ if (!WK.on) toggleWork(true); else paintWork(); }
 async function approve(cid, ok, note = ''){
   const d = S.records.get(cid); if (!d) return;
-  const root = await rootAt(d.z);
-  if (ok && root !== d.root){ toast('You don’t have this exact version yet. Syncing first…'); sendHello(false); return; }
-  await publish(await signed('APPROVE', [['I', S.me.id], ['R', cid], ['H', root], ['S', ok ? '1' : '0'], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  if (d.version && !S.blobs.has(d.version)){ toast('The version list hasn’t arrived yet. Syncing first…'); sendHello(false); return; }
+  const { root, missing } = await versionCheck(d);
+  if (ok && (root !== d.root || missing)){ toast(missing ? `You’re missing ${plural(missing, 'record')} of this version. Syncing first…` : 'This version doesn’t match what you have. Syncing first…'); sendHello(false); return; }
+  const x = S.D.deliveries.find(v => v.d.cid === cid), terms = S.D.pays?.get(cid)?.cid;
+  await publish(await signed('APPROVE', [['I', S.me.id], ['R', cid], ['H', root], ['S', ok ? '1' : '0'], ['M', encTxt(note)], ...(terms ? [['P', terms]] : []),
+    ...(x?.ok.length ? [['G', x.ok.map(a => a.cid).join('_')]] : []), ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(ok ? 'Approved. Your signature is on this version.' : 'Changes requested.');
 }
 WIRE_HOOKS.ask = a => { if (a?.to?.includes(S.me?.id)) toast(`You’ve been asked to approve “${a.title}” · open Work`); };
@@ -193,8 +230,8 @@ WIRE_HOOKS.ask = a => { if (a?.to?.includes(S.me?.id)) toast(`You’ve been aske
 /* the proof: who made the delivered version, who approved it, and the signed records anyone can verify */
 function showProof(cid){
   const x = S.D.deliveries.find(v => v.d.cid === cid); if (!x) return;
-  const recs = [...S.records.values()].filter(r => r.z < x.d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE');
-  const by = new Map(); for (const r of recs) by.set(r.author, (by.get(r.author) || 0) + 1);
+  const recs = versionRecs(x.d);
+  const by = new Map(); for (const r of recs) by.set(personOf(r.author), (by.get(personOf(r.author)) || 0) + 1);
   const out = [`# ${x.d.title || 'Delivery'}`, '', `- **Status:** ${x.done ? `Delivered — ${x.ok.length} of ${x.d.quorum} approvals on this exact version` : `Waiting — ${x.ok.length} of ${x.d.quorum} approvals`}`,
     `- **Canvas:** ${canvasTitle()} (\`${canvasId}\`)`, `- **Version (state root):** \`${x.d.root}\` — the SHA-256 of the ${recs.length} record CIDs it contains`,
     `- **Requested by:** ${short(x.d.author)} · ${new Date(x.d.t).toLocaleString()}`, '', '## Contributors', '',

@@ -4,56 +4,68 @@
 // declines it; in a locked zone, others' changes there don't count at all. Discussion (comments, stances, claims, tasks) is
 // never gated. Co-workers stop overwriting each other's areas without anyone having to ask "who's on this?".
 // @uses core derive (RECORD_GATES, S.D.pending), records, render (drawEl), ui/panels
-// ZONE-I-R-{frame}-S-{open|suggest|locked}-X-Y-W-H-Z-T-SIG     the frame's area when it was zoned; latest per frame wins
-// ACCEPT-I-R-{record}-S-{1 accept|0 decline}-Z-T-SIG           the zone owner's answer to a suggestion
-registerRecord('ZONE', { parse(r, f){ if (!f.R || !['open', 'suggest', 'locked'].includes(f.S)) throw Error('zone'); r.mode = f.S; r.zx = decInt(f.X || '0'); r.zy = decInt(f.Y || '0'); r.zw = Math.max(0, +f.W || 0); r.zh = Math.max(0, +f.H || 0); }, inherit: false });
-registerRecord('ACCEPT', { parse(r, f){ if (!f.R) throw Error('accept'); r.yes = f.S !== '0'; }, inherit: false });
+// ZONE-I-R-{frame}-S-{open|suggest|locked}-Z-T-SIG     by the frame's author or the canvas owner; latest per frame wins.
+//   The area is the frame itself, wherever it is now: never numbers the signer chose
+// ACCEPT-I-R-{record}-S-{1 accept|0 decline}-Z-T-SIG   a zone owner's answer to a suggestion; every zone it lands in must agree
+// The canvas owner is never gated; taking back your own work never is; discussion (comments, stances, claims, tasks) never is.
+registerRecord('ZONE', { parse(r, f){ must(isCid(f.R) && ['open', 'suggest', 'locked'].includes(f.S), 'zone'); r.mode = f.S; }, inherit: false });
+registerRecord('ACCEPT', { parse(r, f){ must(isCid(f.R), 'accept'); r.yes = f.S !== '0'; }, inherit: false });
 Object.assign(PERM_OF, { ZONE: 'draw', ACCEPT: null });
-const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
-// zones from the full record set (before derive): the latest valid ZONE per frame
+const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'DRAW', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
+const isFrameNode = r => r?.type === 'NODE' && r.k === 'frame';
+// zones from the permitted records (before derive): the latest valid, unrevoked ZONE per frame, with the frame's current area
 function zonesOf(all, P){
+  const ok = all.filter(r => permitted(r, P)), revoked = new Set();
+  for (const r of ok) if (r.neg !== null){ const t = S.records.get(r.f.R); if (t && t.author === r.author){ if (r.neg) revoked.add(t.cid); else revoked.delete(t.cid); } }
+  const live = r => !revoked.has(r.cid);
   const z = new Map();
-  for (const r of all) if (r.type === 'ZONE' && r.neg === null){ const fr = S.records.get(r.f.R); if (fr && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) z.set(r.f.R, r); }
-  return [...z.values()].filter(r => r.mode !== 'open');
+  for (const r of ok) if (r.type === 'ZONE' && r.neg === null && live(r)){ const fr = S.records.get(r.f.R); if (isFrameNode(fr) && live(fr) && permitted(fr, P) && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) z.set(r.f.R, r); }
+  const out = [];
+  for (const r of z.values()){
+    if (r.mode === 'open') continue;
+    const fr = S.records.get(r.f.R); let x = fr.x, y = fr.y, w = fr.bw || 200, h = fr.bh || 140;
+    for (const m of ok) if (m.type === 'MOVE' && m.neg === null && m.f.R === fr.cid && live(m)){ x += m.dx; y += m.dy; w += m.dw; h += m.dh; }
+    out.push({ rec: r, cid: r.cid, f: r.f, author: r.author, mode: r.mode, zx: x, zy: y, zw: Math.max(0, w), zh: Math.max(0, h) });
+  }
+  return out;
 }
 const inZone = (z, x, y) => x >= z.zx && y >= z.zy && x <= z.zx + z.zw && y <= z.zy + z.zh;
-// where a record acts: a new element where it was placed; a change where its target was placed
-function anchorOf(r){
-  if (r.type === 'MOVE' || r.type === 'STYLE' || r.neg !== null){ const t = S.records.get(r.f.R); return t && Number.isFinite(t.x) ? t : null; }
-  if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits){ const t = S.records.get(r.edits); return t && Number.isFinite(t.x) ? t : r; }
-  if (r.type === 'ARROW'){ const a = S.records.get(r.f.FROM); return a && Number.isFinite(a.x) ? a : null; }
-  if (r.type === 'GROUP'){ const a = S.records.get(r.members?.[0]); return a && Number.isFinite(a.x) ? a : null; }
-  return Number.isFinite(r.x) ? r : null;
+// the points where a record acts: where a new element lands; for a change, where its target was and where a move takes it
+function anchorsOf(r){
+  const at = t => t && Number.isFinite(t.x) ? [{ x: t.x, y: t.y }] : t?.type === 'DRAW' ? (g => g ? [{ x: g.box.x, y: g.box.y }, { x: g.box.x + g.box.w, y: g.box.y + g.box.h }] : [])(strokeGeom(t.f.R)) : [];
+  if (r.type === 'MOVE'){ const t = S.records.get(r.f.R), p = at(t); return [...p, ...p.map(q => ({ x: q.x + r.dx, y: q.y + r.dy }))]; }
+  if (r.type === 'STYLE') return at(S.records.get(r.f.R));
+  if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits) return [...at(S.records.get(r.edits)), ...at(r)];
+  if (r.type === 'ARROW') return [...at(S.records.get(r.f.FROM)), ...at(S.records.get(r.f.TO))];
+  if (r.type === 'GROUP') return (r.members || []).flatMap(c => at(S.records.get(c)));
+  return at(r);
 }
+const anchorOf = r => anchorsOf(r)[0] || null;
+const zonesHit = (zones, r) => { const pts = anchorsOf(r); return zones.filter(z => r.cid !== z.f.R && !samePerson(r.author, z.author) && pts.some(p => inZone(z, p.x, p.y))); };
 RECORD_GATES.push((all, P) => {
   const zones = zonesOf(all, P); if (!zones.length) return null;
-  const answers = new Map(); for (const r of all) if (r.type === 'ACCEPT') answers.set(r.f.R, r);   // z order: the latest answer
+  const answers = new Map(); for (const r of all) if (r.type === 'ACCEPT' && r.neg === null) answers.set(`${r.f.R}|${personOf(r.author)}`, r);   // z order: each owner's latest
   return r => {
-    if (!GATED.has(r.type) && r.neg === null) return null;
-    if (r.f.R && zones.some(z => z.f.R === r.f.R) && r.type !== 'MOVE') return null;   // the frame's own record
-    const a = anchorOf(r); if (!a) return null;
-    for (const z of zones){
-      if (samePerson(r.author, z.author) || !inZone(z, a.x, a.y) || r.cid === z.f.R) continue;
-      if (z.mode === 'locked') return 'deny';
-      const ans = answers.get(r.cid); if (ans && samePerson(ans.author, z.author)) return ans.yes ? null : 'deny';
-      return 'pending';
-    }
-    return null;
+    if (r.neg !== null || !GATED.has(r.type) || P.owner && samePerson(r.author, P.owner)) return null;
+    const hit = zonesHit(zones, r); if (!hit.length) return null;
+    if (hit.some(z => z.mode === 'locked')) return 'deny';
+    const said = hit.map(z => answers.get(`${r.cid}|${personOf(z.author)}`));
+    if (said.some(a => a && !a.yes)) return 'deny';
+    return said.every(a => a?.yes) ? null : 'pending';
   };
 });
 // computed once per change, not per frame: each frame's zone (latest valid), the active zones, and the suggestions waiting
-DERIVE_HOOKS.push((D, by) => {
-  const byFrame = new Map(), P = S.P || { owner: null };
-  for (const r of by.ZONE || []){ const fr = S.records.get(r.f.R); if (fr && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) byFrame.set(r.f.R, r); }
-  const active = [...byFrame.values()].filter(r => r.mode !== 'open'), sug = [];
-  if (active.length) for (const c of D.pending){ const r = S.records.get(c), a = r && anchorOf(r), z = a && active.find(z => inZone(z, a.x, a.y)); if (z) sug.push({ r, z }); }
+DERIVE_HOOKS.push(D => {
+  const all = [...S.records.values()].sort(byZ), P = S.P || { owner: null }, active = zonesOf(all, P), byFrame = new Map(), sug = [];
+  for (const r of all) if (r.type === 'ZONE' && r.neg === null && inView(r)) byFrame.set(r.f.R, r);
+  if (active.length) for (const c of D.pending){ const r = S.records.get(c), hit = r && zonesHit(active, r); if (hit?.length) sug.push({ r, z: hit[0], zones: hit }); }
   D.zoneByFrame = byFrame; D.zones = active; D.suggestions = sug.sort((a, b) => a.r.z - b.r.z);
 });
 const suggestions = () => S.D.suggestions || [];
 const answer = async (cid, yes) => publish(await signed('ACCEPT', [['I', S.me.id], ['R', cid], ['S', yes ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
 async function setZone(frame, mode){
   const b = box(frame); if (!b) return;
-  await publish(await signed('ZONE', [['I', S.me.id], ['R', frame.cid], ['S', mode], ['X', encInt(Math.round(b.x))], ['Y', encInt(Math.round(b.y))], ['W', Math.round(b.w)], ['H', Math.round(b.h)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  await publish(await signed('ZONE', [['I', S.me.id], ['R', frame.cid], ['S', mode], ['Z', ++S.lamport], ['T', Date.now()]]));
   toast(mode === 'open' ? 'Zone opened: anyone may change it.' : mode === 'suggest' ? 'Suggest zone: others’ changes wait for you to accept them.' : 'Locked zone: only you change what’s inside.');
 }
 const zoneOfFrame = cid => S.D.zoneByFrame?.get(cid);
@@ -63,7 +75,8 @@ PUBLISH_FILTERS.push(async raw => {
   const t = raw.slice(0, raw.indexOf('-')); if (!GATED.has(t)) return undefined;
   const zones = S.D.zones || []; if (!zones.length) return undefined;
   let r; try { r = toRec(parse(raw), 'pending'); } catch { return undefined; }
-  const a = anchorOf(r), z = a && zones.find(z => inZone(z, a.x, a.y) && !samePerson(z.author, S.me.id)); if (!z) return undefined;
+  if (S.P?.owner && samePerson(S.P.owner, S.me.id)) return undefined;
+  const hit = zonesHit(zones, r), z = hit.find(z => z.mode === 'locked') || hit[0]; if (!z) return undefined;
   if (z.mode === 'locked'){ toast(`${whoName(z.author)} has locked this area. Comment or take a stance instead.`); return null; }
   if (!warnedZones.has(z.cid)){ warnedZones.add(z.cid); toast(`This is ${whoName(z.author)}’s area: your change is a suggestion until they accept it.`); }
   return undefined;
@@ -77,9 +90,9 @@ RENDER_HOOKS.world.push(() => {
   }
 });
 RENDER_HOOKS.screen.push(() => {
-  for (const { r, z } of suggestions()){
+  for (const { r, zones } of suggestions()){
     const a = anchorOf(r); if (!a) continue; const s = toScreen(a.x, a.y);
-    const own = samePerson(z.author, S.me.id), what = r.type === 'MOVE' ? 'move' : r.type === 'STYLE' ? 'restyle' : r.edits ? 'edit' : r.neg ? 'removal' : 'addition';
+    const own = zones.some(z => samePerson(z.author, S.me.id)), what = r.type === 'MOVE' ? 'move' : r.type === 'STYLE' ? 'restyle' : r.edits ? 'edit' : r.neg ? 'removal' : 'addition';
     const w = drawBadge(s.x, s.y - 26, `${whoName(r.author)} suggests ${what === 'addition' ? 'an' : 'a'} ${what}${own ? '' : ' · waiting'}`, 'acc', own ? () => openPanel('zones') : null);
     if (own){ drawBadge(s.x + w + 4, s.y - 26, '✓ Accept', 'good', () => answer(r.cid, true)); drawBadge(s.x + w + 76, s.y - 26, '✕', 'bad', () => answer(r.cid, false)); }
   }
@@ -99,8 +112,8 @@ registerPanel({
       ${waiting.length ? `<h3>Your suggestions <span class="n">${waiting.length}</span></h3><ul class="plain">${waiting.map(s => row(s, false)).join('')}</ul>` : ''}
       <h3>Zones <span class="n">${zones.length}</span></h3>${zones.length ? `<ul class="plain">${zones.map(z => `<li class="row2"><button class="link grow" data-go="${z.f.R}">${esc(elTitle(z.f.R))}</button><span class="pill ${z.mode === 'locked' ? 'warn' : 'acc'}">${z.mode}</span><small>${esc(whoName(z.author))}</small></li>`).join('')}</ul>` : '<p class="empty">No zones. Select a frame you made and choose “Zone…” to make it yours.</p>'}`;
   },
-  async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => samePerson(s.z.author, S.me.id))) await answer(s.r.cid, true); },
+  async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me.id)))) await answer(s.r.cid, true); },
 });
 registerFeature({ id: 'zones', name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
   blurb: 'Own an area: others’ changes inside it wait as suggestions, or are locked out',
-  status: () => { const n = suggestions().filter(s => samePerson(s.z.author, S.me?.id)).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });
+  status: () => { const n = suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me?.id))).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });

@@ -50,7 +50,7 @@ registerPanel({
       ${silent.length ? `<div class="card warn"><b>Looked, no stance</b>${silent.map(r => `<small>${esc(whoName(r.id))} is reading the decision “${esc(r.m.dec.d.text.slice(0, 60))}” and hasn’t said where they stand.</small>`).join('')}</div>` : ''}
       <h3>People <span class="n">${rows.length + 1}</span></h3>
       <ul class="plain">${rows.length ? rows.map(({ id, p, m }) => `<li class="row2">${avatar(id)}<span class="grow"><b>${esc(whoName(id))}</b> <small>${m.on ? `${MODE[m.mode][0].toLowerCase()} “${esc(elTitle(m.on).slice(0, 40))}”` : MODE[m.mode][0].toLowerCase()}${m.for ? ` · ${dur(m.for)}` : ''}${p.via === 'mesh' ? ' · via ' + esc(short(p.through)) : ''}</small></span><span class="pill ${MODE[m.mode][1] || ''}">${MODE[m.mode][0]}</span>${m.on ? `<button class="btn" data-go="${m.on}">Show</button>` : ''}</li>`).join('') : '<li class="empty">Nobody else is here. Invite people from the Live button.</li>'}</ul>
-      <label class="muted"><input type="checkbox" data-k="share"${ATT.share ? ' checked' : ''}> Share what I’m looking at (live only, never stored)</label>`;
+      <label class="muted"><input type="checkbox" data-k="share"${ATT.share ? ' checked' : ''}> Share what I’m looking at and for how long (live only, never stored; your selection and edits stay visible)</label>`;
   },
   click(e, b){ if (b.dataset.go) goTo(b.dataset.go); },
   change(e){ if (e.target.dataset.k === 'share'){ ATT.share = e.target.checked; try { localStorage.setItem('flux:attention', ATT.share ? 'on' : 'off'); } catch {} sendPresence(false, true); } },
