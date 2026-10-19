@@ -4,9 +4,11 @@
 // @uses records (post), profiles, net (S.root)
 const peers = new Map();   // id → { x, y, t, name, sel, edit, view, root, n, tool, via }
 let presT = 0;
+let presSeq = 0;
 function presenceNow(){
-  const z = S.view.zoom;
-  return { id: S.me.id, name: myName() || undefined, x: lastPointer?.x, y: lastPointer?.y, sel: [...S.sel].slice(0, 40),
+  const z = S.view.zoom, extra = {};
+  for (const f of PRESENCE_FIELDS) try { Object.assign(extra, f()); } catch {}
+  return { ...extra, s: ++presSeq, id: S.me.id, name: myName() || undefined, x: lastPointer?.x, y: lastPointer?.y, sel: [...S.sel].slice(0, 40),
     edit: editingCid || (typeof taNode !== 'undefined' && taNode?.orig?.cid) || null, tool: currentTool(), root: S.root, n: S.records.size,
     view: { x: Math.round(S.view.x + innerWidth / 2 / z), y: Math.round(S.view.y + innerHeight / 2 / z), zoom: +z.toFixed(3) } };
 }
@@ -25,7 +27,8 @@ function onPresence(p, via){
   peers.set(p.id, { x: Number.isFinite(p.x) ? p.x : prev.x, y: Number.isFinite(p.y) ? p.y : prev.y, t: Date.now(), name,
     sel: Array.isArray(p.sel) ? p.sel.filter(c => typeof c === 'string').slice(0, 40) : [], edit: typeof p.edit === 'string' ? p.edit : null,
     view: p.view && Number.isFinite(p.view.x) && Number.isFinite(p.view.zoom) ? p.view : prev.view, root: typeof p.root === 'string' ? p.root : prev.root,
-    n: Number.isFinite(p.n) ? p.n : prev.n, tool: typeof p.tool === 'string' ? p.tool : '', via: via || prev.via || 'tab' });
+    n: Number.isFinite(p.n) ? p.n : prev.n, tool: typeof p.tool === 'string' ? p.tool : '', via: p.hop > 0 ? 'mesh' : via || prev.via || 'tab',
+    through: p.hop > 0 && typeof p.through === 'string' ? p.through : null, att: p.att && typeof p.att === 'object' ? p.att : null });
   if (S.follow === p.id) followView(peers.get(p.id).view);
   dirty = true;
   if (!had){ paintAuthors(); toast(`${short(p.id)} joined`); sendPresence(false, true); }

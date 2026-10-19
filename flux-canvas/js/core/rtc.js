@@ -5,15 +5,15 @@
 // records, presence and sync flow browser to browser. Codes are compressed; STUN finds a route across networks when online.
 const RTC = { chans: new Set(), pending: null };
 const ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
-function rtcSend(msg){
+function rtcSend(msg, except = null){
   if (!RTC.chans.size) return;
   const s = JSON.stringify({ room: canvasId, msg });
-  for (const ch of RTC.chans) if (ch.readyState === 'open') try { ch.send(s); } catch {}
+  for (const ch of RTC.chans) if (ch !== except && ch.readyState === 'open') try { ch.send(s); } catch {}
 }
 function rtcWire(ch){
   ch.onopen = () => { RTC.chans.add(ch); sendHello(false); runHooks(SYNC_HOOKS); toast('Connected directly, peer to peer'); };
   ch.onclose = () => { RTC.chans.delete(ch); runHooks(SYNC_HOOKS); };
-  ch.onmessage = e => { let d; try { d = JSON.parse(e.data); } catch { return; } if (d && d.room === canvasId && d.msg) onWire({ data: d.msg }, 'direct'); };
+  ch.onmessage = e => { let d; try { d = JSON.parse(e.data); } catch { return; } if (d && d.room === canvasId && d.msg) onWire({ data: d.msg }, 'direct', ch); };
 }
 function iceDone(pc){
   return new Promise(res => {

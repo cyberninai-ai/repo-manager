@@ -3,7 +3,8 @@
 // toolbar buttons, palette commands, keys, channel messages, templates and examples here instead of editing the core.
 // Every hook list is read at the moment it is used, so a feature only has to load before boot.
 
-// ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence }
+// ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence;
+//            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments) }
 const RECORD_TYPES = {};
 const NAMES = new Map();           // author key → display name (example authors; profiles later)
 function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(action); }
@@ -26,6 +27,23 @@ const TOOLBAR_ACTIONS = {};     // data-a → async (rs, button) when a toolbar 
 const PALETTE_HOOKS = [];       // (add) → add(group, title, run, { k, on })
 const KEY_HOOKS = [];           // (e, { onCanvas, mod, k }) → true when handled; runs before the built-in keymap
 const WIRE_HOOKS = {};          // key → handler for ephemeral channel messages { [key]: payload }
+const DELIVERY_HOOKS = {        // features that extend a delivery (features/work) without editing it
+  evaluate: [],                 // (x, D, byType) adjust x.done / x.need / x.blockers (approval flows, conditions)
+  proof: [],                    // (x, lines) add sections to the proof
+  row: [],                      // (x) → HTML under a delivery in the Work panel
+  choices: [],                  // (others) → menu items that resolve how a new delivery is approved: { approvers, quorum, flow }
+};
+const FLOW_CONDITIONS = {};     // id → { label, test(D) → true or the reason it isn't met }: what an approval flow can require
+const RECORD_GATES = [];        // (allRecords, policy) → null | (r) → null | 'deny' | 'pending'; run in derive after permissions (zones)
+const PUBLISH_FILTERS = [];     // async (raw, blobs) → undefined to publish as is, or the CID of what was published instead (silent rounds seal)
+const WIRE_INGEST_HOOKS = [];   // (msg, from, chan) after a wire message brought records this browser didn't have (mesh forwarding)
+const PRESENCE_FIELDS = [];     // () → fields merged into your presence (attention)
+const IDENTITY = { of: k => k };   // key → the person it belongs to; linked devices and recovery (features/devices) replace it
+const personOf = k => IDENTITY.of(k);
+const samePerson = (a, b) => !!a && !!b && personOf(a) === personOf(b);
+// The feature catalogue: every feature module describes itself once; the hub, the palette and the docs read it.
+const FEATURES = [];            // { id, name, group, icon, blurb, records: [ACTION…], open?: () }
+function registerFeature(f){ FEATURES.push(f); }
 const TEMPLATES = [];           // { id, name, icon, blurb, build: async (at) } — "Start something" in the canvas home
 const EXAMPLES = [];            // { id, title, icon, blurb, build: async (authors) } — worked use cases
 

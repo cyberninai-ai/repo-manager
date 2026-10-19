@@ -3,14 +3,14 @@
 // with progress, and deliveries sealed by the canvas state and approved by the people named on them (a quorum, like a multisig)
 // @uses records, derive, permissions, profiles, chrome, toolbar (menus), dialogs (report)
 // TASK-I-R-{element}-S-{todo|doing|done|x}-A-{owner key|0}-D-{yyyymmdd|0}-Z-T-SIG   latest per element wins; x = not a task
-// DELIVER-I-R-{nonce}-M-{title}-A-{approver_approver…}-Q-{quorum}-H-{root}-X-{frame|0}-Z-T-SIG
+// DELIVER-I-R-{nonce}-M-{title}-A-{approver_approver…}-Q-{quorum}-H-{root}-X-{frame|0}[-F-{approval flow}]-Z-T-SIG
 //   H = sha256 over the sorted CIDs of every record before this one (z below its own): the exact version being delivered
 // APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}-Z-T-SIG
 //   counts only from approvers named on the delivery, and only when H matches; latest per approver wins
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
 registerRecord('TASK', { parse(r, f){ if (!f.R || !['todo', 'doing', 'done', 'x'].includes(f.S)) throw Error('task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
-registerRecord('DELIVER', { parse(r, f){ if (!f.R || !f.H || !f.A) throw Error('deliver'); r.title = decTxt(f.M || ''); r.approvers = f.A.split('_').filter(Boolean); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1'))); r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; } });
-registerRecord('APPROVE', { parse(r, f){ if (!f.R || !f.H) throw Error('approve'); r.root = f.H; r.ok = f.S !== '0'; r.note = decTxt(f.M || ''); } });
+registerRecord('DELIVER', { parse(r, f){ if (!f.R || !f.H || !f.A) throw Error('deliver'); r.title = decTxt(f.M || ''); r.approvers = f.A.split('_').filter(Boolean); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1'))); r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; }, inherit: false });
+registerRecord('APPROVE', { parse(r, f){ if (!f.R || !f.H) throw Error('approve'); r.root = f.H; r.ok = f.S !== '0'; r.note = decTxt(f.M || ''); }, inherit: false });
 Object.assign(PERM_OF, { TASK: 'comment', DELIVER: 'draw', APPROVE: null });
 
 DERIVE_HOOKS.push((D, by) => {
@@ -21,11 +21,14 @@ DERIVE_HOOKS.push((D, by) => {
   for (const d of by.DELIVER || []){
     if (D.hidden.has(d.cid)) continue;
     const votes = new Map();
-    for (const a of by.APPROVE || []) if (a.f.R === d.cid && d.approvers.includes(a.author) && !D.hidden.has(a.cid)) votes.set(a.author, a);   // z order: latest wins
+    // an approver's linked devices (features/devices) sign for them; z order: latest wins
+    for (const a of by.APPROVE || []){ const who = a.f.R === d.cid && !D.hidden.has(a.cid) && d.approvers.find(id => samePerson(id, a.author)); if (who) votes.set(who, a); }
     const ok = [...votes.values()].filter(a => a.ok && a.root === d.root), changes = [...votes.values()].filter(a => !a.ok);
-    deliveries.push({ d, votes, ok, changes, done: ok.length >= d.quorum, stale: [...votes.values()].filter(a => a.ok && a.root !== d.root) });
+    const x = { d, votes, ok, changes, done: ok.length >= d.quorum, stale: [...votes.values()].filter(a => a.ok && a.root !== d.root), label: '', blockers: [] };
+    deliveries.push(x);
   }
   D.deliveries = deliveries;
+  for (const x of deliveries) runHooks(DELIVERY_HOOKS.evaluate, x, D, by);   // approval flows and conditions (features/flows)
 });
 
 /* the version a delivery seals: every record before it, as CIDs, hashed */
@@ -110,7 +113,8 @@ POINTER_HOOKS.push(e => {
 const WK = { on: false, mine: false };
 function paintWork(){
   const n = [...(S.D.tasks?.values() || [])], open = n.filter(t => t.status !== 'done' && t.owner === S.me?.id).length;
-  const waiting = (S.D.deliveries || []).filter(x => !x.done && x.d.approvers.includes(S.me?.id) && !x.votes.has(S.me?.id)).length;
+  const myTurn = x => !x.done && x.d.approvers.some(id => samePerson(id, S.me?.id)) && ![...x.votes.keys()].some(id => samePerson(id, S.me?.id));
+  const waiting = (S.D.deliveries || []).filter(myTurn).length;
   const badge = $('workN'); if (badge) badge.textContent = open + waiting || '';
   if (!WK.on) return;
   const list = n.filter(t => !WK.mine || t.owner === S.me.id), done = list.filter(t => t.status === 'done').length;
@@ -119,11 +123,13 @@ function paintWork(){
     ${t.due ? `<span class="wk-due${overdue(t) ? ' late' : ''}">${esc(dueText(t.due))}</span>` : ''}${t.owner ? `<span class="av" style="background:hsl(${authorHue(t.owner)} 55% 30%)" title="">${esc(initials(t.owner))}</span>` : '<span class="av none" aria-label="unassigned">?</span>'}</button></li>`;
   const groups = Object.entries(STATUS).map(([k, s]) => { const g = list.filter(t => t.status === k); return g.length ? `<h3>${s.name} <span class="n">${g.length}</span></h3><ul class="wk-list">${g.map(row).join('')}</ul>` : ''; }).join('');
   const dl = (S.D.deliveries || []).map(x => {
-    const mine = x.d.approvers.includes(S.me.id), myVote = x.votes.get(S.me.id);
-    const state = x.done ? '<span class="ok">Delivered ✓</span>' : x.changes.length ? '<span class="bad">Changes requested</span>' : `Waiting · ${x.ok.length} of ${x.d.quorum}`;
+    const mine = x.d.approvers.some(id => samePerson(id, S.me.id)), myVote = [...x.votes].find(([id]) => samePerson(id, S.me.id))?.[1];
+    const state = x.done ? '<span class="ok">Delivered ✓</span>' : x.changes.length ? '<span class="bad">Changes requested</span>' : esc(x.label || `Waiting · ${x.ok.length} of ${x.d.quorum}`);
+    const extra = DELIVERY_HOOKS.row.map(h => { try { return h(x) || ''; } catch { return ''; } }).join('');
     return `<li class="wk-dl"><div class="wk-dh"><b>${esc(x.d.title || 'Delivery')}</b><span>${state}</span></div>
       <div class="wk-ap">${x.d.approvers.map(id => { const v = x.votes.get(id); return `<span class="chip ${v ? (v.ok && v.root === x.d.root ? 'yes' : v.ok ? '' : 'no') : ''}">${esc(id === S.me.id ? 'You' : short(id))} ${v ? (v.ok ? (v.root === x.d.root ? '✓' : '≠') : '✕') : '…'}</span>`; }).join('')}</div>
       ${x.changes.map(a => a.note ? `<p class="wk-note">${esc(short(a.author))}: ${esc(a.note)}</p>` : '').join('')}
+      ${x.blockers.length ? `<ul class="wk-block">${x.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}${extra}
       <div class="se-acts">${mine && !x.done ? `<button class="btn primary" data-ap="${x.d.cid}">${myVote?.ok ? 'Approved' : 'Approve'}</button><button class="btn" data-ch="${x.d.cid}">Request changes</button>` : ''}
       <button class="btn" data-proof="${x.d.cid}">${x.done ? 'Download proof' : 'View proof so far'}</button></div></li>`;
   }).join('');
@@ -135,7 +141,7 @@ function paintWork(){
 }
 function toggleWork(force){
   WK.on = force ?? !WK.on;
-  if (WK.on){ if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); if (ST.on) toggleStructure(false); }
+  if (WK.on){ closePanel(false); if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); if (ST.on) toggleStructure(false); }
   $('work').style.display = WK.on ? 'flex' : 'none'; $('workBtn').setAttribute('aria-expanded', String(WK.on));
   paintWork(); if (WK.on) $('workClose').focus(); else cv.focus({ preventScroll: true });
 }
@@ -157,14 +163,18 @@ async function openDeliver(){
   const title = await ask('What are you delivering?', canvasTitle(), 'People you name approve this exact version of the canvas. Everything added later is not part of it.');
   if (title === null) return;
   const others = people().filter(id => id !== S.me.id);
-  const picks = others.length ? await new Promise(res => openMenu($('workBtn'), [
-    { label: `Everyone (${others.length + 1})`, icon: 'users', run: () => res([S.me.id, ...others]) },
-    { label: 'Everyone else, not me', icon: 'users', run: () => res(others) },
-    ...others.map(id => ({ label: `Only ${short(id)}`, icon: 'users', run: () => res([id]) })),
-    { label: 'Just me', icon: 'users', run: () => res([S.me.id]) },
-  ])) : [S.me.id];
+  const extra = DELIVERY_HOOKS.choices.flatMap(h => { try { return h(others) || []; } catch { return []; } });
+  const pick = others.length || extra.length ? await new Promise(res => openMenu($('workBtn'), [
+    ...(others.length ? [{ label: `Everyone (${others.length + 1})`, icon: 'users', run: () => res({ approvers: [S.me.id, ...others] }) },
+      { label: 'Everyone else, not me', icon: 'users', run: () => res({ approvers: others }) },
+      ...others.map(id => ({ label: `Only ${short(id)}`, icon: 'users', run: () => res({ approvers: [id] }) }))] : []),
+    { label: 'Just me', icon: 'users', run: () => res({ approvers: [S.me.id] }) },
+    ...(extra.length ? ['-', ...extra.map(it => ({ ...it, run: () => res(it.value) }))] : []),
+  ])) : { approvers: [S.me.id] };
+  if (!pick) return;
+  const picks = pick.approvers;
   const z = S.lamport + 1, root = await rootAt(z), scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
-  await publish(await signed('DELIVER', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['M', encTxt(title.trim() || 'Delivery')], ['A', picks.join('_')], ['Q', picks.length], ['H', root], ['X', scope], ['Z', z], ['T', Date.now()]]));
+  await publish(await signed('DELIVER', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['M', encTxt(title.trim() || 'Delivery')], ['A', picks.join('_')], ['Q', pick.quorum || picks.length], ['H', root], ['X', scope], ...(pick.flow ? [['F', pick.flow]] : []), ['Z', z], ['T', Date.now()]]));
   post({ ask: { to: picks, title: title.trim() } });
   toWork(); toast(`Sent for approval to ${picks.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
 }
@@ -188,6 +198,7 @@ function showProof(cid){
     `- **Requested by:** ${short(x.d.author)} · ${new Date(x.d.t).toLocaleString()}`, '', '## Contributors', '',
     ...[...by].sort((a, b) => b[1] - a[1]).map(([id, n]) => `- ${short(id)} — ${n} signed change${n > 1 ? 's' : ''} · key \`${id}\``), '', '## Approvals', '',
     ...x.d.approvers.map(id => { const v = x.votes.get(id); return `- ${short(id)}: ${v ? (v.ok ? (v.root === x.d.root ? `approved ${new Date(v.t).toLocaleString()}` : 'approved a different version (not counted)') : `requested changes${v.note ? ` — “${v.note}”` : ''}`) : 'not yet'}`; }),
+    ...DELIVERY_HOOKS.proof.flatMap(h => { const extra = []; try { h(x, extra); } catch {} return extra; }),
     '', '## Verify', '', 'Each line below is a signed record. Import them with the canvas file (More → Open a .flux file) and every signature is checked; recompute the state root from the record CIDs to confirm the version.', '', '```',
     x.d.raw, ...[...x.votes.values()].map(v => v.raw), '```'];
   openReport(`Proof — ${x.d.title || 'Delivery'}`, out.join('\n'), `proof-${(x.d.title || 'delivery').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.md`);

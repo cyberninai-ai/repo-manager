@@ -75,6 +75,7 @@ async function unpark(){
   }
 }
 async function publish(raw, blobs = {}){
+  for (const f of PUBLISH_FILTERS){ const out = await f(raw, blobs); if (out !== undefined) return out; }
   for (const [c, b] of Object.entries(blobs)) await addBlob(c, b);
   const cid = await ingest(raw);
   if (cid){
@@ -84,15 +85,18 @@ async function publish(raw, blobs = {}){
   return cid;
 }
 // Every transport (this browser's BroadcastChannel, a network relay in core/net) delivers here; everything is verified on ingest.
-async function onWire({ data }, from = null){
-  if (data && (data.hello || data.records) && from){ onSync(data, from); return; }
-  for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k], from); return; }
+async function onWire({ data }, from = null, chan = null){
+  if (data && (data.hello || data.records) && from){ onSync(data, from, chan); return; }
+  for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k], from, chan); return; }
   if (!data || typeof data.raw !== 'string') return;
   for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
+  const cid = await cidOf(te.encode(data.raw)), fresh = !S.records.has(cid);
   await ingest(data.raw);
+  if (fresh && S.records.has(cid)) runHooks(WIRE_INGEST_HOOKS, data, from, chan);
 }
-// post to every open transport: other tabs here, and the network relay when connected
-function post(msg){ try { bc?.postMessage(msg); } catch {} netSend(msg); rtcSend(msg); }
+// post to every open transport: other tabs here, the network relay, direct peers. skip = { from, chan } leaves out where a
+// message came from, so a forwarded message never goes back to its sender
+function post(msg, skip = null){ if (skip?.from !== 'tab') try { bc?.postMessage(msg); } catch {} if (skip?.from !== 'net') netSend(msg); rtcSend(msg, skip?.chan); }
 function openChannel(){
   try { bc?.close(); } catch {}
   channelName = `canvas.${canvasId}.strokes`;

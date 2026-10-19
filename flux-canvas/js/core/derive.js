@@ -7,7 +7,10 @@ function derive(){
   const all = [...S.records.values()].filter(r => S.histZ == null || r.z <= S.histZ).sort(byZ);
   // permissions (core/permissions): records their author may not make on this canvas take no part in the view
   const P = S.P = policyOf(all), denied = new Set();
-  const recs = P.owner ? all.filter(r => permitted(r, P) || !denied.add(r.cid)) : all;
+  let recs = P.owner ? all.filter(r => permitted(r, P) || !denied.add(r.cid)) : all;
+  // gates from features (zones): a record can be refused here, or held as a suggestion until someone accepts it
+  const gates = RECORD_GATES.map(g => g(all, P)).filter(Boolean), pending = new Set();
+  if (gates.length) recs = recs.filter(r => { for (const g of gates){ const v = g(r); if (v === 'deny'){ denied.add(r.cid); return false; } if (v === 'pending'){ pending.add(r.cid); return false; } } return true; });
   const byType = {};
   const skipMove = new Set();   // MOVEs summed into a compacted MOVE (features/compaction)
   for (const r of recs) if (r.type === 'MOVE' && r.supersedes) for (const c of r.supersedes) if (supersededBy(r, S.records.get(c))) skipMove.add(c);
@@ -53,7 +56,7 @@ function derive(){
   for (const c of comments) if (c.re && threads.has(c.re)) threads.get(c.re).replies.push(c);
   const groupOf = new Map();
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
-  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids, denied };
+  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids, denied, pending };
   runHooks(DERIVE_HOOKS, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }

@@ -13,9 +13,11 @@ async function ownedId(owner, nonce){
 registerRecord('OWNER', {
   parse(r, f){ if (!f.R || !f.K) throw Error('owner'); r.nonce = f.K; },
   check: async r => r.f.R === await ownedId(r.author, r.nonce),
+  inherit: false,
 });
 registerRecord('GRANT', {
   parse(r, f){ if (!f.R || !f.A || !f.P) throw Error('grant'); r.who = f.A; r.perms = new Set(f.P === 'none' ? [] : f.P.split('_').filter(p => PERMS.includes(p))); },
+  inherit: false,
 });
 // what a record needs: by type, plus moving someone else's element needs "move"
 const PERM_OF = { COMMENT: 'comment', RESOLVE: 'comment', REACT: 'comment', AUDIT: 'audit', SIGNOFF: 'audit', OWNER: null, GRANT: null };
@@ -28,9 +30,9 @@ function policyOf(recs){
   for (const r of recs) if (r.type === 'OWNER' && r.f.R === canvasId && r.neg === null){ owner = r.author; break; }
   if (owner) for (const r of recs) if (r.type === 'GRANT' && r.author === owner && r.f.R === canvasId && r.neg === null) grants.set(r.who, r);   // z order: latest wins
   const can = (author, perm) => {
-    if (!owner || author === owner || perm === null) return true;
+    if (!owner || samePerson(author, owner) || perm === null) return true;
     if (perm === 'owner') return false;
-    const g = grants.get(author) || grants.get('all');
+    const g = grants.get(author) || grants.get(personOf(author)) || grants.get('all');
     return !g || g.perms.has(perm);
   };
   return { owner, grants, can };

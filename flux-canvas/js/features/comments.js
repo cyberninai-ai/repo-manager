@@ -8,7 +8,7 @@ const drafts = {};   // unsent reply text per thread, kept across re-renders
 function toggleComments(force){
   const on = force ?? $('comments').style.display !== 'flex';
   $('comments').style.display = on ? 'flex' : 'none';
-  if (on && S.ledger) toggleLedger(false);
+  if (on){ closePanel(false); if (S.ledger) toggleLedger(false); }
   if (on && ST.on) toggleStructure(false);
   if (on && WK.on) toggleWork(false);
   if (on) paintComments(); else { activeThread = null; draft = null; dirty = true; cv.focus({ preventScroll: true }); }

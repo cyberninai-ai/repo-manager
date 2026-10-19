@@ -11,7 +11,7 @@ import { readFile } from 'node:fs/promises';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const only = process.argv.slice(2);
-const files = readdirSync(here).filter(f => f.endsWith('.mjs') && !['env.mjs', 'run.mjs'].includes(f) && (!only.length || only.includes(f.replace('.mjs', ''))));
+const files = readdirSync(here).filter(f => f.endsWith('.mjs') && !['env.mjs', 'run.mjs', 'pair.mjs'].includes(f) && (!only.length || only.includes(f.replace('.mjs', ''))));
 // the sandbox test embeds the bundle as srcdoc, so it always targets the bundle
 const run = f => new Promise(res => {
   const p = spawn(process.execPath, [path.join(here, f)], { env: process.env });

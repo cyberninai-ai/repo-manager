@@ -101,7 +101,7 @@ addEventListener('wheel', hideTip, { passive: true });
 let menuItems = [], menuAnchor = null;
 function openMenu(anchor, items, at = null){
   const m = $('menu'); menuItems = items; menuAnchor = anchor;
-  m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>'
+  m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>' : it.head ? `<div class="mhead" role="presentation">${esc(it.head)}</div>`
     : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
   m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
   if (at){   // a context menu opens at the pointer, flipped to stay on screen

@@ -2,7 +2,7 @@
 // @module ui/ledger — Ledger panel: every signed record
 // @uses chrome
 /* ledger */
-function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); if (S.ledger && ST.on) toggleStructure(false); if (S.ledger && WK.on) toggleWork(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
+function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger) closePanel(false); if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); if (S.ledger && ST.on) toggleStructure(false); if (S.ledger && WK.on) toggleWork(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
 $('ledgerClose').onclick = () => toggleLedger(false);
 // what a record did, in words: the activity feed reads like a log of the work, the raw record is one click away
 const quote = t => t ? ` “${String(t).replace(/\s+/g, ' ').slice(0, 48)}${String(t).length > 48 ? '…' : ''}”` : '';

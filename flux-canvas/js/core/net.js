@@ -61,19 +61,20 @@ function sendMissing(have){
   flush();
   return missing.length;
 }
-async function onSync(data){
+async function onSync(data, from = null, chan = null){
   if (data.hello){
     sendMissing(new Set(Array.isArray(data.hello.have) ? data.hello.have : []));
     if (!data.hello.reply) sendHello(true);
   }
   if (Array.isArray(data.records) && data.records.length) await bulk(async () => {
-    const before = new Set(S.records.keys());
+    const before = new Set(S.records.keys()), fresh = [];
     for (const it of data.records){
       if (!it || typeof it.raw !== 'string') continue;
       for (const [c, b] of Object.entries(it.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
-      await ingest(it.raw);
+      const n = S.records.size; await ingest(it.raw); if (S.records.size > n) fresh.push(it);
     }
     if (data.records.length > 2) noteArrivals(before);
+    if (fresh.length) runHooks(WIRE_INGEST_HOOKS, { records: fresh }, from, chan);
   });
 }
 function paintNet(){ runHooks(SYNC_HOOKS);
