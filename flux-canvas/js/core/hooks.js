@@ -10,9 +10,15 @@ function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(ac
 
 const DERIVE_HOOKS = [];        // (D, byType) after the core derive; byType[action] = that action's records in z order
 const RENDER_HOOKS = {
+  under: [],                    // () drawn in canvas coordinates below the elements (diagram tree links)
   world: [],                    // (z) drawn in canvas coordinates above elements
+  overlay: [],                  // (z) after the selection: comment pins, other people's cursors (they set their own transform)
   screen: [],                   // () drawn in screen pixels above everything else
+  dom: [],                      // () HTML overlays painted after each frame: style bar, selection toolbar, previews, overview
 };
+const FRAME_HOOKS = [];         // () every animation frame, drawn or not (signing pill countdown)
+const CHANGE_HOOKS = [];        // () after the records changed and derive() ran (people, ledger, comments)
+const ACTION_HOOKS = [];        // () before an undo, redo or revoke: finish what a gesture left pending (keyboard moves)
 const POINTER_HOOKS = [];       // (e, w) on primary press before any tool; return true when handled
 const TOOLBAR_HOOKS = [];       // (rs, one, B) → extra selection-toolbar buttons (HTML)
 const TOOLBAR_ACTIONS = {};     // data-a → async (rs, button) when a toolbar button is clicked

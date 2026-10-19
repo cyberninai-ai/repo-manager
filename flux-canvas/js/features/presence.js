@@ -35,3 +35,5 @@ setInterval(() => { let gone = false; for (const [id, p] of peers) if (Date.now(
 addEventListener('pagehide', () => sendPresence(true));
 addEventListener('blur', () => sendPresence(true));
 
+WIRE_HOOKS.presence = onPresence;
+RENDER_HOOKS.overlay.push(drawPeers);

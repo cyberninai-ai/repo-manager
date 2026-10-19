@@ -90,3 +90,5 @@ function drawThumb(cnv, t){
     c2.beginPath(); c2.arc(s.x, s.y - 7, 6, 0, Math.PI * 2); c2.fillStyle = t.resolved ? '#868e96' : authorColor(c.author); c2.fill();
   } finally { ctx = prev; }
 }
+RENDER_HOOKS.overlay.push(drawPins);
+RENDER_HOOKS.dom.push(paintPreviews);

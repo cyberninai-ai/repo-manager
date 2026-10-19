@@ -5,7 +5,6 @@
 const ta = document.getElementById('ta');
 let taAt = null;
 const taOpen = () => ta.style.display === 'block';
-let editingCid = null;
 function openText(w, orig = null){
   setPlacing(null);
   if (orig){ const b = box(orig); w = { x: b.x, y: b.y }; editingCid = orig.cid; dirty = true; }

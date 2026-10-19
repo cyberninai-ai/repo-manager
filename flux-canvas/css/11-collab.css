@@ -101,8 +101,9 @@ body.history #tools{opacity:.45;pointer-events:none}
 #people th,#people td{padding:9px 12px;border-bottom:1px solid var(--line2);text-align:center}
 #people tr:last-child th,#people tr:last-child td{border-bottom:0}
 #people thead th,#people tr:first-child th{font-size:11px;font-weight:650;color:var(--muted);background:var(--panel2);position:sticky;top:0}
-#people th[scope=row]{text-align:left;display:flex;align-items:center;gap:10px;font-weight:400}
-#people th[scope=row] span:last-child{display:flex;flex-direction:column}
+#people th[scope=row],#people th:first-child{text-align:left;font-weight:400}
+#people .who{display:flex;align-items:center;gap:10px}
+#people .who span:last-child{display:flex;flex-direction:column}
 #people th[scope=row] small{color:var(--muted);font-size:11px}
 #people .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;flex:none}
 #people input{width:18px;height:18px;accent-color:var(--cyan);cursor:pointer}

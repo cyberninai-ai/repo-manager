@@ -1,0 +1,5 @@
+after insert {"draws":0,"moves":0,"arrows":0,"sel":0,"mode":"pen"}
+pen on image {"draws":3,"moves":0,"arrows":0,"sel":0,"mode":"pen"}
+select-mode drag {"draws":3,"moves":1,"arrows":0,"sel":1,"mode":"select"}
+resize {"draws":3,"moves":2,"arrows":0,"sel":1,"mode":"select"}
+pen over selection {"draws":4,"moves":2,"arrows":0,"sel":0,"mode":"pen"}

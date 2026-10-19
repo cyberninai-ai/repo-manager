@@ -238,6 +238,20 @@ kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5
 .ledger .meta{margin-left:auto;color:var(--muted);font-size:11px;white-space:nowrap}
 .ledger .raw{margin-top:4px;font:11px/1.4 var(--font-mono);color:var(--muted);word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ledger .row.x .raw{-webkit-line-clamp:unset;display:block;color:var(--ink)}
+
+/* outline panel: a tree of frames, elements and their connections */
+.st .list{list-style:none;margin:0}
+.st [role=treeitem]{padding:6px 8px;border-radius:8px;cursor:pointer;outline-offset:-2px}
+.st [role=treeitem]:hover{background:var(--hover)}
+.st [role=treeitem][aria-selected="true"]{background:var(--accent-weak)}
+.st [role=treeitem][aria-level="2"]{margin-left:18px} .st [role=treeitem][aria-level="3"]{margin-left:36px} .st [role=treeitem][aria-level="4"]{margin-left:54px}
+.st-row{display:flex;align-items:center;gap:6px;font-size:13px}
+.st .tw{width:16px;height:16px;flex:none;color:var(--muted)}
+.st .tw .ic{width:16px;height:16px}
+.st-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-n{font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:0 7px}
+.st-m{font-size:12px;color:var(--muted);margin:2px 0 0 22px;line-height:1.35}
+.st .empty{color:var(--muted);padding:24px 10px;text-align:center}
 #help{position:fixed;z-index:31;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,calc(100% - 32px));max-height:calc(100% - 48px);overflow:auto;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:22px 24px;display:none}
 #help h1{font-size:18px;font-weight:650;margin:0 0 4px}
@@ -335,6 +349,11 @@ kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5
   .em-card{padding:20px 16px}
   #home .hm{margin-top:10px;padding:16px}
   #present .pt{min-width:0}
+}
+@media (max-width:640px){
+  /* the dock scrolls sideways; a fade on the edge shows there is more */
+  #tools{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent);padding-right:28px}
+  #tools [data-tool="hand"]{display:none}   /* two fingers pan on touch */
 }
 [hidden]{display:none!important}   /* the attribute must win over component display rules */
 
@@ -438,8 +457,9 @@ body.history #tools{opacity:.45;pointer-events:none}
 #people th,#people td{padding:9px 12px;border-bottom:1px solid var(--line2);text-align:center}
 #people tr:last-child th,#people tr:last-child td{border-bottom:0}
 #people thead th,#people tr:first-child th{font-size:11px;font-weight:650;color:var(--muted);background:var(--panel2);position:sticky;top:0}
-#people th[scope=row]{text-align:left;display:flex;align-items:center;gap:10px;font-weight:400}
-#people th[scope=row] span:last-child{display:flex;flex-direction:column}
+#people th[scope=row],#people th:first-child{text-align:left;font-weight:400}
+#people .who{display:flex;align-items:center;gap:10px}
+#people .who span:last-child{display:flex;flex-direction:column}
 #people th[scope=row] small{color:var(--muted);font-size:11px}
 #people .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;flex:none}
 #people input{width:18px;height:18px;accent-color:var(--cyan);cursor:pointer}
@@ -470,6 +490,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19.3" r=".9" fill="currentColor"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -595,6 +616,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
+  <button class="ibtn" id="stBtn" aria-label="Outline" data-key="⇧O" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
   <button class="ibtn" id="cmdBtn" aria-label="Search and commands" data-key="⌘K"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
   <button class="ibtn" id="auth" data-tip="Signatures and ledger"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><i class="sdot" aria-hidden="true"></i><span id="authTxt" class="sr">locked</span></button>
   </div>
@@ -663,6 +685,13 @@ body.history #tools{opacity:.45;pointer-events:none}
     <div class="stats"><label><input type="checkbox" id="cmShowDone"> show resolved</label> · <label><input type="checkbox" id="cmPrev" checked> previews on canvas</label> · every comment and reply is a signed record</div>
   </header>
   <div class="list" id="cmList"></div>
+</aside>
+<aside class="ledger st" id="structure" aria-label="Outline">
+  <header>
+    <h2><span>Outline</span><button class="ibtn sm" id="stClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
+    <div class="stats" id="stStats"></div>
+  </header>
+  <ul class="list" id="stTree" role="tree" aria-label="Canvas outline"></ul>
 </aside>
 <aside class="ledger" id="ledger" aria-label="Ledger of signed records">
   <header>
@@ -770,9 +799,15 @@ function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(ac
 
 const DERIVE_HOOKS = [];        // (D, byType) after the core derive; byType[action] = that action's records in z order
 const RENDER_HOOKS = {
+  under: [],                    // () drawn in canvas coordinates below the elements (diagram tree links)
   world: [],                    // (z) drawn in canvas coordinates above elements
+  overlay: [],                  // (z) after the selection: comment pins, other people's cursors (they set their own transform)
   screen: [],                   // () drawn in screen pixels above everything else
+  dom: [],                      // () HTML overlays painted after each frame: style bar, selection toolbar, previews, overview
 };
+const FRAME_HOOKS = [];         // () every animation frame, drawn or not (signing pill countdown)
+const CHANGE_HOOKS = [];        // () after the records changed and derive() ran (people, ledger, comments)
+const ACTION_HOOKS = [];        // () before an undo, redo or revoke: finish what a gesture left pending (keyboard moves)
 const POINTER_HOOKS = [];       // (e, w) on primary press before any tool; return true when handled
 const TOOLBAR_HOOKS = [];       // (rs, one, B) → extra selection-toolbar buttons (HTML)
 const TOOLBAR_ACTIONS = {};     // data-a → async (rs, button) when a toolbar button is clicked
@@ -784,6 +819,12 @@ const EXAMPLES = [];            // { id, title, icon, blurb, build: async (autho
 
 // Run a feature hook without letting one feature's bug stop the others.
 function runHooks(list, ...args){ for (const h of list){ try { h(...args); } catch (err){ console.warn('hook failed', err); } } }
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let toastT = 0;
+let sayT = 0;
+function say(msg){ const n = $('sr'); n.textContent = ''; clearTimeout(sayT); sayT = setTimeout(() => { n.textContent = msg; }, 30); }
+function toast(msg){ say(msg); const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 const ICON_NAMES = new Set([...document.querySelectorAll('svg symbol[id^="i-"]')].map(s => s.id.slice(2)));
 const ic = (name, cls = '') => `<svg class="ic${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 // a button face: an icon when the set has one, otherwise the text itself (emoji, short labels)
@@ -1034,7 +1075,7 @@ const AUTH_IDLE = 5000;
 async function signed(action, pairs){
   if (S.histZ != null){ toast('Viewing history: go back to now to make changes.'); const e = new Error('history view'); e.name = 'HistoryView'; throw e; }
   checkMayDo(action, pairs);
-  auth.until = Date.now() + AUTH_IDLE; auth.count++; paintAuth();
+  auth.until = Date.now() + AUTH_IDLE; auth.count++;   // the signing pill shows it on the next frame
   const payload = build(action, pairs);
   const sig = new Uint8Array(await crypto.subtle.sign(SIGALG[S.me.alg], S.me.priv, te.encode(payload)));
   return payload + '-SIG-' + b58enc(sig);
@@ -1067,6 +1108,11 @@ const S = {
 const byZ = (a, b) => a.z - b.z || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0);
 let channelName = `canvas.${canvasId}.strokes`;
 let bc = null;
+// shared frame state: the renderer reads it, interaction writes it
+let dirty = true;          // something changed: draw the next frame
+let G = null;              // the gesture in progress (interaction/pointer, selection)
+let hoverEdge = null;      // the element whose edge the pointer is on (a connector would start there)
+let editingCid = null;     // the text being edited, hidden while its editor is open
 
 // Where IndexedDB is unavailable (sandboxed frames with an opaque origin), DB.ok is false and callers fall back to localStorage.
 const DB = { ok: false, db: null };
@@ -1212,13 +1258,6 @@ async function addBlob(cid, bytes){
   return true;
 }
 // Blobs are opaque bytes addressed by CID; what they mean depends on the record that cites them.
-function strokeGeom(cid){
-  if (!S.geom.has(cid)){
-    const b = S.blobs.get(cid); if (!b) return null;
-    try { S.geom.set(cid, geomOf(decodePoints(b))); } catch { S.geom.set(cid, null); }
-  }
-  return S.geom.get(cid);
-}
 // Image format from the bytes themselves; file names and MIME types from hosts and messengers are often missing or wrong.
 function sniffImage(b){
   const at = (i, ...v) => v.every((x, j) => b[i + j] === x), str = (i, n) => String.fromCharCode(...b.subarray(i, i + n));
@@ -1341,7 +1380,6 @@ async function publish(raw, blobs = {}){
 }
 // Every transport (this browser's BroadcastChannel, a network relay in core/net) delivers here; everything is verified on ingest.
 async function onWire({ data }, from = null){
-  if (data && data.presence){ onPresence(data.presence); return; }
   if (data && (data.hello || data.records) && from){ onSync(data, from); return; }
   for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k]); return; }
   if (!data || typeof data.raw !== 'string') return;
@@ -1497,11 +1535,6 @@ async function ownedCanvasId(){
 async function claimCanvas(nonce){
   return publish(await signed('OWNER', [['I', S.me.id], ['R', canvasId], ['K', nonce], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
-async function createOwnedCanvas(){
-  const { nonce, id } = await ownedCanvasId();
-  await switchCanvas(id); await claimCanvas(nonce);
-  return id;
-}
 async function grant(who, perms){
   return publish(await signed('GRANT', [['I', S.me.id], ['R', canvasId], ['A', who], ['P', perms.length ? perms.join('_') : 'none'], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
@@ -1535,7 +1568,7 @@ function derive(){
     else els.push(r);
   }
   const hidden = new Set(); for (const [k, v] of negs) if (v) hidden.add(k);
-  for (const el of els){ const o = styles.get(el.cid) || {}; el.ew = o.W ?? (el.type === 'DRAW' ? el.w : el.sw); el.ec = o.C ?? el.f.C; if (el.type === 'NODE') el.ek = NODE_KINDS[o.K] ? o.K : (NODE_KINDS[el.k] ? el.k : 'card');
+  for (const el of els){ const o = styles.get(el.cid) || {}; el.ew = o.W ?? (el.type === 'DRAW' ? el.w : el.sw); el.ec = o.C ?? el.f.C; if (el.type === 'NODE') el.ek = o.K || el.k || 'card';   // features/diagrams checks the kind exists
     el.ez = o.O ?? el.z; el.locked = !!o.L; el.elabel = o.M ?? el.label ?? ''; el.eshape = o.Y || null; el.edash = o.D || null; }
   els.sort((a, b) => a.ez - b.ez || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0));   // layer order: STYLE O overrides z
   // text edits: an author's TEXT with -E-{cid} supersedes that earlier version (unless the edit itself is revoked)
@@ -1561,10 +1594,16 @@ function derive(){
   runHooks(DERIVE_HOOKS, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
+// a node's branch: every node below it in the tree (through P links), visible or not revoked
+function descendants(cid){
+  const out = [], seen = new Set([cid]), q = [cid];
+  while (q.length){ for (const k of S.D.kids.get(q.shift()) || []){ if (seen.has(k)) continue; seen.add(k); const el = S.records.get(k); if (el && !S.D.hidden.has(k)){ out.push(k); q.push(k); } } }
+  return out;
+}
 let derivePending = false;
 // While a canvas or file loads (S.bulk > 0), derive once at the end instead of after every record (audit P1).
 async function bulk(fn){ S.bulk = (S.bulk || 0) + 1; try { return await fn(); } finally { if (!--S.bulk) changed(); } }
-function changed(){ if (S.bulk) return; if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
+function changed(){ if (S.bulk) return; if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); runHooks(CHANGE_HOOKS); dirty = true; }); } }
 
 /* =====================================================================
    Geometry
@@ -1672,12 +1711,195 @@ function pointInPoly(p, poly){
   return c;
 }
 
+// stroke geometry from its point blob, decoded once
+function strokeGeom(cid){
+  if (!S.geom.has(cid)){
+    const b = S.blobs.get(cid); if (!b) return null;
+    try { S.geom.set(cid, geomOf(decodePoints(b))); } catch { S.geom.set(cid, null); }
+  }
+  return S.geom.get(cid);
+}
+/* diagrams: cards, mind maps, flowcharts and wireframes as NODE records */
+// NODE-I-{author}-R-{nonce}-K-{kind}-X-Y-W-H-M-{label}-C-{colour}-P-{parent|0}[-E-{edited}]-Z-T-SIG
+// W/H are a minimum size (0 = fit the label). P draws a connector from the parent automatically.
+const NODE_KINDS = {
+  card:    { name: 'card',              icon: '▭', label: 'Card',      font: 15, pad: [14, 12], wrap: 240, min: [120, 44], align: 'left' },
+  topic:   { name: 'topic',             icon: '⬭', label: 'Idea',      font: 15, pad: [18, 9],  wrap: 220, min: [70, 36],  bold: true },
+  rect:    { name: 'process',           icon: '□', label: 'Step',      font: 14, pad: [16, 12], wrap: 180, min: [110, 48] },
+  ellipse: { name: 'start or end',      icon: '◯', label: 'Start',     font: 14, pad: [26, 14], wrap: 160, min: [110, 50] },
+  diamond: { name: 'decision',          icon: '◇', label: 'Decision?', font: 14, pad: [0, 0],   wrap: 130, min: [130, 84] },
+  sticky:  { name: 'sticky note',       icon: '▨', label: 'Note',      font: 15, pad: [14, 14], wrap: 170, min: [150, 130], align: 'left', top: true },
+  button:  { name: 'button',            icon: '⏵', label: 'Button',    font: 14, pad: [20, 9],  wrap: 220, min: [96, 38],  bold: true },
+  input:   { name: 'input field',       icon: '⎁', label: 'Email',     font: 14, pad: [12, 10], wrap: 260, min: [240, 40], align: 'left' },
+  image:   { name: 'image placeholder', icon: '⊠', label: 'Image',     font: 13, pad: [10, 10], wrap: 200, min: [200, 130] },
+  swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
+  frame:   { name: 'frame',             icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
+};
+S.nodeKind = 'card';
+function wrapLines(text, maxW){
+  const out = [];
+  for (const para of String(text).split('\n')){
+    const words = para.split(/(\s+)/); let line = '';
+    for (const w of words){
+      const t = line + w;
+      if (line && mctx.measureText(t.trimEnd()).width > maxW && w.trim()){ out.push(line.trimEnd()); line = w.trimStart(); }
+      else line = t;
+      while (mctx.measureText(line).width > maxW * 1.6 && line.length > 8){   // break very long words
+        let i = line.length; while (i > 1 && mctx.measureText(line.slice(0, i)).width > maxW) i--;
+        out.push(line.slice(0, i)); line = line.slice(i);
+      }
+    }
+    out.push(line.trimEnd());
+  }
+  return out.length ? out : [''];
+}
+const layoutCache = new Map();
+function nodeLayout(kind, text, minW = 0, minH = 0){
+  const K = NODE_KINDS[kind] || NODE_KINDS.card;
+  const key = [kind, text, minW, minH].join('\u0000');
+  if (layoutCache.has(key)) return layoutCache.get(key);
+  const font = `${K.bold ? 600 : 400} ${K.font}px ${FONTS.sans}`;
+  mctx.font = font;
+  const wrap = Math.max(K.wrap, minW - K.pad[0] * 2);
+  const lines = wrapLines(text || ' ', wrap), lh = Math.round(K.font * 1.35);
+  const tw = Math.max(1, ...lines.map(l => mctx.measureText(l).width)), th = lines.length * lh;
+  let w = tw + K.pad[0] * 2, h = th + K.pad[1] * 2;
+  if (kind === 'diamond'){ w = tw * 1.7 + 44; h = th * 1.9 + 40; }
+  if (kind === 'ellipse'){ w = tw * 1.2 + K.pad[0] * 2; h = th * 1.25 + K.pad[1] * 2; }
+  if (kind === 'frame') h = 0;
+  const L = { w: Math.ceil(Math.max(w, K.min[0], minW)), h: Math.ceil(Math.max(h, K.min[1], minH)), lines, font, lh, K };
+  if (layoutCache.size > 3000) layoutCache.clear();
+  layoutCache.set(key, L);
+  return L;
+}
+function nodeBox(el){
+  const o = S.D.off.get(el.cid);
+  let mw = el.bw + (o ? o.w : 0), mh = el.bh + (o ? o.h : 0);
+  if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.w0 + G.dw; mh = G.h0 + G.dh; }
+  return nodeLayout(el.ek || el.k, el.text, mw, mh);
+}
+let TH = {};
+function readTheme(){
+  const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
+  TH = { ink: INK, panel: v('--panel'), line: v('--line'), muted: v('--muted'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot') };
+}
+function rr(c, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+// colour blending in JS: canvas and SVG consumers can't be relied on to understand color-mix()
+function rgbOf(c){
+  c = String(c || '').trim(); let m;
+  if ((m = c.match(/^#([0-9a-f]{3})$/i))) return [...m[1]].map(h => parseInt(h + h, 16));
+  if ((m = c.match(/^#([0-9a-f]{6})/i))) return [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+  if ((m = c.match(/rgba?\(([^)]+)\)/))) return m[1].split(/[\s,\/]+/).slice(0, 3).map(Number);
+  return [128, 128, 128];
+}
+function mixHex(a, b, t){ const A = rgbOf(a), B = rgbOf(b); return '#' + A.map((v, i) => Math.max(0, Math.min(255, Math.round(v * t + B[i] * (1 - t)))).toString(16).padStart(2, '0')).join(''); }
+const tint = (col, a) => mixHex(col, TH.panel || '#ffffff', a);
+// Draw a node of a kind at p with layout L. Colour 'ink' keeps nodes neutral; any other colour accents them.
+function drawNode(kind, p, L, col, noText, colName){
+  const { x, y } = p, w = L.w, h = L.h, K = L.K, accent = colName && colName !== 'ink' ? col : null;
+  ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5;
+  let textCol = TH.ink;
+  switch (kind){
+    case 'card':
+      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      rr(ctx, x, y, w, h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = accent || TH.line; ctx.stroke();
+      if (accent){ ctx.save(); rr(ctx, x, y, w, h, 10); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(x, y, 5, h); ctx.restore(); }
+      break;
+    case 'topic':
+      rr(ctx, x, y, w, h, h / 2); ctx.fillStyle = tint(accent || TH.accent, .16); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.accent; ctx.stroke(); break;
+    case 'rect': rr(ctx, x, y, w, h, 6); ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
+    case 'ellipse': ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
+    case 'diamond': ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w, y + h / 2); ctx.lineTo(x + w / 2, y + h); ctx.lineTo(x, y + h / 2); ctx.closePath();
+      ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
+    case 'sticky':
+      ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = accent ? mixHex(accent, '#ffffff', .35) : '#ffe066'; ctx.fillRect(x, y, w, h); ctx.shadowColor = 'transparent';
+      textCol = '#1d1d1f'; break;
+    case 'button': rr(ctx, x, y, w, h, 8); ctx.fillStyle = accent || TH.ink; ctx.fill(); textCol = accent ? '#fff' : TH.paper; break;
+    case 'input':
+      rr(ctx, x, y, w, h, 6); ctx.fillStyle = TH.panel; ctx.fill(); ctx.strokeStyle = accent || TH.line; ctx.lineWidth = 1.5; ctx.stroke(); textCol = TH.muted; break;
+    case 'image':
+      ctx.fillStyle = tint(TH.line, .5); ctx.fillRect(x, y, w, h); ctx.strokeStyle = accent || TH.muted; ctx.lineWidth = 1.2; ctx.strokeRect(x, y, w, h);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y + h); ctx.moveTo(x + w, y); ctx.lineTo(x, y + h); ctx.globalAlpha *= .5; ctx.stroke(); ctx.globalAlpha /= .5;
+      textCol = TH.muted; break;
+    case 'swatch':   // moodboards: a colour chip with its name or hex underneath
+      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      rr(ctx, x, y, w, h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent'; ctx.strokeStyle = TH.line; ctx.lineWidth = 1; ctx.stroke();
+      rr(ctx, x + 6, y + 6, w - 12, h - 40, 7); ctx.fillStyle = col; ctx.fill(); break;
+    case 'frame':
+      rr(ctx, x, y, w, h, 18); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y + 30); ctx.lineTo(x + w, y + 30); ctx.lineWidth = 1; ctx.strokeStyle = TH.line; ctx.stroke(); textCol = TH.muted; break;
+  }
+  if (!noText){
+    ctx.font = L.font; ctx.fillStyle = textCol; ctx.textBaseline = 'middle';
+    const left = K.align === 'left', th = L.lines.length * L.lh;
+    let ty = K.top ? y + K.pad[1] + L.lh / 2 : y + h / 2 - th / 2 + L.lh / 2;
+    if (kind === 'frame') ty = y + 15;
+    if (kind === 'swatch') ty = y + h - 17;
+    ctx.textAlign = left ? 'left' : 'center';
+    const tx = left ? x + K.pad[0] + (kind === 'card' && accent ? 4 : 0) : x + w / 2;
+    for (const l of L.lines){ ctx.fillText(l, tx, ty); ty += L.lh; }
+    if (kind === 'input'){ ctx.fillStyle = TH.muted; ctx.globalAlpha *= .6; }
+  }
+  ctx.restore();
+}
+// Connector between two boxes: a smooth curve leaving the facing sides.
+function linkGeom(a, b){
+  const ca = center(a), cb = center(b), dx = cb.x - ca.x, dy = cb.y - ca.y;
+  let p0, p1, c0, c1;
+  if (Math.abs(dx) * (a.h + b.h) >= Math.abs(dy) * (a.w + b.w) * 0.55){
+    const s = Math.sign(dx) || 1; p0 = { x: s > 0 ? a.x + a.w : a.x, y: ca.y }; p1 = { x: s > 0 ? b.x : b.x + b.w, y: cb.y };
+    const k = Math.max(24, Math.abs(p1.x - p0.x) / 2); c0 = { x: p0.x + s * k, y: p0.y }; c1 = { x: p1.x - s * k, y: p1.y };
+  } else {
+    const s = Math.sign(dy) || 1; p0 = { x: ca.x, y: s > 0 ? a.y + a.h : a.y }; p1 = { x: cb.x, y: s > 0 ? b.y : b.y + b.h };
+    const k = Math.max(24, Math.abs(p1.y - p0.y) / 2); c0 = { x: p0.x, y: p0.y + s * k }; c1 = { x: p1.x, y: p1.y - s * k };
+  }
+  return { p0, c0, c1, p1 };
+}
+// Connector geometry between two boxes: curve (bezier between facing sides), straight (centre to centre, clipped) or elbow.
+// Returns { bez } or { pts }, plus mid (label anchor) and from → to (arrowhead direction).
+function connGeom(a, b, shape = 'curve'){
+  const g = linkGeom(a, b), hz = g.c0.y === g.p0.y;
+  if (shape === 'straight'){ const p = edgePoint(a, center(b), 6), q = edgePoint(b, center(a), 6); return { pts: [p, q], mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, from: p, to: q }; }
+  if (shape === 'elbow'){
+    const m = hz ? (g.p0.x + g.p1.x) / 2 : (g.p0.y + g.p1.y) / 2;
+    const pts = hz ? [g.p0, { x: m, y: g.p0.y }, { x: m, y: g.p1.y }, g.p1] : [g.p0, { x: g.p0.x, y: m }, { x: g.p1.x, y: m }, g.p1];
+    return { pts, mid: { x: (pts[1].x + pts[2].x) / 2, y: (pts[1].y + pts[2].y) / 2 }, from: pts[2], to: g.p1 };
+  }
+  return { bez: g, mid: { x: (g.p0.x + 3 * g.c0.x + 3 * g.c1.x + g.p1.x) / 8, y: (g.p0.y + 3 * g.c0.y + 3 * g.c1.y + g.p1.y) / 8 }, from: g.c1, to: g.p1 };
+}
+function strokeConn(c, col, width, dash, head){
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.setLineDash(dash && dash !== 'solid' ? dashOf(dash, width) : []);
+  ctx.beginPath();
+  if (c.bez){ const g = c.bez; ctx.moveTo(g.p0.x, g.p0.y); ctx.bezierCurveTo(g.c0.x, g.c0.y, g.c1.x, g.c1.y, g.p1.x, g.p1.y); }
+  else c.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+  ctx.stroke(); ctx.setLineDash([]);
+  if (head) drawArrowHead(c.from, c.to, 7 + width * 2);
+  ctx.restore();
+}
+function drawLink(a, b, head, col, width){ strokeConn(connGeom(a, b, 'curve'), col, width, 'solid', head); }
+function drawTreeLinks(){
+  for (const el of S.D.els){
+    if (el.type !== 'NODE' || !el.parent || !visible(el)) continue;
+    const p = current(el.parent); if (!p || p === el || !visible(p)) continue;
+    const kind = el.ek, head = !['topic', 'card', 'sticky'].includes(kind);
+    const hid = S.D.hidden.has(el.cid);
+    ctx.save(); if (hid) ctx.globalAlpha = .18;
+    drawLink(box(p), box(el), head, ecol(el) === 'ink' ? TH.muted : colorOf(ecol(el)), 2);
+    ctx.restore();
+  }
+}
+// line dash patterns for connector styles, on the canvas and in SVG
+const dashOf = (d, w) => d === 'dash' ? [w * 4 + 4, w * 3 + 3] : d === 'dot' ? [0.1, w * 2 + 3] : [];
+const svgDash = (d, w) => d === 'dash' ? ` stroke-dasharray="${w * 4 + 4} ${w * 3 + 3}"` : d === 'dot' ? ` stroke-dasharray="0.1 ${w * 2 + 3}"` : '';
 /* =====================================================================
    Viewport + render
    ===================================================================== */
 const cv = document.getElementById('c'), mainCtx = cv.getContext('2d');
 let ctx = mainCtx;   // swapped briefly to draw thumbnails with the same renderer
-let dirty = true, dpr = 1;
+let dpr = 1;
 function resize(){ dpr = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; dirty = true; }
 addEventListener('resize', resize);
 const toWorld = (sx, sy) => ({ x: sx / S.view.zoom + S.view.x, y: sy / S.view.zoom + S.view.y });
@@ -1744,6 +1966,13 @@ function dashedBox(b, color, z){
   ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 4 / z]);
   ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore();
 }
+// the resize handle sits on the bottom-right corner of a single selected image or node
+function resizeHandle(){
+  if (S.sel.size !== 1) return null;
+  const el = S.records.get([...S.sel][0]);
+  if (!el || (el.type !== 'IMAGE' && el.type !== 'NODE') || el.locked || S.D.hidden.has(el.cid)) return null;
+  const b = box(el); return b && { x: b.x + b.w, y: b.y + b.h, el };
+}
 function selOutline(b, color, z, alpha = 1){
   ctx.save(); ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = 1.5 / z;
   rr(ctx, b.x, b.y, b.w, b.h, 4 / z); ctx.stroke(); ctx.restore();
@@ -1775,7 +2004,7 @@ function render(){
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(dpr * z, 0, 0, dpr * z, -S.view.x * z * dpr, -S.view.y * z * dpr);
   const vp = { x: S.view.x, y: S.view.y, w: innerWidth / z, h: innerHeight / z };
-  readTheme(); drawGrid(vp, z); drawTreeLinks();
+  readTheme(); drawGrid(vp, z); runHooks(RENDER_HOOKS.under);
   for (const el of S.D.els){
     if (!visible(el)) continue;
     const b = box(el);
@@ -1813,7 +2042,6 @@ function render(){
   }
   ctx.restore();
   runHooks(RENDER_HOOKS.world, z);
-  drawNodeGhost(); drawGrowHandles(accent);
   if (G?.kind === 'erase' && G.pts.length > 1){ ctx.save(); ctx.strokeStyle = TH.muted; ctx.globalAlpha = .35; ctx.lineWidth = 14 / z; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); ctx.restore(); }
   if (G?.kind === 'move' && G.guides) for (const gd of G.guides){ ctx.save(); ctx.strokeStyle = '#e64980'; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 3 / z]); ctx.beginPath();
@@ -1831,15 +2059,11 @@ function render(){
       ctx.fillStyle = TH.paper; ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z;
       rr(ctx, h.x - 5 / z, h.y - 5 / z, 10 / z, 10 / z, 2.5 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
   }
-  drawPins();
-  drawPeers();
+  runHooks(RENDER_HOOKS.overlay, z);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); runHooks(RENDER_HOOKS.screen);
-  paintMini();
-  paintPreviews();
-  paintBar();
-  paintInspector();
+  runHooks(RENDER_HOOKS.dom);
 }
-function loop(){ if (dirty) render(); paintAuthTick(); requestAnimationFrame(loop); }
+function loop(){ if (dirty) render(); runHooks(FRAME_HOOKS); requestAnimationFrame(loop); }
 
 /* =====================================================================
    Commit: gestures → signed records
@@ -1901,47 +2125,6 @@ async function commitMove(target, dx, dy, dw = 0, dh = 0){
   const size = dw || dh ? [['DW', encInt(dw)], ['DH', encInt(dh)]] : [];
   return publish(await signed('MOVE', [['I', S.me.id], ['R', target], ['DX', encInt(dx)], ['DY', encInt(dy)], ...size, ['Z', ++S.lamport], ['T', Date.now()]]));
 }
-// Images are re-encoded (max 1600px, WebP or JPEG) so a photo stays a reasonable blob to sign, sync and store.
-const IMG_MAX = 1600;
-async function insertImage(file, at){
-  if (!S.me) return;
-  let raw0, typed, bmp;
-  try { raw0 = new Uint8Array(await file.arrayBuffer()); } catch { toast('Could not read that file.'); return; }
-  typed = typedBlob(raw0, file.type);
-  try { bmp = await decodeImage(typed); }
-  catch {
-    const t = typed.type || file.type || 'unknown type';
-    toast(/heic|heif/.test(t) ? 'HEIC photos only decode in Safari. Export it as JPEG or PNG and try again.'
-      : `This browser cannot read that image (${t}). Try a PNG, JPEG, WebP or GIF.`);
-    return;
-  }
-  // a name that is just a hash or a generic camera/clipboard name makes poor alt text
-  const base = (file.name || '').replace(/\.[a-z0-9]+$/i, '');
-  const guess = /^[0-9a-f]{16,}$/i.test(base) || /^(image|img|photo|screenshot|pasted|dsc|pxl)[\s_-]*[\d_-]*$/i.test(base) ? '' : base.replace(/[-_]+/g, ' ').trim();
-  const alt = await ask('Describe this image', guess,
-    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', bmp);
-  if (alt === null) return;
-  file = typed;
-  const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
-  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  const enc = t => new Promise(res => c.toBlob(res, t, 0.85));
-  let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
-  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < MAX_BLOB && k === 1) out = file;   // keep a small original when it's already smaller
-  for (let q = 0.7; out && out.size > MAX_BLOB && q > 0.2; q -= 0.15) out = await new Promise(res => c.toBlob(res, 'image/jpeg', q));   // stay under the blob cap
-  if (!out || out.size > MAX_BLOB){ toast('That image is too large to sign and share, even re-encoded.'); return; }
-  const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
-  // place it at a comfortable on-screen size, centred on the drop point
-  const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));
-  const w = Math.max(8, Math.round(c.width * fit)), h = Math.max(8, Math.round(c.height * fit));
-  const p = at || toWorld(innerWidth / 2, innerHeight / 2), x = Math.round(p.x - w / 2), y = Math.round(p.y - h / 2);
-  S.imgs.set(R, bmp.width === c.width ? bmp : await createImageBitmap(c));
-  const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h], ['M', encTxt(alt.trim())], ['Z', ++S.lamport], ['T', Date.now()]]);
-  const cid = await publish(raw, { [R]: bytes });
-  recordCreate(cid);
-  dirty = true;
-  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · draw on it now · select mode (V) to move or resize it`);
-}
 async function setNeg(cid, on){
   const r = S.records.get(cid);
   if (!r || r.author !== S.me.id || r.neg !== null) return false;
@@ -1956,7 +2139,7 @@ function moveTargets(){
   return t;
 }
 async function undo(){
-  commitKb();
+  runHooks(ACTION_HOOKS);
   const h = S.hist.pop(); if (!h){ toast('Nothing of yours to undo.'); return; }
   if (h.kind === 'create') await setNeg(h.cid, true);
   else if (h.kind === 'revoke') for (const c of h.cids) await setNeg(c, false);
@@ -1979,7 +2162,7 @@ async function redo(){
   S.hist.push(h);
 }
 async function revokeSelection(){
-  commitKb();
+  runHooks(ACTION_HOOKS);
   if (!S.sel.size){ toast('Select something first (ctrl-drag to lasso).'); return; }
   const locked = [...S.sel].filter(c => S.records.get(c)?.locked).length;
   if (locked) toast(`${locked} locked element${locked > 1 ? 's' : ''} kept. Unlock first (⌘⇧L).`);
@@ -2015,7 +2198,7 @@ function expandSel(){
 /* =====================================================================
    Pointer gestures
    ===================================================================== */
-let G = null, hoverEdge = null, spaceDown = false, lastTap = null;
+let spaceDown = false, lastTap = null;
 const pointers = new Map();
 function edgeHit(sx, sy){
   const w = toWorld(sx, sy), band = 8 / S.view.zoom, els = S.D.els;
@@ -2119,6 +2302,7 @@ function kbMove(dx, dy, targets = null){
   G.dx += dx; G.dy += dy; dirty = true;
   clearTimeout(kbT); kbT = setTimeout(commitKb, 450);
 }
+ACTION_HOOKS.push(() => commitKb());
 function commitKb(){
   clearTimeout(kbT);
   const g = G; if (!g || !g.keyboard) return;
@@ -2178,12 +2362,6 @@ function ask(label, value = '', why = '', preview = null, multi = false){
 function closeAsk(v){
   $('ask').style.display = 'none'; const r = askRes; askRes = null; r && r(v);
   const back = askFocus && document.contains(askFocus) && askFocus !== document.body ? askFocus : cv; back.focus({ preventScroll: true });
-}
-function resizeHandle(){
-  if (S.sel.size !== 1) return null;
-  const el = S.records.get([...S.sel][0]);
-  if (!el || (el.type !== 'IMAGE' && el.type !== 'NODE') || el.locked || S.D.hidden.has(el.cid)) return null;
-  const b = box(el); return b && { x: b.x + b.w, y: b.y + b.h, el };
 }
 function onHandle(w){ const h = resizeHandle(); return h && Math.hypot(w.x - h.x, w.y - h.y) < 12 / S.view.zoom ? h : null; }
 // One-shot tools: the next click places a text or a comment, then the pen comes back.
@@ -2284,6 +2462,8 @@ function drawThumb(cnv, t){
     c2.beginPath(); c2.arc(s.x, s.y - 7, 6, 0, Math.PI * 2); c2.fillStyle = t.resolved ? '#868e96' : authorColor(c.author); c2.fill();
   } finally { ctx = prev; }
 }
+RENDER_HOOKS.overlay.push(drawPins);
+RENDER_HOOKS.dom.push(paintPreviews);
 function setCursor(){
   cv.style.cursor = erasing ? 'cell' : G?.kind === 'grow' ? 'crosshair' : hoverGrow ? 'copy' : placing === 'node' ? 'cell' : G?.kind === 'pin' ? (G.moved ? 'grabbing' : 'grab') : hoverPin ? 'grab' : placing === 'text' ? 'text' : placing === 'comment' ? 'copy'
     : spaceDown || S.handTool || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
@@ -2316,7 +2496,7 @@ cv.addEventListener('pointerdown', e => {
     if (gh){ G = { kind: 'grow', from: gh.el, dir: gh.dir, start: w, cur: w, moved: false, sx: e.clientX, sy: e.clientY }; dirty = true; return; }
     if (placing === 'comment'){ G = { kind: 'none' }; startComment(w, hitTest(w)); setPlacing(null); return; }
   }
-  if (e.button === 1 || e.button === 2 || spaceDown || S.handTool){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
+  if (e.button === 1 || e.button === 2 || spaceDown || S.handTool){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y, button: e.button, at: w }; setCursor(); return; }
   if (e.button !== 0) return;
   if (S.lassoMode && !e.ctrlKey && !e.metaKey && !onHandle(w)){
     const hit = hitTest(w);
@@ -2432,6 +2612,9 @@ function endPointer(e, cancelled){
   if (cancelled) return;
   const w = toWorld(e.clientX, e.clientY);
   switch (g.kind){
+    case 'pan':   // a right-click that didn't drag opens the context menu
+      if (g.button === 2 && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < 5) canvasMenu({ x: e.clientX, y: e.clientY }, g.at);
+      return;
     case 'stroke': {
       const tap = (g.far || 0) < 4 && performance.now() - g.p0 < 300;
       if (tap){
@@ -2535,7 +2718,6 @@ cv.addEventListener('wheel', e => {
 const ta = document.getElementById('ta');
 let taAt = null;
 const taOpen = () => ta.style.display === 'block';
-let editingCid = null;
 function openText(w, orig = null){
   setPlacing(null);
   if (orig){ const b = box(orig); w = { x: b.x, y: b.y }; editingCid = orig.cid; dirty = true; }
@@ -2571,14 +2753,6 @@ ta.addEventListener('keydown', e => {
 });
 ta.addEventListener('blur', () => finishText(true));
 
-/* =====================================================================
-   Chrome: auth pill, authors, inspector, ledger, palette, toast
-   ===================================================================== */
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let toastT = 0;
-let sayT = 0;
-function say(msg){ const n = $('sr'); n.textContent = ''; clearTimeout(sayT); sayT = setTimeout(() => { n.textContent = msg; }, 30); }
 const KIND = el => el.type === 'NODE' ? (NODE_KINDS[el.ek || el.k]?.name || 'card') : el.type === 'SHAPE' ? (el.k === 'circle' ? 'circle' : el.k) : el.type === 'DRAW' ? 'stroke' : el.type.toLowerCase();
 function describe(el){
   if (!el) return '';
@@ -2591,7 +2765,6 @@ function announceSel(){
   if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete revokes.');
   else say(`${S.sel.size} elements selected. Arrow keys move, Delete revokes yours.`);
 }
-function toast(msg){ say(msg); const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 let authShown = '';
 function paintAuth(){
   if (!S.me) return;
@@ -2601,6 +2774,7 @@ function paintAuth(){
   if (txt !== authShown){ authShown = txt; $('authTxt').innerHTML = txt; $('auth').classList.toggle('open', open); }
 }
 function paintAuthTick(){ paintAuth(); }
+FRAME_HOOKS.push(paintAuthTick);
 $('auth').onclick = () => toggleLedger();
 function paintSummary(){
   const c = {}; let n = 0;
@@ -2608,6 +2782,7 @@ function paintSummary(){
   const oc = [...S.D.threads.values()].filter(t => !S.D.hidden.has(t.root.cid) && !t.resolved).length;
   $('summary').textContent = (oc ? `${oc} open comment thread${oc > 1 ? 's' : ''}. ` : '') + (n ? `Canvas has ${n} element${n > 1 ? 's' : ''}: ` + Object.entries(c).map(([k, v]) => `${v} ${k}${v > 1 ? 's' : ''}`).join(', ') + '.' : 'Empty canvas.');
 }
+const initials = id => NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
 function paintAuthors(){
   paintSummary();
   const counts = new Map();
@@ -2617,7 +2792,8 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA)
+    b.textContent = initials(id);
     b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.dataset.tip = `${id === S.me?.id ? 'You' : NAMES.get(id) || short(id)} · ${n} element${n === 1 ? '' : 's'} · click to show only theirs`;
@@ -2711,6 +2887,49 @@ $('insp').addEventListener('click', async e => {
 });
 async function copy(text, msg){ try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Clipboard blocked by the browser.'); } }
 
+CHANGE_HOOKS.push(paintAuthors);
+RENDER_HOOKS.dom.push(paintInspector);   // after the style bar (registered first): the toolbar keeps clear of it
+// Images are re-encoded (max 1600px, WebP or JPEG) so a photo stays a reasonable blob to sign, sync and store.
+const IMG_MAX = 1600;
+async function insertImage(file, at){
+  if (!S.me) return;
+  let raw0, typed, bmp;
+  try { raw0 = new Uint8Array(await file.arrayBuffer()); } catch { toast('Could not read that file.'); return; }
+  typed = typedBlob(raw0, file.type);
+  try { bmp = await decodeImage(typed); }
+  catch {
+    const t = typed.type || file.type || 'unknown type';
+    toast(/heic|heif/.test(t) ? 'HEIC photos only decode in Safari. Export it as JPEG or PNG and try again.'
+      : `This browser cannot read that image (${t}). Try a PNG, JPEG, WebP or GIF.`);
+    return;
+  }
+  // a name that is just a hash or a generic camera/clipboard name makes poor alt text
+  const base = (file.name || '').replace(/\.[a-z0-9]+$/i, '');
+  const guess = /^[0-9a-f]{16,}$/i.test(base) || /^(image|img|photo|screenshot|pasted|dsc|pxl)[\s_-]*[\d_-]*$/i.test(base) ? '' : base.replace(/[-_]+/g, ' ').trim();
+  const alt = await ask('Describe this image', guess,
+    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', bmp);
+  if (alt === null) return;
+  file = typed;
+  const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const enc = t => new Promise(res => c.toBlob(res, t, 0.85));
+  let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
+  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < MAX_BLOB && k === 1) out = file;   // keep a small original when it's already smaller
+  for (let q = 0.7; out && out.size > MAX_BLOB && q > 0.2; q -= 0.15) out = await new Promise(res => c.toBlob(res, 'image/jpeg', q));   // stay under the blob cap
+  if (!out || out.size > MAX_BLOB){ toast('That image is too large to sign and share, even re-encoded.'); return; }
+  const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
+  // place it at a comfortable on-screen size, centred on the drop point
+  const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));
+  const w = Math.max(8, Math.round(c.width * fit)), h = Math.max(8, Math.round(c.height * fit));
+  const p = at || toWorld(innerWidth / 2, innerHeight / 2), x = Math.round(p.x - w / 2), y = Math.round(p.y - h / 2);
+  S.imgs.set(R, bmp.width === c.width ? bmp : await createImageBitmap(c));
+  const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(x)], ['Y', encInt(y)], ['W', w], ['H', h], ['M', encTxt(alt.trim())], ['Z', ++S.lamport], ['T', Date.now()]]);
+  const cid = await publish(raw, { [R]: bytes });
+  recordCreate(cid);
+  dirty = true;
+  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · draw on it now · select mode (V) to move or resize it`);
+}
 /* ---------- copy, paste, duplicate ---------- */
 // Copies are new records signed by you: same content, effective style and position baked in, links inside the copy re-pointed.
 let clip = null, pasteN = 0;
@@ -2893,6 +3112,7 @@ $('mini').addEventListener('pointerdown', e => { e.stopPropagation(); $('mini').
 $('mini').addEventListener('pointermove', e => { if (e.buttons) miniPan(e); });
 $('zoomui').addEventListener('pointerdown', e => e.stopPropagation());
 
+RENDER_HOOKS.dom.push(paintMini);
 /* ---------- outline → mind map ---------- */
 const BULLET = /^\s*(?:[-*•+–]|\d+[.)]|\[[ x]\])\s+/;
 function isOutline(t){
@@ -2970,183 +3190,8 @@ setInterval(() => { let gone = false; for (const [id, p] of peers) if (Date.now(
 addEventListener('pagehide', () => sendPresence(true));
 addEventListener('blur', () => sendPresence(true));
 
-/* diagrams: cards, mind maps, flowcharts and wireframes as NODE records */
-// NODE-I-{author}-R-{nonce}-K-{kind}-X-Y-W-H-M-{label}-C-{colour}-P-{parent|0}[-E-{edited}]-Z-T-SIG
-// W/H are a minimum size (0 = fit the label). P draws a connector from the parent automatically.
-const NODE_KINDS = {
-  card:    { name: 'card',              icon: '▭', label: 'Card',      font: 15, pad: [14, 12], wrap: 240, min: [120, 44], align: 'left' },
-  topic:   { name: 'topic',             icon: '⬭', label: 'Idea',      font: 15, pad: [18, 9],  wrap: 220, min: [70, 36],  bold: true },
-  rect:    { name: 'process',           icon: '□', label: 'Step',      font: 14, pad: [16, 12], wrap: 180, min: [110, 48] },
-  ellipse: { name: 'start or end',      icon: '◯', label: 'Start',     font: 14, pad: [26, 14], wrap: 160, min: [110, 50] },
-  diamond: { name: 'decision',          icon: '◇', label: 'Decision?', font: 14, pad: [0, 0],   wrap: 130, min: [130, 84] },
-  sticky:  { name: 'sticky note',       icon: '▨', label: 'Note',      font: 15, pad: [14, 14], wrap: 170, min: [150, 130], align: 'left', top: true },
-  button:  { name: 'button',            icon: '⏵', label: 'Button',    font: 14, pad: [20, 9],  wrap: 220, min: [96, 38],  bold: true },
-  input:   { name: 'input field',       icon: '⎁', label: 'Email',     font: 14, pad: [12, 10], wrap: 260, min: [240, 40], align: 'left' },
-  image:   { name: 'image placeholder', icon: '⊠', label: 'Image',     font: 13, pad: [10, 10], wrap: 200, min: [200, 130] },
-  swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
-  frame:   { name: 'screen frame',      icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
-};
-S.nodeKind = 'card';
-function wrapLines(text, maxW){
-  const out = [];
-  for (const para of String(text).split('\n')){
-    const words = para.split(/(\s+)/); let line = '';
-    for (const w of words){
-      const t = line + w;
-      if (line && mctx.measureText(t.trimEnd()).width > maxW && w.trim()){ out.push(line.trimEnd()); line = w.trimStart(); }
-      else line = t;
-      while (mctx.measureText(line).width > maxW * 1.6 && line.length > 8){   // break very long words
-        let i = line.length; while (i > 1 && mctx.measureText(line.slice(0, i)).width > maxW) i--;
-        out.push(line.slice(0, i)); line = line.slice(i);
-      }
-    }
-    out.push(line.trimEnd());
-  }
-  return out.length ? out : [''];
-}
-const layoutCache = new Map();
-function nodeLayout(kind, text, minW = 0, minH = 0){
-  const K = NODE_KINDS[kind] || NODE_KINDS.card;
-  const key = [kind, text, minW, minH].join('\u0000');
-  if (layoutCache.has(key)) return layoutCache.get(key);
-  const font = `${K.bold ? 600 : 400} ${K.font}px ${FONTS.sans}`;
-  mctx.font = font;
-  const wrap = Math.max(K.wrap, minW - K.pad[0] * 2);
-  const lines = wrapLines(text || ' ', wrap), lh = Math.round(K.font * 1.35);
-  const tw = Math.max(1, ...lines.map(l => mctx.measureText(l).width)), th = lines.length * lh;
-  let w = tw + K.pad[0] * 2, h = th + K.pad[1] * 2;
-  if (kind === 'diamond'){ w = tw * 1.7 + 44; h = th * 1.9 + 40; }
-  if (kind === 'ellipse'){ w = tw * 1.2 + K.pad[0] * 2; h = th * 1.25 + K.pad[1] * 2; }
-  if (kind === 'frame') h = 0;
-  const L = { w: Math.ceil(Math.max(w, K.min[0], minW)), h: Math.ceil(Math.max(h, K.min[1], minH)), lines, font, lh, K };
-  if (layoutCache.size > 3000) layoutCache.clear();
-  layoutCache.set(key, L);
-  return L;
-}
-function nodeBox(el){
-  const o = S.D.off.get(el.cid);
-  let mw = el.bw + (o ? o.w : 0), mh = el.bh + (o ? o.h : 0);
-  if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.w0 + G.dw; mh = G.h0 + G.dh; }
-  return nodeLayout(el.ek || el.k, el.text, mw, mh);
-}
-let TH = {};
-function readTheme(){
-  const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
-  TH = { ink: INK, panel: v('--panel'), line: v('--line'), muted: v('--muted'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot') };
-}
-function rr(c, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
-// colour blending in JS: canvas and SVG consumers can't be relied on to understand color-mix()
-function rgbOf(c){
-  c = String(c || '').trim(); let m;
-  if ((m = c.match(/^#([0-9a-f]{3})$/i))) return [...m[1]].map(h => parseInt(h + h, 16));
-  if ((m = c.match(/^#([0-9a-f]{6})/i))) return [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
-  if ((m = c.match(/rgba?\(([^)]+)\)/))) return m[1].split(/[\s,\/]+/).slice(0, 3).map(Number);
-  return [128, 128, 128];
-}
-function mixHex(a, b, t){ const A = rgbOf(a), B = rgbOf(b); return '#' + A.map((v, i) => Math.max(0, Math.min(255, Math.round(v * t + B[i] * (1 - t)))).toString(16).padStart(2, '0')).join(''); }
-const tint = (col, a) => mixHex(col, TH.panel || '#ffffff', a);
-// Draw a node of a kind at p with layout L. Colour 'ink' keeps nodes neutral; any other colour accents them.
-function drawNode(kind, p, L, col, noText, colName){
-  const { x, y } = p, w = L.w, h = L.h, K = L.K, accent = colName && colName !== 'ink' ? col : null;
-  ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5;
-  let textCol = TH.ink;
-  switch (kind){
-    case 'card':
-      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
-      rr(ctx, x, y, w, h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent';
-      ctx.strokeStyle = accent || TH.line; ctx.stroke();
-      if (accent){ ctx.save(); rr(ctx, x, y, w, h, 10); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(x, y, 5, h); ctx.restore(); }
-      break;
-    case 'topic':
-      rr(ctx, x, y, w, h, h / 2); ctx.fillStyle = tint(accent || TH.accent, .16); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.accent; ctx.stroke(); break;
-    case 'rect': rr(ctx, x, y, w, h, 6); ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
-    case 'ellipse': ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
-    case 'diamond': ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w, y + h / 2); ctx.lineTo(x + w / 2, y + h); ctx.lineTo(x, y + h / 2); ctx.closePath();
-      ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
-    case 'sticky':
-      ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
-      ctx.fillStyle = accent ? mixHex(accent, '#ffffff', .35) : '#ffe066'; ctx.fillRect(x, y, w, h); ctx.shadowColor = 'transparent';
-      textCol = '#1d1d1f'; break;
-    case 'button': rr(ctx, x, y, w, h, 8); ctx.fillStyle = accent || TH.ink; ctx.fill(); textCol = accent ? '#fff' : TH.paper; break;
-    case 'input':
-      rr(ctx, x, y, w, h, 6); ctx.fillStyle = TH.panel; ctx.fill(); ctx.strokeStyle = accent || TH.line; ctx.lineWidth = 1.5; ctx.stroke(); textCol = TH.muted; break;
-    case 'image':
-      ctx.fillStyle = tint(TH.line, .5); ctx.fillRect(x, y, w, h); ctx.strokeStyle = accent || TH.muted; ctx.lineWidth = 1.2; ctx.strokeRect(x, y, w, h);
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y + h); ctx.moveTo(x + w, y); ctx.lineTo(x, y + h); ctx.globalAlpha *= .5; ctx.stroke(); ctx.globalAlpha /= .5;
-      textCol = TH.muted; break;
-    case 'swatch':   // moodboards: a colour chip with its name or hex underneath
-      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
-      rr(ctx, x, y, w, h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent'; ctx.strokeStyle = TH.line; ctx.lineWidth = 1; ctx.stroke();
-      rr(ctx, x + 6, y + 6, w - 12, h - 40, 7); ctx.fillStyle = col; ctx.fill(); break;
-    case 'frame':
-      rr(ctx, x, y, w, h, 18); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x, y + 30); ctx.lineTo(x + w, y + 30); ctx.lineWidth = 1; ctx.strokeStyle = TH.line; ctx.stroke(); textCol = TH.muted; break;
-  }
-  if (!noText){
-    ctx.font = L.font; ctx.fillStyle = textCol; ctx.textBaseline = 'middle';
-    const left = K.align === 'left', th = L.lines.length * L.lh;
-    let ty = K.top ? y + K.pad[1] + L.lh / 2 : y + h / 2 - th / 2 + L.lh / 2;
-    if (kind === 'frame') ty = y + 15;
-    if (kind === 'swatch') ty = y + h - 17;
-    ctx.textAlign = left ? 'left' : 'center';
-    const tx = left ? x + K.pad[0] + (kind === 'card' && accent ? 4 : 0) : x + w / 2;
-    for (const l of L.lines){ ctx.fillText(l, tx, ty); ty += L.lh; }
-    if (kind === 'input'){ ctx.fillStyle = TH.muted; ctx.globalAlpha *= .6; }
-  }
-  ctx.restore();
-}
-// Connector between two boxes: a smooth curve leaving the facing sides.
-function linkGeom(a, b){
-  const ca = center(a), cb = center(b), dx = cb.x - ca.x, dy = cb.y - ca.y;
-  let p0, p1, c0, c1;
-  if (Math.abs(dx) * (a.h + b.h) >= Math.abs(dy) * (a.w + b.w) * 0.55){
-    const s = Math.sign(dx) || 1; p0 = { x: s > 0 ? a.x + a.w : a.x, y: ca.y }; p1 = { x: s > 0 ? b.x : b.x + b.w, y: cb.y };
-    const k = Math.max(24, Math.abs(p1.x - p0.x) / 2); c0 = { x: p0.x + s * k, y: p0.y }; c1 = { x: p1.x - s * k, y: p1.y };
-  } else {
-    const s = Math.sign(dy) || 1; p0 = { x: ca.x, y: s > 0 ? a.y + a.h : a.y }; p1 = { x: cb.x, y: s > 0 ? b.y : b.y + b.h };
-    const k = Math.max(24, Math.abs(p1.y - p0.y) / 2); c0 = { x: p0.x, y: p0.y + s * k }; c1 = { x: p1.x, y: p1.y - s * k };
-  }
-  return { p0, c0, c1, p1 };
-}
-// Connector geometry between two boxes: curve (bezier between facing sides), straight (centre to centre, clipped) or elbow.
-// Returns { bez } or { pts }, plus mid (label anchor) and from → to (arrowhead direction).
-function connGeom(a, b, shape = 'curve'){
-  const g = linkGeom(a, b), hz = g.c0.y === g.p0.y;
-  if (shape === 'straight'){ const p = edgePoint(a, center(b), 6), q = edgePoint(b, center(a), 6); return { pts: [p, q], mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, from: p, to: q }; }
-  if (shape === 'elbow'){
-    const m = hz ? (g.p0.x + g.p1.x) / 2 : (g.p0.y + g.p1.y) / 2;
-    const pts = hz ? [g.p0, { x: m, y: g.p0.y }, { x: m, y: g.p1.y }, g.p1] : [g.p0, { x: g.p0.x, y: m }, { x: g.p1.x, y: m }, g.p1];
-    return { pts, mid: { x: (pts[1].x + pts[2].x) / 2, y: (pts[1].y + pts[2].y) / 2 }, from: pts[2], to: g.p1 };
-  }
-  return { bez: g, mid: { x: (g.p0.x + 3 * g.c0.x + 3 * g.c1.x + g.p1.x) / 8, y: (g.p0.y + 3 * g.c0.y + 3 * g.c1.y + g.p1.y) / 8 }, from: g.c1, to: g.p1 };
-}
-function strokeConn(c, col, width, dash, head){
-  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.setLineDash(dash && dash !== 'solid' ? dashOf(dash, width) : []);
-  ctx.beginPath();
-  if (c.bez){ const g = c.bez; ctx.moveTo(g.p0.x, g.p0.y); ctx.bezierCurveTo(g.c0.x, g.c0.y, g.c1.x, g.c1.y, g.p1.x, g.p1.y); }
-  else c.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
-  ctx.stroke(); ctx.setLineDash([]);
-  if (head) drawArrowHead(c.from, c.to, 7 + width * 2);
-  ctx.restore();
-}
-function drawLink(a, b, head, col, width){ strokeConn(connGeom(a, b, 'curve'), col, width, 'solid', head); }
-function drawTreeLinks(){
-  for (const el of S.D.els){
-    if (el.type !== 'NODE' || !el.parent || !visible(el)) continue;
-    const p = current(el.parent); if (!p || p === el || !visible(p)) continue;
-    const kind = el.ek, head = !['topic', 'card', 'sticky'].includes(kind);
-    const hid = S.D.hidden.has(el.cid);
-    ctx.save(); if (hid) ctx.globalAlpha = .18;
-    drawLink(box(p), box(el), head, ecol(el) === 'ink' ? TH.muted : colorOf(ecol(el)), 2);
-    ctx.restore();
-  }
-}
-function descendants(cid){
-  const out = [], seen = new Set([cid]), q = [cid];
-  while (q.length){ for (const k of S.D.kids.get(q.shift()) || []){ if (seen.has(k)) continue; seen.add(k); const el = S.records.get(k); if (el && !S.D.hidden.has(k)){ out.push(k); q.push(k); } } }
-  return out;
-}
+WIRE_HOOKS.presence = onPresence;
+RENDER_HOOKS.overlay.push(drawPeers);
 const soleNode = () => { if (S.sel.size !== 1) return null; const el = current([...S.sel][0]); return el?.type === 'NODE' && visible(el) ? el : null; };
 
 /* "+" handles on a selected node */
@@ -3366,6 +3411,12 @@ async function insertTemplate(kind){
   toast(`${{ mindmap: 'Mind map', flow: 'Flowchart', mobile: 'Mobile wireframe', web: 'Web wireframe' }[kind]} added · ${made.length} signed nodes`);
 }
 
+
+// the tree's connectors are content: drawn under the elements; the grow handles and placement ghost are drawn above
+RENDER_HOOKS.under.push(drawTreeLinks);
+RENDER_HOOKS.world.push(() => { drawNodeGhost(); drawGrowHandles(TH.accent); });
+// a NODE's kind can be restyled to any name; unknown kinds read as their original kind, then as a card
+DERIVE_HOOKS.push(D => { for (const el of D.els) if (el.type === 'NODE' && !NODE_KINDS[el.ek]) el.ek = NODE_KINDS[el.k] ? el.k : 'card'; });
 /* SVG export: the visible canvas as vector markup */
 const xe = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 function toSVG(){
@@ -3643,6 +3694,7 @@ try { if (localStorage.getItem('flux:barMin') === '1') foldBar(true); } catch {}
 addEventListener('resize', () => document.documentElement.style.setProperty('--barH', barH() + 'px'));
 try { new ResizeObserver(() => { document.documentElement.style.setProperty('--barH', barH() + 'px'); dirty = true; }).observe($('bar')); } catch {}
 
+RENDER_HOOKS.dom.unshift(paintBar);   // first: the selection toolbar places itself clear of the bar
 /* comments */
 let activeThread = null, draft = null, pinMove = null;
 S.cmShowDone = false;
@@ -3651,6 +3703,7 @@ function toggleComments(force){
   const on = force ?? $('comments').style.display !== 'flex';
   $('comments').style.display = on ? 'flex' : 'none';
   if (on && S.ledger) toggleLedger(false);
+  if (on && ST.on) toggleStructure(false);
   if (on) paintComments(); else { activeThread = null; draft = null; dirty = true; cv.focus({ preventScroll: true }); }
   $('cmtList').setAttribute('aria-expanded', String(on));
   document.body.classList.toggle('drawer', on || S.ledger);
@@ -3776,8 +3829,9 @@ $('textBtn').onclick = () => setPlacing(placing === 'text' ? null : 'text');
 cv.addEventListener('pointerdown', () => { if (pinMove){ pinMove = null; commitKb(); } }, true);
 $('cmtBtn').onclick = () => setPlacing(placing === 'comment' ? null : 'comment');
 
+CHANGE_HOOKS.push(paintComments);
 /* ledger */
-function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
+function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); if (S.ledger && ST.on) toggleStructure(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
 $('ledgerClose').onclick = () => toggleLedger(false);
 function paintLedger(){
   if (!S.ledger) return;
@@ -3809,6 +3863,7 @@ $('ledgerList').addEventListener('click', e => {
 });
 
 $('ledgerStats').addEventListener('click', e => { if (e.target.id === 'ledgerCompact') compactHistory(); });
+CHANGE_HOOKS.push(paintLedger);
 /* palette */
 const SW = c => `<span class="sw" style="background:${colorOf(c)}"></span>`;
 function commands(){
@@ -4133,6 +4188,13 @@ async function canvasList(){
 }
 const ago = t => { if (!t) return 'empty'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
 
+// a new canvas you own (core/permissions): an id derived from your key, claimed with an OWNER record
+async function createOwnedCanvas(){
+  const { nonce, id } = await ownedCanvasId();
+  await switchCanvas(id); await claimCanvas(nonce);
+  return id;
+}
+
 /* the canvas home */
 const CARD_ICONS = { blank: ['plus', 'slate'], brainstorm: ['sparkle', 'amber'], offsite: ['sparkle', 'amber'], mindmap: ['mindmap', 'violet'], flow: ['flow', 'blue'],
   wire: ['wire', 'slate'], feedback: ['columns', 'green'], retro: ['columns', 'green'], moodboard: ['palette', 'pink'], brand: ['palette', 'pink'],
@@ -4218,8 +4280,6 @@ const RELATIONS = [
   { id: 'question',    label: 'question',    C: 'orange', D: 'dot',   icon: '?' },
 ];
 const SHAPES = ['curve', 'straight', 'elbow'], DASHES = ['solid', 'dash', 'dot'];
-const dashOf = (d, w) => d === 'dash' ? [w * 4 + 4, w * 3 + 3] : d === 'dot' ? [0.1, w * 2 + 3] : [];
-const svgDash = (d, w) => d === 'dash' ? ` stroke-dasharray="${w * 4 + 4} ${w * 3 + 3}"` : d === 'dot' ? ` stroke-dasharray="0.1 ${w * 2 + 3}"` : '';
 
 let relRow = false;
 const ownArrows = rs => rs.filter(r => r.type === 'ARROW' && r.author === S.me.id);
@@ -4980,7 +5040,7 @@ function paintPeople(){
   const head = `<tr><th scope="col">Person</th>${PERMS.map(p => `<th scope="col">${PERM_NAMES[p]}</th>`).join('')}</tr>`;
   $('peopleTable').innerHTML = head + rows.map(r => {
     const owner = r.id === P.owner;
-    return `<tr${owner ? ' class="own"' : ''}><th scope="row"><span class="av" style="background:${r.id === 'all' ? 'var(--muted)' : `hsl(${authorHue(r.id)} 55% 30%)`}" aria-hidden="true">${r.id === 'all' ? '∗' : esc(r.label.slice(0, 2))}</span><span><b>${esc(r.label)}</b><small>${esc(r.sub)}</small></span></th>`
+    return `<tr${owner ? ' class="own"' : ''}><th scope="row"><div class="who"><span class="av" style="background:${r.id === 'all' ? 'var(--muted)' : `hsl(${authorHue(r.id)} 55% 30%)`}" aria-hidden="true">${r.id === 'all' ? '∗' : esc(initials(r.id))}</span><span><b>${esc(r.label)}</b><small>${esc(r.sub)}</small></span></div></th>`
       + PERMS.map(p => `<td><input type="checkbox" data-who="${esc(r.id)}" data-p="${p}" aria-label="${esc(r.label)}: ${PERM_NAMES[p]}"${(owner || P.can(r.id === 'all' ? '\u0000' : r.id, p)) ? ' checked' : ''}${!mine || owner ? ' disabled' : ''}></td>`).join('') + '</tr>';
   }).join('');
   $('peopleActs').innerHTML = P.owner ? '' : '<button class="btn primary" id="peopleCopy">Make an owned copy</button>';
@@ -5067,6 +5127,108 @@ function rebuildHistory(limit = 200){
   }
   S.hist = hist.slice(-limit); S.redo = [];
 }
+// how things connect, votes and comments — so the spatial structure is available without seeing it
+// @uses chrome (describe), brainstorm (reactions), comments, derive
+const ST = { on: false, closed: new Set(), focus: null };   // frames start expanded
+const isFrameEl = el => el.type === 'NODE' && el.ek === 'frame';
+const labelOf = el => {
+  const t = (el.text || el.alt || el.elabel || '').replace(/\s+/g, ' ').trim();
+  return t ? `${KIND(el)} “${t.slice(0, 70)}${t.length > 70 ? '…' : ''}”` : KIND(el);
+};
+// reading order: rows top to bottom (a row is anything within 40 units), then left to right
+const reading = (a, b) => { const A = box(a), B = box(b); return Math.abs(A.y - B.y) > 40 ? A.y - B.y : A.x - B.x; };
+function structure(){
+  const els = S.D.els.filter(el => visible(el) && !S.D.hidden.has(el.cid) && !S.D.superseded.has(el.cid) && el.type !== 'ARROW' && box(el));
+  const frames = els.filter(isFrameEl), parentOf = new Map();
+  for (const el of els){
+    const c = center(box(el)); let best = null;
+    for (const f of frames) if (f !== el){ const b = box(f); if (inside(c, b) && (!best || b.w * b.h < box(best).w * box(best).h)) best = f; }   // innermost frame
+    parentOf.set(el.cid, best ? best.cid : 'root');
+  }
+  const kids = new Map([['root', []]]);
+  for (const el of els){ const p = parentOf.get(el.cid); if (!kids.has(p)) kids.set(p, []); kids.get(p).push(el); }
+  for (const l of kids.values()) l.sort(reading);
+  // connections: arrows (with their meaning) and diagram tree links
+  const links = new Map(), add = (cid, s) => { if (!links.has(cid)) links.set(cid, []); links.get(cid).push(s); };
+  for (const a of S.D.els) if (a.type === 'ARROW' && visible(a) && !S.D.hidden.has(a.cid)){
+    const f = current(a.f.FROM), t = current(a.f.TO); if (!f || !t) continue;
+    const rel = a.elabel ? ` (${a.elabel})` : '';
+    add(f.cid, `→ ${labelOf(t)}${rel}`); add(t.cid, `← ${labelOf(f)}${rel}`);
+  }
+  for (const el of els) if (el.type === 'NODE' && el.parent){ const p = current(el.parent); if (p && p !== el){ add(el.cid, `child of ${labelOf(p)}`); } }
+  return { kids, links };
+}
+function stMeta(el){
+  const bits = [], re = S.D.reactions?.get(el.cid);
+  if (re?.vote?.size) bits.push(`${re.vote.size} vote${re.vote.size > 1 ? 's' : ''}`);
+  const others = re ? Object.entries(re).filter(([k, s]) => k !== 'vote' && s.size).map(([k, s]) => `${REACTIONS[k]?.name || k} ${s.size}`) : [];
+  bits.push(...others);
+  const cm = [...S.D.threads.values()].filter(t => t.root.on && current(t.root.on)?.cid === el.cid && !S.D.hidden.has(t.root.cid));
+  if (cm.length) bits.push(`${cm.length} comment${cm.length > 1 ? 's' : ''}${cm.some(t => !t.resolved) ? ' (open)' : ''}`);
+  if (el.author !== S.me?.id) bits.push(`by ${NAMES.get(el.author) || short(el.author)}`);
+  return bits.join(' · ');
+}
+function paintStructure(){
+  if (!ST.on) return;
+  const { kids, links } = structure(), out = [];
+  let n = 0;
+  const walk = (list, level) => {
+    for (const el of list){
+      n++;
+      const sub = kids.get(el.cid) || [], open = !ST.closed.has(el.cid), ls = links.get(el.cid) || [], meta = stMeta(el);
+      out.push(`<li role="treeitem" aria-level="${level}" data-c="${el.cid}" tabindex="-1"${sub.length ? ` aria-expanded="${open}"` : ''}${S.sel.has(el.cid) ? ' aria-selected="true"' : ''}>
+        <div class="st-row">${sub.length ? `<span class="tw" aria-hidden="true">${ic(open ? 'chev-down' : 'chev-right')}</span>` : '<span class="tw"></span>'}<span class="st-l">${esc(labelOf(el))}</span>${sub.length ? `<span class="st-n">${sub.length}</span>` : ''}</div>
+        ${meta || ls.length ? `<div class="st-m">${esc([meta, ...ls].filter(Boolean).join(' · '))}</div>` : ''}</li>`);
+      if (sub.length && open) walk(sub, level + 1);
+    }
+  };
+  walk(kids.get('root'), 1);
+  const frames = [...kids.keys()].filter(k => k !== 'root').length;
+  $('stStats').textContent = n ? `${n} element${n > 1 ? 's' : ''} · ${frames} frame${frames === 1 ? '' : 's'} · in reading order. Enter selects and shows one on the canvas.` : '';
+  const prev = document.activeElement?.closest?.('#stTree [data-c]')?.dataset.c;
+  $('stTree').innerHTML = out.join('') || '<li class="empty" role="none">Nothing on the canvas yet.</li>';
+  const items = [...$('stTree').querySelectorAll('[data-c]')];
+  const keep = items.find(li => li.dataset.c === (prev || ST.focus)) || items[0];
+  if (keep){ keep.tabIndex = 0; if (prev) keep.focus(); }
+}
+function toggleStructure(force){
+  ST.on = force ?? !ST.on;
+  if (ST.on){ if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); }
+  $('structure').style.display = ST.on ? 'flex' : 'none'; $('stBtn').setAttribute('aria-expanded', String(ST.on));
+  paintStructure();
+  if (ST.on) ($('stTree').querySelector('[tabindex="0"]') || $('stClose')).focus(); else cv.focus({ preventScroll: true });
+  say(ST.on ? 'Outline. Arrow keys move through the canvas, Enter shows an element.' : 'Outline closed.');
+}
+function showOnCanvas(cid){
+  const el = S.records.get(cid); if (!el) return;
+  S.sel = new Set([cid]); expandSel(); ensureVisible(el); dirty = true; announceSel(); ST.focus = cid;
+}
+$('stClose').onclick = () => toggleStructure(false);
+$('stBtn').onclick = () => toggleStructure();
+$('stTree').addEventListener('click', e => {
+  const li = e.target.closest('[data-c]'); if (!li) return;
+  if (e.target.closest('.tw') && li.hasAttribute('aria-expanded')){ const c = li.dataset.c; ST.closed.has(c) ? ST.closed.delete(c) : ST.closed.add(c); ST.focus = c; paintStructure(); return; }
+  showOnCanvas(li.dataset.c); paintStructure();
+});
+$('stTree').addEventListener('keydown', e => {
+  const items = [...$('stTree').querySelectorAll('[data-c]')], li = e.target.closest('[data-c]'), i = items.indexOf(li); if (i < 0) return;
+  const go = j => { const n = items[Math.max(0, Math.min(items.length - 1, j))]; for (const x of items) x.tabIndex = -1; n.tabIndex = 0; n.focus(); ST.focus = n.dataset.c; };
+  const c = li.dataset.c, exp = li.getAttribute('aria-expanded');
+  if (e.key === 'ArrowDown') go(i + 1);
+  else if (e.key === 'ArrowUp') go(i - 1);
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(items.length - 1);
+  else if (e.key === 'ArrowRight' && exp === 'false'){ ST.closed.delete(c); ST.focus = c; paintStructure(); $('stTree').querySelector(`[data-c="${c}"]`)?.focus(); }
+  else if (e.key === 'ArrowLeft' && exp === 'true'){ ST.closed.add(c); ST.focus = c; paintStructure(); $('stTree').querySelector(`[data-c="${c}"]`)?.focus(); }
+  else if (e.key === 'ArrowLeft'){ const lv = +li.getAttribute('aria-level'); for (let j = i - 1; j >= 0; j--) if (+items[j].getAttribute('aria-level') < lv){ go(j); break; } }
+  else if (e.key === 'Enter' || e.key === ' '){ showOnCanvas(c); paintStructure(); }
+  else if (e.key === 'Escape') toggleStructure(false);
+  else return;
+  e.preventDefault(); e.stopPropagation();
+});
+CHANGE_HOOKS.push(paintStructure);
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && e.key === 'O' && e.shiftKey && !c.mod){ e.preventDefault(); toggleStructure(); return true; } return false; });
+PALETTE_HOOKS.push(add => add('view', 'Outline of the canvas', () => toggleStructure(true), { k: '⇧O' }));
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 
@@ -5160,18 +5322,23 @@ addEventListener('wheel', hideTip, { passive: true });
 
 /* menu: role=menu, arrow keys, Home/End, Escape returns focus to the button that opened it */
 let menuItems = [], menuAnchor = null;
-function openMenu(anchor, items){
+function openMenu(anchor, items, at = null){
   const m = $('menu'); menuItems = items; menuAnchor = anchor;
   m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>'
     : `<button role="menuitem" tabindex="-1" data-i="${i}">${ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
-  m.hidden = false; anchor.setAttribute('aria-expanded', 'true');
-  const r = anchor.getBoundingClientRect();
-  m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
+  m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
+  if (at){   // a context menu opens at the pointer, flipped to stay on screen
+    m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, at.x)) + 'px';
+    m.style.top = Math.max(8, at.y + m.offsetHeight > innerHeight - 8 ? at.y - m.offsetHeight : at.y) + 'px';
+  } else {
+    const r = anchor.getBoundingClientRect();
+    m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
+  }
   m.querySelector('[role=menuitem]')?.focus();
 }
 function closeMenu(back = true){
   const m = $('menu'); if (m.hidden) return;
-  m.hidden = true; menuAnchor?.setAttribute('aria-expanded', 'false'); if (back) menuAnchor?.focus();
+  m.hidden = true; if (menuAnchor !== cv) menuAnchor?.setAttribute('aria-expanded', 'false'); if (back) menuAnchor?.focus({ preventScroll: true });
 }
 $('menu').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b) return; const it = menuItems[+b.dataset.i]; closeMenu(false); it.run(); });
 $('menu').addEventListener('keydown', e => {
@@ -5184,7 +5351,7 @@ $('menu').addEventListener('keydown', e => {
   else if (e.key === 'Escape'){ e.preventDefault(); closeMenu(); }
   else if (e.key === 'Tab') closeMenu(false);
 });
-document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.target.closest('#menu') && e.target !== menuAnchor && !menuAnchor?.contains(e.target)) closeMenu(false); }, true);
+document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.target.closest('#menu') && (menuAnchor === cv || (e.target !== menuAnchor && !menuAnchor?.contains(e.target)))) closeMenu(false); }, true);
 
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
@@ -5221,6 +5388,40 @@ function toggleGrid(){ S.grid = !S.grid; try { localStorage.setItem('flux:grid',
 PALETTE_HOOKS.push(add => {
   add('view', S.grid ? 'Hide dot grid' : 'Show dot grid', toggleGrid);
   for (const [t, T] of Object.entries(TOOLS)) add('tool', T.name, () => setTool(t), { on: currentTool() === t });
+});
+
+/* context menu: right-click (or the Menu key / Shift+F10 on the canvas) offers what fits the element under it */
+function canvasMenu(at, w){
+  const hit = w && hitTest(w);
+  if (hit && !S.sel.has(hit.cid)){ S.sel = new Set([hit.cid]); expandSel(); announceSel(); dirty = true; }
+  else if (w && !hit && S.sel.size && !inside(w, grow(selBox() || { x: 0, y: 0, w: 0, h: 0 }, 8 / S.view.zoom))){ S.sel.clear(); dirty = true; }   // empty paper
+  const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean), one = rs.length === 1 ? rs[0] : null, mine = rs.filter(r => r.author === S.me?.id);
+  const items = [];
+  if (rs.length){
+    if (one && mine.length && (one.type === 'TEXT' || one.type === 'NODE')) items.push({ label: 'Edit', icon: 'edit', key: '↵', run: () => editAny(one) });
+    items.push({ label: 'Comment', icon: 'comment', key: 'M', run: commentOnSelection });
+    items.push({ label: 'Duplicate', icon: 'copy', key: '⌘D', run: duplicateSelection }, { label: 'Copy', icon: 'copy', key: '⌘C', run: copySelection }, '-');
+    items.push({ label: 'Bring to front', icon: 'front', key: '⌘⇧↑', run: () => reorder(true) }, { label: 'Send to back', icon: 'back', key: '⌘⇧↓', run: () => reorder(false) });
+    items.push({ label: rs.every(r => r.locked) ? 'Unlock' : 'Lock', icon: rs.every(r => r.locked) ? 'unlock' : 'lock', key: '⌘⇧L', run: toggleLock });
+    if (rs.length > 1) items.push({ label: 'Group', icon: 'group', key: '⌘G', run: groupSelection });
+    if (rs.some(r => S.D.groupOf.has(r.cid))) items.push({ label: 'Ungroup', icon: 'ungroup', key: '⌘⇧G', run: ungroupSelection });
+    if (mine.length) items.push('-', { label: mine.length < rs.length ? `Delete yours (${mine.length})` : 'Delete', icon: 'trash', key: '⌫', run: revokeSelection });
+  } else {
+    const p = w || viewCenter();
+    if (clip) items.push({ label: 'Paste', icon: 'copy', key: '⌘V', run: pasteClip });
+    items.push({ label: 'Sticky note here', icon: 'sticky', run: () => startNode({ kind: 'sticky', anchor: { x: p.x, y: p.y, ax: .5, ay: .5 } }) });
+    items.push({ label: 'Text here', icon: 'type', key: 'T', run: () => openText(p) }, '-');
+    items.push({ label: 'Select all', icon: 'cursor', key: '⌘A', run: () => { selectAll(); announceSel(); } }, { label: 'Zoom to fit', icon: 'fit', key: '0', run: () => { zoomFit(); dirty = true; } });
+    items.push({ label: 'Outline of the canvas', icon: 'list', key: '⇧O', run: () => toggleStructure(true) });
+  }
+  openMenu(cv, items, at);
+}
+KEY_HOOKS.push((e, c) => {
+  if (c.onCanvas && (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey))){
+    e.preventDefault(); const b = S.sel.size && selBox(), s = b ? toScreen(b.x + b.w / 2, b.y + b.h / 2) : { x: innerWidth / 2, y: innerHeight / 2 };
+    canvasMenu(s, null); return true;
+  }
+  return false;
 });
 
 /* welcome card: quick starts build into this (empty) canvas; it steps aside on the first touch or key */

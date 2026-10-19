@@ -1,0 +1,26 @@
+toolbar buttons Comment | Duplicate | Align left | Align centres | Align right | Align top | Align middles | Align bottom | Distribute horizontally | Distribute vertically | Bring to front | Send to back | Lock | Group | Dot vote | React | Arrange in a grid | Sort by votes | Cluster into a frame | Masonry layout | Details and signature | Revoke
+toolbar above selection true
+align top ys [ -100, -100, -100 ]
+distribute gaps [ 130, 130 ]
+pasted [["NODE","Alpha","",""],["NODE","Beta","",""],["NODE","Kid of alpha","Alpha",""],["ARROW","","",["Alpha","Beta",true]]] | Pasted 4 elements. Signed.
+paste near pointer [ 700, 600 ]
+undo paste -> nodes 4
+dup 5 Gamma
+alt-drag 6 original stayed -100
+guides while dragging 0
+snapped edges {"ax":[-300,-180],"bx":[-17,103],"ay":[-100,-56],"by":[-3,41]}
+front: top z? true
+back: bottom z? true
+locked true | 1 element locked: they stay put and can be drawn over. Signed.
+click locked selects? 0
+drew over locked 1
+delete locked -> false
+unlocked false
+label depends on in svg true
+erase 3 -> 1 | Erased 2 elements. Each is a signed revoke; undo brings them back.
+undo erase -> 3
+zoom 125%
+overview on true
+minimap pans true
+outline {"kids":[["Flights","R",58],["Hotel","R",148],["Food","R",208],["Budget","L",88],["Packing","L",148]],"sub":["Book","Seats"]}
+peers on tab1 [ '<k>' ] live ring 1

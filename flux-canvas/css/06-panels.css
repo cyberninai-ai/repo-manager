@@ -17,3 +17,17 @@
 .ledger .meta{margin-left:auto;color:var(--muted);font-size:11px;white-space:nowrap}
 .ledger .raw{margin-top:4px;font:11px/1.4 var(--font-mono);color:var(--muted);word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ledger .row.x .raw{-webkit-line-clamp:unset;display:block;color:var(--ink)}
+
+/* outline panel: a tree of frames, elements and their connections */
+.st .list{list-style:none;margin:0}
+.st [role=treeitem]{padding:6px 8px;border-radius:8px;cursor:pointer;outline-offset:-2px}
+.st [role=treeitem]:hover{background:var(--hover)}
+.st [role=treeitem][aria-selected="true"]{background:var(--accent-weak)}
+.st [role=treeitem][aria-level="2"]{margin-left:18px} .st [role=treeitem][aria-level="3"]{margin-left:36px} .st [role=treeitem][aria-level="4"]{margin-left:54px}
+.st-row{display:flex;align-items:center;gap:6px;font-size:13px}
+.st .tw{width:16px;height:16px;flex:none;color:var(--muted)}
+.st .tw .ic{width:16px;height:16px}
+.st-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-n{font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:0 7px}
+.st-m{font-size:12px;color:var(--muted);margin:2px 0 0 22px;line-height:1.35}
+.st .empty{color:var(--muted);padding:24px 10px;text-align:center}

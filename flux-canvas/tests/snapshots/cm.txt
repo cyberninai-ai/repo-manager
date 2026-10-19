@@ -1,0 +1,12 @@
+edit {"texts":["Final title"],"superseded":1,"arrowVisible":1} | Text edited and signed. The earlier version stays in the ledger.
+undo edit ["Draft title"]
+composer focus: cmNew | New comment on rect by you
+posted: Comment posted on rect by you. Signed.
+threads [{"on":"rect by you","n":2,"resolved":false},{"on":"canvas","n":1,"resolved":false}] badge 2
+pin follows 120 40
+pin click -> { open: 'flex', active: true, focus: 'reply box' }
+resolved badge 1 | Thread resolved.
+tab2 threads 2
+tab2 edit others text -> Only its author can edit this text. Add a comment instead (M).
+draft kept: { v: 'half-typed', k: 'ok' } msgs 2
+reload {"threads":2,"rej":0,"text":["Final title"]}

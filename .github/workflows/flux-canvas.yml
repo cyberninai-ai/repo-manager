@@ -1,0 +1,32 @@
+name: flux-canvas
+on:
+  push:
+    paths: ['flux-canvas/**', 'flux-canvas.html', '.github/workflows/flux-canvas.yml']
+  pull_request:
+    paths: ['flux-canvas/**', 'flux-canvas.html', '.github/workflows/flux-canvas.yml']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flux-canvas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: flux-canvas/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Bundle is current and module boundaries hold
+        run: npm run check
+      - name: Browser suites on the bundle
+        run: npm test
+      - name: Browser suites on the modular source
+        run: npm run test:source
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-output
+          path: flux-canvas/tests/out/

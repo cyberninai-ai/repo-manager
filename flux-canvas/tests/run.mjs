@@ -33,6 +33,17 @@ if (process.env.FLUX_TARGET === 'source' && !process.env.FLUX_URL){
   process.env.FLUX_URL = `http://127.0.0.1:${server.address().port}/index.html`;
   process.on('exit', () => server.close());
 }
+// Golden output (audit T1): the older suites print what they observe; that output, with keys, CIDs, times and canvas ids
+// normalised away, must match tests/snapshots/<suite>.txt. UPDATE_SNAPSHOTS=1 rewrites them after an intended change.
+// Suites that assert for themselves ("asserted N checks") are not snapshotted.
+const snapDir = path.join(here, 'snapshots');
+const normalize = out => out.split('\n').filter(l => !/^(target:|axe|errors)/.test(l)).join('\n')
+  .replace(/\bbafk[a-z2-7]{20,}/g, '<cid>').replace(/\b(ed|ec)[1-9A-HJ-NP-Za-km-z]{20,}/g, '<key>')
+  .replace(/\b1[6-9]\d{11}\b/g, '<time>').replace(/\d{1,2}\/\d{1,2}\/\d{2,4},? \d{1,2}:\d{2}( ?[AP]M)?/g, '<date>')
+  .replace(/\bo[a-z2-7]{15}\b/g, '<canvas>').replace(/(author |you · |\bby )[1-9A-HJ-NP-Za-km-z]{6}\b/g, '$1<k>')
+  .replace(/'[1-9A-HJ-NP-Za-km-z]{6}'/g, "'<k>'").replace(/\b(bytes|size) \d+/g, '$1 <n>').replace(/\b\d+(\.\d+)? ?(KB|B)\b/g, '<n> $2')
+  .replace(/[ \t]+$/gm, '').trim() + '\n';
+import { writeFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
 let failed = 0;
 console.log(`target: ${process.env.FLUX_URL || (process.env.FLUX_TARGET === 'source' ? 'source (index.html)' : 'bundle (flux-canvas.html)')}`);
 for (const f of files){
@@ -42,6 +53,15 @@ for (const f of files){
   if (/TIMEOUT/.test(out)) problems.push('timeout');
   for (const m of out.matchAll(/^errors (\[[\s\S]*?\])\s*$/gm)) if (m[1].replace(/\s/g, '') !== '[]') problems.push('page errors: ' + m[1].replace(/\s+/g, ' ').slice(0, 300));
   for (const m of out.matchAll(/^axe\b(.*)$/gm)){ const res = m[1].match(/(\[.*\]|clean)\s*$/); if (!res || !/^(\[\]|clean)$/.test(res[1])) problems.push('axe:' + m[1].slice(0, 300)); }
+  if (!/asserted \d+ checks/.test(out) && !problems.length && !/^perf\b/m.test(out)){
+    const snap = path.join(snapDir, f.replace('.mjs', '.txt')), got = normalize(out);
+    if (process.env.UPDATE_SNAPSHOTS || !existsSync(snap)){ mkdirSync(snapDir, { recursive: true }); writeFileSync(snap, got); }
+    else if (readFileSync(snap, 'utf8') !== got){
+      const want = readFileSync(snap, 'utf8').split('\n'), have = got.split('\n'), diff = [];
+      for (let i = 0; i < Math.max(want.length, have.length); i++) if (want[i] !== have[i]) diff.push(`line ${i + 1}\n      want: ${want[i] ?? '(none)'}\n      got:  ${have[i] ?? '(none)'}`);
+      problems.push('output differs from tests/snapshots/' + path.basename(snap) + '\n    ' + diff.slice(0, 8).join('\n    '));
+    }
+  }
   if (problems.length){ failed++; console.log(`✗ ${f}\n  ${problems.join('\n  ')}\n${out.split('\n').map(l => '    ' + l).join('\n')}`); }
   else console.log(`✓ ${f}`);
 }

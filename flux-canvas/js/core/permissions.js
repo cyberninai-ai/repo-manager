@@ -56,11 +56,6 @@ async function ownedCanvasId(){
 async function claimCanvas(nonce){
   return publish(await signed('OWNER', [['I', S.me.id], ['R', canvasId], ['K', nonce], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
-async function createOwnedCanvas(){
-  const { nonce, id } = await ownedCanvasId();
-  await switchCanvas(id); await claimCanvas(nonce);
-  return id;
-}
 async function grant(who, perms){
   return publish(await signed('GRANT', [['I', S.me.id], ['R', canvasId], ['A', who], ['P', perms.length ? perms.join('_') : 'none'], ['Z', ++S.lamport], ['T', Date.now()]]));
 }

@@ -93,18 +93,23 @@ addEventListener('wheel', hideTip, { passive: true });
 
 /* menu: role=menu, arrow keys, Home/End, Escape returns focus to the button that opened it */
 let menuItems = [], menuAnchor = null;
-function openMenu(anchor, items){
+function openMenu(anchor, items, at = null){
   const m = $('menu'); menuItems = items; menuAnchor = anchor;
   m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>'
     : `<button role="menuitem" tabindex="-1" data-i="${i}">${ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
-  m.hidden = false; anchor.setAttribute('aria-expanded', 'true');
-  const r = anchor.getBoundingClientRect();
-  m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
+  m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
+  if (at){   // a context menu opens at the pointer, flipped to stay on screen
+    m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, at.x)) + 'px';
+    m.style.top = Math.max(8, at.y + m.offsetHeight > innerHeight - 8 ? at.y - m.offsetHeight : at.y) + 'px';
+  } else {
+    const r = anchor.getBoundingClientRect();
+    m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
+  }
   m.querySelector('[role=menuitem]')?.focus();
 }
 function closeMenu(back = true){
   const m = $('menu'); if (m.hidden) return;
-  m.hidden = true; menuAnchor?.setAttribute('aria-expanded', 'false'); if (back) menuAnchor?.focus();
+  m.hidden = true; if (menuAnchor !== cv) menuAnchor?.setAttribute('aria-expanded', 'false'); if (back) menuAnchor?.focus({ preventScroll: true });
 }
 $('menu').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b) return; const it = menuItems[+b.dataset.i]; closeMenu(false); it.run(); });
 $('menu').addEventListener('keydown', e => {
@@ -117,7 +122,7 @@ $('menu').addEventListener('keydown', e => {
   else if (e.key === 'Escape'){ e.preventDefault(); closeMenu(); }
   else if (e.key === 'Tab') closeMenu(false);
 });
-document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.target.closest('#menu') && e.target !== menuAnchor && !menuAnchor?.contains(e.target)) closeMenu(false); }, true);
+document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.target.closest('#menu') && (menuAnchor === cv || (e.target !== menuAnchor && !menuAnchor?.contains(e.target)))) closeMenu(false); }, true);
 
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
@@ -154,6 +159,40 @@ function toggleGrid(){ S.grid = !S.grid; try { localStorage.setItem('flux:grid',
 PALETTE_HOOKS.push(add => {
   add('view', S.grid ? 'Hide dot grid' : 'Show dot grid', toggleGrid);
   for (const [t, T] of Object.entries(TOOLS)) add('tool', T.name, () => setTool(t), { on: currentTool() === t });
+});
+
+/* context menu: right-click (or the Menu key / Shift+F10 on the canvas) offers what fits the element under it */
+function canvasMenu(at, w){
+  const hit = w && hitTest(w);
+  if (hit && !S.sel.has(hit.cid)){ S.sel = new Set([hit.cid]); expandSel(); announceSel(); dirty = true; }
+  else if (w && !hit && S.sel.size && !inside(w, grow(selBox() || { x: 0, y: 0, w: 0, h: 0 }, 8 / S.view.zoom))){ S.sel.clear(); dirty = true; }   // empty paper
+  const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean), one = rs.length === 1 ? rs[0] : null, mine = rs.filter(r => r.author === S.me?.id);
+  const items = [];
+  if (rs.length){
+    if (one && mine.length && (one.type === 'TEXT' || one.type === 'NODE')) items.push({ label: 'Edit', icon: 'edit', key: '↵', run: () => editAny(one) });
+    items.push({ label: 'Comment', icon: 'comment', key: 'M', run: commentOnSelection });
+    items.push({ label: 'Duplicate', icon: 'copy', key: '⌘D', run: duplicateSelection }, { label: 'Copy', icon: 'copy', key: '⌘C', run: copySelection }, '-');
+    items.push({ label: 'Bring to front', icon: 'front', key: '⌘⇧↑', run: () => reorder(true) }, { label: 'Send to back', icon: 'back', key: '⌘⇧↓', run: () => reorder(false) });
+    items.push({ label: rs.every(r => r.locked) ? 'Unlock' : 'Lock', icon: rs.every(r => r.locked) ? 'unlock' : 'lock', key: '⌘⇧L', run: toggleLock });
+    if (rs.length > 1) items.push({ label: 'Group', icon: 'group', key: '⌘G', run: groupSelection });
+    if (rs.some(r => S.D.groupOf.has(r.cid))) items.push({ label: 'Ungroup', icon: 'ungroup', key: '⌘⇧G', run: ungroupSelection });
+    if (mine.length) items.push('-', { label: mine.length < rs.length ? `Delete yours (${mine.length})` : 'Delete', icon: 'trash', key: '⌫', run: revokeSelection });
+  } else {
+    const p = w || viewCenter();
+    if (clip) items.push({ label: 'Paste', icon: 'copy', key: '⌘V', run: pasteClip });
+    items.push({ label: 'Sticky note here', icon: 'sticky', run: () => startNode({ kind: 'sticky', anchor: { x: p.x, y: p.y, ax: .5, ay: .5 } }) });
+    items.push({ label: 'Text here', icon: 'type', key: 'T', run: () => openText(p) }, '-');
+    items.push({ label: 'Select all', icon: 'cursor', key: '⌘A', run: () => { selectAll(); announceSel(); } }, { label: 'Zoom to fit', icon: 'fit', key: '0', run: () => { zoomFit(); dirty = true; } });
+    items.push({ label: 'Outline of the canvas', icon: 'list', key: '⇧O', run: () => toggleStructure(true) });
+  }
+  openMenu(cv, items, at);
+}
+KEY_HOOKS.push((e, c) => {
+  if (c.onCanvas && (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey))){
+    e.preventDefault(); const b = S.sel.size && selBox(), s = b ? toScreen(b.x + b.w / 2, b.y + b.h / 2) : { x: innerWidth / 2, y: innerHeight / 2 };
+    canvasMenu(s, null); return true;
+  }
+  return false;
 });
 
 /* welcome card: quick starts build into this (empty) canvas; it steps aside on the first touch or key */

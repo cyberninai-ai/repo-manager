@@ -28,4 +28,9 @@ const S = {
 const byZ = (a, b) => a.z - b.z || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0);
 let channelName = `canvas.${canvasId}.strokes`;
 let bc = null;
+// shared frame state: the renderer reads it, interaction writes it
+let dirty = true;          // something changed: draw the next frame
+let G = null;              // the gesture in progress (interaction/pointer, selection)
+let hoverEdge = null;      // the element whose edge the pointer is on (a connector would start there)
+let editingCid = null;     // the text being edited, hidden while its editor is open
 

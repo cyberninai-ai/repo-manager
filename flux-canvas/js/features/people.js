@@ -20,7 +20,7 @@ function paintPeople(){
   const head = `<tr><th scope="col">Person</th>${PERMS.map(p => `<th scope="col">${PERM_NAMES[p]}</th>`).join('')}</tr>`;
   $('peopleTable').innerHTML = head + rows.map(r => {
     const owner = r.id === P.owner;
-    return `<tr${owner ? ' class="own"' : ''}><th scope="row"><span class="av" style="background:${r.id === 'all' ? 'var(--muted)' : `hsl(${authorHue(r.id)} 55% 30%)`}" aria-hidden="true">${r.id === 'all' ? '∗' : esc(r.label.slice(0, 2))}</span><span><b>${esc(r.label)}</b><small>${esc(r.sub)}</small></span></th>`
+    return `<tr${owner ? ' class="own"' : ''}><th scope="row"><div class="who"><span class="av" style="background:${r.id === 'all' ? 'var(--muted)' : `hsl(${authorHue(r.id)} 55% 30%)`}" aria-hidden="true">${r.id === 'all' ? '∗' : esc(initials(r.id))}</span><span><b>${esc(r.label)}</b><small>${esc(r.sub)}</small></span></div></th>`
       + PERMS.map(p => `<td><input type="checkbox" data-who="${esc(r.id)}" data-p="${p}" aria-label="${esc(r.label)}: ${PERM_NAMES[p]}"${(owner || P.can(r.id === 'all' ? '\u0000' : r.id, p)) ? ' checked' : ''}${!mine || owner ? ' disabled' : ''}></td>`).join('') + '</tr>';
   }).join('');
   $('peopleActs').innerHTML = P.owner ? '' : '<button class="btn primary" id="peopleCopy">Make an owned copy</button>';

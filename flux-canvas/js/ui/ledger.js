@@ -2,7 +2,7 @@
 // @module ui/ledger — Ledger panel: every signed record
 // @uses chrome
 /* ledger */
-function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
+function toggleLedger(force){ S.ledger = force ?? !S.ledger; if (S.ledger && $('comments').style.display === 'flex') toggleComments(false); if (S.ledger && ST.on) toggleStructure(false); $('ledger').style.display = S.ledger ? 'flex' : 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); paintLedger(); if (S.ledger) $('ledgerClose').focus(); else cv.focus({ preventScroll: true }); }
 $('ledgerClose').onclick = () => toggleLedger(false);
 function paintLedger(){
   if (!S.ledger) return;
@@ -34,3 +34,4 @@ $('ledgerList').addEventListener('click', e => {
 });
 
 $('ledgerStats').addEventListener('click', e => { if (e.target.id === 'ledgerCompact') compactHistory(); });
+CHANGE_HOOKS.push(paintLedger);

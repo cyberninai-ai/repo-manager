@@ -31,7 +31,7 @@ function derive(){
     else els.push(r);
   }
   const hidden = new Set(); for (const [k, v] of negs) if (v) hidden.add(k);
-  for (const el of els){ const o = styles.get(el.cid) || {}; el.ew = o.W ?? (el.type === 'DRAW' ? el.w : el.sw); el.ec = o.C ?? el.f.C; if (el.type === 'NODE') el.ek = NODE_KINDS[o.K] ? o.K : (NODE_KINDS[el.k] ? el.k : 'card');
+  for (const el of els){ const o = styles.get(el.cid) || {}; el.ew = o.W ?? (el.type === 'DRAW' ? el.w : el.sw); el.ec = o.C ?? el.f.C; if (el.type === 'NODE') el.ek = o.K || el.k || 'card';   // features/diagrams checks the kind exists
     el.ez = o.O ?? el.z; el.locked = !!o.L; el.elabel = o.M ?? el.label ?? ''; el.eshape = o.Y || null; el.edash = o.D || null; }
   els.sort((a, b) => a.ez - b.ez || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0));   // layer order: STYLE O overrides z
   // text edits: an author's TEXT with -E-{cid} supersedes that earlier version (unless the edit itself is revoked)
@@ -57,8 +57,14 @@ function derive(){
   runHooks(DERIVE_HOOKS, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
+// a node's branch: every node below it in the tree (through P links), visible or not revoked
+function descendants(cid){
+  const out = [], seen = new Set([cid]), q = [cid];
+  while (q.length){ for (const k of S.D.kids.get(q.shift()) || []){ if (seen.has(k)) continue; seen.add(k); const el = S.records.get(k); if (el && !S.D.hidden.has(k)){ out.push(k); q.push(k); } } }
+  return out;
+}
 let derivePending = false;
 // While a canvas or file loads (S.bulk > 0), derive once at the end instead of after every record (audit P1).
 async function bulk(fn){ S.bulk = (S.bulk || 0) + 1; try { return await fn(); } finally { if (!--S.bulk) changed(); } }
-function changed(){ if (S.bulk) return; if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
+function changed(){ if (S.bulk) return; if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); runHooks(CHANGE_HOOKS); dirty = true; }); } }
 

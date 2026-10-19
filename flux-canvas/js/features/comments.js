@@ -9,6 +9,7 @@ function toggleComments(force){
   const on = force ?? $('comments').style.display !== 'flex';
   $('comments').style.display = on ? 'flex' : 'none';
   if (on && S.ledger) toggleLedger(false);
+  if (on && ST.on) toggleStructure(false);
   if (on) paintComments(); else { activeThread = null; draft = null; dirty = true; cv.focus({ preventScroll: true }); }
   $('cmtList').setAttribute('aria-expanded', String(on));
   document.body.classList.toggle('drawer', on || S.ledger);
@@ -134,3 +135,4 @@ $('textBtn').onclick = () => setPlacing(placing === 'text' ? null : 'text');
 cv.addEventListener('pointerdown', () => { if (pinMove){ pinMove = null; commitKb(); } }, true);
 $('cmtBtn').onclick = () => setPlacing(placing === 'comment' ? null : 'comment');
 
+CHANGE_HOOKS.push(paintComments);

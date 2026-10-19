@@ -1,13 +1,6 @@
 'use strict';
-// @module ui/chrome — $ helpers, announcer, toast, signing pill, authors, summary, selection toolbar
-/* =====================================================================
-   Chrome: auth pill, authors, inspector, ledger, palette, toast
-   ===================================================================== */
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let toastT = 0;
-let sayT = 0;
-function say(msg){ const n = $('sr'); n.textContent = ''; clearTimeout(sayT); sayT = setTimeout(() => { n.textContent = msg; }, 30); }
+// @module ui/chrome — Signing pill, authors, summary, selection toolbar
+// @uses core/announce, render, features (selection toolbar actions)
 const KIND = el => el.type === 'NODE' ? (NODE_KINDS[el.ek || el.k]?.name || 'card') : el.type === 'SHAPE' ? (el.k === 'circle' ? 'circle' : el.k) : el.type === 'DRAW' ? 'stroke' : el.type.toLowerCase();
 function describe(el){
   if (!el) return '';
@@ -20,7 +13,6 @@ function announceSel(){
   if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete revokes.');
   else say(`${S.sel.size} elements selected. Arrow keys move, Delete revokes yours.`);
 }
-function toast(msg){ say(msg); const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 let authShown = '';
 function paintAuth(){
   if (!S.me) return;
@@ -30,6 +22,7 @@ function paintAuth(){
   if (txt !== authShown){ authShown = txt; $('authTxt').innerHTML = txt; $('auth').classList.toggle('open', open); }
 }
 function paintAuthTick(){ paintAuth(); }
+FRAME_HOOKS.push(paintAuthTick);
 $('auth').onclick = () => toggleLedger();
 function paintSummary(){
   const c = {}; let n = 0;
@@ -37,6 +30,7 @@ function paintSummary(){
   const oc = [...S.D.threads.values()].filter(t => !S.D.hidden.has(t.root.cid) && !t.resolved).length;
   $('summary').textContent = (oc ? `${oc} open comment thread${oc > 1 ? 's' : ''}. ` : '') + (n ? `Canvas has ${n} element${n > 1 ? 's' : ''}: ` + Object.entries(c).map(([k, v]) => `${v} ${k}${v > 1 ? 's' : ''}`).join(', ') + '.' : 'Empty canvas.');
 }
+const initials = id => NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
 function paintAuthors(){
   paintSummary();
   const counts = new Map();
@@ -46,7 +40,8 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA)
+    b.textContent = initials(id);
     b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.dataset.tip = `${id === S.me?.id ? 'You' : NAMES.get(id) || short(id)} · ${n} element${n === 1 ? '' : 's'} · click to show only theirs`;
@@ -140,3 +135,5 @@ $('insp').addEventListener('click', async e => {
 });
 async function copy(text, msg){ try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Clipboard blocked by the browser.'); } }
 
+CHANGE_HOOKS.push(paintAuthors);
+RENDER_HOOKS.dom.push(paintInspector);   // after the style bar (registered first): the toolbar keeps clear of it

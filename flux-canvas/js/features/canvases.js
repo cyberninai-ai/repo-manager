@@ -72,6 +72,13 @@ async function canvasList(){
 }
 const ago = t => { if (!t) return 'empty'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
 
+// a new canvas you own (core/permissions): an id derived from your key, claimed with an OWNER record
+async function createOwnedCanvas(){
+  const { nonce, id } = await ownedCanvasId();
+  await switchCanvas(id); await claimCanvas(nonce);
+  return id;
+}
+
 /* the canvas home */
 const CARD_ICONS = { blank: ['plus', 'slate'], brainstorm: ['sparkle', 'amber'], offsite: ['sparkle', 'amber'], mindmap: ['mindmap', 'violet'], flow: ['flow', 'blue'],
   wire: ['wire', 'slate'], feedback: ['columns', 'green'], retro: ['columns', 'green'], moodboard: ['palette', 'pink'], brand: ['palette', 'pink'],

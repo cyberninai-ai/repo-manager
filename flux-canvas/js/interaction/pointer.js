@@ -33,7 +33,7 @@ cv.addEventListener('pointerdown', e => {
     if (gh){ G = { kind: 'grow', from: gh.el, dir: gh.dir, start: w, cur: w, moved: false, sx: e.clientX, sy: e.clientY }; dirty = true; return; }
     if (placing === 'comment'){ G = { kind: 'none' }; startComment(w, hitTest(w)); setPlacing(null); return; }
   }
-  if (e.button === 1 || e.button === 2 || spaceDown || S.handTool){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; setCursor(); return; }
+  if (e.button === 1 || e.button === 2 || spaceDown || S.handTool){ G = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y, button: e.button, at: w }; setCursor(); return; }
   if (e.button !== 0) return;
   if (S.lassoMode && !e.ctrlKey && !e.metaKey && !onHandle(w)){
     const hit = hitTest(w);
@@ -149,6 +149,9 @@ function endPointer(e, cancelled){
   if (cancelled) return;
   const w = toWorld(e.clientX, e.clientY);
   switch (g.kind){
+    case 'pan':   // a right-click that didn't drag opens the context menu
+      if (g.button === 2 && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < 5) canvasMenu({ x: e.clientX, y: e.clientY }, g.at);
+      return;
     case 'stroke': {
       const tap = (g.far || 0) < 4 && performance.now() - g.p0 < 300;
       if (tap){

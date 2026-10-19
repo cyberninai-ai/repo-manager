@@ -6,7 +6,7 @@
    ===================================================================== */
 const cv = document.getElementById('c'), mainCtx = cv.getContext('2d');
 let ctx = mainCtx;   // swapped briefly to draw thumbnails with the same renderer
-let dirty = true, dpr = 1;
+let dpr = 1;
 function resize(){ dpr = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; dirty = true; }
 addEventListener('resize', resize);
 const toWorld = (sx, sy) => ({ x: sx / S.view.zoom + S.view.x, y: sy / S.view.zoom + S.view.y });
@@ -73,6 +73,13 @@ function dashedBox(b, color, z){
   ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 4 / z]);
   ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore();
 }
+// the resize handle sits on the bottom-right corner of a single selected image or node
+function resizeHandle(){
+  if (S.sel.size !== 1) return null;
+  const el = S.records.get([...S.sel][0]);
+  if (!el || (el.type !== 'IMAGE' && el.type !== 'NODE') || el.locked || S.D.hidden.has(el.cid)) return null;
+  const b = box(el); return b && { x: b.x + b.w, y: b.y + b.h, el };
+}
 function selOutline(b, color, z, alpha = 1){
   ctx.save(); ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = 1.5 / z;
   rr(ctx, b.x, b.y, b.w, b.h, 4 / z); ctx.stroke(); ctx.restore();
@@ -104,7 +111,7 @@ function render(){
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(dpr * z, 0, 0, dpr * z, -S.view.x * z * dpr, -S.view.y * z * dpr);
   const vp = { x: S.view.x, y: S.view.y, w: innerWidth / z, h: innerHeight / z };
-  readTheme(); drawGrid(vp, z); drawTreeLinks();
+  readTheme(); drawGrid(vp, z); runHooks(RENDER_HOOKS.under);
   for (const el of S.D.els){
     if (!visible(el)) continue;
     const b = box(el);
@@ -142,7 +149,6 @@ function render(){
   }
   ctx.restore();
   runHooks(RENDER_HOOKS.world, z);
-  drawNodeGhost(); drawGrowHandles(accent);
   if (G?.kind === 'erase' && G.pts.length > 1){ ctx.save(); ctx.strokeStyle = TH.muted; ctx.globalAlpha = .35; ctx.lineWidth = 14 / z; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); ctx.restore(); }
   if (G?.kind === 'move' && G.guides) for (const gd of G.guides){ ctx.save(); ctx.strokeStyle = '#e64980'; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 3 / z]); ctx.beginPath();
@@ -160,13 +166,9 @@ function render(){
       ctx.fillStyle = TH.paper; ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z;
       rr(ctx, h.x - 5 / z, h.y - 5 / z, 10 / z, 10 / z, 2.5 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
   }
-  drawPins();
-  drawPeers();
+  runHooks(RENDER_HOOKS.overlay, z);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); runHooks(RENDER_HOOKS.screen);
-  paintMini();
-  paintPreviews();
-  paintBar();
-  paintInspector();
+  runHooks(RENDER_HOOKS.dom);
 }
-function loop(){ if (dirty) render(); paintAuthTick(); requestAnimationFrame(loop); }
+function loop(){ if (dirty) render(); runHooks(FRAME_HOOKS); requestAnimationFrame(loop); }
 

@@ -4,7 +4,7 @@
 /* =====================================================================
    Pointer gestures
    ===================================================================== */
-let G = null, hoverEdge = null, spaceDown = false, lastTap = null;
+let spaceDown = false, lastTap = null;
 const pointers = new Map();
 function edgeHit(sx, sy){
   const w = toWorld(sx, sy), band = 8 / S.view.zoom, els = S.D.els;
@@ -108,6 +108,7 @@ function kbMove(dx, dy, targets = null){
   G.dx += dx; G.dy += dy; dirty = true;
   clearTimeout(kbT); kbT = setTimeout(commitKb, 450);
 }
+ACTION_HOOKS.push(() => commitKb());
 function commitKb(){
   clearTimeout(kbT);
   const g = G; if (!g || !g.keyboard) return;

@@ -10,13 +10,6 @@ async function addBlob(cid, bytes){
   return true;
 }
 // Blobs are opaque bytes addressed by CID; what they mean depends on the record that cites them.
-function strokeGeom(cid){
-  if (!S.geom.has(cid)){
-    const b = S.blobs.get(cid); if (!b) return null;
-    try { S.geom.set(cid, geomOf(decodePoints(b))); } catch { S.geom.set(cid, null); }
-  }
-  return S.geom.get(cid);
-}
 // Image format from the bytes themselves; file names and MIME types from hosts and messengers are often missing or wrong.
 function sniffImage(b){
   const at = (i, ...v) => v.every((x, j) => b[i + j] === x), str = (i, n) => String.fromCharCode(...b.subarray(i, i + n));

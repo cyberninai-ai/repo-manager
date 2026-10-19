@@ -35,3 +35,8 @@
   #home .hm{margin-top:10px;padding:16px}
   #present .pt{min-width:0}
 }
+@media (max-width:640px){
+  /* the dock scrolls sideways; a fade on the edge shows there is more */
+  #tools{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent);padding-right:28px}
+  #tools [data-tool="hand"]{display:none}   /* two fingers pan on touch */
+}

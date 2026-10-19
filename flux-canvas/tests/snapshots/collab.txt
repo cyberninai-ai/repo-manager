@@ -1,0 +1,34 @@
+empty state shown true
+home {"open":true,"tpl":9,"ex":5,"focus":"inside"}
+focus trapped in home true
+template blank {"title":"Untitled canvas","els":0,"rej":0}
+template brainstorm {"title":"Brainstorm","els":6,"rej":0}
+template feedback {"title":"Feedback board","els":9,"rej":0}
+template story {"title":"Storyboard","els":19,"rej":0}
+template moodboard {"title":"Moodboard","els":12,"rej":0}
+template audit {"title":"Audit flow","els":8,"rej":0}
+template mindmap {"title":"Mind map","els":8,"rej":0}
+example offsite {"title":"Team offsite — brainstorm and vote","records":30,"ok":30,"bad":0,"rej":0,"authors":4,"votes":11,"audits":0,"signoffs":0,"threads":1,"images":0,"swatches":0}
+example retro {"title":"Sprint 42 retro — feedback board","records":34,"ok":34,"bad":0,"rej":0,"authors":4,"votes":10,"audits":0,"signoffs":0,"threads":1,"images":0,"swatches":0}
+example onboarding {"title":"Onboarding story — Maya’s first week","records":29,"ok":29,"bad":0,"rej":0,"authors":4,"votes":0,"audits":0,"signoffs":0,"threads":1,"images":5,"swatches":0}
+example brand {"title":"Brand refresh — moodboard","records":26,"ok":26,"bad":0,"rej":0,"authors":4,"votes":0,"audits":0,"signoffs":0,"threads":1,"images":5,"swatches":10}
+example expense {"title":"Expense approval — audited flow","records":20,"ok":20,"bad":0,"rej":0,"authors":4,"votes":0,"audits":6,"signoffs":1,"threads":1,"images":0,"swatches":0}
+canvas list Expense approval — audited flow | Brand refresh — moodboard | Onboarding story — Maya’s first week | Sprint 42 retro — feedback board
+audit walk {"open":"flex","steps":["Submit expense","Attach receipt","Over $1,000?","Manager approves","Finance approves","Paid out"]}
+my verdicts 2 | fail on “Attach receipt”. Signed.
+report has table and signoff true
+signoff fences verdicts true
+history 7 → 1 | refused while viewing: true
+back to now true
+vote pill is yours ● 5 votes left
+budget enforced true my votes 1
+chip click takes the vote back 0
+timer in both tabs true ⏱ 4:59
+timer stopped in tab 2 true
+sorted by votes 2,1,1,0
+summary {"cols":true,"top":"1. Flaky e2e tests blocked merges twice — ● 3","comments":true}
+report dialog true
+present 1 · Monday → 3 · Docs desert | ended true
+palette fce3c4,8c4f23,e09f5d,f1c48d,c87b3d distinct 5
+connector {"label":"supports","color":"green","shape":"straight","dash":"dash","svgDash":true,"svgLabel":true}
+sticky 1

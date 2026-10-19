@@ -200,3 +200,4 @@ try { if (localStorage.getItem('flux:barMin') === '1') foldBar(true); } catch {}
 addEventListener('resize', () => document.documentElement.style.setProperty('--barH', barH() + 'px'));
 try { new ResizeObserver(() => { document.documentElement.style.setProperty('--barH', barH() + 'px'); dirty = true; }).observe($('bar')); } catch {}
 
+RENDER_HOOKS.dom.unshift(paintBar);   // first: the selection toolbar places itself clear of the bar

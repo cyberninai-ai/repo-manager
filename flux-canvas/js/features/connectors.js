@@ -12,8 +12,6 @@ const RELATIONS = [
   { id: 'question',    label: 'question',    C: 'orange', D: 'dot',   icon: '?' },
 ];
 const SHAPES = ['curve', 'straight', 'elbow'], DASHES = ['solid', 'dash', 'dot'];
-const dashOf = (d, w) => d === 'dash' ? [w * 4 + 4, w * 3 + 3] : d === 'dot' ? [0.1, w * 2 + 3] : [];
-const svgDash = (d, w) => d === 'dash' ? ` stroke-dasharray="${w * 4 + 4} ${w * 3 + 3}"` : d === 'dot' ? ` stroke-dasharray="0.1 ${w * 2 + 3}"` : '';
 
 let relRow = false;
 const ownArrows = rs => rs.filter(r => r.type === 'ARROW' && r.author === S.me.id);

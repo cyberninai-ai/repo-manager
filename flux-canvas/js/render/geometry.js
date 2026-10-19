@@ -107,3 +107,11 @@ function pointInPoly(p, poly){
   return c;
 }
 
+// stroke geometry from its point blob, decoded once
+function strokeGeom(cid){
+  if (!S.geom.has(cid)){
+    const b = S.blobs.get(cid); if (!b) return null;
+    try { S.geom.set(cid, geomOf(decodePoints(b))); } catch { S.geom.set(cid, null); }
+  }
+  return S.geom.get(cid);
+}

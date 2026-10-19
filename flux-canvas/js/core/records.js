@@ -83,7 +83,6 @@ async function publish(raw, blobs = {}){
 }
 // Every transport (this browser's BroadcastChannel, a network relay in core/net) delivers here; everything is verified on ingest.
 async function onWire({ data }, from = null){
-  if (data && data.presence){ onPresence(data.presence); return; }
   if (data && (data.hello || data.records) && from){ onSync(data, from); return; }
   for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k]); return; }
   if (!data || typeof data.raw !== 'string') return;

@@ -87,7 +87,7 @@ const AUTH_IDLE = 5000;
 async function signed(action, pairs){
   if (S.histZ != null){ toast('Viewing history: go back to now to make changes.'); const e = new Error('history view'); e.name = 'HistoryView'; throw e; }
   checkMayDo(action, pairs);
-  auth.until = Date.now() + AUTH_IDLE; auth.count++; paintAuth();
+  auth.until = Date.now() + AUTH_IDLE; auth.count++;   // the signing pill shows it on the next frame
   const payload = build(action, pairs);
   const sig = new Uint8Array(await crypto.subtle.sign(SIGALG[S.me.alg], S.me.priv, te.encode(payload)));
   return payload + '-SIG-' + b58enc(sig);

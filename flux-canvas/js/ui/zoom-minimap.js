@@ -40,3 +40,4 @@ $('mini').addEventListener('pointerdown', e => { e.stopPropagation(); $('mini').
 $('mini').addEventListener('pointermove', e => { if (e.buttons) miniPan(e); });
 $('zoomui').addEventListener('pointerdown', e => e.stopPropagation());
 
+RENDER_HOOKS.dom.push(paintMini);
