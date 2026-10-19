@@ -150,45 +150,13 @@ $('audit').addEventListener('keydown', e => {
   if (e.key === 'ArrowRight'){ e.preventDefault(); showStep(walk.i + 1); } if (e.key === 'ArrowLeft'){ e.preventDefault(); showStep(walk.i - 1); }
 });
 
-/* history: replay the union record by record (read-only while open) */
-let histRecs = null, histPlay = 0;
-function openHistory(){
-  histRecs = [...S.records.values()].sort(byZ);
-  if (!histRecs.length){ toast('Nothing to replay yet.'); return; }
-  $('history').hidden = false; document.body.classList.add('history');
-  const r = $('histRange'); r.max = histRecs.length; r.value = histRecs.length; setHist(histRecs.length);
-  setTimeout(() => r.focus(), 0);
-  say('History. Move the slider to replay the canvas step by step. Nothing can change until you go back to now.');
-}
-function setHist(i){
-  i = Math.max(0, Math.min(histRecs.length, i));
-  S.histZ = i >= histRecs.length ? null : i === 0 ? -1e15 : histRecs[i - 1].z;
-  const r = histRecs[Math.max(0, i - 1)];
-  $('histLabel').textContent = i >= histRecs.length ? `now · ${histRecs.length} records` : `${i} of ${histRecs.length} · ${r ? `${r.type.toLowerCase()} by ${short(r.author)} · ${new Date(r.t).toLocaleString()}` : 'before the first record'}`;
-  $('histRange').setAttribute('aria-valuetext', $('histLabel').textContent);
-  S.sel.clear(); changed();
-}
-function closeHistory(){ clearInterval(histPlay); histPlay = 0; S.histZ = null; histRecs = null; $('history').hidden = true; document.body.classList.remove('history'); changed(); cv.focus({ preventScroll: true }); say('Back to now.'); }
-$('histRange').addEventListener('input', e => setHist(+e.target.value));
-$('histPlay').onclick = () => {
-  if (histPlay){ clearInterval(histPlay); histPlay = 0; $('histPlay').innerHTML = ic('play'); return; }
-  const r = $('histRange'); if (+r.value >= histRecs.length){ r.value = 0; setHist(0); }
-  const step = Math.max(1, Math.round(histRecs.length / 80));
-  $('histPlay').innerHTML = '<span class="gl">❚❚</span>';
-  histPlay = setInterval(() => { const v = Math.min(histRecs.length, +r.value + step); r.value = v; setHist(v); if (v >= histRecs.length){ clearInterval(histPlay); histPlay = 0; $('histPlay').innerHTML = ic('play'); } }, 90);
-};
-$('histNow').onclick = closeHistory;
-$('history').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeHistory(); });
-
 PALETTE_HOOKS.push(add => {
   add('audit', 'Start audit from the selected step', startAudit, { k: 'A' });
   add('audit', 'Audit report (Markdown)…', () => openReport(`Audit report — ${canvasTitle()}`, auditReport(), 'audit-report.md'));
-  add('audit', 'History: replay the canvas…', openHistory, { k: '⇧H' });
 });
 KEY_HOOKS.push((e, c) => {
   if (!c.onCanvas || c.mod || e.altKey) return false;
   if (c.k === 'a' && !e.shiftKey){ e.preventDefault(); startAudit(); return true; }
-  if (e.key === 'H' && e.shiftKey){ e.preventDefault(); openHistory(); return true; }
   return false;
 });
 $('auditClose').onclick = closeAudit;

@@ -107,7 +107,7 @@ A feature registers here and needs no edits to the core:
 
 | Hook | Signature | Used by |
 |---|---|---|
-| `registerRecord(action, { parse, fence?, check? })` | adds a record type. `fence` names the action allowed inside its `P` fence (each verified on its own). `check` is an async validity test run on ingest | canvases (META), brainstorm (REACT), audit (AUDIT, SIGNOFF), permissions (OWNER with `check`, GRANT) |
+| `registerRecord(action, { parse, fence?, check?, inherit? })` | adds a record type. `fence` names the action allowed inside its `P` fence (each verified on its own). `check` is an async validity test run on ingest. `inherit: false` keeps it out of forks (governance, payments). Field `N` is reserved for revocation | canvases (META), brainstorm (REACT), audit (AUDIT, SIGNOFF), permissions (OWNER with `check`, GRANT) |
 | `DERIVE_HOOKS` | `(D, byType)` after the core derive | reactions, verdicts, sign-offs, canvas title |
 | `RENDER_HOOKS.under` / `.world` / `.overlay` / `.screen` / `.dom` | drawing layers: below elements, above them, after the selection, in screen pixels, then HTML overlays | tree links; ghosts, `+` handles, chips, badges; pins and cursors; style bar, selection toolbar, previews, overview |
 | `CHANGE_HOOKS` | `()` after records changed and `derive()` ran | people, ledger, comments, outline |
@@ -119,7 +119,18 @@ A feature registers here and needs no edits to the core:
 | `KEY_HOOKS` | `(e, { onCanvas, mod, k }) → true` | H, D, A, ⇧H, ⇧S, F5, presentation keys |
 | `WIRE_HOOKS[key]` | ephemeral messages on every transport | presence, shared timer |
 | `TEMPLATES` / `EXAMPLES` | canvas home cards | every use case |
-| `NAMES` | author key → display name | example authors |
+| `NAMES` | author key → display name | example authors, profiles |
+| `registerFeature({ id, name, group, icon, blurb, records, status?, open })` | the feature catalogue: the Team hub and the palette read it | every team feature (docs/FEATURES.md) |
+| `DELIVERY_HOOKS.evaluate` / `.proof` / `.row` / `.choices` | judge a delivery, add proof sections, add Work-panel rows, offer ways to approve | flows; contribution, payouts, witnesses, excerpts, claims |
+| `FLOW_CONDITIONS[id]` | `{ label, test(D) → true or a reason }`: what an approval flow can require | claims, stances, decisions, rituals, tasks, critical path |
+| `RECORD_GATES` | `(all, policy) → (r) → null / 'deny' / 'pending'`, in derive after permissions | zones (suggest and locked) |
+| `PUBLISH_FILTERS` | `async (raw, blobs) → undefined` to publish as is, or what was published instead | silent rounds (seal notes), zones (refuse in a locked zone) |
+| `WIRE_INGEST_HOOKS` | `(msg, from, chan)` after a wire message brought new records | mesh forwarding |
+| `PRESENCE_FIELDS` | `() → fields` merged into your live presence | attention (Room) |
+| `IDENTITY.of` / `personOf` / `samePerson` | key → person | linked devices and recovery; read by permissions, approvals, credit, names |
+| `registerPanel({ id, title, blurb, paint, click?, change? })` (ui/panels) | a side panel: one open at a time, repainted on change keeping focus and typed text | every team feature panel |
+| `STRIP` / `STRIP_ACTIONS` (ui/hub) | chips in the session strip under the title bar | silent rounds, facilitation, rituals |
+| `drawBadge(x, y, text, tone, run?)` / `screenBox(el)` (ui/panels) | clickable labels beside elements | stances, decisions, claims, zones, dependencies, what changed |
 | `runHooks(list, …)` | calls each hook, logs and isolates failures | — |
 
 Undo for anything that isn't a plain create, move or style: push `{ kind: 'fn', undo, redo }` onto `S.hist`.
@@ -127,7 +138,7 @@ Undo for anything that isn't a plain create, move or style: push `{ kind: 'fn', 
 ## Adding a feature (checklist)
 
 1. **Format:** specify any new record in PATTERNS.md, including who may author it and how "latest wins" is decided.
-2. **Code:** add `js/features/<name>.js` with `@module` and `@uses` headers, and add its `<script>` to `index.html` before `interaction/keyboard.js`.
+2. **Code:** add `js/features/<name>.js` with `@module` and `@uses` headers, and add its `<script>` to `index.html` before `interaction/keyboard.js`. Call `registerFeature` so it appears in the Team hub, and `registerPanel` for its panel (no markup in `index.html` needed).
 3. **Records:** call `registerRecord`, then compute the feature's view in a `DERIVE_HOOKS` entry. Skip records in `D.hidden`; follow edits with `current()`.
 4. **Interface:** add toolbar buttons, palette commands and keys through the hooks. Put markup in `index.html` and styles in a stylesheet. Use `say()` for screen-reader announcements and `toast()` for visible ones.
 5. **Use case:** register a template and, if useful, an example built with `features/builders.js` (no undo noise; examples sign as Ana, Ben and Chen).
@@ -224,6 +235,30 @@ Each row is one user-facing surface, with the files that own it.
 | features/work.js | Tasks (TASK), the Work panel, deliveries with named approvers and a quorum (DELIVER, APPROVE), the proof |
 | features/compaction.js | Compact your own history (audit D1) and rebuild undo after a reload (audit D3) |
 | features/structure.js | Outline panel (audit X2): the canvas as a navigable tree — frames, what sits in them, |
+| ui/panels.js | The panel host: registerPanel, one side panel at a time, repaint keeping focus; canvas badges and shared panel helpers |
+| ui/form.js | formDialog: a labelled multi-field dialog for features (no <form>, works in sandboxes) |
+| ui/hub.js | The Team button (registered features grouped, with live status) and the session strip |
+| features/stances.js | Stances and the consensus map: agree, disagree, unsure, alternative, abstain; levels and convergence |
+| features/decisions.js | The decision ledger: DECISION and REVIEW, evidence, stances, review dates, decision log |
+| features/claims.js | Claim grounding: CLAIM, EVIDENCE, CHECK; independent checks; automatic grounders plug in |
+| features/seal.js | Sealed records: SEAL commits to a record’s CID and encrypts it; REVEAL opens it at its time |
+| features/rounds.js | Silent-first rounds: notes sealed during the round, all opened together; blind stance rounds |
+| features/facilitate.js | Facilitation: role, agenda with time boxes, pull to item, raise-hand queue, floor, note-takers, minutes |
+| features/rituals.js | Ritual contracts: required outputs, people and time box; success only when met; the team record |
+| features/attention.js | Structural presence (Room): editing, reading, idle, maybe stuck, hot spots; live only |
+| features/flows.js | Approval flows: groups, thresholds, order, conditions, escalation; judges deliveries |
+| features/contribution.js | Contribution proof: METHOD weights, shares from signed records, CREDIT that recomputes |
+| features/payouts.js | Canvas-to-Cash: FUND pledges, PAY terms, SETTLE that recomputes; connectors and manifest |
+| features/witness.js | Peer witnesses: WITNESS countersigns a version; each peer checks it against its own records |
+| features/excerpt.js | Excerpts with proof: part of a delivery plus the version’s IDs; verification and opening |
+| features/mesh.js | Mesh relay: forward new records and live signals to every other connection |
+| features/replay.js | Replay: play the canvas back in its rhythm, scoped, with sessions and moments |
+| features/since.js | What changed since your last visit, a delivery or a decision, outlined and stepped through |
+| features/lineage.js | Lineage forks: copy with original signatures, LINEAGE and FORKED links, INHERIT royalties, pull |
+| features/graph.js | The canvas graph: questions across every canvas on this device; signed RESULT |
+| features/devices.js | Linked devices and guardian recovery: LINK, GUARD, RECOVER; key → person |
+| features/zones.js | Zones and suggest mode: ZONE, ACCEPT; record gate for suggestions and locked areas |
+| features/taskflow.js | Task dependencies, ready and blocked work, the critical path, loops |
 | ui/toolbar.js | The tool model (select, hand, draw, eraser, rectangle, ellipse, line, sticky note, shapes, text, |
 | interaction/keyboard.js | Global keyboard map |
 | boot.js | Boot: identity, saved records, first render |

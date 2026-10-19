@@ -57,7 +57,7 @@ const whoName = id => id === S.me?.id ? 'You' : short(id);
 const elTitle = cid => { const el = cid && current(cid); return el ? ((el.text || el.alt || el.elabel || KIND(el)).replace(/\s+/g, ' ').trim().slice(0, 70) || KIND(el)) : 'something removed'; };
 function goTo(cid){ const el = current(cid); if (!el) return; S.sel = new Set([el.cid]); ensureVisible(el); announceSel(); dirty = true; }
 const when = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const plural = (n, w, pl = w + 's') => `${n} ${n === 1 ? w : pl}`;
 
 /* canvas badges: small labels team features draw beside elements (screen pixels), clickable */
 const BADGES = [];   // this frame's clickable badges: { x, y, w, h, run }

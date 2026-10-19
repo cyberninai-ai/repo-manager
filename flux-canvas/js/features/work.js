@@ -7,6 +7,7 @@
 //   H = sha256 over the sorted CIDs of every record before this one (z below its own): the exact version being delivered
 // APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}-Z-T-SIG
 //   counts only from approvers named on the delivery, and only when H matches; latest per approver wins
+const WORK_SECTIONS = [];   // () → HTML sections other features add to the Work panel (features/taskflow)
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
 registerRecord('TASK', { parse(r, f){ if (!f.R || !['todo', 'doing', 'done', 'x'].includes(f.S)) throw Error('task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
 registerRecord('DELIVER', { parse(r, f){ if (!f.R || !f.H || !f.A) throw Error('deliver'); r.title = decTxt(f.M || ''); r.approvers = f.A.split('_').filter(Boolean); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1'))); r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; }, inherit: false });
@@ -135,6 +136,7 @@ function paintWork(){
   }).join('');
   $('workBody').innerHTML = `<div class="wk-prog"><div><b>${done} of ${list.length}</b> done${WK.mine ? ' · yours' : ''}</div><i style="width:${list.length ? Math.round(done / list.length * 100) : 0}%"></i></div>
     <div class="opts"><label><input type="checkbox" id="wkMine"${WK.mine ? ' checked' : ''}> Only mine</label></div>
+    ${WORK_SECTIONS.map(f => { try { return f() || ''; } catch { return ''; } }).join('')}
     ${groups || '<p class="se-empty">No tasks yet. Select a note or shape and press K (or the ✓ button) to make it a task.</p>'}
     <h3>Deliveries</h3>${dl ? `<ul class="wk-list">${dl}</ul>` : '<p class="se-empty">When the work is ready, deliver it: the people you name approve this exact version, and everyone gets a proof.</p>'}
     <button class="btn" id="wkDeliver">${ic('check')}Deliver this work…</button>`;

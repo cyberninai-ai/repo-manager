@@ -43,6 +43,19 @@ Make the collaboration itself verifiable, without making it harder to use.
 | Deliver | Tasks with owners and due dates, progress, a delivery sent for approval | Approvers sign the exact version, and later edits can't sneak in |
 | Prove | A proof file plus the canvas file | Anyone can check every signature offline, years later |
 
+## Twenty-one team features
+
+The loop above is carried by twenty-one features (details in [FEATURES.md](FEATURES.md)). Each is a separate module; together they make the canvas a **coordination substrate**: every meeting, review and delivery becomes a signed, replayable, funded, grounded and accountable event.
+
+| Step | Features |
+|---|---|
+| Ideate | **Silent rounds**: everyone writes, nobody sees anything until all ideas open together. **Room**: who is editing, reading, stuck or idle, live only, never stored. **Zones**: own an area; others' changes there wait as suggestions |
+| Organize | **Facilitated meetings**: role, agenda with time boxes, queue for the floor, note-takers, minutes. **Ritual contracts**: a retro or planning closes as a success only when its outputs exist. **Dependencies and critical path** |
+| Decide | **Consensus map**: signed stances show where the room agrees or is split, and how it converges. **Decision ledger**: decisions with their evidence, stances and review dates. **Claim grounding**: facts carry evidence and independent checks. **Sealed bids and commitments** |
+| Deliver | **Approval flows**: groups, thresholds, order and conditions as a signed rule. **Contribution proof**: who did how much, derived from the records. **Canvas-to-Cash**: pledges, payment terms, and a settlement released by approval. **Peer witnesses**. **Excerpts with proof** |
+| Prove and remember | **Replay**: watch the session being made. **What changed** since your last visit or a delivery. **Lineage forks** with royalties. **Canvas graph**: questions across all your canvases, signed answers |
+| Underneath | **Mesh relay**: groups stay in sync with no server. **Linked devices and guardian recovery**: one person, several keys; guardians restore a lost one |
+
 ## Who it's for
 
 - **Distributed teams and agencies** that need client sign-off tied to the exact version.
@@ -76,6 +89,7 @@ Be precise with the team and with customers.
   - a state root that summarises the whole canvas.
 - **What it does not have (today):** a global chain, consensus among strangers, tokens or gas.
   - It doesn't need them: teammates aren't strangers competing to write the same ledger. They're collaborators who need proof of who did what.
+- **What dates a version today:** peer witnesses. Independent people countersign a version, and to deny it existed every one of them would have had to lie.
 - **The natural next step:** anchor a delivery's state root on a public chain. One transaction then timestamps the whole delivery for anyone to see, without putting the work itself on-chain.
 
 The honest way to say it: **"Blockchain-grade proof for collaborative work, without the chain overhead. Anchoring to a public chain is a bolt-on."**
@@ -90,25 +104,28 @@ The honest way to say it: **"Blockchain-grade proof for collaborative work, with
   - comments with threads, votes, reactions, a shared timer, presentation mode.
 - **Sync:** other tabs, direct peer-to-peer (two codes), or a relay (`npm run relay`, no dependencies); self-healing sync by state root; "caught up: 12 changes from Ana" after being away.
 - **Work and proof:**
-  - tasks (status, owner, due date) with a Work panel;
-  - deliveries approved by quorum on an exact version, with a proof file;
+  - tasks (status, owner, due date) with a Work panel, dependencies and the critical path;
+  - deliveries approved by quorum or by an approval flow on an exact version, with a proof file that carries the flow, the claims, contribution shares, the payment and witnesses;
   - audit flows with signed verdicts and sign-off;
   - a readable activity feed;
   - owner-controlled permissions.
+- **Team features:** the twenty-one above, from the Team button (top right) or ⌘K.
 - **Under the hood:**
   - non-extractable keys;
   - an append-only local log (IndexedDB);
   - verification in every browser;
   - clock-abuse protection;
   - compaction;
-  - 59 modules in enforced layers;
-  - 24 browser test suites.
+  - 83 modules in enforced layers;
+  - 28 browser test suites, the team features tested with two to four people over WebRTC.
 
 ## What's next (and what to be careful not to over-promise)
 
 | Next | Why it matters |
 |---|---|
-| Passkeys as the identity root | Keys can't be backed up today; clearing the browser loses that identity (the work stays valid) |
+| A payout connector (FXN service pool) | Settlements are signed and recomputable; a connector moves the money |
+| An automatic grounder (TLM or a resolver) | Claims are grounded by people today; a grounder signs checks with its own key |
+| Passkeys as the identity root | Linked devices and guardians cover a lost device; a passkey makes the first device recoverable alone |
 | End-to-end encryption on the relay | The relay can read what it forwards today |
 | On-chain anchoring of deliveries | Public timestamp of a delivery's state root |
 | Rotation, text styling inside shapes, components | Closer to a full design tool |

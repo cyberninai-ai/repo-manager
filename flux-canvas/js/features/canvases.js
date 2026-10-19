@@ -3,7 +3,7 @@
 // @uses hooks, records, keyboard (switchCanvas), ui/dialogs
 
 // META-I-{author}-R-{canvasId}-M-{title}-K-{template}-Z-T-SIG — latest wins; anyone may retitle (audit S2)
-registerRecord('META', { parse(r, f){ if (!f.R) throw Error('meta'); r.title = decTxt(f.M || ''); r.tpl = f.K || ''; } });
+registerRecord('META', { parse(r, f){ if (!f.R) throw Error('meta'); r.title = decTxt(f.M || ''); r.tpl = f.K || ''; }, inherit: false });
 DERIVE_HOOKS.push((D, by) => {
   let m = null;
   for (const r of by.META || []) if (r.f.R === canvasId) m = r;   // z order: the last is the latest

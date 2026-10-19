@@ -2,7 +2,7 @@
 
 **Goal:** a collaborative space where people think together. They brainstorm, build ideas, collect feedback, build stories and moodboards, and run audits, and every contribution is a signed record anyone can verify.
 
-The plan is ordered so each phase ships on its own and leaves the app working. Phases 0–14 are done: 0–7 build the collaboration features, 8 the interface, 9–12 resolve the audit, and 13–14 make editing and co-work feel native (audit round 3). The end lists decisions and next work for the team.
+The plan is ordered so each phase ships on its own and leaves the app working. Phases 0–15 are done: 0–7 build the collaboration features, 8 the interface, 9–12 resolve the audit, 13–14 make editing and co-work feel native (audit round 3), and 15 adds twenty-one team features ([FEATURES.md](FEATURES.md)). The end lists decisions and next work for the team.
 
 ## Principles
 
@@ -17,7 +17,7 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 ### 0 · Modular source (done)
 - `index.html` + `css/` (11 files) + `js/` (core, render, model, interaction, ui, features), in load order.
 - `tools/build.mjs` inlines them into `../flux-canvas.html`; `--check` fails CI when the bundle is stale.
-- `tests/`: browser suites (14 then, 24 now) plus a runner that fails on page errors or axe violations. They run against the bundle or the source.
+- `tests/`: browser suites (14 then, 28 now) plus a runner that fails on page errors or axe violations. They run against the bundle or the source.
 - **Accept:** the first build is byte-identical to the original file, and both targets pass all suites.
 
 ### 1 · Canvases and use cases (done)
@@ -108,6 +108,14 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 - **Work:** `TASK`, the Work panel, `DELIVER` with named approvers and a quorum, `APPROVE` on an exact root, the proof file.
 - **Accept:** `tests/cowork.mjs` (two browser contexts over WebRTC).
 
+### 15 · Team features (done) · see FEATURES.md
+- **Platform:** `registerFeature` and the Team hub, one panel host, a form dialog, the session strip, canvas badges; core hooks for deliveries, flow conditions, record gates, publish filters, wire ingest, presence fields and identity.
+- **Decide:** claim grounding, sealed bids and commitments, decision ledger, consensus map.
+- **Meet:** structural presence, silent rounds, facilitated meetings, ritual contracts, zones and suggestions.
+- **Deliver:** approval flows, contribution proof, Canvas-to-Cash, peer witnesses, dependencies and critical path, excerpts with proof.
+- **Remember and network:** replay, what changed, lineage forks, the canvas graph, linked devices and guardian recovery, the mesh relay.
+- **Accept:** `tests/reason.mjs`, `meeting.mjs`, `economy.mjs`, `memory.mjs` (99 checks, two to four people over WebRTC).
+
 ### Decisions recorded
 - **Transport:** a plain WebSocket relay rather than Gun, untrusted by design because clients verify every record. WebRTC was added in phase 14 as a third transport behind the same `post()`/`onWire()` pair; codes are swapped by hand so no signalling server is needed.
 - **ES modules:** deferred. `file://` refuses them, and the shared frame state would need setters everywhere. Enforced layers give the boundary guarantee now.
@@ -117,8 +125,12 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 
 | Item | Why | Notes |
 |---|---|---|
-| Passkeys (WebAuthn) as the signing root | Non-extractable keys can't be backed up; a passkey syncs across a person's devices | Sign a per-device key with the passkey; records stay the same |
+| Passkeys (WebAuthn) as the signing root | Linked devices and guardians cover loss today; a passkey would make the first device recoverable without anyone's help | Sign a per-device key with the passkey; records stay the same |
 | End-to-end encryption on the relay | The relay can read what it forwards and stores | Per-canvas symmetric key shared in the link fragment; encrypt `msg` bodies |
-| Public anchoring of deliveries | A public timestamp for a delivery's state root | One transaction per delivery; the work stays off-chain |
+| Public anchoring of deliveries | Witnesses date a version among people; a chain dates it for anyone | One transaction per delivery root; a payout connector can do it with the settlement |
+| A payout connector (FXN service pool) | Settlements are signed instructions; something must move the money | `PAYOUT_CONNECTORS.push({ name, run })`; the manifest is the input |
+| An automatic grounder | Claims are grounded by people today | `GROUNDERS.push({ name, run })`; it signs checks with its own key |
+| Time-locked sealing | A sealer who goes offline can't be forced to reveal | Encrypt to a time-lock service (drand tlock) instead of the sealer's key |
+| Scoped reveal and private canvases | Sealed records open to everyone; the relay reads plaintext | Per-person encryption keys published with profiles |
 | Signalling over the relay | Joining peer to peer without swapping codes by hand | Relay forwards offers and answers only; data stays direct |
 | Incremental `derive()` | Only needed past about 50,000 records (a full derive is 1.6 ms at 5,000) | Keep `derive()` pure; memoise per record type |

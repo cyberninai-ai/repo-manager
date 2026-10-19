@@ -10,7 +10,7 @@ let INK = '#14181f';
 const colorOf = c => c === 'ink' || !c ? INK : COLORS[c] || (/^[0-9a-fA-F]{6}$/.test(c) ? '#' + c : INK);
 function authorHue(id){ let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return h % 360; }
 const authorColor = id => `hsl(${authorHue(id)} 62% 48%)`;
-const short = id => id ? (NAMES.get(id) || NAMES.get(personOf(id)) || id.slice(2, 8)) : '?';
+const short = id => id ? (NAMES.get(personOf(id)) || NAMES.get(id) || id.slice(2, 8)) : '?';   // a person's linked keys share one name
 
 function pathOf(pts){
   const p = new Path2D();

@@ -597,6 +597,13 @@ body.history #tools{opacity:.45;pointer-events:none}
 #strip .sp .btn{height:24px;font-size:12px;padding:0 8px;border-radius:12px}
 #strip .sp:not(:has(.btn)){padding-right:12px}
 body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
+/* replay */
+#history select{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+#history .rp-marks{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;max-height:60px;overflow:auto}
+#history .rp-marks:empty{display:none}
+#history .rp-marks .pill{cursor:pointer}
+#history .rp-marks .pill:hover{background:var(--hover)}
+.fx details summary{cursor:pointer;font-size:13px;font-weight:600}
 </style>
 </head>
 <body>
@@ -1892,7 +1899,7 @@ let INK = '#14181f';
 const colorOf = c => c === 'ink' || !c ? INK : COLORS[c] || (/^[0-9a-fA-F]{6}$/.test(c) ? '#' + c : INK);
 function authorHue(id){ let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return h % 360; }
 const authorColor = id => `hsl(${authorHue(id)} 62% 48%)`;
-const short = id => id ? (NAMES.get(id) || NAMES.get(personOf(id)) || id.slice(2, 8)) : '?';
+const short = id => id ? (NAMES.get(personOf(id)) || NAMES.get(id) || id.slice(2, 8)) : '?';   // a person's linked keys share one name
 
 function pathOf(pts){
   const p = new Path2D();
@@ -4627,7 +4634,7 @@ async function placeImage(bytes, x, y, w, h, alt){
 async function scene(kind, palette, x, y, w, h, alt){ return placeImage(await sceneBytes(kind, palette, Math.round(w * 1.5), Math.round(h * 1.5)), x, y, w, h, alt); }
 
 // META-I-{author}-R-{canvasId}-M-{title}-K-{template}-Z-T-SIG — latest wins; anyone may retitle (audit S2)
-registerRecord('META', { parse(r, f){ if (!f.R) throw Error('meta'); r.title = decTxt(f.M || ''); r.tpl = f.K || ''; } });
+registerRecord('META', { parse(r, f){ if (!f.R) throw Error('meta'); r.title = decTxt(f.M || ''); r.tpl = f.K || ''; }, inherit: false });
 DERIVE_HOOKS.push((D, by) => {
   let m = null;
   for (const r of by.META || []) if (r.f.R === canvasId) m = r;   // z order: the last is the latest
@@ -5452,45 +5459,13 @@ $('audit').addEventListener('keydown', e => {
   if (e.key === 'ArrowRight'){ e.preventDefault(); showStep(walk.i + 1); } if (e.key === 'ArrowLeft'){ e.preventDefault(); showStep(walk.i - 1); }
 });
 
-/* history: replay the union record by record (read-only while open) */
-let histRecs = null, histPlay = 0;
-function openHistory(){
-  histRecs = [...S.records.values()].sort(byZ);
-  if (!histRecs.length){ toast('Nothing to replay yet.'); return; }
-  $('history').hidden = false; document.body.classList.add('history');
-  const r = $('histRange'); r.max = histRecs.length; r.value = histRecs.length; setHist(histRecs.length);
-  setTimeout(() => r.focus(), 0);
-  say('History. Move the slider to replay the canvas step by step. Nothing can change until you go back to now.');
-}
-function setHist(i){
-  i = Math.max(0, Math.min(histRecs.length, i));
-  S.histZ = i >= histRecs.length ? null : i === 0 ? -1e15 : histRecs[i - 1].z;
-  const r = histRecs[Math.max(0, i - 1)];
-  $('histLabel').textContent = i >= histRecs.length ? `now · ${histRecs.length} records` : `${i} of ${histRecs.length} · ${r ? `${r.type.toLowerCase()} by ${short(r.author)} · ${new Date(r.t).toLocaleString()}` : 'before the first record'}`;
-  $('histRange').setAttribute('aria-valuetext', $('histLabel').textContent);
-  S.sel.clear(); changed();
-}
-function closeHistory(){ clearInterval(histPlay); histPlay = 0; S.histZ = null; histRecs = null; $('history').hidden = true; document.body.classList.remove('history'); changed(); cv.focus({ preventScroll: true }); say('Back to now.'); }
-$('histRange').addEventListener('input', e => setHist(+e.target.value));
-$('histPlay').onclick = () => {
-  if (histPlay){ clearInterval(histPlay); histPlay = 0; $('histPlay').innerHTML = ic('play'); return; }
-  const r = $('histRange'); if (+r.value >= histRecs.length){ r.value = 0; setHist(0); }
-  const step = Math.max(1, Math.round(histRecs.length / 80));
-  $('histPlay').innerHTML = '<span class="gl">❚❚</span>';
-  histPlay = setInterval(() => { const v = Math.min(histRecs.length, +r.value + step); r.value = v; setHist(v); if (v >= histRecs.length){ clearInterval(histPlay); histPlay = 0; $('histPlay').innerHTML = ic('play'); } }, 90);
-};
-$('histNow').onclick = closeHistory;
-$('history').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeHistory(); });
-
 PALETTE_HOOKS.push(add => {
   add('audit', 'Start audit from the selected step', startAudit, { k: 'A' });
   add('audit', 'Audit report (Markdown)…', () => openReport(`Audit report — ${canvasTitle()}`, auditReport(), 'audit-report.md'));
-  add('audit', 'History: replay the canvas…', openHistory, { k: '⇧H' });
 });
 KEY_HOOKS.push((e, c) => {
   if (!c.onCanvas || c.mod || e.altKey) return false;
   if (c.k === 'a' && !e.shiftKey){ e.preventDefault(); startAudit(); return true; }
-  if (e.key === 'H' && e.shiftKey){ e.preventDefault(); openHistory(); return true; }
   return false;
 });
 $('auditClose').onclick = closeAudit;
@@ -5869,6 +5844,7 @@ PALETTE_HOOKS.push(add => add('view', 'Outline of the canvas', () => toggleStruc
 //   H = sha256 over the sorted CIDs of every record before this one (z below its own): the exact version being delivered
 // APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}-Z-T-SIG
 //   counts only from approvers named on the delivery, and only when H matches; latest per approver wins
+const WORK_SECTIONS = [];   // () → HTML sections other features add to the Work panel (features/taskflow)
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
 registerRecord('TASK', { parse(r, f){ if (!f.R || !['todo', 'doing', 'done', 'x'].includes(f.S)) throw Error('task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
 registerRecord('DELIVER', { parse(r, f){ if (!f.R || !f.H || !f.A) throw Error('deliver'); r.title = decTxt(f.M || ''); r.approvers = f.A.split('_').filter(Boolean); r.quorum = Math.max(1, Math.min(r.approvers.length, decInt(f.Q || '1'))); r.root = f.H; r.scope = f.X && f.X !== '0' ? f.X : null; r.flow = f.F && f.F !== '0' ? f.F : null; }, inherit: false });
@@ -5997,6 +5973,7 @@ function paintWork(){
   }).join('');
   $('workBody').innerHTML = `<div class="wk-prog"><div><b>${done} of ${list.length}</b> done${WK.mine ? ' · yours' : ''}</div><i style="width:${list.length ? Math.round(done / list.length * 100) : 0}%"></i></div>
     <div class="opts"><label><input type="checkbox" id="wkMine"${WK.mine ? ' checked' : ''}> Only mine</label></div>
+    ${WORK_SECTIONS.map(f => { try { return f() || ''; } catch { return ''; } }).join('')}
     ${groups || '<p class="se-empty">No tasks yet. Select a note or shape and press K (or the ✓ button) to make it a task.</p>'}
     <h3>Deliveries</h3>${dl ? `<ul class="wk-list">${dl}</ul>` : '<p class="se-empty">When the work is ready, deliver it: the people you name approve this exact version, and everyone gets a proof.</p>'}
     <button class="btn" id="wkDeliver">${ic('check')}Deliver this work…</button>`;
@@ -6124,7 +6101,7 @@ const whoName = id => id === S.me?.id ? 'You' : short(id);
 const elTitle = cid => { const el = cid && current(cid); return el ? ((el.text || el.alt || el.elabel || KIND(el)).replace(/\s+/g, ' ').trim().slice(0, 70) || KIND(el)) : 'something removed'; };
 function goTo(cid){ const el = current(cid); if (!el) return; S.sel = new Set([el.cid]); ensureVisible(el); announceSel(); dirty = true; }
 const when = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const plural = (n, w, pl = w + 's') => `${n} ${n === 1 ? w : pl}`;
 
 /* canvas badges: small labels team features draw beside elements (screen pixels), clickable */
 const BADGES = [];   // this frame's clickable badges: { x, y, w, h, run }
@@ -7587,6 +7564,596 @@ registerPanel({
 registerFeature({ id: 'mesh', name: 'Mesh relay', group: 'network', icon: 'mesh', records: [],
   blurb: 'Peers pass records and presence on for each other: groups stay in sync without a server',
   status: () => { const n = [...peers.values()].filter(p => p.via === 'mesh').length; return n ? `${n} through others` : ''; }, open: () => openPanel('mesh') });
+// record is signed, ordered and kept, so the session is its own recording: notes appear in order, comments attach, votes and
+// stances land, decisions are taken, and a marker shows who did each step. Replay all of it or only what you care about
+// (decisions and approvals, one person, the last hour), jump between work sessions and to the moments decisions were made.
+// Read-only while it runs (identity refuses to sign during history).
+// @uses ui/ledger (activityText), ui/panels (badges), derive (S.histZ)
+const RP = { recs: null, i: 0, timer: 0, playing: false, speed: 'fit', scope: 'all', who: null, cur: null };
+const RP_SCOPES = { all: 'Everything', decisions: 'Decisions, approvals, stances', person: 'One person', hour: 'The last hour' };
+const RP_MOMENTS = new Set(['DECISION', 'APPROVE', 'DELIVER', 'REVEAL', 'CLOSE', 'SETTLE', 'SIGNOFF', 'CHECK']);
+const inScope = r => RP.scope === 'all' || RP.scope === 'decisions' && (RP_MOMENTS.has(r.type) || r.type === 'STANCE') || RP.scope === 'person' && samePerson(r.author, RP.who) || RP.scope === 'hour' && r.t > Date.now() - 36e5;
+// work sessions: runs of records without a gap longer than 20 minutes
+function sessionsOf(recs){ const out = []; let cur = null; for (const [i, r] of recs.entries()){ if (!cur || r.t - recs[i - 1].t > 20 * 6e4){ cur = { from: i, to: i, people: new Set() }; out.push(cur); } cur.to = i; cur.people.add(personOf(r.author)); } return out; }
+function openHistory(){
+  RP.recs = [...S.records.values()].filter(r => !r.raw.startsWith('PROFILE')).sort(byZ);
+  if (!RP.recs.length){ toast('Nothing to replay yet.'); return; }
+  closePanel(false);
+  const h = $('history'), sess = sessionsOf(RP.recs), ppl = [...new Set(RP.recs.map(r => personOf(r.author)))];
+  h.innerHTML = `<b>Replay</b> <span class="ro">read-only</span>
+    <button class="ibtn" id="histPlay" aria-label="Play or pause the replay">${ic('play')}</button>
+    <input type="range" id="histRange" min="0" max="${RP.recs.length}" step="1" value="${RP.recs.length}" aria-label="Replay position">
+    <span id="histLabel"></span>
+    <label class="sr" for="rpScope">Replay what</label><select id="rpScope">${Object.entries(RP_SCOPES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
+    <label class="sr" for="rpWho">Whose work</label><select id="rpWho" hidden>${ppl.map(p => `<option value="${p}">${esc(whoName(p))}</option>`).join('')}</select>
+    <label class="sr" for="rpSpeed">Speed</label><select id="rpSpeed"><option value="fit">Each session in 30 s</option><option value="4">4×</option><option value="16">16×</option><option value="60">60×</option><option value="step">One step a second</option></select>
+    <button class="btn" id="histNow">Back to now</button>
+    <div class="rp-marks" role="group" aria-label="Sessions and moments">${sess.length > 1 ? sess.map((s, i) => `<button class="pill" data-jump="${s.from}">Session ${i + 1} · ${when(RP.recs[s.from].t)} · ${plural(s.to - s.from + 1, 'change')}</button>`).join('') : ''}
+      ${RP.recs.map((r, i) => RP_MOMENTS.has(r.type) && r.type !== 'CHECK' ? `<button class="pill acc" data-jump="${i}">${{ DECISION: '⚑', APPROVE: '✓', DELIVER: '↗', REVEAL: '🔓', CLOSE: '◎', SETTLE: '💰', SIGNOFF: '✓' }[r.type]} ${esc(r.type === 'DECISION' ? r.text.slice(0, 28) : activityText(r).slice(0, 28))}</button>` : '').join('')}</div>`;
+  $('histRange').addEventListener('input', e => { stopPlay(); setHist(+e.target.value); });
+  h.hidden = false; document.body.classList.add('history');
+  setHist(RP.recs.length); setTimeout(() => $('histRange').focus(), 0);
+  say('Replay. Press play to watch the canvas being made, or move the slider. Nothing can change until you go back to now.');
+}
+function setHist(i){
+  i = Math.max(0, Math.min(RP.recs.length, i)); RP.i = i;
+  S.histZ = i >= RP.recs.length ? null : i === 0 ? -1e15 : RP.recs[i - 1].z;
+  const r = RP.cur = i > 0 ? RP.recs[i - 1] : null;
+  $('histRange').value = i;
+  $('histLabel').textContent = i >= RP.recs.length ? `now · ${plural(RP.recs.length, 'change')}` : r ? `${i}/${RP.recs.length} · ${whoName(r.author)} ${activityText(r)} · ${new Date(r.t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'before the first change';
+  $('histRange').setAttribute('aria-valuetext', $('histLabel').textContent);
+  S.sel.clear(); changed();
+}
+function stopPlay(){ clearTimeout(RP.timer); RP.playing = false; const b = $('histPlay'); if (b) b.innerHTML = ic('play'); }
+// the next step in scope, and how long to wait for it: real gaps, compressed by the speed (long pauses capped)
+function nextInScope(i){ for (let j = i; j < RP.recs.length; j++) if (inScope(RP.recs[j])) return j + 1; return RP.recs.length; }
+function delayTo(a, b){
+  if (RP.speed === 'step') return 1000;
+  const gap = Math.max(0, (RP.recs[b - 1]?.t || 0) - (RP.recs[a - 1]?.t || RP.recs[b - 1]?.t || 0));
+  const s = sessionsOf(RP.recs).find(s => s.from <= b - 1 && b - 1 <= s.to), span = s ? RP.recs[s.to].t - RP.recs[s.from].t : 0;
+  const k = RP.speed === 'fit' ? Math.max(1, span / 30000) : +RP.speed;
+  return Math.max(40, Math.min(1500, gap / k));
+}
+function play(){
+  if (RP.playing) return stopPlay();
+  if (RP.i >= RP.recs.length) setHist(0);
+  RP.playing = true; $('histPlay').innerHTML = '<span class="gl">❚❚</span>';
+  const step = () => { const n = nextInScope(RP.i); if (n >= RP.recs.length && RP.i >= RP.recs.length){ stopPlay(); return; } const wait = delayTo(RP.i, n); RP.timer = setTimeout(() => { setHist(n); if (n >= RP.recs.length) stopPlay(); else step(); }, wait); };
+  step();
+}
+function closeHistory(){ stopPlay(); S.histZ = null; RP.recs = null; RP.cur = null; $('history').hidden = true; document.body.classList.remove('history'); changed(); cv.focus({ preventScroll: true }); say('Back to now.'); }
+$('history').addEventListener('change', e => {
+  if (e.target.id === 'rpScope'){ RP.scope = e.target.value; $('rpWho').hidden = RP.scope !== 'person'; if (RP.scope === 'person') RP.who = $('rpWho').value; }
+  if (e.target.id === 'rpWho') RP.who = e.target.value;
+  if (e.target.id === 'rpSpeed') RP.speed = e.target.value;
+});
+$('history').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'histPlay') return play();
+  if (b.id === 'histNow') return closeHistory();
+  if (b.dataset.jump){ stopPlay(); setHist(+b.dataset.jump + 1); const el = RP.cur && (S.records.get(RP.cur.f.R) || RP.cur); if (el && box(el)) ensureVisible(el); }
+});
+$('history').addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Escape') closeHistory();
+  if (e.key === ' ' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT'){ e.preventDefault(); play(); }
+});
+// the step being replayed: a marker in its author's colour on what they touched, with what they did
+RENDER_HOOKS.screen.push(() => {
+  const r = RP.cur; if (!r || S.histZ == null) return;
+  const el = r.type === 'MOVE' || r.type === 'STYLE' || r.type === 'STANCE' || r.type === 'TASK' || r.type === 'CLAIM' || r.type === 'EVIDENCE' || r.type === 'CHECK' || r.neg !== null ? current(r.f.R) : ELEMENT.has(r.type) ? r : r.on ? current(r.on) : null;
+  const sb = el && screenBox(el); if (!sb) return;
+  ctx.save(); ctx.strokeStyle = authorColor(r.author); ctx.lineWidth = 3; rr(ctx, sb.x - 6, sb.y - 6, sb.w + 12, sb.h + 12, 10); ctx.stroke(); ctx.restore();
+  drawBadge(sb.x - 6, sb.y - 30, `${whoName(r.author)} ${activityText(r)}`.slice(0, 60), 'ink');
+});
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.key === 'H' && e.shiftKey){ e.preventDefault(); openHistory(); return true; } return false; });
+PALETTE_HOOKS.push(add => add('team', 'Replay: watch how the canvas was made', openHistory, { k: '⇧H' }));
+registerFeature({ id: 'replay', name: 'Replay', group: 'remember', icon: 'play', records: [],
+  blurb: 'Watch the canvas being made, in its rhythm: whole sessions, one person, or just the decisions', open: openHistory });
+// what was added, edited, moved, removed or discussed, and the panel walks you through it change by change, by person.
+// Replay (features/replay) plays the session; this reviews its result in place, so you catch up without watching.
+// @uses records, derive, ui/panels (badges), features/work (deliveries), features/decisions
+const SN = { on: false, base: 'visit', ref: null, i: -1, visit: null };
+const seenKey = () => 'flux:seen:' + canvasId;
+// your last visit: read when the canvas opens, then kept up to date while you are on it
+function loadVisit(){ try { SN.visit = JSON.parse(localStorage.getItem(seenKey()) || 'null'); } catch { SN.visit = null; } }
+function markSeen(){ if (!S.records.size || S.histZ != null) return; try { localStorage.setItem(seenKey(), JSON.stringify({ z: S.lamport, t: Date.now(), id: canvasId })); } catch {} }
+let visitFor = null;
+CHANGE_HOOKS.push(() => { if (visitFor !== canvasId){ visitFor = canvasId; loadVisit(); if (SN.visit && [...S.records.values()].some(r => r.z > SN.visit.z && !samePerson(r.author, S.me?.id) && r.type !== 'PROFILE')) setTimeout(() => toast('Changed since your last visit · Team → What changed'), 1200); } });
+setInterval(() => { if (visitFor === canvasId && !SN.on) markSeen(); }, 30000);
+addEventListener('pagehide', () => { if (!SN.on) markSeen(); });
+function baseline(){
+  if (SN.base === 'visit') return SN.visit ? { z: SN.visit.z, label: `your last visit (${when(SN.visit.t)})` } : { z: Infinity, label: 'your last visit (first visit: nothing to compare)' };
+  if (SN.base === 'hour') return { t: Date.now() - 36e5, label: 'an hour ago' };
+  if (SN.base === 'day') return { t: Date.now() - 864e5, label: 'yesterday' };
+  const r = S.records.get(SN.ref); return r ? { z: r.z, label: r.type === 'DELIVER' ? `the delivery “${r.title}”` : `the decision “${r.text.slice(0, 40)}”` } : { z: Infinity, label: '…' };
+}
+const KIND_COL = { added: 'good', edited: 'acc', moved: 'warn', removed: 'bad', discussed: 'ink' };
+const KIND_NAME = { added: 'Added', edited: 'Edited', moved: 'Moved', removed: 'Removed', discussed: 'Discussed' };
+const ON_TYPES = new Set(['COMMENT', 'STANCE', 'REACT', 'CLAIM', 'EVIDENCE', 'CHECK', 'TASK']);
+// changes since the baseline, one entry per element: its strongest kind of change, who changed it, when
+function changesSince(){
+  const b = baseline(), after = r => b.t != null ? r.t > b.t : r.z > b.z, out = new Map();
+  const touch = (cid, kind, r) => { if (!cid) return; const c = kind === 'removed' ? cid : current(cid)?.cid || cid; const o = out.get(c) || { cid: c, kinds: new Set(), who: new Set(), t: 0 }; o.kinds.add(kind); o.who.add(personOf(r.author)); o.t = Math.max(o.t, r.t); out.set(c, o); };
+  for (const r of S.records.values()){
+    if (!after(r) || r.type === 'PROFILE') continue;
+    if (r.neg !== null){ if (r.neg) touch(r.f.R, 'removed', r); }
+    else if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits) touch(r.edits, 'edited', r);
+    else if (ELEMENT.has(r.type)) touch(r.cid, 'added', r);
+    else if (r.type === 'MOVE') touch(r.f.R, 'moved', r);
+    else if (r.type === 'STYLE') touch(r.f.R, 'edited', r);
+    else if (r.type === 'COMMENT') touch(r.on, 'discussed', r);
+    else if (ON_TYPES.has(r.type)) touch(r.f.R, 'discussed', r);
+    else if (r.type === 'DECISION') touch(r.on, 'discussed', r);
+  }
+  for (const o of out.values()) o.kind = ['removed', 'added', 'edited', 'moved', 'discussed'].find(k => o.kinds.has(k));
+  return [...out.values()].filter(o => S.records.has(o.cid)).sort((a, b) => b.t - a.t);
+}
+RENDER_HOOKS.screen.push(() => {
+  if (!SN.on) return;
+  for (const o of changesSince()){
+    const el = S.records.get(o.cid), b = el && box(el); if (!b) continue;
+    const a = toScreen(b.x, b.y), c = toScreen(b.x + b.w, b.y + b.h); if (c.x < -50 || a.x > innerWidth + 50 || c.y < -50 || a.y > innerHeight + 50) continue;
+    ctx.save(); ctx.strokeStyle = TONE[KIND_COL[o.kind]][1]; ctx.lineWidth = 2.5; ctx.setLineDash(o.kind === 'removed' ? [6, 4] : []); rr(ctx, a.x - 5, a.y - 5, c.x - a.x + 10, c.y - a.y + 10, 8); ctx.stroke(); ctx.restore();
+    drawBadge(a.x - 5, c.y + 8, `${KIND_NAME[o.kind]} · ${[...o.who].map(whoName).join(', ')}`, KIND_COL[o.kind], () => { SN.i = changesSince().findIndex(x => x.cid === o.cid); paintPanel(); });
+  }
+});
+function stepChange(d){ const l = changesSince(); if (!l.length) return; SN.i = (SN.i + d + l.length) % l.length; const el = S.records.get(l[SN.i].cid); if (el && box(el)){ ensureVisible(el); if (!S.D.hidden.has(el.cid)){ S.sel = new Set([el.cid]); announceSel(); } dirty = true; } say(`${SN.i + 1} of ${l.length}: ${KIND_NAME[l[SN.i].kind]} ${elTitle(l[SN.i].cid)}`); paintPanel(); }
+registerPanel({
+  id: 'since', title: 'What changed', blurb: 'Everything added, edited, moved, removed or discussed since a moment you choose, outlined on the canvas.',
+  onOpen(){ SN.on = true; SN.i = -1; dirty = true; }, onClose(){ SN.on = false; dirty = true; },
+  paint(body){
+    const l = changesSince(), b = baseline(), by = new Map(); for (const o of l) for (const w of o.who) by.set(w, (by.get(w) || 0) + 1);
+    const refs = [...(S.D.deliveries || []).map(x => [x.d.cid, `Delivery: ${x.d.title}`]), ...(S.D.decisions || []).map(x => [x.d.cid, `Decision: ${x.d.text.slice(0, 40)}`])];
+    body.innerHTML = `<div class="row2"><label class="sr" for="snBase">Since</label><select id="snBase" data-k="base" class="grow">${[['visit', 'Since my last visit'], ['hour', 'In the last hour'], ['day', 'In the last day'], ...refs.map(([c, n]) => ['ref:' + c, `Since ${n}`])].map(([k, n]) => `<option value="${k}"${(SN.base === 'ref' ? 'ref:' + SN.ref : SN.base) === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
+      <p>Since ${esc(b.label)}: <b>${plural(l.length, 'item')}</b> changed${by.size ? ` by ${[...by].map(([w, n]) => `${esc(whoName(w))} (${n})`).join(', ')}` : ''}.</p>
+      <div class="row2">${Object.keys(KIND_NAME).map(k => { const n = l.filter(o => o.kind === k).length; return n ? `<span class="pill ${KIND_COL[k] === 'ink' ? '' : KIND_COL[k]}">${n} ${KIND_NAME[k].toLowerCase()}</span>` : ''; }).join('')}</div>
+      ${l.length ? `<div class="acts"><button class="btn" data-step="-1" aria-label="Previous change">‹ Previous</button><button class="btn primary" data-step="1" data-autofocus>Next change ›</button><button class="btn" data-seen>Mark all as seen</button></div>
+      <ul class="plain">${l.slice(0, 80).map((o, i) => `<li class="row2${i === SN.i ? ' card hot' : ''}"><span class="pill ${KIND_COL[o.kind] === 'ink' ? '' : KIND_COL[o.kind]}">${KIND_NAME[o.kind]}</span><button class="link grow" data-i="${i}">${esc(elTitle(o.cid))}</button><small>${[...o.who].map(whoName).join(', ')} · ${when(o.t)}</small></li>`).join('')}</ul>` : '<p class="empty">Nothing changed since then.</p>'}`;
+  },
+  click(e, b){
+    if (b.dataset.step) return stepChange(+b.dataset.step);
+    if (b.dataset.i){ SN.i = +b.dataset.i - 1; return stepChange(1); }
+    if (b.hasAttribute('data-seen')){ markSeen(); loadVisit(); SN.base = 'visit'; paintPanel(); dirty = true; say('Marked as seen.'); }
+  },
+  change(e){ if (e.target.id === 'snBase'){ const v = e.target.value; if (v.startsWith('ref:')){ SN.base = 'ref'; SN.ref = v.slice(4); } else SN.base = v; SN.i = -1; paintPanel(); dirty = true; } },
+});
+registerFeature({ id: 'since', name: 'What changed', group: 'remember', icon: 'diff', records: [],
+  blurb: 'Catch up in place: what was added, edited, moved, removed or discussed since your last visit or a delivery',
+  status: () => { if (!SN.visit) return ''; const n = [...S.records.values()].filter(r => r.z > SN.visit.z && r.type !== 'PROFILE' && !samePerson(r.author, S.me?.id)).length; return n ? `${n} new since your visit` : ''; },
+  open: () => openPanel('since') });
+// their signature and credit), starts a new canvas you own, and links the two both ways: LINEAGE in the fork names its parent
+// and the version it started from; FORKED in the parent lists its descendants, which people can endorse. A template's owner can
+// ask for a royalty (INHERIT): payouts on forks then pay it automatically. Forks can pull later changes from their parent.
+// Governance (ownership, grants, deliveries, payments, meetings) is never copied: a fork inherits the work and the reasoning,
+// not the authority.
+// @uses records, features/canvases (createOwnedCanvas), features/payouts (SETTLE_HOOKS), features/stances, ui/panels, ui/form
+// INHERIT-I-R-{canvas}-S-{open|closed}-Y-{royalty, basis points}-Z-T-SIG          the canvas owner's terms for forks
+// LINEAGE-I-R-{fork}-P-{parent}-H-{parent version}-C-{records copied}-K-{the parent's INHERIT|0}-Z-T-SIG   signed in the fork
+// FORKED-I-R-{fork}-H-{parent version}-M-{title}-Z-T-SIG                           signed in the parent
+// The parent's INHERIT record is itself copied into the fork, signed by the parent's owner, so the royalty can't be dropped.
+registerRecord('INHERIT', { parse(r, f){ if (!f.R || !['open', 'closed'].includes(f.S)) throw Error('inherit'); r.open = f.S === 'open'; r.bp = Math.max(0, Math.min(5000, +f.Y || 0)); } });
+registerRecord('LINEAGE', { parse(r, f){ if (!f.R || !f.P || !f.H) throw Error('lineage'); r.parent = f.P; r.root = f.H; r.n = Math.max(0, +f.C || 0); r.terms = f.K && f.K !== '0' ? f.K : null; }, inherit: false });
+registerRecord('FORKED', { parse(r, f){ if (!f.R || !f.H) throw Error('forked'); r.child = f.R; r.root = f.H; r.title = decTxt(f.M || ''); }, inherit: false });
+Object.assign(PERM_OF, { INHERIT: null, LINEAGE: null, FORKED: 'comment' });   // INHERIT counts only from the owner (derive below)
+// core element records and most feature records travel with a fork; governance doesn't
+const NO_INHERIT = new Set(['OWNER', 'GRANT', 'META', 'PROFILE']);
+const inheritable = r => !NO_INHERIT.has(r.type) && RECORD_TYPES[r.type]?.inherit !== false;
+DERIVE_HOOKS.push((D, by) => {
+  const lin = (by.LINEAGE || []).filter(r => r.f.R === canvasId && !D.hidden.has(r.cid));
+  D.lineage = lin.at(-1) || null; D.lineageAll = lin;
+  D.forks = (by.FORKED || []).filter(r => !D.hidden.has(r.cid));
+  D.inherit = (by.INHERIT || []).filter(r => r.f.R === canvasId && (!S.P?.owner || samePerson(r.author, S.P.owner))).at(-1) || null;
+});
+const parentTerms = () => { const l = S.D.lineage; const t = l?.terms && S.records.get(l.terms); return t && t.type === 'INHERIT' && t.f.R === l.parent ? t : null; };
+// a fork's payouts pay the template's owner its royalty first
+SETTLE_HOOKS.push(() => { const t = parentTerms(); return t && t.bp ? [{ to: t.author, bp: t.bp, why: 'royalty' }] : []; });
+const fullRoot = async () => b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...S.records.keys()].sort().join('\n')))));
+async function forkCanvas(){
+  if (S.D.inherit && !S.D.inherit.open && !samePerson(S.P?.owner, S.me.id)){ toast('The owner has closed this canvas to forks.'); return null; }
+  const parent = canvasId, title = canvasTitle(), root = await fullRoot(), terms = S.D.inherit;
+  const recs = [...S.records.values()].filter(inheritable).sort(byZ), blobs = new Map();
+  for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b)) blobs.set(b, S.blobs.get(b)); }
+  const { nonce, id } = await ownedCanvasId();
+  try { await publish(await signed('FORKED', [['I', S.me.id], ['R', id], ['H', root], ['M', encTxt(title)], ['Z', ++S.lamport], ['T', Date.now()]])); } catch {}   // the parent may not let you comment: the fork still links back
+  await flushSave(); await switchCanvas(id); await claimCanvas(nonce);
+  for (const [c, b] of blobs) await addBlob(c, b);
+  await bulk(async () => { for (const r of recs) await ingest(r.raw); });
+  await publish(await signed('LINEAGE', [['I', S.me.id], ['R', id], ['P', parent], ['H', root], ['C', recs.length], ['K', terms?.cid || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+  await setTitle(`${title} (fork)`);
+  toast(`Forked: ${plural(recs.length, 'record')} copied with their original signatures. This canvas is yours.`);
+  return id;
+}
+// pull: the parent's inheritable records this fork doesn't have yet (from this browser's copy of the parent, or a peer's)
+async function parentNews(){
+  const l = S.D.lineage; if (!l) return [];
+  const have = new Set(S.records.keys()), rows = await dbAll('records', l.parent), out = [];
+  for (const row of rows){ const raw = row.raw || row.r || row; if (typeof raw !== 'string') continue; let node; try { node = parse(raw); } catch { continue; } if (NO_INHERIT.has(node.action) || RECORD_TYPES[node.action]?.inherit === false) continue; const c = row.cid || await cidOf(te.encode(raw)); if (!have.has(c)) out.push(raw); }
+  return out;
+}
+async function pullParent(){
+  const news = await parentNews(); if (!news.length){ toast('Nothing new in the parent (from what this browser has of it).'); return; }
+  for (const b of await dbAll('blobs', S.D.lineage.parent)) if (!S.blobs.has(b.cid)) try { await addBlob(b.cid, b.bytes); } catch {}
+  await bulk(async () => { for (const raw of news) await ingest(raw); });
+  const l = S.D.lineage, rows = await dbAll('records', l.parent);
+  const root = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(rows.map(r => r.cid).filter(Boolean).sort().join('\n')))));
+  await publish(await signed('LINEAGE', [['I', S.me.id], ['R', canvasId], ['P', l.parent], ['H', root], ['C', l.n + news.length], ['K', l.terms || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+  toast(`Pulled ${plural(news.length, 'change')} from the parent.`);
+}
+async function termsForm(){
+  const t = S.D.inherit;
+  const v = await formDialog('Terms for forks', [{ id: 'open', label: 'Forks', type: 'select', value: t && !t.open ? 'closed' : 'open', options: [['open', 'Anyone may fork this canvas'], ['closed', 'Ask people not to fork it']] },
+    { id: 'roy', label: 'Royalty on payouts made on forks (%)', type: 'number', value: (t?.bp || 0) / 100, min: 0, max: 50 }],
+    { ok: 'Sign the terms', why: 'Forks carry this signed record. When a fork releases a payment, the royalty is paid to you first.' });
+  if (!v) return;
+  await publish(await signed('INHERIT', [['I', S.me.id], ['R', canvasId], ['S', v.open], ['Y', Math.round((v.roy || 0) * 100)], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+let newsN = null;
+registerPanel({
+  id: 'lineage', title: 'Lineage', blurb: 'Where this canvas came from, what grew out of it, and the terms for forking it.',
+  onOpen(){ newsN = null; parentNews().then(n => { newsN = n.length; paintPanel(); }); },
+  paint(body){
+    const l = S.D.lineage, t = parentTerms(), forks = S.D.forks || [], mine = S.D.inherit, owner = !S.P?.owner || samePerson(S.P.owner, S.me.id);
+    body.innerHTML = `${l ? `<div class="card"><div class="hd"><b>Forked from</b><span class="pill acc">${plural(l.n, 'record')}</span></div>
+        <div class="row2"><button class="link" data-open="${l.parent}">${esc(l.parent)}</button><small>at version ${l.root.slice(0, 8)} · ${when(l.t)} by ${esc(whoName(l.author))}</small></div>
+        ${t ? `<small>${t.bp ? `Royalty: ${pct(t.bp)} of payouts here goes to ${esc(whoName(t.author))}, the template’s owner` : 'No royalty'}${t.open ? '' : ' · the owner asked not to fork it'}</small>` : ''}
+        <div class="acts"><button class="btn" data-pull${newsN ? '' : ' disabled'}>${newsN == null ? 'Checking the parent…' : newsN ? `Pull ${plural(newsN, 'new change')}` : 'Up to date with the parent'}</button></div></div>` : ''}
+      <h3>Forks of this canvas <span class="n">${forks.length}</span></h3>
+      ${forks.length ? `<ul class="plain">${forks.map(f => { const c = consensus(f.cid); return `<li class="card"><div class="hd"><button class="link" data-open="${f.child}">${esc(f.title || f.child)}</button><small>${esc(whoName(f.author))} · ${when(f.t)}</small></div>
+        <div class="acts"><button class="btn" data-st="agree" data-t="${f.cid}" aria-pressed="${c.mine === 'agree'}">Endorse ${c.c.agree || ''}</button></div></li>`; }).sort().join('')}</ul>` : '<p class="empty">No forks yet.</p>'}
+      ${owner ? `<div class="card"><b>Terms for forks</b><small>${mine ? `${mine.open ? 'Open to forks' : 'Closed to forks'} · royalty ${pct(mine.bp)}` : 'Open to forks, no royalty.'}</small><div class="acts"><button class="btn" data-terms>Set the terms…</button></div></div>` : ''}
+      <div class="acts"><button class="btn primary" data-fork data-autofocus>${ic('fork')}Fork this canvas</button></div>`;
+  },
+  click(e, b){
+    if (b.hasAttribute('data-fork')) return forkCanvas();
+    if (b.hasAttribute('data-pull')) return pullParent();
+    if (b.hasAttribute('data-terms')) return termsForm();
+    if (b.dataset.open){ closePanel(false); return switchCanvas(b.dataset.open); }
+    if (b.dataset.st) return takeStance([b.dataset.t], b.dataset.st);
+  },
+});
+registerFeature({ id: 'lineage', name: 'Lineage forks', group: 'remember', icon: 'fork', records: ['INHERIT', 'LINEAGE', 'FORKED'],
+  blurb: 'Fork with the original signatures; forks link back, pull updates, and pay template royalties',
+  status: () => S.D.lineage ? 'a fork' : (S.D.forks?.length ? `${S.D.forks.length} forks` : ''), open: () => openPanel('lineage') });
+// asked questions together: every decision about pricing last quarter, who approves most, how often our retros close, which
+// templates get forked, each person's record of work across canvases. A result can be signed as a manifest anyone with the same
+// canvases can re-check. There is no central index: the graph is what you hold (and what peers have synced to you).
+// @uses db (all canvases), records (parse, toRec), features/canvases (canvasList), ui/panels, ui/form
+// RESULT-I-Q-{query}-H-{sha256 of the sorted result CIDs}-C-{rows}-K-{canvases}-Z-T-SIG      signed, never stored on a canvas
+registerRecord('RESULT', { parse(r, f){ if (!f.Q || !f.H) throw Error('result'); r.query = decTxt(f.Q); r.n = +f.C || 0; }, inherit: false });
+PERM_OF.RESULT = null;
+const GQ = { kind: 'DECISION', who: '', text: '', days: 0, group: 'none', rows: null, busy: false, preset: '' };
+// every canvas this browser holds, parsed: [{ canvas, title, recs: [rec] }]
+async function graphLoad(){
+  const list = await canvasList(), out = [];
+  for (const c of list){
+    let recs;
+    if (c.id === canvasId) recs = [...S.records.values()];
+    else { recs = []; for (const row of await dbAll('records', c.id)){ if (typeof row.raw !== 'string') continue; try { recs.push(toRec(parse(row.raw), row.cid)); } catch {} } }
+    out.push({ canvas: c.id, title: c.title || 'Untitled canvas', recs });
+  }
+  return out;
+}
+const recText = r => r.text || r.title || r.name || r.note || r.prompt || (r.f.M ? decTxt(r.f.M) : '') || '';
+const PRESETS = {
+  decisions: { name: 'Decisions everywhere', run: all => { const rows = rowsOf(all, r => r.type === 'DECISION'); return { table: [['Canvas', 'Decision', 'Who', 'When']], body: rows.map(x => [x.title, x.r.text, whoName(personOf(x.r.author)), when(x.r.t)]), rows }; } },
+  approvers: { name: 'Who approves most', run: all => countBy(rowsOf(all, r => r.type === 'APPROVE' && r.f.S !== '0'), x => whoName(personOf(x.r.author))) },
+  work: { name: 'Record of work, per person', run: all => { const m = new Map(); for (const c of all) for (const r of c.recs) if (r.neg === null && r.type !== 'PROFILE'){ const p = personOf(r.author), o = m.get(p) || { n: 0, canvases: new Set(), credit: 0, credits: 0 }; o.n++; o.canvases.add(c.canvas); m.set(p, o); }
+    for (const c of all) for (const r of c.recs) if (r.type === 'CREDIT') for (const [k, bp] of r.shares){ const o = m.get(personOf(k)); if (o){ o.credit += bp; o.credits++; } }
+    return { table: [['Person', 'Signed records', 'Canvases', 'Credited deliveries', 'Average share']], body: [...m].sort((a, b) => b[1].n - a[1].n).map(([k, o]) => [whoName(k), o.n, o.canvases.size, o.credits, o.credits ? pct(Math.round(o.credit / o.credits)) : '–']) }; } },
+  rituals: { name: 'How our rituals close', run: all => { const rows = []; for (const c of all){ const closes = c.recs.filter(r => r.type === 'CLOSE'); for (const r of c.recs.filter(r => r.type === 'RITUAL')){ const cl = closes.filter(x => x.f.R === r.cid).sort(byZ)[0]; rows.push([c.title, r.name, cl ? cl.outcome : 'open', when(r.t)]); } }
+    const done = rows.filter(r => r[2] !== 'open'); return { table: [['Canvas', 'Ritual', 'Outcome', 'When']], body: rows, note: done.length ? `${done.filter(r => r[2] === 'success').length} of ${done.length} closed as a success` : '' }; } },
+  forks: { name: 'Most forked canvases', run: all => countBy(rowsOf(all, r => r.type === 'FORKED'), x => x.title) },
+  claims: { name: 'Claims and their checks', run: all => { const rows = []; for (const c of all){ const checks = c.recs.filter(r => r.type === 'CHECK'); for (const r of c.recs.filter(r => r.type === 'CLAIM' && r.on)){ const t = c.recs.find(x => x.cid === r.f.R), ch = checks.filter(x => x.f.R === r.f.R); rows.push([c.title, recText(t || r).slice(0, 80), `${ch.filter(x => x.verdict === 'ok').length} ✓ · ${ch.filter(x => x.verdict === 'no').length} ✕`]); } } return { table: [['Canvas', 'Claim', 'Checks']], body: rows }; } },
+};
+function rowsOf(all, f){ const out = []; for (const c of all) for (const r of c.recs) if (r.neg === null && f(r)) out.push({ canvas: c.canvas, title: c.title, r }); return out.sort((a, b) => b.r.t - a.r.t); }
+function countBy(rows, key){ const m = new Map(); for (const x of rows){ const k = key(x); m.set(k, (m.get(k) || 0) + 1); } return { table: [['', 'Count']], body: [...m].sort((a, b) => b[1] - a[1]), rows }; }
+async function runQuery(){
+  GQ.busy = true; paintPanel();
+  const all = await graphLoad();
+  if (GQ.preset){ GQ.rows = { ...PRESETS[GQ.preset].run(all), all }; }
+  else {
+    const since = GQ.days ? Date.now() - GQ.days * 864e5 : 0, q = GQ.text.trim().toLowerCase();
+    const rows = rowsOf(all, r => (GQ.kind === '*' || r.type === GQ.kind) && r.t >= since && (!GQ.who || samePerson(r.author, GQ.who)) && (!q || recText(r).toLowerCase().includes(q)));
+    GQ.rows = GQ.group === 'none' ? { table: [['Canvas', 'Kind', 'Who', 'When', 'What']], body: rows.slice(0, 300).map(x => [x.title, x.r.type.toLowerCase(), whoName(personOf(x.r.author)), when(x.r.t), recText(x.r).slice(0, 90)]), rows, all }
+      : { ...countBy(rows, x => GQ.group === 'author' ? whoName(personOf(x.r.author)) : GQ.group === 'canvas' ? x.title : GQ.group === 'type' ? x.r.type.toLowerCase() : new Date(x.r.t).toISOString().slice(0, 10)), all };
+  }
+  GQ.busy = false; paintPanel();
+}
+// sign what was found: anyone holding the same canvases can recompute the hash of the result's records
+async function signResult(){
+  const rows = GQ.rows?.rows || [], cids = rows.map(x => x.r.cid).sort();
+  const h = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(cids.join('\n')))));
+  const query = GQ.preset ? `preset:${GQ.preset}` : JSON.stringify({ kind: GQ.kind, who: GQ.who, text: GQ.text, days: GQ.days, group: GQ.group });
+  const raw = await signed('RESULT', [['I', S.me.id], ['Q', encTxt(query)], ['H', h], ['C', rows.length], ['K', GQ.rows.all.length], ['Z', S.lamport], ['T', Date.now()]]);
+  downloadJSON('flux-query-result.json', JSON.stringify({ flux: 'result', v: 1, result: raw, query, canvases: GQ.rows.all.map(c => c.canvas), records: rows.map(x => ({ canvas: x.canvas, raw: x.r.raw })) }, null, 2));
+  toast(`Signed result: ${plural(rows.length, 'record')} from ${plural(GQ.rows.all.length, 'canvas', 'canvases')}.`);
+}
+registerPanel({
+  id: 'graph', title: 'Canvas graph', blurb: 'Ask questions across every canvas on this device: decisions, approvers, rituals, forks, records of work.', live: false,
+  paint(body){
+    const kinds = [...KNOWN].sort(), ppl = people();
+    const t = GQ.rows;
+    body.innerHTML = `<div class="acts">${Object.entries(PRESETS).map(([k, p]) => `<button class="btn" data-preset="${k}" aria-pressed="${GQ.preset === k}">${esc(p.name)}</button>`).join('')}</div>
+      <details data-k="custom"${GQ.preset ? '' : ' open'}><summary>Your own question</summary><div class="fx-body" style="padding:8px 0">
+        <div class="row2"><label class="sr" for="gqKind">Kind</label><select id="gqKind" data-k="kind"><option value="*">Any kind</option>${kinds.map(k => `<option value="${k}"${GQ.kind === k ? ' selected' : ''}>${k.toLowerCase()}</option>`).join('')}</select>
+          <label class="sr" for="gqWho">Who</label><select id="gqWho" data-k="who"><option value="">Anyone</option>${ppl.map(p => `<option value="${p}"${GQ.who === p ? ' selected' : ''}>${esc(whoName(p))}</option>`).join('')}</select></div>
+        <div class="row2"><input id="gqText" data-k="text" class="grow" placeholder="Containing… (e.g. pricing)" aria-label="Containing" value="${esc(GQ.text)}">
+          <label class="sr" for="gqDays">When</label><select id="gqDays" data-k="days">${[[0, 'Any time'], [7, 'Last week'], [30, 'Last month'], [90, 'Last quarter']].map(([d, n]) => `<option value="${d}"${GQ.days === d ? ' selected' : ''}>${n}</option>`).join('')}</select>
+          <label class="sr" for="gqGroup">Group by</label><select id="gqGroup" data-k="group">${[['none', 'List'], ['author', 'By person'], ['canvas', 'By canvas'], ['type', 'By kind'], ['day', 'By day']].map(([g, n]) => `<option value="${g}"${GQ.group === g ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="acts"><button class="btn primary" data-run data-autofocus>${ic('search')}Ask</button></div></div></details>
+      ${GQ.busy ? '<p class="muted">Reading every canvas on this device…</p>' : t ? `<p><b>${plural(t.body.length, 'row')}</b> from ${plural(t.all.length, 'canvas', 'canvases')}${t.note ? ` · ${esc(t.note)}` : ''}</p>
+        <div style="overflow:auto"><table><tr>${t.table[0].map(h => `<th>${esc(h)}</th>`).join('')}</tr>${t.body.slice(0, 200).map(r => `<tr>${r.map(c => `<td>${esc(String(c))}</td>`).join('')}</tr>`).join('')}</table></div>
+        ${t.rows ? '<div class="acts"><button class="btn" data-sign>Sign this result…</button></div>' : ''}` : ''}
+      <p class="muted">No central index: this is what this device holds, verified record by record when it arrived.</p>`;
+  },
+  click(e, b){
+    if (b.dataset.preset){ GQ.preset = GQ.preset === b.dataset.preset ? '' : b.dataset.preset; if (GQ.preset) runQuery(); else { GQ.rows = null; paintPanel(); } return; }
+    if (b.hasAttribute('data-run')){ GQ.preset = ''; GQ.text = $('gqText').value; runQuery(); }
+    if (b.hasAttribute('data-sign')) signResult();
+  },
+  change(e){ const k = e.target.dataset.k; if (k === 'kind') GQ.kind = e.target.value; if (k === 'who') GQ.who = e.target.value; if (k === 'days') GQ.days = +e.target.value; if (k === 'group') GQ.group = e.target.value; if (k === 'text') GQ.text = e.target.value; },
+});
+registerFeature({ id: 'graph', name: 'Canvas graph', group: 'network', icon: 'graph', records: ['RESULT'],
+  blurb: 'Questions across all your canvases: decisions, approvers, rituals, forks, records of work; signed results', open: () => openPanel('graph') });
+// to each other become one person: their work, names, approvals and grants count together. You name guardians and a threshold
+// (say 2 of 3 teammates); if you lose a device, a new key asks to be you and, once enough guardians confirm, it is.
+// Keys stay non-extractable: nothing secret is ever copied between devices. This replaces "clearing the browser loses you".
+// @uses core hooks (IDENTITY), core rtc (packCode), features/profiles, ui/panels, ui/form
+// LINK-I-R-{other key}-S-{1|0}-Z-T-SIG              mutual links join two keys; a one-way link from a new key asks to recover
+// GUARD-I-R-{guardian}-S-{1|0}-Q-{threshold}-Z-T-SIG   your guardians and how many must agree (your latest Q)
+// RECOVER-I-R-{lost key}-K-{new key}-Z-T-SIG          a guardian confirms the new key is the same person
+registerRecord('LINK', { parse(r, f){ if (!f.R) throw Error('link'); r.to = f.R; r.on = f.S !== '0'; }, inherit: false });
+registerRecord('GUARD', { parse(r, f){ if (!f.R) throw Error('guard'); r.who = f.R; r.on = f.S !== '0'; r.q = Math.max(1, +f.Q || 1); }, inherit: false });
+registerRecord('RECOVER', { parse(r, f){ if (!f.R || !f.K) throw Error('recover'); r.lost = f.R; r.key = f.K; }, inherit: false });
+Object.assign(PERM_OF, { LINK: null, GUARD: null, RECOVER: null });
+let aliasSig = '';
+// runs first among derive hooks: everything after it (approvals, credit, names) sees people, not keys
+DERIVE_HOOKS.unshift((D, by) => {
+  const links = new Map();   // "a>b" → on, latest per direction
+  for (const r of by.LINK || []) if (!D.hidden.has(r.cid)) links.set(`${r.author}>${r.to}`, r.on);
+  const parent = new Map(), find = k => { while (parent.has(k) && parent.get(k) !== k) k = parent.get(k); return k; };
+  const join = (a, b) => { const x = find(a), y = find(b); if (x !== y){ const [lo, hi] = x < y ? [x, y] : [y, x]; parent.set(hi, lo); parent.set(lo, lo); } };
+  for (const [k, on] of links){ const [a, b] = k.split('>'); if (on && links.get(`${b}>${a}`)) join(a, b); }
+  // guardians: per person their active guardians and threshold; a recovery joins the new key once enough of them confirm
+  const guards = new Map();
+  for (const r of by.GUARD || []){ if (D.hidden.has(r.cid)) continue; const g = guards.get(r.author) || { who: new Set(), q: 1 }; if (r.on) g.who.add(r.who); else g.who.delete(r.who); g.q = r.q; guards.set(r.author, g); }
+  const rec = new Map(); D.recoveries = [];
+  for (const r of by.RECOVER || []){ if (D.hidden.has(r.cid)) continue; const k = `${r.lost}>${r.key}`; if (!rec.has(k)) rec.set(k, new Set()); rec.get(k).add(r.author); }
+  for (const [k, by2] of rec){
+    const [lost, key] = k.split('>'), g = guards.get(lost), asked = links.get(`${key}>${lost}`);
+    const ok = g ? new Set([...by2].filter(a => [...g.who].some(w => find(w) === find(a))).map(a => find(a))).size : 0;   // distinct guardians (any of their devices)
+    D.recoveries.push({ lost, key, ok, need: g?.q || Infinity, asked: !!asked, done: !!asked && g && ok >= g.q });
+    if (asked && g && ok >= g.q) join(lost, key);
+  }
+  // pending requests: a one-way link from a key that hasn't been joined (to show the guardians and the other device)
+  D.linkAsks = [...links].filter(([k, on]) => { const [a, b] = k.split('>'); return on && !links.get(`${b}>${a}`) && find(a) !== find(b); }).map(([k]) => k.split('>'));
+  // a one-way link to someone with guardians is a recovery request, even before any guardian has answered
+  for (const [a, b] of D.linkAsks) if (guards.get(b)?.who.size && !D.recoveries.some(r => r.lost === b && r.key === a)) D.recoveries.push({ lost: b, key: a, ok: 0, need: guards.get(b).q, asked: true, done: false });
+  D.guards = guards;
+  // each person is named after their original key: the one whose first work (not identity records) is earliest
+  const first = new Map(), keys = new Set(parent.keys()), ID_TYPES = new Set(['PROFILE', 'LINK', 'GUARD', 'RECOVER']);
+  if (keys.size) for (const r of S.records.values()) if (keys.has(r.author) && !ID_TYPES.has(r.type) && (!first.has(r.author) || r.t < first.get(r.author))) first.set(r.author, r.t);
+  const groups = new Map(); for (const k of keys){ const g = find(k); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); }
+  const alias = new Map();
+  for (const ks of groups.values()){ const root = ks.slice().sort((a, b) => (first.get(a) ?? Infinity) - (first.get(b) ?? Infinity) || (a < b ? -1 : 1))[0]; for (const k of ks) alias.set(k, root); }
+  IDENTITY.of = k => alias.get(k) || k;
+  // one name per person: the latest profile among their keys
+  for (const [k, root] of alias){ const n = NAMES.get(k); if (n && !NAMES.has(root)) NAMES.set(root, n); }
+  const sig = [...alias].map(p => p.join('=')).sort().join(',');
+  if (sig !== aliasSig){ aliasSig = sig; queueMicrotask(changed); }   // permissions were filtered with the old map: once more
+});
+const myKeys = () => [...new Set([S.me.id, ...[...S.records.values()].filter(r => r.author && samePerson(r.author, S.me.id)).map(r => r.author)])];
+const devSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
+async function linkCode(){ return packCode({ t: 'link', key: S.me.id, room: canvasId }); }
+// the other device pastes the code: it asks to link, the first device confirms
+async function useLinkCode(code){
+  const o = await unpackCode(code); if (o.t !== 'link' || !o.key) throw Error('not a link code');
+  if (o.room && o.room !== canvasId) await switchCanvasTo(o.room);
+  await devSign('LINK', [['R', o.key], ['S', '1']]);
+  post({ linkAsk: { from: S.me.id, to: o.key } });
+  toast('Asked to link. Confirm on your other device.');
+}
+WIRE_HOOKS.linkAsk = a => { if (a?.to === S.me?.id) toast('Another device asks to be linked to you · Team → Devices and recovery'); };
+WIRE_HOOKS.recoverAsk = a => { if (S.D.guards?.get(a?.lost)?.who.has(S.me?.id)) toast(`${short(a.lost)} asks to recover their identity on a new device · Team → Devices and recovery`); };
+async function askRecovery(lost){
+  await devSign('LINK', [['R', lost], ['S', '1']]);
+  post({ recoverAsk: { lost, key: S.me.id } });
+  toast(`Asked ${short(lost)}’s guardians to confirm it’s you. Tell them through another channel too.`);
+}
+registerPanel({
+  id: 'devices', title: 'Devices and recovery', blurb: 'One person, several keys: link your devices, and name guardians who can restore you if a device is lost.', sync: true,
+  paint(body){
+    const me = S.me.id, keys = myKeys(), g = S.D.guards?.get(me), asks = S.D.linkAsks || [], recs = S.D.recoveries || [];
+    const toMe = asks.filter(([a, b]) => b === me && !(S.D.recoveries || []).some(r => r.key === a)), forGuard = recs.filter(r => !r.done && S.D.guards?.get(r.lost)?.who.has(me) && r.asked);
+    const others = people().filter(id => !samePerson(id, me));
+    body.innerHTML = `<div class="card"><b>This person’s keys</b>${keys.map(k => `<div class="row2">${avatar(k)}<span class="grow">${esc(fingerprint(k))}${k === me ? ' <small>(this device)</small>' : ''}</span></div>`).join('')}
+        <div class="acts"><button class="btn" data-code data-autofocus>${ic('link')}Link another device…</button><button class="btn" data-have>I have a link code</button></div></div>
+      ${toMe.length ? `<div class="card hot"><b>Waiting for you</b>${toMe.map(([a]) => `<div class="row2"><span class="grow">${esc(fingerprint(a))} asks to be linked to you</span><button class="btn primary" data-link="${a}">It’s my device</button></div>`).join('')}</div>` : ''}
+      ${forGuard.length ? `<div class="card warn"><b>Recovery requests</b>${forGuard.map(r => `<div class="row2"><span class="grow">${esc(short(r.lost))}: new key ${esc(fingerprint(r.key))} · ${r.ok} of ${r.need} guardians confirmed</span><button class="btn" data-confirm="${r.lost}>${r.key}">I checked: confirm</button></div>`).join('')}<small>Only confirm after you checked with them in person or on a call.</small></div>` : ''}
+      <h3>Your guardians ${g?.who.size ? `<span class="n">${g.q} of ${g.who.size} needed</span>` : ''}</h3>
+      ${g?.who.size ? `<ul class="plain">${[...g.who].map(k => `<li class="row2">${avatar(k)}<span class="grow">${esc(whoName(k))}</span></li>`).join('')}</ul>` : '<p class="empty">No guardians. If this device is lost, nobody can confirm a new one is you.</p>'}
+      <div class="acts"><button class="btn" data-guards${others.length ? '' : ' disabled'}>${ic('shield')}Choose guardians…</button><button class="btn" data-recover${others.length ? '' : ' disabled'}>Lost a device? Recover…</button></div>
+      ${recs.filter(r => r.done).map(r => `<small>Recovered: ${esc(short(r.lost))} onto ${esc(fingerprint(r.key))} (${r.ok} guardians)</small>`).join('')}`;
+  },
+  async click(e, b){
+    try {
+      if (b.hasAttribute('data-code')){ const c = await linkCode(); await copy(c, 'Link code copied. On your other device: Team → Devices and recovery → I have a link code.'); return; }
+      if (b.hasAttribute('data-have')){ const c = await ask('Link code', '', 'Paste the code from your other device.'); if (c) await useLinkCode(c.trim()); return; }
+      if (b.dataset.link){ await devSign('LINK', [['R', b.dataset.link], ['S', '1']]); toast('Linked: both devices are you now.'); return; }
+      if (b.dataset.confirm){ const [lost, key] = b.dataset.confirm.split('>'); await devSign('RECOVER', [['R', lost], ['K', key]]); toast('Confirmed.'); return; }
+      if (b.hasAttribute('data-guards')){
+        const g = S.D.guards?.get(S.me.id), others = people().filter(id => !samePerson(id, S.me.id));
+        const v = await formDialog('Guardians', [{ id: 'who', label: 'People who can confirm a new device is you', type: 'people', value: [...(g?.who || [])], options: others }, { id: 'q', label: 'How many must confirm', type: 'number', value: g?.q || Math.min(2, others.length), min: 1 }],
+          { ok: 'Sign', why: 'Pick people who know you and can check it’s really you. More than one makes it hard for anyone to take your identity.' });
+        if (!v) return; const q = Math.max(1, Math.min(v.who.length || 1, v.q || 1));
+        for (const k of new Set([...(g?.who || []), ...v.who])) await devSign('GUARD', [['R', k], ['S', v.who.includes(k) ? '1' : '0'], ['Q', q]]);
+        return;
+      }
+      if (b.hasAttribute('data-recover')){
+        const lost = await new Promise(res => openMenu(b, people().filter(id => id !== S.me.id && S.D.guards?.has(id)).map(id => ({ label: `I was ${short(id)}`, icon: 'users', run: () => res(id) })).concat([{ label: 'Cancel', icon: 'x', run: () => res(null) }])));
+        if (lost) await askRecovery(lost);
+      }
+    } catch (err){ toast(/code/.test(err.message) ? 'That isn’t a link code.' : err.message); }
+  },
+});
+registerFeature({ id: 'devices', name: 'Devices and recovery', group: 'network', icon: 'key', records: ['LINK', 'GUARD', 'RECOVER'],
+  blurb: 'Link your devices as one person; guardians restore you if one is lost',
+  status: () => { const n = (S.D.linkAsks || []).filter(([, b]) => b === S.me?.id).length + (S.D.recoveries || []).filter(r => !r.done && S.D.guards?.get(r.lost)?.who.has(S.me?.id)).length; return n ? `${n} waiting` : S.D.guards?.get(S.me?.id)?.who.size ? '' : 'no guardians'; },
+  open: () => openPanel('devices') });
+// In a suggest zone, what others add, move or edit inside it shows as a suggestion, ghosted, until the zone's owner accepts or
+// declines it; in a locked zone, others' changes there don't count at all. Discussion (comments, stances, claims, tasks) is
+// never gated. Co-workers stop overwriting each other's areas without anyone having to ask "who's on this?".
+// @uses core derive (RECORD_GATES, S.D.pending), records, render (drawEl), ui/panels
+// ZONE-I-R-{frame}-S-{open|suggest|locked}-X-Y-W-H-Z-T-SIG     the frame's area when it was zoned; latest per frame wins
+// ACCEPT-I-R-{record}-S-{1 accept|0 decline}-Z-T-SIG           the zone owner's answer to a suggestion
+registerRecord('ZONE', { parse(r, f){ if (!f.R || !['open', 'suggest', 'locked'].includes(f.S)) throw Error('zone'); r.mode = f.S; r.zx = decInt(f.X || '0'); r.zy = decInt(f.Y || '0'); r.zw = Math.max(0, +f.W || 0); r.zh = Math.max(0, +f.H || 0); }, inherit: false });
+registerRecord('ACCEPT', { parse(r, f){ if (!f.R) throw Error('accept'); r.yes = f.S !== '0'; }, inherit: false });
+Object.assign(PERM_OF, { ZONE: 'draw', ACCEPT: null });
+const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
+// zones from the full record set (before derive): the latest valid ZONE per frame
+function zonesOf(all, P){
+  const z = new Map();
+  for (const r of all) if (r.type === 'ZONE' && r.neg === null){ const fr = S.records.get(r.f.R); if (fr && (samePerson(r.author, fr.author) || P.owner && samePerson(r.author, P.owner))) z.set(r.f.R, r); }
+  return [...z.values()].filter(r => r.mode !== 'open');
+}
+const inZone = (z, x, y) => x >= z.zx && y >= z.zy && x <= z.zx + z.zw && y <= z.zy + z.zh;
+// where a record acts: a new element where it was placed; a change where its target was placed
+function anchorOf(r){
+  if (r.type === 'MOVE' || r.type === 'STYLE' || r.neg !== null){ const t = S.records.get(r.f.R); return t && Number.isFinite(t.x) ? t : null; }
+  if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits){ const t = S.records.get(r.edits); return t && Number.isFinite(t.x) ? t : r; }
+  if (r.type === 'ARROW'){ const a = S.records.get(r.f.FROM); return a && Number.isFinite(a.x) ? a : null; }
+  if (r.type === 'GROUP'){ const a = S.records.get(r.members?.[0]); return a && Number.isFinite(a.x) ? a : null; }
+  return Number.isFinite(r.x) ? r : null;
+}
+RECORD_GATES.push((all, P) => {
+  const zones = zonesOf(all, P); if (!zones.length) return null;
+  const answers = new Map(); for (const r of all) if (r.type === 'ACCEPT') answers.set(r.f.R, r);   // z order: the latest answer
+  return r => {
+    if (!GATED.has(r.type) && r.neg === null) return null;
+    if (r.f.R && zones.some(z => z.f.R === r.f.R) && r.type !== 'MOVE') return null;   // the frame's own record
+    const a = anchorOf(r); if (!a) return null;
+    for (const z of zones){
+      if (samePerson(r.author, z.author) || !inZone(z, a.x, a.y) || r.cid === z.f.R) continue;
+      if (z.mode === 'locked') return 'deny';
+      const ans = answers.get(r.cid); if (ans && samePerson(ans.author, z.author)) return ans.yes ? null : 'deny';
+      return 'pending';
+    }
+    return null;
+  };
+});
+// the suggestions waiting, with the zone each sits in
+function suggestions(){
+  const out = [], P = S.P || { owner: null }, zones = zonesOf([...S.records.values()].sort(byZ), P);
+  for (const c of S.D.pending || []){ const r = S.records.get(c); if (!r) continue; const a = anchorOf(r), z = a && zones.find(z => inZone(z, a.x, a.y)); if (z) out.push({ r, z }); }
+  return out.sort((a, b) => a.r.z - b.r.z);
+}
+const answer = async (cid, yes) => publish(await signed('ACCEPT', [['I', S.me.id], ['R', cid], ['S', yes ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+async function setZone(frame, mode){
+  const b = box(frame); if (!b) return;
+  await publish(await signed('ZONE', [['I', S.me.id], ['R', frame.cid], ['S', mode], ['X', encInt(Math.round(b.x))], ['Y', encInt(Math.round(b.y))], ['W', Math.round(b.w)], ['H', Math.round(b.h)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  toast(mode === 'open' ? 'Zone opened: anyone may change it.' : mode === 'suggest' ? 'Suggest zone: others’ changes wait for you to accept them.' : 'Locked zone: only you change what’s inside.');
+}
+const zoneOfFrame = cid => [...S.records.values()].filter(r => r.type === 'ZONE' && r.f.R === cid).sort(byZ).at(-1);
+// tell people before they sign something a zone won't take as is
+const warnedZones = new Set();
+PUBLISH_FILTERS.push(async raw => {
+  const t = raw.slice(0, raw.indexOf('-')); if (!GATED.has(t)) return undefined;
+  const zones = zonesOf([...S.records.values()].sort(byZ), S.P || { owner: null }); if (!zones.length) return undefined;
+  let r; try { r = toRec(parse(raw), 'pending'); } catch { return undefined; }
+  const a = anchorOf(r), z = a && zones.find(z => inZone(z, a.x, a.y) && !samePerson(z.author, S.me.id)); if (!z) return undefined;
+  if (z.mode === 'locked'){ toast(`${whoName(z.author)} has locked this area. Comment or take a stance instead.`); return null; }
+  if (!warnedZones.has(z.cid)){ warnedZones.add(z.cid); toast(`This is ${whoName(z.author)}’s area: your change is a suggestion until they accept it.`); }
+  return undefined;
+});
+// suggestions drawn ghosted where they would land, with the suggester's name; the zone's owner answers from the badge
+RENDER_HOOKS.world.push(() => {
+  for (const { r } of suggestions()){
+    if (!ELEMENT.has(r.type)) continue;
+    const el = Object.assign(Object.create(r), { ew: r.type === 'DRAW' ? r.w : r.sw, ec: r.f.C, ek: r.k || 'card', ez: r.z, elabel: '', efill: r.fill || null, esize: null, eshape: null, edash: null });
+    ctx.save(); ctx.globalAlpha = .45; try { drawEl(el); } catch {} ctx.restore();
+  }
+});
+RENDER_HOOKS.screen.push(() => {
+  for (const { r, z } of suggestions()){
+    const a = anchorOf(r); if (!a) continue; const s = toScreen(a.x, a.y);
+    const own = samePerson(z.author, S.me.id), what = r.type === 'MOVE' ? 'move' : r.type === 'STYLE' ? 'restyle' : r.edits ? 'edit' : r.neg ? 'removal' : 'addition';
+    const w = drawBadge(s.x, s.y - 26, `${whoName(r.author)} suggests ${what === 'addition' ? 'an' : 'a'} ${what}${own ? '' : ' · waiting'}`, 'acc', own ? () => openPanel('zones') : null);
+    if (own){ drawBadge(s.x + w + 4, s.y - 26, '✓ Accept', 'good', () => answer(r.cid, true)); drawBadge(s.x + w + 76, s.y - 26, '✕', 'bad', () => answer(r.cid, false)); }
+  }
+  for (const r of S.records.values()) if (r.type === 'ZONE' && r.mode !== 'open' && zoneOfFrame(r.f.R) === r){ const fr = current(r.f.R), sb = fr && screenBox(fr); if (sb) drawBadge(sb.x + sb.w - 120, sb.y + 6, `${r.mode === 'locked' ? '🔒' : '✎'} ${whoName(r.author)}’s ${r.mode === 'locked' ? 'zone' : 'suggest zone'}`, r.mode === 'locked' ? 'warn' : 'acc'); }
+});
+const isFrameRec = r => r?.type === 'NODE' && (r.ek || r.k) === 'frame';
+TOOLBAR_HOOKS.push((rs, one, B) => isFrameRec(one) && (samePerson(one.author, S.me.id) || samePerson(S.P?.owner, S.me.id)) ? B('zone', 'zone', `Zone: ${zoneOfFrame(one.cid)?.mode || 'open'}…`, 'aria-haspopup="menu"') : '');
+TOOLBAR_ACTIONS.zone = (rs, b) => { const f = rs[0], cur = zoneOfFrame(f.cid)?.mode || 'open';
+  openMenu(b, [['open', 'Open: anyone changes it'], ['suggest', 'Suggest: others’ changes wait for me'], ['locked', 'Locked: only I change it']].map(([m, l]) => ({ label: l, icon: m === 'locked' ? 'lock' : m === 'suggest' ? 'edit' : 'unlock', on: cur === m, run: () => setZone(f, m) }))); };
+registerPanel({
+  id: 'zones', title: 'Zones and suggestions', blurb: 'Areas people own: changes others make inside them wait as suggestions, or don’t count when the area is locked.',
+  paint(body){
+    const sug = suggestions(), mine = sug.filter(s => samePerson(s.z.author, S.me.id)), waiting = sug.filter(s => samePerson(s.r.author, S.me.id));
+    const zones = [...S.records.values()].filter(r => r.type === 'ZONE' && zoneOfFrame(r.f.R) === r && r.mode !== 'open');
+    const row = ({ r, z }, own) => `<li class="row2"><span class="pill acc">${esc(r.type === 'MOVE' ? 'Move' : r.type === 'STYLE' ? 'Restyle' : r.edits ? 'Edit' : r.neg ? 'Removal' : 'Addition')}</span><span class="grow">${esc(elTitle(r.edits || r.f.R || r.cid))} <small>by ${esc(whoName(r.author))} in ${esc(elTitle(z.f.R))}</small></span>${own ? `<button class="btn" data-yes="${r.cid}">Accept</button><button class="btn" data-no="${r.cid}">Decline</button>` : '<small>waiting</small>'}</li>`;
+    body.innerHTML = `${mine.length ? `<h3>For you to answer <span class="n">${mine.length}</span></h3><ul class="plain">${mine.map(s => row(s, true)).join('')}</ul><div class="acts"><button class="btn" data-all>Accept all</button></div>` : ''}
+      ${waiting.length ? `<h3>Your suggestions <span class="n">${waiting.length}</span></h3><ul class="plain">${waiting.map(s => row(s, false)).join('')}</ul>` : ''}
+      <h3>Zones <span class="n">${zones.length}</span></h3>${zones.length ? `<ul class="plain">${zones.map(z => `<li class="row2"><button class="link grow" data-go="${z.f.R}">${esc(elTitle(z.f.R))}</button><span class="pill ${z.mode === 'locked' ? 'warn' : 'acc'}">${z.mode}</span><small>${esc(whoName(z.author))}</small></li>`).join('')}</ul>` : '<p class="empty">No zones. Select a frame you made and choose “Zone…” to make it yours.</p>'}`;
+  },
+  async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => samePerson(s.z.author, S.me.id))) await answer(s.r.cid, true); },
+});
+registerFeature({ id: 'zones', name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
+  blurb: 'Own an area: others’ changes inside it wait as suggestions, or are locked out',
+  status: () => { const n = suggestions().filter(s => samePerson(s.z.author, S.me?.id)).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });
+// on" points at what must finish first; "leads to" or a plain arrow points at what comes next). Blocked tasks say what they wait
+// for, the Work panel lists what is ready now, and the critical path (the longest chain of unfinished work) is outlined, so the
+// team sees what actually delays the delivery. Nothing new is signed: it is read from tasks (TASK) and connectors (ARROW).
+// @uses features/work (tasks, Work panel), features/connectors (relation labels), ui/panels (badges)
+const edgeWord = a => (a.elabel ?? a.label ?? '').toLowerCase();
+// edges between tasks: before → after
+function taskEdges(){
+  const t = S.D.tasks || new Map(), out = [];
+  for (const a of S.D.els) if (a.type === 'ARROW' && !S.D.hidden.has(a.cid)){
+    const f = current(a.f.FROM)?.cid, to = current(a.f.TO)?.cid; if (!t.has(f) || !t.has(to) || f === to) continue;
+    const l = edgeWord(a); if (l && !/depends|leads|blocks|then|after|before/.test(l)) continue;   // "supports", "example of"… aren't order
+    out.push(/depends|after/.test(l) ? [to, f] : [f, to]);
+  }
+  return out;
+}
+function plan(){
+  const t = S.D.tasks || new Map(), edges = taskEdges(), before = new Map(), after = new Map();
+  for (const [a, b] of edges){ (before.get(b) || before.set(b, []).get(b)).push(a); (after.get(a) || after.set(a, []).get(a)).push(b); }
+  const open = c => t.get(c)?.status !== 'done';
+  const blocked = new Map(); for (const [c, bs] of before) if (open(c)){ const w = bs.filter(open); if (w.length) blocked.set(c, w); }
+  // cycles: a task that (through others) waits on itself
+  const cyc = new Set(), state = new Map();
+  const visit = c => { state.set(c, 1); for (const n of after.get(c) || []){ if (state.get(n) === 1) cyc.add(n).add(c); else if (!state.has(n)) visit(n); } state.set(c, 2); };
+  for (const c of t.keys()) if (!state.has(c)) visit(c);
+  // the critical path: the longest chain of unfinished tasks (memoised; cycles cut)
+  const memo = new Map(), longest = (c, seen = new Set()) => { if (memo.has(c)) return memo.get(c); if (seen.has(c) || !open(c)) return []; seen.add(c);
+    let best = []; for (const n of after.get(c) || []){ const p = longest(n, seen); if (p.length > best.length) best = p; } seen.delete(c); const r = [c, ...best]; memo.set(c, r); return r; };
+  let path = []; for (const c of t.keys()) if (open(c) && !(before.get(c) || []).some(open)){ const p = longest(c); if (p.length > path.length) path = p; }
+  const ready = [...t].filter(([c, x]) => x.status !== 'done' && !blocked.has(c)).map(([c]) => c);
+  return { edges, blocked, ready, path: path.length > 1 ? path : [], cycles: cyc };
+}
+RENDER_HOOKS.screen.push(() => {
+  if (!S.D.tasks?.size) return;
+  const p = plan(), onPath = new Set(p.path);
+  for (const c of onPath){ const sb = screenBox(S.records.get(c)); if (!sb) continue; ctx.save(); ctx.strokeStyle = TONE.bad[1]; ctx.lineWidth = 2; ctx.setLineDash([8, 5]); rr(ctx, sb.x - 9, sb.y - 9, sb.w + 18, sb.h + 18, 12); ctx.stroke(); ctx.restore(); }
+  for (const [c, w] of p.blocked){ const sb = screenBox(S.records.get(c)); if (!sb) continue; drawBadge(sb.x, sb.y + sb.h + 28, `⛔ waits on ${w.length === 1 ? elTitle(w[0]).slice(0, 22) : plural(w.length, 'task')}`, 'warn', () => { goTo(w[0]); }); }
+  for (const c of p.cycles){ const sb = screenBox(S.records.get(c)); if (sb) drawBadge(sb.x + sb.w - 70, sb.y + sb.h + 28, '↻ loop', 'bad'); }
+});
+// the Work panel gets a "Next up" section: ready now, blocked, the critical path
+WORK_SECTIONS.push(() => {
+  const p = plan(); if (!p.edges.length) return '';
+  const li = c => `<li><button class="wk-row" data-c="${c}"><span class="wk-t">${esc(elTitle(c))}</span>${S.D.tasks.get(c)?.owner ? `<span class="av" style="background:hsl(${authorHue(S.D.tasks.get(c).owner)} 55% 30%)">${esc(initials(S.D.tasks.get(c).owner))}</span>` : ''}</button></li>`;
+  return `<h3>Ready now <span class="n">${p.ready.length}</span></h3><ul class="wk-list">${p.ready.map(li).join('')}</ul>
+    ${p.path.length ? `<h3>Critical path <span class="n">${p.path.length} steps</span></h3><ul class="wk-list">${p.path.map(li).join('')}</ul>` : ''}
+    ${p.blocked.size ? `<h3>Blocked <span class="n">${p.blocked.size}</span></h3><ul class="wk-list">${[...p.blocked.keys()].map(li).join('')}</ul>` : ''}
+    ${p.cycles.size ? `<p class="wk-note">${plural(p.cycles.size, 'task')} wait on each other in a loop.</p>` : ''}`;
+});
+FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.path.length ? `${plural(p.path.length, 'task')} on the critical path` : true; } };
+registerFeature({ id: 'taskflow', name: 'Dependencies and critical path', group: 'deliver', icon: 'deps', records: [],
+  blurb: 'Connect tasks to order them: what is blocked, what is ready, and the chain that sets the date',
+  status: () => { if (!S.D.tasks?.size) return ''; const p = plan(); return p.blocked.size ? `${p.blocked.size} blocked` : ''; },
+  open: () => { toggleWork(true); toast('Connect two tasks: “depends on” points at what must finish first.'); } });
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 
