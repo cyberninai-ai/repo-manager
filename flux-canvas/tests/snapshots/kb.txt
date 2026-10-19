@@ -11,7 +11,7 @@ tap select -> Selected circle by you. Arrow keys move, Delete removes.
 moves: 2
 ask focused: askIn value: site plan
 image alt: sketch | sel: circle by you
-+ -> Zoom 120 percent
++ -> Resized to 132 by 66.
 summary: Canvas has 5 elements: 1 rect, 1 circle, 1 text, 1 arrow, 1 image.
 help focus: helpClose
 after esc focus: c

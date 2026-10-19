@@ -47,9 +47,12 @@ function toSVG(){
       if (el.elabel) o.push(`<text x="${n(c.mid.x)}" y="${n(c.mid.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`);
     } else if (el.type === 'NODE'){
       const b = box(el), L = nodeBox(el), K = L.K, ac = ecol(el) !== 'ink' ? col : null, k = el.ek;
-      const fillN = { card: TH.panel, topic: mix(ac || TH.accent, .16), rect: mix(ac || TH.ink, .07), ellipse: mix(ac || TH.ink, .07), diamond: mix(ac || TH.ink, .07),
+      let fillN = { card: TH.panel, topic: mix(ac || TH.accent, .16), rect: mix(ac || TH.ink, .07), ellipse: mix(ac || TH.ink, .07), diamond: mix(ac || TH.ink, .07),
         sticky: ac ? mixHex(ac, '#ffffff', .35) : '#ffe066', swatch: TH.panel, button: ac || TH.ink, input: TH.panel, image: mix(TH.line, .5), frame: 'none' }[k];
       const strokeN = { card: ac || TH.line, topic: ac || TH.accent, rect: ac || TH.ink, ellipse: ac || TH.ink, diamond: ac || TH.ink, sticky: 'none', button: 'none', input: ac || TH.line, image: ac || TH.muted, frame: ac || TH.ink, swatch: TH.line }[k];
+      let solid = null;
+      if (FILLABLE.has(k) && el.efill === 'none') fillN = 'none';
+      if (FILLABLE.has(k) && el.efill === 'solid'){ solid = k === 'topic' ? (ac || TH.accent) : (ac || TH.ink); fillN = solid; }
       const sw = ['topic', 'rect', 'ellipse', 'diamond', 'frame'].includes(k) ? 2 : 1.5, attrs = `fill="${fillN}" stroke="${strokeN}" stroke-width="${sw}"`;
       if (k === 'ellipse') o.push(`<ellipse cx="${n(b.x + b.w / 2)}" cy="${n(b.y + b.h / 2)}" rx="${n(b.w / 2)}" ry="${n(b.h / 2)}" ${attrs}/>`);
       else if (k === 'diamond') o.push(`<polygon points="${n(b.x + b.w / 2)},${n(b.y)} ${n(b.x + b.w)},${n(b.y + b.h / 2)} ${n(b.x + b.w / 2)},${n(b.y + b.h)} ${n(b.x)},${n(b.y + b.h / 2)}" ${attrs}/>`);
@@ -61,7 +64,7 @@ function toSVG(){
         if (k === 'swatch') o.push(`<rect x="${n(b.x + 6)}" y="${n(b.y + 6)}" width="${n(b.w - 12)}" height="${n(b.h - 40)}" rx="7" fill="${col}"/>`);
         if (k === 'frame') o.push(`<line x1="${n(b.x)}" y1="${n(b.y + 30)}" x2="${n(b.x + b.w)}" y2="${n(b.y + 30)}" stroke="${TH.line}"/>`);
       }
-      const tcol = k === 'sticky' ? '#1d1d1f' : k === 'button' ? (ac ? '#fff' : TH.paper) : ['input', 'image', 'frame'].includes(k) ? TH.muted : TH.ink;
+      const tcol = solid ? readableOn(solid) : k === 'sticky' ? '#1d1d1f' : k === 'button' ? (ac ? '#fff' : TH.paper) : ['input', 'image', 'frame'].includes(k) ? TH.muted : TH.ink;
       const left = K.align === 'left', th = L.lines.length * L.lh;
       let ty = K.top ? b.y + K.pad[1] + L.lh / 2 : b.y + b.h / 2 - th / 2 + L.lh / 2; if (k === 'frame') ty = b.y + 15; if (k === 'swatch') ty = b.y + b.h - 17;
       const tx = left ? b.x + K.pad[0] + (k === 'card' && ac ? 4 : 0) : b.x + b.w / 2;

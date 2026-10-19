@@ -27,7 +27,7 @@ const until = async (pg, f, ms = 4000) => { const t = Date.now(); while (Date.no
 
 const A = await open(), B = await open();
 ok(await until(A, () => NET.state === 'live' && NET.peers === 2), 'both browsers live on the relay');
-ok(!(await A.evaluate(() => document.getElementById('netChip').hidden)), 'live chip shown');
+ok(await until(A, () => document.getElementById('liveBtn').dataset.state === 'live'), 'live button shows the session');
 // 1. live: a record signed in A appears in B, a stroke with its blob too
 await A.evaluate(() => commitText({ x: 0, y: 0 }, 'hello from A'));
 ok(await until(B, () => S.D.els.some(e => e.text === 'hello from A')), 'text arrives live');

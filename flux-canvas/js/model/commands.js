@@ -42,7 +42,7 @@ async function commitComment({ on = null, x, y, text, re = null }){
     ['M', encTxt(text)], ['RE', re || '0'], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
 }
-async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = null, M = null, Y = null, D = null }){
+async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = null, M = null, Y = null, D = null, F = null }){
   const pairs = [['I', S.me.id], ['R', cid]];
   if (K) pairs.push(['K', K]);
   if (O != null) pairs.push(['O', encInt(Math.round(O))]);
@@ -50,6 +50,7 @@ async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = nu
   if (M != null) pairs.push(['M', encTxt(M)]);
   if (Y) pairs.push(['Y', Y]);
   if (D) pairs.push(['D', D]);
+  if (F) pairs.push(['F', F]);
   if (W != null) pairs.push(['W', Math.max(1, Math.round(W))]);
   if (C) pairs.push(['C', C]);
   return publish(await signed('STYLE', [...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));

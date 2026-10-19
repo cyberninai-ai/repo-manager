@@ -3,7 +3,7 @@
 // @uses selection, tools
 function setCursor(){
   cv.style.cursor = erasing ? 'cell' : G?.kind === 'grow' ? 'crosshair' : hoverGrow ? 'copy' : placing === 'node' ? 'cell' : G?.kind === 'pin' ? (G.moved ? 'grabbing' : 'grab') : hoverPin ? 'grab' : placing === 'text' ? 'text' : placing === 'comment' ? 'copy'
-    : spaceDown || S.handTool || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
+    : spaceDown || S.handTool || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' ? HANDLE_CURSOR[G.h] : hoverHandle ? HANDLE_CURSOR[hoverHandle] : G?.kind === 'move' ? 'move'
     : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : S.shapeTool ? 'crosshair' : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
 }
 let lastEmpty = null;
@@ -54,12 +54,12 @@ cv.addEventListener('pointerdown', e => {
       lastEmpty = null; G = { kind: 'none' }; startNode({ kind: 'sticky', anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return;
     }
     lastEmpty = { t: now, x: e.clientX, y: e.clientY };
-    G = { kind: 'lasso', pts: [w] }; dirty = true; return;
+    G = { kind: 'marquee', a: w, b: w, add: e.shiftKey, base: new Set(S.sel) }; dirty = true; return;   // a rectangle, as in every design tool
   }
   if (S.sel.size){
     if (S.lassoMode){
       const hd = onHandle(w);
-      if (hd){ const b = box(hd.el); G = { kind: 'resize', target: hd.el.cid, start: w, aspect: b.w / b.h, dw: 0, dh: 0, node: hd.el.type === 'NODE', w0: b.w, h0: b.h }; setCursor(); return; }
+      if (hd){ const b = box(hd.el); G = { kind: 'resize', target: hd.el.cid, h: hd.h, start: w, b0: { ...b }, nb: { ...b }, el: hd.el }; setCursor(); return; }
     } else if (e.ctrlKey || e.metaKey){   // pen mode: ⌘/Ctrl is a temporary select key, so ⌘-drag inside the selection moves it
       const sb = selBox();
       if (sb && inside(w, grow(sb, 10 / S.view.zoom))){ G = startMoveG(w, e.altKey); setCursor(); return; }
@@ -87,9 +87,10 @@ cv.addEventListener('pointermove', e => {
     const pid = pinAt(e.clientX, e.clientY), hpin = !!pid;
     if (hpin !== hoverPin){ hoverPin = hpin; setCursor(); }
     if (pid !== hoverThread && pid !== 'draft'){ hoverThread = pid; paintPreviews(); }
-    const hp = S.lassoMode && !!hitTest(toWorld(e.clientX, e.clientY));
+    const he = S.lassoMode && !placing ? hitTest(toWorld(e.clientX, e.clientY)) : null, hp = !!he;
+    if ((he?.cid || null) !== hoverCid){ hoverCid = he?.cid || null; dirty = true; }
     if (hp !== hoverPick){ hoverPick = hp; setCursor(); }
-    const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(S.lassoMode && sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = S.lassoMode && !!onHandle(wp);
+    const wp = toWorld(e.clientX, e.clientY), sb = S.sel.size && selBox(), hs = !!(S.lassoMode && sb && inside(wp, grow(sb, 10 / S.view.zoom))), hh = S.lassoMode && (onHandle(wp)?.h || false);
     if (h !== hoverEdge || hs !== hoverSel || hh !== hoverHandle){ hoverEdge = hs || hh ? null : h; hoverSel = hs; hoverHandle = hh; dirty = true; setCursor(); }
     return;
   }
@@ -113,13 +114,13 @@ cv.addEventListener('pointermove', e => {
       G.moved = true; G.dx = Math.round(w.x - G.start.x); G.dy = Math.round(w.y - G.start.y);
       if (G.id === 'draft'){ draft.px += G.dx; draft.py += G.dy; draft.x += G.dx; draft.y += G.dy; G.start = w; G.dx = G.dy = 0; }
       break;
-    case 'resize': {   // proportional, from the bottom-right corner (nodes: free, but never smaller than their label)
-      if (G.node){ G.dw = Math.round(w.x - G.start.x); G.dh = Math.round(w.y - G.start.y); break; }
-      const el = S.records.get(G.target), base = el.bw + (S.D.off.get(el.cid)?.w || 0);
-      const dw = Math.max(w.x - G.start.x, (w.y - G.start.y) * G.aspect, 16 - base);
-      G.dw = Math.round(dw); G.dh = Math.round(dw / G.aspect); break;
-    }
+    case 'resize': G.nb = resizedBox(G, w, e.shiftKey); break;
     case 'rect': case 'circle': case 'place': G.b = w; break;
+    case 'marquee': {   // live: what the rectangle touches is selected as you drag
+      G.b = w; const r = norm(G.a, G.b), next = new Set(G.add ? G.base : []);
+      for (const i of S.D.els.keys()){ const el = S.D.els[i]; if (!visible(el) || el.locked || S.D.hidden.has(el.cid)) continue; const b = box(el); if (b && b.x < r.x + r.w && b.x + b.w > r.x && b.y < r.y + r.h && b.y + b.h > r.y) next.add(el.cid); }
+      S.sel = next; expandSel(); break;
+    }
     case 'line': {   // Shift snaps to 45°
       G.b = e.shiftKey ? snap45(G.a, w) : w;
       G.target = G.from ? elementAt(w, G.from) : null;
@@ -152,7 +153,9 @@ function endPointer(e, cancelled){
   switch (g.kind){
     case 'place': {
       const kind = S.nodeKind; setPlacing(null);
-      if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 8){ const n = norm(g.a, g.b); startNode({ kind, anchor: { x: n.x, y: n.y, ax: 0, ay: 0 }, size: { W: Math.round(n.w), H: Math.round(n.h) } }); }
+      const dragged = Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 8;
+      if (SHAPE_SIZE[kind]){ const d = SHAPE_SIZE[kind]; placeShape(kind, dragged ? norm(g.a, g.b) : { x: Math.round(w.x - d[0] / 2), y: Math.round(w.y - d[1] / 2), w: d[0], h: d[1] }); return; }
+      if (dragged){ const n = norm(g.a, g.b); startNode({ kind, anchor: { x: n.x, y: n.y, ax: 0, ay: 0 }, size: { W: Math.round(n.w), H: Math.round(n.h) } }); }
       else startNode({ kind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } });
       return;
     }
@@ -187,6 +190,7 @@ function endPointer(e, cancelled){
       if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) * S.view.zoom < 4) return;
       commitStroke([{ x: g.a.x, y: g.a.y, t: 0 }, { x: g.b.x, y: g.b.y, t: 1 }], Date.now()); return;
     }
+    case 'marquee': if (S.sel.size) announceSel(); return;
     case 'lasso': {
       if (g.pts.length < 3) return;
       for (const el of S.D.els){
@@ -210,15 +214,13 @@ function endPointer(e, cancelled){
       return;
     }
     case 'resize': {
-      if (!g.dw && !g.dh) return;
-      if (g.node){
-        const el = S.records.get(g.target), o = S.D.off.get(el.cid) || { w: 0, h: 0 }, L = nodeLayout(el.ek, el.text);
-        const tw = Math.max(L.w, Math.round(g.w0 + g.dw)), th = Math.max(L.h, Math.round(g.h0 + g.dh));
-        const dw = tw - (el.bw + (o.w || 0)), dh = th - (el.bh + (o.h || 0));
-        if (dw || dh) (async () => { await commitMove(el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [el.cid], dx: 0, dy: 0, dw, dh }); S.redo = []; })();
-        say(`Resized to ${tw} by ${th}.`); return;
-      }
-      (async () => { await commitMove(g.target, 0, 0, g.dw, g.dh); S.hist.push({ kind: 'move', targets: [g.target], dx: 0, dy: 0, dw: g.dw, dh: g.dh }); S.redo = []; })();
+      // sizes are stored as the element's own W/H plus resize offsets (for a node, W/H is a minimum where 0 means "fit the label")
+      const el = S.records.get(g.target), o = S.D.off.get(g.target) || { w: 0, h: 0 };
+      const dx = Math.round(g.nb.x - g.b0.x), dy = Math.round(g.nb.y - g.b0.y);
+      const dw = g.nb.w === g.b0.w ? 0 : Math.round(g.nb.w - (el.bw + (o.w || 0))), dh = g.nb.h === g.b0.h ? 0 : Math.round(g.nb.h - (el.bh + (o.h || 0)));
+      if (!dx && !dy && !dw && !dh) return;
+      (async () => { await commitMove(g.target, dx, dy, dw, dh); S.hist.push({ kind: 'move', targets: [g.target], dx, dy, dw, dh }); S.redo = []; })();
+      say(`Resized to ${Math.round(g.nb.w)} by ${Math.round(g.nb.h)}.`);
       return;
     }
     case 'erase': {
@@ -244,6 +246,22 @@ function endPointer(e, cancelled){
 }
 cv.addEventListener('pointerup', e => endPointer(e, false));
 cv.addEventListener('pointercancel', e => endPointer(e, true));
+// the box a resize handle gives: the opposite edge stays put; Shift keeps proportions (images keep them unless Shift);
+// a node never gets smaller than its label needs
+function resizedBox(g, w, shift){
+  const b = g.b0, h = g.h, right = b.x + b.w, bottom = b.y + b.h;
+  let x0 = b.x, y0 = b.y, x1 = right, y1 = bottom;
+  if (h.includes('w')) x0 = Math.min(w.x, right - 8); if (h.includes('e')) x1 = Math.max(w.x, b.x + 8);
+  if (h.includes('n')) y0 = Math.min(w.y, bottom - 8); if (h.includes('s')) y1 = Math.max(w.y, b.y + 8);
+  let nw = x1 - x0, nh = y1 - y0;
+  const keep = (g.el.type === 'IMAGE') !== shift;
+  if (keep && h.length === 2){   // corner: follow the larger change, keep the aspect
+    const a = b.w / b.h; if (nw / a > nh) nh = nw / a; else nw = nh * a;
+    if (h.includes('w')) x0 = right - nw; if (h.includes('n')) y0 = bottom - nh;
+  }
+  if (g.el.type === 'NODE'){ const L = nodeLayout(g.el.ek, g.el.text); if (nw < L.w){ if (h.includes('w')) x0 = right - L.w; nw = L.w; } if (nh < L.h){ if (h.includes('n')) y0 = bottom - L.h; nh = L.h; } }
+  return { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) };
+}
 function snap45(a, b){
   const d = Math.hypot(b.x - a.x, b.y - a.y), t = Math.round(Math.atan2(b.y - a.y, b.x - a.x) / (Math.PI / 4)) * Math.PI / 4;
   return { x: a.x + d * Math.cos(t), y: a.y + d * Math.sin(t) };

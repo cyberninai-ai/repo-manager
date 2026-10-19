@@ -12,9 +12,11 @@ function toRec(node, cid){
     case 'RESOLVE': if (!f.R) throw Error('resolve'); r.state = f.S === '1'; break;
     case 'STYLE': if (!f.R) throw Error('style'); r.sw2 = f.W ? Math.max(1, decInt(f.W)) : null; r.sc = f.C || null; r.sk = f.K || null;
       r.so = f.O ? decInt(f.O) : null; r.sl = f.L ? f.L === '1' : null; r.sm = 'M' in f ? decTxt(f.M) : null;
-      r.sy = ['curve', 'straight', 'elbow'].includes(f.Y) ? f.Y : null; r.sd = ['solid', 'dash', 'dot'].includes(f.D) ? f.D : null; break;
+      r.sy = ['curve', 'straight', 'elbow'].includes(f.Y) ? f.Y : null; r.sd = ['solid', 'dash', 'dot'].includes(f.D) ? f.D : null;
+      r.sf = ['none', 'light', 'solid'].includes(f.F) ? f.F : null; break;
     case 'NODE': r.k = f.K || 'card'; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(0, decInt(f.W || '0')); r.bh = Math.max(0, decInt(f.H || '0'));
-      r.text = decTxt(f.M || ''); r.parent = f.P && f.P !== '0' ? f.P : null; r.edits = f.E || null; r.sw = 2; break;
+      r.text = decTxt(f.M || ''); r.parent = f.P && f.P !== '0' ? f.P : null; r.edits = f.E || null; r.sw = 2;
+      r.fill = ['none', 'light', 'solid'].includes(f.F) ? f.F : null; break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
     case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move');
       r.supersedes = f.X ? f.X.split('_').filter(Boolean) : null; break;   // compaction: this MOVE is the sum of the author's listed MOVEs
@@ -84,17 +86,17 @@ async function publish(raw, blobs = {}){
 // Every transport (this browser's BroadcastChannel, a network relay in core/net) delivers here; everything is verified on ingest.
 async function onWire({ data }, from = null){
   if (data && (data.hello || data.records) && from){ onSync(data, from); return; }
-  for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k]); return; }
+  for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k], from); return; }
   if (!data || typeof data.raw !== 'string') return;
   for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
   await ingest(data.raw);
 }
 // post to every open transport: other tabs here, and the network relay when connected
-function post(msg){ try { bc?.postMessage(msg); } catch {} netSend(msg); }
+function post(msg){ try { bc?.postMessage(msg); } catch {} netSend(msg); rtcSend(msg); }
 function openChannel(){
   try { bc?.close(); } catch {}
   channelName = `canvas.${canvasId}.strokes`;
-  try { bc = new BroadcastChannel(channelName); bc.onmessage = onWire; } catch { bc = null; }
+  try { bc = new BroadcastChannel(channelName); bc.onmessage = e => onWire(e, 'tab'); } catch { bc = null; }
   netJoin();
 }
 openChannel();

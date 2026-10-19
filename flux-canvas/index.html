@@ -120,7 +120,8 @@
 <div id="empty" hidden>
   <div class="em-card" role="region" aria-labelledby="emT">
     <h2 id="emT">Start your canvas</h2>
-    <p>Draw anywhere, drop a sticky note, or begin from a template.</p>
+    <p>Draw anywhere, drop a sticky note, or begin from a template. Invite people and work on it together, live.</p>
+    <label class="em-name"><span>Your name</span><input id="emName" placeholder="So people know who’s who" maxlength="40" autocomplete="name"></label>
     <div class="em-q">
       <button data-q="brainstorm"><svg class="ic" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Brainstorm</span></button>
       <button data-q="mindmap"><svg class="ic" aria-hidden="true"><use href="#i-mindmap"/></svg><span>Mind map</span></button>
@@ -159,7 +160,7 @@
   <button class="ibtn" data-tool="comment" id="cmtBtn" aria-label="Comment" data-key="M"><svg class="ic" aria-hidden="true"><use href="#i-comment"/></svg></button>
 </div>
 <div id="corner" role="group" aria-label="Collaboration">
-  <button class="chip net" id="netChip" hidden aria-haspopup="menu" aria-expanded="false"><i aria-hidden="true"></i><span>Live</span></button>
+  <button class="live" id="liveBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="session" data-state="solo"><i aria-hidden="true"></i><span>Just you</span></button>
   <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
@@ -170,6 +171,7 @@
 <div id="bar" role="toolbar" aria-label="Style">
   <div class="grp" id="gColor"><span class="lbl2" aria-hidden="true">Colour</span><div class="sws" role="radiogroup" aria-label="Colour" id="barColors"></div></div>
   <div class="grp" id="gKind"><span class="lbl2" aria-hidden="true">Shape</span><div class="sws" role="radiogroup" aria-label="Shape" id="barKinds"></div></div>
+  <div class="grp" id="gNFill"><span class="lbl2" aria-hidden="true">Fill</span><div class="seg" role="radiogroup" aria-label="Fill" id="barNFill"></div></div>
   <div class="grp" id="gBrush">
     <label class="lbl2" for="brush">Stroke</label>
     <input type="range" id="brush" min="1" max="80" step="1" aria-describedby="brushHint">
@@ -231,6 +233,10 @@
   </header>
   <div class="list" id="cmList"></div>
 </aside>
+<section id="session" role="dialog" aria-labelledby="sessionT" hidden>
+  <header><h2 id="sessionT">Live session</h2><button class="ibtn sm" id="sessionClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
+  <div id="sessionBody"></div>
+</section>
 <aside class="ledger st" id="structure" aria-label="Outline">
   <header>
     <h2><span>Outline</span><button class="ibtn sm" id="stClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
@@ -347,6 +353,7 @@
 <script src="js/core/state.js"></script>
 <script src="js/core/db.js"></script>
 <script src="js/core/net.js"></script>
+<script src="js/core/rtc.js"></script>
 <script src="js/core/blobs.js"></script>
 <script src="js/core/records.js"></script>
 <script src="js/core/persistence.js"></script>
@@ -386,7 +393,9 @@
 <script src="js/features/story.js"></script>
 <script src="js/features/moodboard.js"></script>
 <script src="js/features/audit.js"></script>
+<script src="js/features/profiles.js"></script>
 <script src="js/features/people.js"></script>
+<script src="js/features/session.js"></script>
 <script src="js/features/compaction.js"></script>
 <script src="js/features/structure.js"></script>
 <script src="js/ui/toolbar.js"></script>

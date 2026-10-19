@@ -31,6 +31,7 @@ function setTool(t, quiet = false){
   if (!TOOLS[t]) return;
   if (taOpen()) finishText(true);
   S.handTool = false; S.shapeTool = null; erasing = false; placing = null;
+  if (t !== 'select' && t !== 'hand' && S.sel.size){ S.sel.clear(); announceSel(); }   // a creation tool's colour, kind and fill are for what you make next
   switch (t){
     case 'select': S.lassoMode = true; break;
     case 'hand': S.handTool = true; break;
@@ -131,6 +132,7 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
+  { label: 'Live session and invites…', icon: 'wifi', run: () => toggleSession(true) },
   { label: 'People and permissions…', icon: 'users', run: openPeople },
   NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Offline. Your work stays here and syncs again when you go live.'); } },
   '-',
@@ -158,11 +160,6 @@ async function askRelay(){
   const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'Everyone who opens this canvas through the same relay sees changes live. Start one with: npm run relay. The relay passes work along but can’t change it.');
   if (v){ netConnect(v); toast('Connecting… share the canvas link so others join the same canvas.'); }
 }
-$('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
-  { label: NET.state === 'live' ? `Connected to ${NET.url.replace(/^wss?:\/\//, '')}` : `Reconnecting to ${NET.url.replace(/^wss?:\/\//, '')}`, icon: 'wifi', run: () => {} },
-  { label: 'Sync everything now', icon: 'upload', run: () => { sendHello(false); toast('Sync requested.'); } },
-  { label: 'Disconnect', icon: 'x', run: () => netClose(true) },
-]) : closeMenu();
 $('moreBtn').onclick = () => $('menu').hidden ? openMenu($('moreBtn'), moreMenuItems()) : closeMenu();
 $('shareBtn').onclick = () => $('menu').hidden ? openMenu($('shareBtn'), shareItems()) : closeMenu();
 
@@ -208,6 +205,9 @@ KEY_HOOKS.push((e, c) => {
 
 /* welcome card: quick starts build into this (empty) canvas; it steps aside on the first touch or key */
 S.touched = false;
+$('emName').value = store.get('flux:name') || '';
+$('emName').addEventListener('change', e => setMyName(e.target.value));
+$('emName').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); });
 const touchCanvas = e => { if (S.touched || e.target.closest?.('#empty .em-card')) return; S.touched = true; $('empty').hidden = true; };
 addEventListener('pointerdown', touchCanvas, true);
 addEventListener('keydown', touchCanvas, true);

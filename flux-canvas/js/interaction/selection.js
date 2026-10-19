@@ -133,7 +133,7 @@ async function kbResize(f){
   const dw = Math.round(b.w * f) - b.w, dh = Math.round(b.h * f) - b.h;
   if (b.w + dw < 16) return true;
   await commitMove(h.el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [h.el.cid], dx: 0, dy: 0, dw, dh }); S.redo = [];
-  say(`Image resized to ${b.w + dw} by ${b.h + dh}.`); return true;
+  say(`Resized to ${b.w + dw} by ${b.h + dh}.`); return true;
 }
 const viewCenter = () => toWorld(innerWidth / 2, innerHeight / 2);
 async function kbInsert(kind){

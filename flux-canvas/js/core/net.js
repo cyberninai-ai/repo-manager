@@ -46,17 +46,17 @@ function netJoin(){
   NET.ws.send(JSON.stringify({ join: canvasId }));
   sendHello(false);
 }
-const sendHello = reply => netSend({ hello: { have: [...S.records.keys()], reply } });
+const sendHello = reply => post({ hello: { have: [...S.records.keys()], reply } });   // to every transport: tabs, relay, direct peers
 // answer a HELLO with what the other side lacks, in chunks of about 1 MB
 function sendMissing(have){
   const missing = [...S.records.values()].filter(r => !have.has(r.cid)).sort(byZ);
   let chunk = [], size = 0;
-  const flush = () => { if (chunk.length) netSend({ records: chunk }); chunk = []; size = 0; };
+  const flush = () => { if (chunk.length) post({ records: chunk }); chunk = []; size = 0; };
   for (const r of missing){
     const it = { raw: r.raw }, b = blobOf(r);
     if (b && S.blobs.has(b)) it.blobs = { [b]: b64enc(S.blobs.get(b)) };
     chunk.push(it); size += r.raw.length + (it.blobs ? it.blobs[b].length : 0);
-    if (size > 1e6) flush();
+    if (size > 2e5) flush();
   }
   flush();
   return missing.length;
@@ -66,19 +66,42 @@ async function onSync(data){
     sendMissing(new Set(Array.isArray(data.hello.have) ? data.hello.have : []));
     if (!data.hello.reply) sendHello(true);
   }
-  if (Array.isArray(data.records)) await bulk(async () => {
+  if (Array.isArray(data.records) && data.records.length) await bulk(async () => {
+    const before = new Set(S.records.keys());
     for (const it of data.records){
       if (!it || typeof it.raw !== 'string') continue;
       for (const [c, b] of Object.entries(it.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
       await ingest(it.raw);
     }
+    if (data.records.length > 2) noteArrivals(before);
   });
 }
-function paintNet(){
+function paintNet(){ runHooks(SYNC_HOOKS);
   const el = document.getElementById('netChip'); if (!el) return;
   el.hidden = NET.state === 'off';
   el.dataset.state = NET.state;
   const txt = NET.state === 'live' ? `Live${NET.peers > 1 ? ` · ${NET.peers}` : ''}` : NET.state === 'connecting' ? 'Reconnecting…' : 'Relay error';
   el.querySelector('span').textContent = txt;
   el.setAttribute('aria-label', NET.state === 'live' ? `Connected to the relay${NET.peers > 1 ? `, ${NET.peers} people on this canvas` : ''}. Open sync options` : `${txt} Open sync options`);
+}
+
+/* state root (audit W5): one short hash of every record CID this browser holds. Peers compare roots in their presence:
+   equal roots mean they see exactly the same canvas; different roots trigger a sync. */
+S.root = '';
+let rootT = 0;
+function scheduleRoot(){
+  clearTimeout(rootT);
+  rootT = setTimeout(async () => {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...S.records.keys()].sort().join('\n'))));
+    S.root = b32(h).slice(0, 12); runHooks(SYNC_HOOKS);
+  }, 250);
+}
+CHANGE_HOOKS.push(scheduleRoot);
+// what arrived while you were away: counted per author after a sync batch, so people see who moved the work forward
+let caughtUp = null;
+function noteArrivals(before){
+  const fresh = [...S.records.values()].filter(r => !before.has(r.cid) && r.author !== S.me?.id && r.type !== 'PROFILE');
+  if (!fresh.length) return;
+  const by = new Map(); for (const r of fresh) by.set(r.author, (by.get(r.author) || 0) + 1);
+  clearTimeout(caughtUp); caughtUp = setTimeout(() => toast(`Caught up · ${fresh.length} change${fresh.length > 1 ? 's' : ''} from ${[...by.keys()].map(a => NAMES.get(a) || a.slice(2, 8)).join(', ')}`), 600);
 }

@@ -26,9 +26,11 @@ function barGroups(){
     if (rs.some(r => r.type === 'DRAW' || r.type === 'SHAPE' || r.type === 'ARROW')) g.add('brush');
     if (rs.some(r => r.type === 'TEXT')) g.add('text');
     if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky')) g.add('kind');   // a sticky note is a sticky note: colour only
+    if (rs.some(r => r.type === 'NODE' && FILLABLE.has(r.ek))) g.add('nfill');
     return g;
   }
   for (const k of (TOOL_GROUPS[t] || '').split(' ')) if (k) g.add(k);
+  if (t === 'node' && FILLABLE.has(S.nodeKind)) g.add('nfill');
   return g;
 }
 const KIND_SVG = {
@@ -85,6 +87,13 @@ function paintBar(){
       if (d){ e.preventDefault(); e.stopPropagation(); const n = list[(i + d + list.length) % list.length]; n.focus(); n.click(); }
     });
   }
+  const nf = $('barNFill');
+  if (!nf.children.length){
+    for (const [v, label, svg] of [['none', 'No fill', '<rect x="4" y="4" width="12" height="12" rx="2" fill="none"/>'], ['light', 'Light fill', '<rect x="4" y="4" width="12" height="12" rx="2" fill="currentColor" fill-opacity=".2"/>'], ['solid', 'Solid fill', '<rect x="4" y="4" width="12" height="12" rx="2" fill="currentColor"/>']]){
+      const b = document.createElement('button'); b.className = 'kd'; b.dataset.fill = v; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', label);
+      b.innerHTML = `<svg viewBox="0 0 20 20" class="ic" aria-hidden="true">${svg}</svg>`; b.onclick = () => setNodeFill(v); nf.appendChild(b);
+    }
+  }
   const groups = barGroups(), gkey = [...groups].join();
   const selKinds = selOwn(['NODE']).map(n => n.ek), shownKind = selKinds.length ? selKinds[0] : S.nodeKind;
   for (const b of kinds.children){ const on = b.dataset.k === shownKind; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
@@ -99,10 +108,13 @@ function paintBar(){
   const tt = textTargets(), t = tt[0], ts = t ? (t._previewFs || t.fs) : S.textSize;
   const lt = lineTargets(), bw = lt.length ? Math.round(brushOf(lt[0])) : S.width;
   const tf = t ? t.f.F : S.font;
-  const key = [gkey, currentTool(), S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
+  const key = [gkey, currentTool(), S.nodeFill, selOwn(['NODE']).map(n => n.cid + n.efill + n.ek).join(), S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
   if (key === barShown) return; barShown = key;
   const bar = $('bar'), was = bar.hidden;
   bar.hidden = !groups.size;
+  $('gNFill').hidden = !groups.has('nfill');
+  const fillNow = selOwn(['NODE']).find(n => FILLABLE.has(n.ek))?.efill || (S.sel.size ? 'light' : S.nodeFill);
+  for (const b of nf.children){ const on = b.dataset.fill === fillNow; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
   $('gColor').hidden = !groups.has('color'); $('gKind').hidden = !groups.has('kind');
   $('gBrush').hidden = !groups.has('brush'); $('gText').hidden = !groups.has('text'); $('fillBtn').hidden = !groups.has('fill');
   $('fillBtn').setAttribute('aria-pressed', String(!!S.fill));
@@ -163,6 +175,14 @@ async function setFont(f){
   for (const t of tt){ const cur = current(t.cid); if (!cur) continue; if (cur.f.F === f){ made.push(cur.cid); continue; } const b = box(cur); made.push(await commitText({ x: b.x, y: b.y }, cur.text, cur, { F: f }) || cur.cid); }
   S.sel = new Set([...keep, ...made]); dirty = true; barShown = '';
   say(`${tt.length} text${tt.length > 1 ? 's' : ''} set in ${FONT_NAMES[f]}.`);
+}
+// shape fill: for new shapes, and a signed restyle of your selected shapes (undoable)
+async function setNodeFill(v){
+  S.nodeFill = v; barShown = '';
+  const items = [];
+  for (const el of selOwn(['NODE']).filter(n => FILLABLE.has(n.ek))){ const from = el.efill || 'light'; if (from !== v){ items.push({ cid: el.cid, before: { F: from }, after: { F: v } }); await commitStyle(el.cid, { F: v }); } }
+  if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
+  paintBar(); say(`${{ none: 'No', light: 'Light', solid: 'Solid' }[v]} fill${items.length ? ` on ${items.length} shape${items.length > 1 ? 's' : ''}` : ' for new shapes'}.`);
 }
 $('fillBtn').onclick = () => { S.fill = !S.fill; barShown = ''; paintBar(); say(S.fill ? 'New shapes are filled' : 'New shapes are outlines'); };
 let tsizeT = 0;

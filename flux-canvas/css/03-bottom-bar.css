@@ -19,7 +19,7 @@
 #bar .kd .ic{width:20px;height:20px;stroke-width:1.5}
 #bar .kd:hover,#bar .ft:hover{background:var(--hover)}
 #bar .kd[aria-checked="true"],#bar .ft[aria-checked="true"]{background:var(--accent-weak);color:var(--cyan)}
-#bar .fonts{display:flex;gap:2px;margin-left:4px}
+#bar .fonts,#bar .seg{display:flex;gap:2px;margin-left:4px}
 #bar .ft{font-size:14px;font-weight:600}
 #bar .tog{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted)}
 #bar .tog[aria-pressed="true"]{background:var(--accent-weak);border-color:var(--accent-line);color:var(--cyan)}

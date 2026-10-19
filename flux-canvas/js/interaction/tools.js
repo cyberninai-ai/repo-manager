@@ -1,7 +1,8 @@
 'use strict';
 // @module interaction/tools — Resize handle and one-shot placement tools (text, comment, node)
 // @uses selection
-function onHandle(w){ const h = resizeHandle(); return h && Math.hypot(w.x - h.x, w.y - h.y) < 12 / S.view.zoom ? h : null; }
+function onHandle(w){ const r = 9 / S.view.zoom; return resizeHandles().find(h => Math.abs(w.x - h.x) < r && Math.abs(w.y - h.y) < r) || null; }
+const HANDLE_CURSOR = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize' };
 // One-shot tools: the next click places a text or a comment, then the pen comes back.
 let placing = null, hoverGrow = false;
 function setPlacing(kind){

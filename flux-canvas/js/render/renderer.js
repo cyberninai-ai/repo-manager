@@ -49,13 +49,14 @@ function drawEl(el){
       ctx.font = `${12 / S.view.zoom}px ${FONTS.mono}`; ctx.textBaseline = 'top'; ctx.fillText(!S.blobs.has(el.f.R) ? 'image blob missing' : S.imgs.get(el.f.R) === 'error' ? 'this browser cannot decode this image' : 'loading image…', el.x + 6 / S.view.zoom, el.y + 6 / S.view.zoom); ctx.restore(); }
   } else if (el.type === 'SHAPE'){
     ctx.lineWidth = lw(el); ctx.beginPath();
-    if (el.k === 'circle') ctx.ellipse(el.x + el.bw / 2, el.y + el.bh / 2, Math.abs(el.bw / 2), Math.abs(el.bh / 2), 0, 0, Math.PI * 2);
+    const sz = el.k === 'line' ? { w: el.bw, h: el.bh } : sizeOf(el);
+    if (el.k === 'circle') ctx.ellipse(el.x + sz.w / 2, el.y + sz.h / 2, Math.abs(sz.w / 2), Math.abs(sz.h / 2), 0, 0, Math.PI * 2);
     else if (el.k === 'line'){ ctx.moveTo(el.x, el.y); ctx.lineTo(el.x + el.bw, el.y + el.bh); }
-    else ctx.rect(el.x, el.y, el.bw, el.bh);
+    else ctx.rect(el.x, el.y, sz.w, sz.h);
     if (el.f.F && el.f.F !== 'none'){ ctx.save(); ctx.globalAlpha *= 0.16; ctx.fillStyle = colorOf(el.ec && el.ec !== el.f.C ? el.ec : el.f.F); ctx.fill(); ctx.restore(); }
     ctx.stroke();
   } else if (el.type === 'NODE'){
-    drawNode(el.ek, { x: el.x, y: el.y }, nodeBox(el), colorOf(ecol(el)), false, ecol(el));
+    drawNode(el.ek, { x: el.x, y: el.y }, nodeBox(el), colorOf(ecol(el)), false, ecol(el), el.efill);
   } else if (el.type === 'TEXT'){
     const fs = el._previewFs || el.fs;
     ctx.font = `${fs}px ${FONTS[el.f.F] || FONTS.sans}`; ctx.textBaseline = 'top';
@@ -74,12 +75,18 @@ function dashedBox(b, color, z){
   ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore();
 }
 // the resize handle sits on the bottom-right corner of a single selected image or node
-function resizeHandle(){
-  if (S.sel.size !== 1) return null;
-  const el = S.records.get([...S.sel][0]);
-  if (!el || (el.type !== 'IMAGE' && el.type !== 'NODE') || el.locked || S.D.hidden.has(el.cid)) return null;
-  const b = box(el); return b && { x: b.x + b.w, y: b.y + b.h, el };
+// resizable: shapes, cards, notes, images (strokes, text and connectors keep their size)
+const resizable = el => el && (el.type === 'IMAGE' || el.type === 'NODE' || (el.type === 'SHAPE' && el.k !== 'line')) && !el.locked && !S.D.hidden.has(el.cid);
+const HANDLES = { nw: [0, 0], n: [.5, 0], ne: [1, 0], e: [1, .5], se: [1, 1], s: [.5, 1], sw: [0, 1], w: [0, .5] };
+// the eight handles of a single selected resizable element; edge handles only when there is room for them
+function resizeHandles(){
+  if (S.sel.size !== 1) return [];
+  const el = S.records.get([...S.sel][0]); if (!resizable(el)) return [];
+  const b = box(el); if (!b) return [];
+  const roomy = b.w * S.view.zoom > 40 && b.h * S.view.zoom > 40;
+  return Object.entries(HANDLES).filter(([k]) => roomy || k.length === 2).map(([h, [fx, fy]]) => ({ h, x: b.x + b.w * fx, y: b.y + b.h * fy, el }));
 }
+function resizeHandle(){ return resizeHandles().find(h => h.h === 'se') || null; }   // keyboard +/− resizes from here
 function selOutline(b, color, z, alpha = 1){
   ctx.save(); ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = 1.5 / z;
   rr(ctx, b.x, b.y, b.w, b.h, 4 / z); ctx.stroke(); ctx.restore();
@@ -157,16 +164,19 @@ function render(){
     if (gd.x != null){ ctx.moveTo(gd.x, gd.a); ctx.lineTo(gd.x, gd.b); } else { ctx.moveTo(gd.a, gd.y); ctx.lineTo(gd.b, gd.y); } ctx.stroke(); ctx.restore(); }
   // hover: connectable edge
   if (!G && hoverEdge){ const b = box(hoverEdge); if (b) selOutline(grow(b, 4 / z), accent, z, .45); }
+  // hover: what a click would pick
+  if (!G && hoverCid && !S.sel.has(hoverCid)){ const el = S.records.get(hoverCid), b = el && box(el); if (b) selOutline(grow(b, 3 / z), accent, z, .5); }
+  if (G?.kind === 'marquee'){ const r = norm(G.a, G.b); ctx.save(); ctx.fillStyle = accent; ctx.globalAlpha = .07; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.globalAlpha = .8; ctx.strokeStyle = accent; ctx.lineWidth = 1 / z; ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.restore(); }
   // selection
   if (S.sel.size){
     for (const c of S.sel){ const el = S.records.get(c); const b = el && box(el); if (b) selOutline(grow(b, 3 / z), accent, z, S.sel.size > 1 ? .55 : 1); }
     for (const c of S.sel){ const el = S.records.get(c), b = el?.locked && box(el); if (b){ ctx.save(); ctx.font = `${12 / z}px ${FONTS.sans}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('🔒', b.x + b.w, b.y - 4 / z); ctx.restore(); } }
     const sb = selBox();
     if (sb && S.sel.size > 1){ ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 3 / z]); ctx.strokeRect(sb.x - 8 / z, sb.y - 8 / z, sb.w + 16 / z, sb.h + 16 / z); ctx.restore(); }
-    const h = S.lassoMode && resizeHandle();
-    if (h){ ctx.save(); ctx.fillStyle = accent; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(); ctx.lineWidth = 2 / z;
-      ctx.fillStyle = TH.paper; ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z;
-      rr(ctx, h.x - 5 / z, h.y - 5 / z, 10 / z, 10 / z, 2.5 / z); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    if (S.lassoMode && G?.kind !== 'move') for (const h of resizeHandles()){
+      ctx.save(); ctx.fillStyle = TH.paper; ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z;
+      rr(ctx, h.x - 4.5 / z, h.y - 4.5 / z, 9 / z, 9 / z, 2 / z); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
   }
   runHooks(RENDER_HOOKS.overlay, z);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); runHooks(RENDER_HOOKS.screen);

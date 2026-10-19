@@ -18,6 +18,7 @@ const RENDER_HOOKS = {
 };
 const FRAME_HOOKS = [];         // () every animation frame, drawn or not (signing pill countdown)
 const CHANGE_HOOKS = [];        // () after the records changed and derive() ran (people, ledger, comments)
+const SYNC_HOOKS = [];          // () when connection state or the state root changes (session panel, live button)
 const ACTION_HOOKS = [];        // () before an undo, redo or revoke: finish what a gesture left pending (keyboard moves)
 const POINTER_HOOKS = [];       // (e, w) on primary press before any tool; return true when handled
 const TOOLBAR_HOOKS = [];       // (rs, one, B) → extra selection-toolbar buttons (HTML)

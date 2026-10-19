@@ -49,7 +49,7 @@ function placeNear(pb, dir, w, h, skip){
   }
   return { x, y, w, h };
 }
-function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, orig = null, label = null, size = null }){
+function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, orig = null, label = null, size = null, typed = null }){
   if (taOpen()) finishText(true);
   setPlacing(null);
   kind = NODE_KINDS[kind] ? kind : 'card';
@@ -62,6 +62,7 @@ function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, ori
   ta.value = orig ? orig.text : (label ?? K.label);
   ta.setAttribute('aria-label', `${orig ? 'Edit' : 'New'} ${K.name} label. Enter saves, Tab saves and adds a connected child, Control+Enter adds a sibling, Escape cancels`);
   ta.style.display = 'block'; ta.style.whiteSpace = 'pre-wrap'; ta.style.outlineStyle = 'dashed';
+  if (typed != null){ ta.value = typed; ta.focus(); ta.setSelectionRange(typed.length, typed.length); placeNodeEditor(); dirty = true; return; }   // typing started it: keep every key
   placeNodeEditor(); dirty = true;
   setTimeout(() => { ta.focus(); ta.select(); }, 0);
   say(`${orig ? 'Editing' : 'New'} ${K.name}${parent ? ` connected to “${current(parent)?.text.slice(0, 40) || ''}”` : ''}. Type the label, Enter to sign.`);
@@ -86,11 +87,11 @@ function drawNodeGhost(){
   if (!taNode) return;
   const { x, y, L } = nodeEditBox(), col = taNode.color;
   if (taNode.parent){ const p = current(taNode.parent); if (p) drawLink(box(p), { x, y, w: L.w, h: L.h }, !['topic', 'card', 'sticky'].includes(taNode.kind), col === 'ink' ? TH.muted : colorOf(col), 2); }
-  drawNode(taNode.kind, { x, y }, L, colorOf(col), true, col);
+  drawNode(taNode.kind, { x, y }, L, colorOf(col), true, col, taNode.orig?.efill ?? S.nodeFill);
 }
 async function finishNode(commit, then){
   const n = taNode; if (!n) return;
-  const label = ta.value.replace(/\s+$/, '') || NODE_KINDS[n.kind].label;
+  const label = ta.value.replace(/\s+$/, '') || (FILLABLE.has(n.kind) ? '' : NODE_KINDS[n.kind].label);   // a shape may stay blank
   const { x, y } = nodeEditBox();
   taNode = null; editingCid = null; ta.style.display = 'none'; ta.style.whiteSpace = 'pre'; dirty = true;
   if (document.activeElement === ta) cv.focus({ preventScroll: true });
@@ -105,10 +106,10 @@ async function finishNode(commit, then){
   if (then === 'child') startChild(el, 'right');
   if (then === 'sibling') startSibling(el);
 }
-async function commitNode({ kind, x, y, W = 0, H = 0, label, color = 'ink', parent = null, edits = null }){
+async function commitNode({ kind, x, y, W = 0, H = 0, label, color = 'ink', parent = null, edits = null, fill = null }){
   const t = Date.now(), R = await cidOf(te.encode([kind, x, y, t, Math.random()].join('_')));
   const raw = await signed('NODE', [['I', S.me.id], ['R', R], ['K', kind], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))], ['W', Math.max(0, Math.round(W))], ['H', Math.max(0, Math.round(H))],
-    ['M', encTxt(label)], ['C', color || 'ink'], ['P', parent || '0'], ...(edits ? [['E', edits]] : []), ['Z', ++S.lamport], ['T', t]]);
+    ['M', encTxt(label)], ['C', color || 'ink'], ['P', parent || '0'], ...(fill && fill !== 'light' ? [['F', fill]] : []), ...(edits ? [['E', edits]] : []), ['Z', ++S.lamport], ['T', t]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
 }
 function startChild(p, dir){
@@ -230,3 +231,17 @@ RENDER_HOOKS.under.push(drawTreeLinks);
 RENDER_HOOKS.world.push(() => { drawNodeGhost(); drawGrowHandles(TH.accent); });
 // a NODE's kind can be restyled to any name; unknown kinds read as their original kind, then as a card
 DERIVE_HOOKS.push(D => { for (const el of D.els) if (el.type === 'NODE' && !NODE_KINDS[el.ek]) el.ek = NODE_KINDS[el.k] ? el.k : 'card'; });
+
+// a shape you just made is blank: start typing and the text goes into it (no double-click needed)
+KEY_HOOKS.unshift((e, c) => {
+  if (!c.onCanvas || c.mod || e.altKey || e.key.length !== 1 || S.sel.size !== 1) return false;
+  const el = current([...S.sel][0]); if (!el || el.type !== 'NODE' || el.text || el.author !== S.me?.id) return false;
+  e.preventDefault(); const b = box(el); startNode({ kind: el.ek, parent: el.parent, color: ecol(el), orig: el, anchor: { x: b.x, y: b.y, ax: 0, ay: 0 }, typed: e.key }); return true;
+});
+// the Shape tool: drag out a shape (or click for a standard one); it appears at once, selected, blank and ready to type into
+async function placeShape(kind, r){
+  const cid = await commitNode({ kind, x: r.x, y: r.y, W: r.w, H: r.h, label: '', color: S.color === 'ink' ? 'ink' : S.color, fill: S.nodeFill });
+  if (!cid) return;
+  setTool('select', true); S.sel = new Set([cid]); dirty = true;
+  say(`${NODE_KINDS[kind].name} added and selected. Type to add text, drag a handle to resize.`);
+}

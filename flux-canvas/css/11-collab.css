@@ -112,3 +112,34 @@ body.history #tools{opacity:.45;pointer-events:none}
 #people tr.own{background:var(--accent-weak)}
 #people .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 #people .acts:empty{display:none}
+
+/* live session panel */
+#session{position:fixed;top:calc(max(12px,env(safe-area-inset-top)) + 56px);right:12px;z-index:27;width:min(390px,calc(100% - 24px));max-height:calc(100% - 90px);overflow:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:14px 16px 16px}
+#session header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#session h2{margin:0;font-size:16px;font-weight:650}
+#session h3{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;display:flex;gap:6px;align-items:center}
+#session h3 .n{background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:0 7px;font-size:11px;color:var(--ink)}
+.se-sync{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line2)}
+.se-sync i{width:10px;height:10px;border-radius:50%;background:var(--faint);margin-top:4px;flex:none}
+.se-sync[data-state="live"] i,.se-sync[data-state="waiting"] i{background:var(--green)} .se-sync[data-state="syncing"] i{background:var(--amber)}
+.se-sync div{display:flex;flex-direction:column} .se-sync span{color:var(--muted);font-size:12px}
+.se-me,.se-people li{display:flex;align-items:center;gap:10px}
+.se-people{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.se-who{display:flex;flex-direction:column;flex:1;min-width:0} .se-who small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#session .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;flex:none}
+#seName{font-size:15px;font-weight:600;border:1px solid transparent;border-radius:8px;padding:4px 8px;margin-left:-8px;background:transparent;outline:none}
+#seName:hover{border-color:var(--line)} #seName:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--accent-weak)}
+#session .btn.sm{height:28px;font-size:12px} #session .btn[aria-pressed="true"]{background:var(--accent-weak);border-color:var(--accent-line);color:var(--cyan)}
+#session .btn .ic{width:16px;height:16px}
+#seSpot,#seLink{margin-top:10px;width:100%}
+.se-empty{color:var(--muted);font-size:13px;margin:0}
+.se-p2p,.se-relay{margin-top:12px;padding:12px;border:1px solid var(--line2);border-radius:12px;display:grid;gap:8px}
+.se-row{display:flex;flex-direction:column} .se-row small{color:var(--muted);font-size:12px}
+.se-p2p label{font-size:12px;color:var(--muted)}
+.se-p2p textarea{width:100%;font:11px/1.4 var(--font-mono);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);resize:vertical;word-break:break-all}
+.se-acts{display:flex;gap:8px;flex-wrap:wrap}
+.em-name{display:flex;align-items:center;gap:10px;margin:-6px 0 16px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;text-align:left}
+.em-name span{font-size:13px;font-weight:600;white-space:nowrap}
+.em-name input{flex:1;border:0;outline:none;background:transparent;font-size:14px;min-width:0}
+.em-name:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px var(--accent-weak)}

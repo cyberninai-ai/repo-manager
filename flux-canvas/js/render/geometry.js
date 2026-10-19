@@ -32,7 +32,7 @@ const ecol = el => el.ec ?? el.f.C;
 function baseBox(el){
   switch (el.type){
     case 'DRAW': { const g = strokeGeom(el.f.R); if (!g) return null; const lwv = lw(el), h = lwv / 2; return { x: g.box.x - h, y: g.box.y - h, w: g.box.w + lwv, h: g.box.h + lwv }; }
-    case 'SHAPE': return { x: el.x, y: el.y, w: el.bw, h: el.bh };
+    case 'SHAPE': { if (el.k === 'line') return { x: el.x, y: el.y, w: el.bw, h: el.bh }; const s = sizeOf(el); return { x: el.x, y: el.y, w: s.w, h: s.h }; }
     case 'IMAGE': { const s = sizeOf(el); return { x: el.x, y: el.y, w: s.w, h: s.h }; }
     case 'NODE': { const L = nodeBox(el); return { x: el.x, y: el.y, w: L.w, h: L.h }; }
     case 'TEXT': {
@@ -49,13 +49,14 @@ function baseBox(el){
 function sizeOf(el){
   const o = S.D.off.get(el.cid);
   let w = el.bw + (o ? o.w : 0), h = el.bh + (o ? o.h : 0);
-  if (G && G.kind === 'resize' && G.target === el.cid){ w += G.dw; h += G.dh; }
+  if (G && G.kind === 'resize' && G.target === el.cid){ w = G.nb.w; h = G.nb.h; }
   return { w: Math.max(8, w), h: Math.max(8, h) };
 }
 function offsetOf(cid){
   const D = S.D, a = D.off.get(cid), g = D.groupOf.get(cid), b = g && D.off.get(g);
   let x = (a ? a.x : 0) + (b ? b.x : 0), y = (a ? a.y : 0) + (b ? b.y : 0);
   if (G && G.kind === 'move' && G.targets.has(g || cid)){ x += G.dx; y += G.dy; }
+  if (G && G.kind === 'resize' && G.target === cid){ x += G.nb.x - G.b0.x; y += G.nb.y - G.b0.y; }   // a top or left handle moves the origin
   return { x, y };
 }
 function box(el){

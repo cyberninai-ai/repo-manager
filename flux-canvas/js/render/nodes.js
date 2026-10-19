@@ -17,7 +17,7 @@ const NODE_KINDS = {
   swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
   frame:   { name: 'frame',             icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
 };
-S.nodeKind = 'card';
+S.nodeKind = 'rect';   // the Shape tool starts with a rectangle
 function wrapLines(text, maxW){
   const out = [];
   for (const para of String(text).split('\n')){
@@ -57,7 +57,7 @@ function nodeLayout(kind, text, minW = 0, minH = 0){
 function nodeBox(el){
   const o = S.D.off.get(el.cid);
   let mw = el.bw + (o ? o.w : 0), mh = el.bh + (o ? o.h : 0);
-  if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.w0 + G.dw; mh = G.h0 + G.dh; }
+  if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.nb.w; mh = G.nb.h; }
   return nodeLayout(el.ek || el.k, el.text, mw, mh);
 }
 let TH = {};
@@ -77,10 +77,12 @@ function rgbOf(c){
 function mixHex(a, b, t){ const A = rgbOf(a), B = rgbOf(b); return '#' + A.map((v, i) => Math.max(0, Math.min(255, Math.round(v * t + B[i] * (1 - t)))).toString(16).padStart(2, '0')).join(''); }
 const tint = (col, a) => mixHex(col, TH.panel || '#ffffff', a);
 // Draw a node of a kind at p with layout L. Colour 'ink' keeps nodes neutral; any other colour accents them.
-function drawNode(kind, p, L, col, noText, colName){
+function drawNode(kind, p, L, col, noText, colName, fill = null){
   const { x, y } = p, w = L.w, h = L.h, K = L.K, accent = colName && colName !== 'ink' ? col : null;
   ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5;
   let textCol = TH.ink;
+  // shapes: no fill, a light tint (the default) or solid colour with text that stays readable on it
+  const paint = (c, a) => { if (fill === 'none') return; ctx.fillStyle = fill === 'solid' ? c : tint(c, a); ctx.fill(); if (fill === 'solid') textCol = readableOn(c); };
   switch (kind){
     case 'card':
       ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
@@ -89,11 +91,11 @@ function drawNode(kind, p, L, col, noText, colName){
       if (accent){ ctx.save(); rr(ctx, x, y, w, h, 10); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(x, y, 5, h); ctx.restore(); }
       break;
     case 'topic':
-      rr(ctx, x, y, w, h, h / 2); ctx.fillStyle = tint(accent || TH.accent, .16); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.accent; ctx.stroke(); break;
-    case 'rect': rr(ctx, x, y, w, h, 6); ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
-    case 'ellipse': ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
+      rr(ctx, x, y, w, h, h / 2); paint(accent || TH.accent, .16); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.accent; ctx.stroke(); break;
+    case 'rect': rr(ctx, x, y, w, h, 6); paint(accent || TH.ink, .07); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
+    case 'ellipse': ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); paint(accent || TH.ink, .07); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
     case 'diamond': ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w, y + h / 2); ctx.lineTo(x + w / 2, y + h); ctx.lineTo(x, y + h / 2); ctx.closePath();
-      ctx.fillStyle = tint(accent || TH.ink, .07); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
+      paint(accent || TH.ink, .07); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke(); break;
     case 'sticky':
       ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
       ctx.fillStyle = accent ? mixHex(accent, '#ffffff', .35) : '#ffe066'; ctx.fillRect(x, y, w, h); ctx.shadowColor = 'transparent';
@@ -176,3 +178,8 @@ function drawTreeLinks(){
 // line dash patterns for connector styles, on the canvas and in SVG
 const dashOf = (d, w) => d === 'dash' ? [w * 4 + 4, w * 3 + 3] : d === 'dot' ? [0.1, w * 2 + 3] : [];
 const svgDash = (d, w) => d === 'dash' ? ` stroke-dasharray="${w * 4 + 4} ${w * 3 + 3}"` : d === 'dot' ? ` stroke-dasharray="0.1 ${w * 2 + 3}"` : '';
+// text colour that stays readable on a solid fill
+const readableOn = c => { const [r, g, b] = rgbOf(c); return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#1d1d1f' : '#ffffff'; };
+// shape kinds that take a fill choice, and the size a shape gets from a single click
+const FILLABLE = new Set(['rect', 'ellipse', 'diamond', 'topic']);
+const SHAPE_SIZE = { rect: [160, 100], ellipse: [160, 110], diamond: [150, 120] };   // these appear at once; ideas and cards open their label first

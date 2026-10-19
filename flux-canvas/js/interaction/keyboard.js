@@ -78,6 +78,7 @@ addEventListener('keyup', e => { if (e.key === ' '){ spaceDown = false; setCurso
 addEventListener('blur', () => { spaceDown = false; });
 addEventListener('hashchange', () => { const m = location.hash.match(/^#([a-z0-9]{6,32})$/); if (m && m[1] !== canvasId) switchCanvas(m[1]); });
 // Swap canvases in place: no reload, so it also works where the URL can't change.
+switchCanvasTo = id => switchCanvas(id);   // core/rtc joins an invite's canvas through this
 async function switchCanvas(id){
   await flushSave();   // the canvas being left keeps everything it had
   canvasId = id; setHash(id);

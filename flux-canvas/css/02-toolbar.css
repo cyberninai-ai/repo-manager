@@ -60,12 +60,14 @@
 #menu [role^=menuitem] span{flex:1}
 #menu kbd{margin-left:auto}
 #menu .msep{height:1px;background:var(--line2);margin:5px 4px}
-/* live sync status */
-.chip.net i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.chip.net[data-state="live"]{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--line))}
-.chip.net[data-state="live"] i{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
-.chip.net[data-state="connecting"] i{background:var(--amber);animation:pulse 1.2s infinite}
-.chip.net[data-state="error"]{color:var(--red)}
+/* live session button: always visible, says how many people are here and whether everyone is in sync */
+.live{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);
+  color:var(--ink);font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap}
+.live:hover{background:var(--hover)}
+.live i{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none}
+.live[data-state="live"]{color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
+.live[data-state="live"] i,.live[data-state="waiting"] i{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+.live[data-state="syncing"]{color:var(--amber)} .live[data-state="syncing"] i{background:var(--amber);animation:pulse 1.2s infinite}
 @keyframes pulse{50%{opacity:.3}}
 #authors button.more{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line);font-size:11px}
 #menu .msw{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
