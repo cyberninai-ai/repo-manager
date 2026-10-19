@@ -86,6 +86,7 @@ async function switchCanvas(id){
     view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
   openChannel(); activeThread = null; draft = null;
   const n = await loadCanvas(id);
+  rebuildHistory();
   derive(); paintAuthors(); paintLedger(); dirty = true;
   toast(`Canvas ${id}${n ? '' : ' · empty'}`);
 }

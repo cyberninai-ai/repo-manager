@@ -89,11 +89,11 @@ POINTER_HOOKS.push(e => {
 let timerEnd = 0, timerDone = true;
 function startTimer(min, remote = false){
   timerEnd = Date.now() + min * 60000; timerDone = false;
-  if (!remote) try { bc?.postMessage({ timer: { end: timerEnd } }); } catch {}
+  if (!remote) post({ timer: { end: timerEnd } });
   paintTimer(); say(`${remote ? 'A collaborator started a' : 'Timer started:'} ${min} minute${min === 1 ? '' : 's'}${remote ? ' timer' : ''}.`);
 }
 function stopTimer(remote = false){
-  timerEnd = 0; timerDone = true; if (!remote) try { bc?.postMessage({ timer: { end: 0 } }); } catch {}
+  timerEnd = 0; timerDone = true; if (!remote) post({ timer: { end: 0 } });
   paintTimer(); say('Timer stopped.');
 }
 WIRE_HOOKS.timer = t => { if (t && t.end > Date.now()) startTimer((t.end - Date.now()) / 60000, true); else if (timerEnd) stopTimer(true); };

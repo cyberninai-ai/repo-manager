@@ -5,9 +5,9 @@
 const peers = new Map();
 let presT = 0;
 function sendPresence(gone){
-  if (!bc || !S.me) return;
+  if (!S.me) return;
   const now = Date.now(); if (!gone && now - presT < 40) return; presT = now;
-  try { bc.postMessage({ presence: gone ? { id: S.me.id, gone: true } : { id: S.me.id, x: lastPointer?.x, y: lastPointer?.y } }); } catch {}
+  post({ presence: gone ? { id: S.me.id, gone: true } : { id: S.me.id, x: lastPointer?.x, y: lastPointer?.y } });
 }
 function onPresence(p){
   if (!p || typeof p.id !== 'string' || p.id === S.me?.id) return;

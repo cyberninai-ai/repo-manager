@@ -16,9 +16,11 @@ function toRec(node, cid){
     case 'NODE': r.k = f.K || 'card'; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(0, decInt(f.W || '0')); r.bh = Math.max(0, decInt(f.H || '0'));
       r.text = decTxt(f.M || ''); r.parent = f.P && f.P !== '0' ? f.P : null; r.edits = f.E || null; r.sw = 2; break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
-    case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move'); break;
+    case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move');
+      r.supersedes = f.X ? f.X.split('_').filter(Boolean) : null; break;   // compaction: this MOVE is the sum of the author's listed MOVEs
     case 'IMAGE': if (!f.R) throw Error('image'); r.alt = decTxt(f.M || ''); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
-    case 'GROUP': if (!Array.isArray(f.P)) throw Error('group'); break;
+    case 'GROUP': if (Array.isArray(f.P)) break;   // older form: members copied into a fence
+      if (!f.K) throw Error('group'); r.members = f.K.split('_').filter(Boolean); break;   // audit D2: members by CID
   }
   if (RECORD_TYPES[r.type]) RECORD_TYPES[r.type].parse(r, f);   // feature record types (core/hooks)
   return r;
@@ -52,10 +54,18 @@ async function ingest(raw, persist = true){
     }
   }
   S.records.set(cid, rec);
+  if (rec.supersedes) dropSuperseded(rec);
   if (rec.z > S.lamport){ S.lamport = rec.z; if (S.parked.size) setTimeout(unpark, 0); }
   if (persist) save(cid);
   changed();
   return cid;
+}
+// a compacted MOVE replaces the author's own MOVEs on the same target: their copies can go
+const supersededBy = (r, t) => t && t.type === 'MOVE' && t.author === r.author && t.f.R === r.f.R && t.neg === null && t.cid !== r.cid;
+function dropSuperseded(r){
+  const gone = r.supersedes.filter(c => supersededBy(r, S.records.get(c)));
+  for (const c of gone) S.records.delete(c);
+  if (gone.length) dbDeleteRecords(canvasId, gone);
 }
 async function unpark(){
   for (const [cid, p] of [...S.parked]) if (p.z <= S.lamport + Z_SLACK && p.t <= Date.now() + T_SLACK){
@@ -65,23 +75,28 @@ async function unpark(){
 async function publish(raw, blobs = {}){
   for (const [c, b] of Object.entries(blobs)) await addBlob(c, b);
   const cid = await ingest(raw);
-  if (cid && bc){
+  if (cid){
     const wire = {}; for (const [c, b] of Object.entries(blobs)) wire[c] = b64enc(b);
-    bc.postMessage({ raw, blobs: wire });
+    post({ raw, blobs: wire });
   }
   return cid;
 }
-async function onWire({ data }){
+// Every transport (this browser's BroadcastChannel, a network relay in core/net) delivers here; everything is verified on ingest.
+async function onWire({ data }, from = null){
   if (data && data.presence){ onPresence(data.presence); return; }
+  if (data && (data.hello || data.records) && from){ onSync(data, from); return; }
   for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k]); return; }
   if (!data || typeof data.raw !== 'string') return;
   for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
   await ingest(data.raw);
 }
+// post to every open transport: other tabs here, and the network relay when connected
+function post(msg){ try { bc?.postMessage(msg); } catch {} netSend(msg); }
 function openChannel(){
   try { bc?.close(); } catch {}
   channelName = `canvas.${canvasId}.strokes`;
   try { bc = new BroadcastChannel(channelName); bc.onmessage = onWire; } catch { bc = null; }
+  netJoin();
 }
 openChannel();
 

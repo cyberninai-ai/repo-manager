@@ -59,3 +59,10 @@
 #menu [role=menuitem] span{flex:1}
 #menu kbd{margin-left:auto}
 #menu .msep{height:1px;background:var(--line2);margin:5px 4px}
+/* live sync status */
+.chip.net i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.chip.net[data-state="live"]{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--line))}
+.chip.net[data-state="live"] i{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+.chip.net[data-state="connecting"] i{background:var(--amber);animation:pulse 1.2s infinite}
+.chip.net[data-state="error"]{color:var(--red)}
+@keyframes pulse{50%{opacity:.3}}

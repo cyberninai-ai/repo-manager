@@ -122,6 +122,7 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
   { label: 'People and permissions…', icon: 'users', run: openPeople },
+  NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Disconnected. Records stay here; other tabs in this browser still sync.'); } },
   '-',
   { label: 'Export canvas (.flux, signed)', icon: 'download', run: () => exportCanvas(true) },
   { label: 'Export SVG', icon: 'image', run: exportSVG },
@@ -138,6 +139,15 @@ const shareItems = () => [
   { label: S.grid ? 'Hide dot grid' : 'Show dot grid', icon: 'grid', run: toggleGrid },
   { label: 'Keyboard shortcuts', icon: 'help', key: '?', run: () => toggleHelp(true) },
 ];
+async function askRelay(){
+  const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'A Flux relay forwards signed records between browsers (run one with: node tools/relay.mjs). Everyone on the same canvas id and relay sees changes live; the relay cannot forge anything.');
+  if (v){ netConnect(v); toast('Connecting… share the canvas link so others join the same canvas.'); }
+}
+$('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
+  { label: NET.state === 'live' ? `Connected to ${NET.url.replace(/^wss?:\/\//, '')}` : `Reconnecting to ${NET.url.replace(/^wss?:\/\//, '')}`, icon: 'wifi', run: () => {} },
+  { label: 'Sync everything now', icon: 'upload', run: () => { sendHello(false); toast('Sync requested.'); } },
+  { label: 'Disconnect', icon: 'x', run: () => netClose(true) },
+]) : closeMenu();
 $('shareBtn').onclick = () => $('menu').hidden ? openMenu($('shareBtn'), shareItems()) : closeMenu();
 
 function toggleGrid(){ S.grid = !S.grid; try { localStorage.setItem('flux:grid', S.grid ? '1' : '0'); } catch {} dirty = true; say(S.grid ? 'Dot grid on' : 'Dot grid off'); }

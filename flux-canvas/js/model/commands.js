@@ -156,10 +156,10 @@ async function groupSelection(){
   kids.sort(byZ);
   // an element belongs to one group: retire the groups being absorbed (yours only)
   for (const g of new Set(kids.map(k => S.D.groupOf.get(k.cid)).filter(Boolean))) await setNeg(g, true);
-  const R = await cidOf(te.encode(kids.map(k => k.cid).join('_')));
-  const raw = await signed('GROUP', [['I', S.me.id], ['R', R], ['P', kids.map(k => k.raw)], ['Z', ++S.lamport], ['T', Date.now()]]);
+  const K = kids.map(k => k.cid).join('_'), R = await cidOf(te.encode(K));
+  const raw = await signed('GROUP', [['I', S.me.id], ['R', R], ['K', K], ['Z', ++S.lamport], ['T', Date.now()]]);   // members by CID, not copies (audit D2)
   recordCreate(await publish(raw));
-  toast(`Grouped ${kids.length} elements into one fenced record.`);
+  toast(`Grouped ${kids.length} elements into one signed record.`);
 }
 async function ungroupSelection(){
   const gs = new Set([...S.sel].map(c => S.D.groupOf.get(c)).filter(Boolean));
@@ -169,6 +169,6 @@ async function ungroupSelection(){
 }
 function expandSel(){
   const D = S.D;
-  for (const c of [...S.sel]){ const g = D.groupOf.get(c); if (g) for (const m of S.records.get(g).members) if (visible(S.records.get(m))) S.sel.add(m); }
+  for (const c of [...S.sel]){ const g = D.groupOf.get(c); if (g) for (const m of S.records.get(g).members) if (S.records.has(m) && visible(S.records.get(m))) S.sel.add(m); }
 }
 

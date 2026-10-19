@@ -141,6 +141,13 @@ kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5
 #menu [role=menuitem] span{flex:1}
 #menu kbd{margin-left:auto}
 #menu .msep{height:1px;background:var(--line2);margin:5px 4px}
+/* live sync status */
+.chip.net i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.chip.net[data-state="live"]{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--line))}
+.chip.net[data-state="live"] i{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+.chip.net[data-state="connecting"] i{background:var(--amber);animation:pulse 1.2s infinite}
+.chip.net[data-state="error"]{color:var(--red)}
+@keyframes pulse{50%{opacity:.3}}
 #bar{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:4px;
   width:max-content;max-width:calc(100% - 24px);padding:5px 6px;border-radius:var(--r-lg);flex-wrap:wrap;justify-content:center}
 #bar .grp{display:flex;align-items:center;gap:6px;padding:0 8px;height:36px}
@@ -462,6 +469,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5"/><path d="M7.5 8L12 3.5 16.5 8"/><path d="M5 13v6.5h14V13"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19.3" r=".9" fill="currentColor"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -583,6 +591,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <button class="ibtn" data-tool="comment" id="cmtBtn" aria-label="Comment" data-key="M"><svg class="ic" aria-hidden="true"><use href="#i-comment"/></svg></button>
 </div>
 <div id="corner" role="group" aria-label="Collaboration">
+  <button class="chip net" id="netChip" hidden aria-haspopup="menu" aria-expanded="false"><i aria-hidden="true"></i><span>Live</span></button>
   <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
@@ -1113,6 +1122,87 @@ async function dbDeleteCanvas(canvas){
     return await txDone(t);
   } catch { return false; }
 }
+// The relay (tools/relay.mjs) is untrusted: it only forwards and keeps a copy. Every record is verified on arrival like any other.
+// Sync on join: each side sends HELLO with the CIDs it has; the other answers with the records missing from that list.
+const NET = { ws: null, url: '', state: 'off', peers: 0, retry: 0, timer: 0 };
+const RELAY_AUTO = !!document.querySelector('meta[name="flux-relay"]');   // the relay injects this when it serves the app
+function relayDefault(){
+  if (RELAY_AUTO) return location.origin.replace(/^http/, 'ws');
+  return store.get('flux:relay') || '';
+}
+function netConnect(url){
+  url = String(url || '').trim(); if (!url) return;
+  if (!/^wss?:\/\//.test(url)) url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + url.replace(/^\w+:\/\//, '');
+  netClose(); NET.url = url; NET.retry = 0; if (!RELAY_AUTO) store.set('flux:relay', url);
+  netOpen();
+}
+function netClose(forget = false){
+  clearTimeout(NET.timer);
+  if (NET.ws){ NET.ws.onclose = null; try { NET.ws.close(); } catch {} }
+  NET.ws = null; NET.state = 'off'; NET.peers = 0;
+  if (forget){ NET.url = ''; try { localStorage.removeItem('flux:relay'); } catch {} }
+  paintNet();
+}
+function netOpen(){
+  let ws; try { ws = new WebSocket(NET.url); } catch { NET.state = 'error'; paintNet(); return; }
+  NET.ws = ws; NET.state = 'connecting'; paintNet();
+  ws.onopen = () => { NET.state = 'live'; NET.retry = 0; paintNet(); netJoin(); };
+  ws.onmessage = e => {
+    let d; try { d = JSON.parse(e.data); } catch { return; }
+    if (!d || d.room !== canvasId) return;
+    if (typeof d.peers === 'number'){ NET.peers = d.peers; paintNet(); return; }
+    if (d.msg) onWire({ data: d.msg }, 'net');
+  };
+  ws.onclose = () => {   // reconnect with backoff: 1 s, 2 s, 4 s … 30 s
+    NET.ws = null; NET.state = 'connecting'; NET.peers = 0; paintNet();
+    NET.timer = setTimeout(netOpen, Math.min(30000, 1000 * 2 ** NET.retry++));
+  };
+}
+function netSend(msg){
+  if (NET.ws?.readyState !== 1) return false;
+  try { NET.ws.send(JSON.stringify({ room: canvasId, msg })); return true; } catch { return false; }
+}
+function netJoin(){
+  if (NET.ws?.readyState !== 1) return;
+  NET.ws.send(JSON.stringify({ join: canvasId }));
+  sendHello(false);
+}
+const sendHello = reply => netSend({ hello: { have: [...S.records.keys()], reply } });
+// answer a HELLO with what the other side lacks, in chunks of about 1 MB
+function sendMissing(have){
+  const missing = [...S.records.values()].filter(r => !have.has(r.cid)).sort(byZ);
+  let chunk = [], size = 0;
+  const flush = () => { if (chunk.length) netSend({ records: chunk }); chunk = []; size = 0; };
+  for (const r of missing){
+    const it = { raw: r.raw }, b = blobOf(r);
+    if (b && S.blobs.has(b)) it.blobs = { [b]: b64enc(S.blobs.get(b)) };
+    chunk.push(it); size += r.raw.length + (it.blobs ? it.blobs[b].length : 0);
+    if (size > 1e6) flush();
+  }
+  flush();
+  return missing.length;
+}
+async function onSync(data){
+  if (data.hello){
+    sendMissing(new Set(Array.isArray(data.hello.have) ? data.hello.have : []));
+    if (!data.hello.reply) sendHello(true);
+  }
+  if (Array.isArray(data.records)) await bulk(async () => {
+    for (const it of data.records){
+      if (!it || typeof it.raw !== 'string') continue;
+      for (const [c, b] of Object.entries(it.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
+      await ingest(it.raw);
+    }
+  });
+}
+function paintNet(){
+  const el = document.getElementById('netChip'); if (!el) return;
+  el.hidden = NET.state === 'off';
+  el.dataset.state = NET.state;
+  const txt = NET.state === 'live' ? `Live${NET.peers > 1 ? ` · ${NET.peers}` : ''}` : NET.state === 'connecting' ? 'Reconnecting…' : 'Relay error';
+  el.querySelector('span').textContent = txt;
+  el.setAttribute('aria-label', NET.state === 'live' ? `Connected to the relay${NET.peers > 1 ? `, ${NET.peers} people on this canvas` : ''}. Open sync options` : `${txt} Open sync options`);
+}
 /* ---------- ingest: verify, address, union-merge ---------- */
 async function addBlob(cid, bytes){
   if (S.blobs.has(cid)) return true;
@@ -1184,9 +1274,11 @@ function toRec(node, cid){
     case 'NODE': r.k = f.K || 'card'; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(0, decInt(f.W || '0')); r.bh = Math.max(0, decInt(f.H || '0'));
       r.text = decTxt(f.M || ''); r.parent = f.P && f.P !== '0' ? f.P : null; r.edits = f.E || null; r.sw = 2; break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
-    case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move'); break;
+    case 'MOVE': r.dx = decInt(f.DX); r.dy = decInt(f.DY); r.dw = f.DW ? decInt(f.DW) : 0; r.dh = f.DH ? decInt(f.DH) : 0; if (!f.R) throw Error('move');
+      r.supersedes = f.X ? f.X.split('_').filter(Boolean) : null; break;   // compaction: this MOVE is the sum of the author's listed MOVEs
     case 'IMAGE': if (!f.R) throw Error('image'); r.alt = decTxt(f.M || ''); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
-    case 'GROUP': if (!Array.isArray(f.P)) throw Error('group'); break;
+    case 'GROUP': if (Array.isArray(f.P)) break;   // older form: members copied into a fence
+      if (!f.K) throw Error('group'); r.members = f.K.split('_').filter(Boolean); break;   // audit D2: members by CID
   }
   if (RECORD_TYPES[r.type]) RECORD_TYPES[r.type].parse(r, f);   // feature record types (core/hooks)
   return r;
@@ -1220,10 +1312,18 @@ async function ingest(raw, persist = true){
     }
   }
   S.records.set(cid, rec);
+  if (rec.supersedes) dropSuperseded(rec);
   if (rec.z > S.lamport){ S.lamport = rec.z; if (S.parked.size) setTimeout(unpark, 0); }
   if (persist) save(cid);
   changed();
   return cid;
+}
+// a compacted MOVE replaces the author's own MOVEs on the same target: their copies can go
+const supersededBy = (r, t) => t && t.type === 'MOVE' && t.author === r.author && t.f.R === r.f.R && t.neg === null && t.cid !== r.cid;
+function dropSuperseded(r){
+  const gone = r.supersedes.filter(c => supersededBy(r, S.records.get(c)));
+  for (const c of gone) S.records.delete(c);
+  if (gone.length) dbDeleteRecords(canvasId, gone);
 }
 async function unpark(){
   for (const [cid, p] of [...S.parked]) if (p.z <= S.lamport + Z_SLACK && p.t <= Date.now() + T_SLACK){
@@ -1233,23 +1333,28 @@ async function unpark(){
 async function publish(raw, blobs = {}){
   for (const [c, b] of Object.entries(blobs)) await addBlob(c, b);
   const cid = await ingest(raw);
-  if (cid && bc){
+  if (cid){
     const wire = {}; for (const [c, b] of Object.entries(blobs)) wire[c] = b64enc(b);
-    bc.postMessage({ raw, blobs: wire });
+    post({ raw, blobs: wire });
   }
   return cid;
 }
-async function onWire({ data }){
+// Every transport (this browser's BroadcastChannel, a network relay in core/net) delivers here; everything is verified on ingest.
+async function onWire({ data }, from = null){
   if (data && data.presence){ onPresence(data.presence); return; }
+  if (data && (data.hello || data.records) && from){ onSync(data, from); return; }
   for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k]); return; }
   if (!data || typeof data.raw !== 'string') return;
   for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
   await ingest(data.raw);
 }
+// post to every open transport: other tabs here, and the network relay when connected
+function post(msg){ try { bc?.postMessage(msg); } catch {} netSend(msg); }
 function openChannel(){
   try { bc?.close(); } catch {}
   channelName = `canvas.${canvasId}.strokes`;
   try { bc = new BroadcastChannel(channelName); bc.onmessage = onWire; } catch { bc = null; }
+  netJoin();
 }
 openChannel();
 
@@ -1292,7 +1397,8 @@ async function flushSave(){
   } catch { toast('Storage is full or blocked; new records live in this tab only.'); }
 }
 // Load a canvas: from IndexedDB, else migrate it from localStorage (older versions), else the localStorage fallback.
-async function loadCanvas(id){
+function loadCanvas(id){ return bulk(() => loadLines(id)); }
+async function loadLines(id){
   const legacyKey = 'flux:canvas:' + id;
   if (await dbReady){
     const recs = await dbAll('records', id);
@@ -1313,7 +1419,8 @@ async function loadCanvas(id){
   if (saved) await importText(saved, false);
   return saved ? S.records.size : 0;
 }
-async function importText(text, persist = true){
+function importText(text, persist = true){ return bulk(() => importLines(text, persist)); }
+async function importLines(text, persist){
   const ls = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   let added = 0, before = S.rejected;
   for (const l of ls) if (l.startsWith('BLOB-')){
@@ -1406,12 +1513,15 @@ function derive(){
   const P = S.P = policyOf(all), denied = new Set();
   const recs = P.owner ? all.filter(r => permitted(r, P) || !denied.add(r.cid)) : all;
   const byType = {};
+  const skipMove = new Set();   // MOVEs summed into a compacted MOVE (features/compaction)
+  for (const r of recs) if (r.type === 'MOVE' && r.supersedes) for (const c of r.supersedes) if (supersededBy(r, S.records.get(c))) skipMove.add(c);
   const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map(), styles = new Map();
   for (const r of recs){
     if (r.neg !== null){
       const t = S.records.get(r.f.R);
       if (t && t.author === r.author && t.type === r.type && t.neg === null) negs.set(t.cid, r.neg); // latest z wins; only the author's own
     } else if (r.type === 'MOVE'){
+      if (skipMove.has(r.cid)) continue;
       const o = off.get(r.f.R) || { x: 0, y: 0, w: 0, h: 0 }; o.x += r.dx; o.y += r.dy; o.w += r.dw; o.h += r.dh; off.set(r.f.R, o);
     } else if (r.type === 'GROUP') groups.push(r);
     else if (r.type === 'COMMENT') comments.push(r);
@@ -1452,7 +1562,9 @@ function derive(){
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
 let derivePending = false;
-function changed(){ if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
+// While a canvas or file loads (S.bulk > 0), derive once at the end instead of after every record (audit P1).
+async function bulk(fn){ S.bulk = (S.bulk || 0) + 1; try { return await fn(); } finally { if (!--S.bulk) changed(); } }
+function changed(){ if (S.bulk) return; if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
 
 /* =====================================================================
    Geometry
@@ -1884,10 +1996,10 @@ async function groupSelection(){
   kids.sort(byZ);
   // an element belongs to one group: retire the groups being absorbed (yours only)
   for (const g of new Set(kids.map(k => S.D.groupOf.get(k.cid)).filter(Boolean))) await setNeg(g, true);
-  const R = await cidOf(te.encode(kids.map(k => k.cid).join('_')));
-  const raw = await signed('GROUP', [['I', S.me.id], ['R', R], ['P', kids.map(k => k.raw)], ['Z', ++S.lamport], ['T', Date.now()]]);
+  const K = kids.map(k => k.cid).join('_'), R = await cidOf(te.encode(K));
+  const raw = await signed('GROUP', [['I', S.me.id], ['R', R], ['K', K], ['Z', ++S.lamport], ['T', Date.now()]]);   // members by CID, not copies (audit D2)
   recordCreate(await publish(raw));
-  toast(`Grouped ${kids.length} elements into one fenced record.`);
+  toast(`Grouped ${kids.length} elements into one signed record.`);
 }
 async function ungroupSelection(){
   const gs = new Set([...S.sel].map(c => S.D.groupOf.get(c)).filter(Boolean));
@@ -1897,7 +2009,7 @@ async function ungroupSelection(){
 }
 function expandSel(){
   const D = S.D;
-  for (const c of [...S.sel]){ const g = D.groupOf.get(c); if (g) for (const m of S.records.get(g).members) if (visible(S.records.get(m))) S.sel.add(m); }
+  for (const c of [...S.sel]){ const g = D.groupOf.get(c); if (g) for (const m of S.records.get(g).members) if (S.records.has(m) && visible(S.records.get(m))) S.sel.add(m); }
 }
 
 /* =====================================================================
@@ -1907,7 +2019,7 @@ let G = null, hoverEdge = null, spaceDown = false, lastTap = null;
 const pointers = new Map();
 function edgeHit(sx, sy){
   const w = toWorld(sx, sy), band = 8 / S.view.zoom, els = S.D.els;
-  for (let i = els.length - 1; i >= 0; i--){
+  for (const i of idxNear(w, band)){
     const el = els[i];
     if (el.type === 'ARROW' || el.type === 'IMAGE' || el.locked || !visible(el) || S.D.hidden.has(el.cid)) continue;
     const b = box(el); if (!b) continue;
@@ -1919,9 +2031,34 @@ function edgeHit(sx, sy){
   }
   return null;
 }
+/* spatial index (audit P1): a uniform grid of element indices, rebuilt lazily after each derive. Hit tests look only at the
+   cells around the pointer instead of every element; very large elements (frames, long arrows) live in an always-checked list. */
+const CELL = 400;
+let spx = null;
+function spatialIndex(){
+  if (spx && spx.D === S.D) return spx;
+  const map = new Map(), wide = [], els = S.D.els;
+  for (let i = 0; i < els.length; i++){
+    const b = box(els[i]); if (!b){ wide.push(i); continue; }
+    const x0 = Math.floor(b.x / CELL), x1 = Math.floor((b.x + b.w) / CELL), y0 = Math.floor(b.y / CELL), y1 = Math.floor((b.y + b.h) / CELL);
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 16){ wide.push(i); continue; }
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++){ const k = cx + ',' + cy; let a = map.get(k); if (!a) map.set(k, a = []); a.push(i); }
+  }
+  return spx = { D: S.D, map, wide };
+}
+// element indices near w (padding in world units), topmost first
+function nearIdx(w, pad){
+  const s = spatialIndex(), out = new Set(s.wide);
+  for (let cx = Math.floor((w.x - pad) / CELL); cx <= Math.floor((w.x + pad) / CELL); cx++)
+    for (let cy = Math.floor((w.y - pad) / CELL); cy <= Math.floor((w.y + pad) / CELL); cy++) for (const i of s.map.get(cx + ',' + cy) || []) out.add(i);
+  return [...out].sort((a, b) => b - a);
+}
+// while elements are being dragged or resized their boxes move away from the index: fall back to a full scan
+const scanAll = () => G && (G.kind === 'move' || G.kind === 'resize') || S.D.els.length < 200;
+const idxNear = (w, pad) => scanAll() ? [...S.D.els.keys()].reverse() : nearIdx(w, pad);
 function elementAt(w, except){
   const pad = 6 / S.view.zoom, els = S.D.els;
-  for (let i = els.length - 1; i >= 0; i--){
+  for (const i of idxNear(w, pad)){
     const el = els[i];
     if (el === except || el.type === 'ARROW' || !visible(el) || S.D.hidden.has(el.cid)) continue;
     const b = box(el); if (b && inside(w, grow(b, pad))) return el;
@@ -1931,7 +2068,7 @@ function elementAt(w, except){
 // Precise hit test: strokes and arrows by distance to their path, shapes by outline (or body when filled), text and images by box.
 function hitTest(w, tolPx = 6){
   const tol = tolPx / S.view.zoom, els = S.D.els;
-  for (let i = els.length - 1; i >= 0; i--){
+  for (const i of idxNear(w, tol + 40 / S.view.zoom)){
     const el = els[i];
     if (!visible(el) || el.locked) continue;
     const b = box(el); if (!b || !inside(w, grow(b, tol))) continue;
@@ -2803,9 +2940,9 @@ async function mindmapFromOutlinePrompt(){
 const peers = new Map();
 let presT = 0;
 function sendPresence(gone){
-  if (!bc || !S.me) return;
+  if (!S.me) return;
   const now = Date.now(); if (!gone && now - presT < 40) return; presT = now;
-  try { bc.postMessage({ presence: gone ? { id: S.me.id, gone: true } : { id: S.me.id, x: lastPointer?.x, y: lastPointer?.y } }); } catch {}
+  post({ presence: gone ? { id: S.me.id, gone: true } : { id: S.me.id, x: lastPointer?.x, y: lastPointer?.y } });
 }
 function onPresence(p){
   if (!p || typeof p.id !== 'string' || p.id === S.me?.id) return;
@@ -3650,7 +3787,8 @@ function paintLedger(){
   $('ledgerStats').innerHTML = `${recs.length} records · ${authors.size} author${authors.size === 1 ? '' : 's'} · ${(bytes / 1024).toFixed(1)} KB
     ${S.rejected ? ` · <span class="bad">${S.rejected} rejected (${Object.entries(S.why).filter(([k, v]) => v && k !== 'clock').map(([k, v]) => `${v} ${k}`).join(', ')})</span>` : ''}
     ${S.parked.size ? ` · <span class="bad">${S.parked.size} waiting: clock ahead of this canvas</span>` : ''}
-    ${edNative === false ? ' · Ed25519 verified in JS' : ''}<br>canvas ${esc(canvasId)} · channel <span class="kbd">${esc(channelName)}</span>${bc ? '' : ' (unavailable)'}`;
+    ${edNative === false ? ' · Ed25519 verified in JS' : ''}
+    ${(() => { const n = compactionPlan().saves; return n >= 10 ? `<br><button class="btn" id="ledgerCompact">Compact my history · ${n} fewer records</button>` : ''; })()}<br>canvas ${esc(canvasId)} · channel <span class="kbd">${esc(channelName)}</span>${bc ? '' : ' (unavailable)'}`;
   $('ledgerList').innerHTML = recs.slice(0, 500).map(r => {
     const tag = r.neg !== null ? `<span class="tag t-neg">${r.type} N-${r.neg ? 1 : 0}</span>` : `<span class="tag t-${r.type}">${r.type}</span>`;
     const deny = S.D.denied?.has(r.cid) ? '<span class="tag t-neg">not permitted</span>' : '';
@@ -3670,6 +3808,7 @@ $('ledgerList').addEventListener('click', e => {
   if (r && ELEMENT.has(r.type)){ S.sel = new Set([r.cid]); expandSel(); announceSel(); const b = box(r); if (b){ const c = center(b); S.view.x = c.x - innerWidth / 2 / S.view.zoom; S.view.y = c.y - innerHeight / 2 / S.view.zoom; } dirty = true; }
 });
 
+$('ledgerStats').addEventListener('click', e => { if (e.target.id === 'ledgerCompact') compactHistory(); });
 /* palette */
 const SW = c => `<span class="sw" style="background:${colorOf(c)}"></span>`;
 function commands(){
@@ -4199,11 +4338,11 @@ POINTER_HOOKS.push(e => {
 let timerEnd = 0, timerDone = true;
 function startTimer(min, remote = false){
   timerEnd = Date.now() + min * 60000; timerDone = false;
-  if (!remote) try { bc?.postMessage({ timer: { end: timerEnd } }); } catch {}
+  if (!remote) post({ timer: { end: timerEnd } });
   paintTimer(); say(`${remote ? 'A collaborator started a' : 'Timer started:'} ${min} minute${min === 1 ? '' : 's'}${remote ? ' timer' : ''}.`);
 }
 function stopTimer(remote = false){
-  timerEnd = 0; timerDone = true; if (!remote) try { bc?.postMessage({ timer: { end: 0 } }); } catch {}
+  timerEnd = 0; timerDone = true; if (!remote) post({ timer: { end: 0 } });
   paintTimer(); say('Timer stopped.');
 }
 WIRE_HOOKS.timer = t => { if (t && t.end > Date.now()) startTimer((t.end - Date.now()) / 60000, true); else if (timerEnd) stopTimer(true); };
@@ -4867,6 +5006,67 @@ $('people').addEventListener('click', async e => {
   zoomFit(); toast('Owned copy ready. Share → People and permissions to choose who can do what.');
 });
 PALETTE_HOOKS.push(add => add('share', 'People and permissions…', openPeople));
+// What can go, without changing what anyone sees:
+//   · your MOVEs on one element → one signed MOVE with their sum and X = the CIDs it replaces (peers drop those too)
+//   · your STYLE records whose every field a later STYLE of yours overrides (latest wins, so they no longer count)
+//   · your revoke/restore records on an element, except the latest
+// The history scrubber can no longer replay the steps that were folded together.
+const STYLE_FIELDS = { W: 'sw2', C: 'sc', K: 'sk', O: 'so', L: 'sl', M: 'sm', Y: 'sy', D: 'sd' };
+function compactionPlan(){
+  const mine = [...S.records.values()].filter(r => r.author === S.me?.id).sort(byZ);
+  const moves = new Map(), lastField = new Map(), lastNeg = new Map();
+  for (const r of mine){
+    if (r.neg !== null) lastNeg.set(r.f.R + r.type, r.cid);
+    else if (r.type === 'MOVE') (moves.get(r.f.R) || moves.set(r.f.R, []).get(r.f.R)).push(r);
+    else if (r.type === 'STYLE') for (const [k, p] of Object.entries(STYLE_FIELDS)) if (r[p] != null) lastField.set(r.f.R + '|' + k, r.cid);
+  }
+  const drop = [];
+  for (const r of mine){
+    if (r.neg !== null && lastNeg.get(r.f.R + r.type) !== r.cid) drop.push(r.cid);
+    if (r.type === 'STYLE' && Object.entries(STYLE_FIELDS).every(([k, p]) => r[p] == null || lastField.get(r.f.R + '|' + k) !== r.cid)) drop.push(r.cid);
+  }
+  const fold = [...moves].filter(([, l]) => l.length > 1);
+  return { drop, fold, saves: drop.length + fold.reduce((s, [, l]) => s + l.length - 1, 0) };
+}
+async function compactHistory(){
+  const { drop, fold, saves } = compactionPlan();
+  if (!saves){ toast('Nothing to compact: your history is already as small as it gets.'); return 0; }
+  for (const [target, list] of fold){
+    const sum = k => list.reduce((s, m) => s + m[k], 0), dw = sum('dw'), dh = sum('dh');
+    await publish(await signed('MOVE', [['I', S.me.id], ['R', target], ['DX', encInt(sum('dx'))], ['DY', encInt(sum('dy'))],
+      ...(dw || dh ? [['DW', encInt(dw)], ['DH', encInt(dh)]] : []), ['X', list.map(m => m.cid).join('_')], ['Z', ++S.lamport], ['T', Date.now()]]));
+  }
+  for (const c of drop) S.records.delete(c);
+  await dbDeleteRecords(canvasId, drop);
+  if (!DB.ok) save();
+  changed(); paintLedger();
+  toast(`Compacted: ${saves} record${saves === 1 ? '' : 's'} fewer. Everything looks the same; step-by-step history of those moves is folded.`);
+  return saves;
+}
+PALETTE_HOOKS.push(add => add('canvas', 'Compact my history', compactHistory));
+
+// Undo after a reload: rebuild the stack from your own records (newest last), so ⌘Z keeps working across sessions.
+function rebuildHistory(limit = 200){
+  if (!S.me) return;
+  const mine = [...S.records.values()].filter(r => r.author === S.me.id).sort(byZ), hist = [], style = new Map();
+  const base = el => el ? { W: el.type === 'DRAW' ? el.w : el.sw, C: el.f.C, K: el.k, O: el.z, L: false, M: el.label ?? '', Y: 'curve', D: 'solid' } : {};
+  for (const r of mine){
+    if (r.neg !== null){ hist.push(r.neg ? { kind: 'revoke', cids: [r.f.R] } : { kind: 'create', cid: r.f.R }); continue; }
+    if (ELEMENT.has(r.type) || r.type === 'GROUP'){ hist.push({ kind: 'create', cid: r.cid }); continue; }
+    if (r.type === 'MOVE'){
+      const prev = hist[hist.length - 1];
+      if (prev?.kind === 'move' && prev.t === r.t && prev.dx === r.dx && prev.dy === r.dy && !(prev.dw || prev.dh || r.dw || r.dh)) prev.targets.push(r.f.R);   // one drag of several elements
+      else hist.push({ kind: 'move', targets: [r.f.R], dx: r.dx, dy: r.dy, dw: r.dw, dh: r.dh, t: r.t });
+      continue;
+    }
+    if (r.type === 'STYLE'){
+      const cur = style.get(r.f.R) || base(S.records.get(r.f.R)), before = {}, after = {};
+      for (const [k, p] of Object.entries(STYLE_FIELDS)) if (r[p] != null){ before[k] = cur[k]; after[k] = r[p]; cur[k] = r[p]; }
+      style.set(r.f.R, cur); hist.push({ kind: 'style', items: [{ cid: r.f.R, before, after }] });
+    }
+  }
+  S.hist = hist.slice(-limit); S.redo = [];
+}
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 
@@ -4989,6 +5189,7 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
   { label: 'People and permissions…', icon: 'users', run: openPeople },
+  NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Disconnected. Records stay here; other tabs in this browser still sync.'); } },
   '-',
   { label: 'Export canvas (.flux, signed)', icon: 'download', run: () => exportCanvas(true) },
   { label: 'Export SVG', icon: 'image', run: exportSVG },
@@ -5005,6 +5206,15 @@ const shareItems = () => [
   { label: S.grid ? 'Hide dot grid' : 'Show dot grid', icon: 'grid', run: toggleGrid },
   { label: 'Keyboard shortcuts', icon: 'help', key: '?', run: () => toggleHelp(true) },
 ];
+async function askRelay(){
+  const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'A Flux relay forwards signed records between browsers (run one with: node tools/relay.mjs). Everyone on the same canvas id and relay sees changes live; the relay cannot forge anything.');
+  if (v){ netConnect(v); toast('Connecting… share the canvas link so others join the same canvas.'); }
+}
+$('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
+  { label: NET.state === 'live' ? `Connected to ${NET.url.replace(/^wss?:\/\//, '')}` : `Reconnecting to ${NET.url.replace(/^wss?:\/\//, '')}`, icon: 'wifi', run: () => {} },
+  { label: 'Sync everything now', icon: 'upload', run: () => { sendHello(false); toast('Sync requested.'); } },
+  { label: 'Disconnect', icon: 'x', run: () => netClose(true) },
+]) : closeMenu();
 $('shareBtn').onclick = () => $('menu').hidden ? openMenu($('shareBtn'), shareItems()) : closeMenu();
 
 function toggleGrid(){ S.grid = !S.grid; try { localStorage.setItem('flux:grid', S.grid ? '1' : '0'); } catch {} dirty = true; say(S.grid ? 'Dot grid on' : 'Dot grid off'); }
@@ -5111,6 +5321,7 @@ async function switchCanvas(id){
     view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
   openChannel(); activeThread = null; draft = null;
   const n = await loadCanvas(id);
+  rebuildHistory();
   derive(); paintAuthors(); paintLedger(); dirty = true;
   toast(`Canvas ${id}${n ? '' : ' · empty'}`);
 }
@@ -5126,6 +5337,8 @@ async function switchCanvas(id){
   if (freshCanvas){ const o = await ownedCanvasId(); claim = o.nonce; canvasId = o.id; setHash(canvasId); store.set('flux:lastCanvas', canvasId); openChannel(); }
   await loadCanvas(canvasId);
   if (claim) await claimCanvas(claim);
+  rebuildHistory();
+  if (relayDefault()) netConnect(relayDefault());
   derive(); paintAuthors(); paintAuth(); paintBar(); document.documentElement.style.setProperty('--barH', barH() + 'px'); dirty = true; loop();
 })();
 // a refused signature while viewing history is expected, not an error

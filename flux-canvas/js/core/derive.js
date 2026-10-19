@@ -9,12 +9,15 @@ function derive(){
   const P = S.P = policyOf(all), denied = new Set();
   const recs = P.owner ? all.filter(r => permitted(r, P) || !denied.add(r.cid)) : all;
   const byType = {};
+  const skipMove = new Set();   // MOVEs summed into a compacted MOVE (features/compaction)
+  for (const r of recs) if (r.type === 'MOVE' && r.supersedes) for (const c of r.supersedes) if (supersededBy(r, S.records.get(c))) skipMove.add(c);
   const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map(), styles = new Map();
   for (const r of recs){
     if (r.neg !== null){
       const t = S.records.get(r.f.R);
       if (t && t.author === r.author && t.type === r.type && t.neg === null) negs.set(t.cid, r.neg); // latest z wins; only the author's own
     } else if (r.type === 'MOVE'){
+      if (skipMove.has(r.cid)) continue;
       const o = off.get(r.f.R) || { x: 0, y: 0, w: 0, h: 0 }; o.x += r.dx; o.y += r.dy; o.w += r.dw; o.h += r.dh; off.set(r.f.R, o);
     } else if (r.type === 'GROUP') groups.push(r);
     else if (r.type === 'COMMENT') comments.push(r);
@@ -55,5 +58,7 @@ function derive(){
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
 let derivePending = false;
-function changed(){ if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
+// While a canvas or file loads (S.bulk > 0), derive once at the end instead of after every record (audit P1).
+async function bulk(fn){ S.bulk = (S.bulk || 0) + 1; try { return await fn(); } finally { if (!--S.bulk) changed(); } }
+function changed(){ if (S.bulk) return; if (!derivePending){ derivePending = true; queueMicrotask(() => { derivePending = false; derive(); paintAuthors(); paintLedger(); paintComments(); dirty = true; }); } }
 

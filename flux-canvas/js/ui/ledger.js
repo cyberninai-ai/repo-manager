@@ -12,7 +12,8 @@ function paintLedger(){
   $('ledgerStats').innerHTML = `${recs.length} records · ${authors.size} author${authors.size === 1 ? '' : 's'} · ${(bytes / 1024).toFixed(1)} KB
     ${S.rejected ? ` · <span class="bad">${S.rejected} rejected (${Object.entries(S.why).filter(([k, v]) => v && k !== 'clock').map(([k, v]) => `${v} ${k}`).join(', ')})</span>` : ''}
     ${S.parked.size ? ` · <span class="bad">${S.parked.size} waiting: clock ahead of this canvas</span>` : ''}
-    ${edNative === false ? ' · Ed25519 verified in JS' : ''}<br>canvas ${esc(canvasId)} · channel <span class="kbd">${esc(channelName)}</span>${bc ? '' : ' (unavailable)'}`;
+    ${edNative === false ? ' · Ed25519 verified in JS' : ''}
+    ${(() => { const n = compactionPlan().saves; return n >= 10 ? `<br><button class="btn" id="ledgerCompact">Compact my history · ${n} fewer records</button>` : ''; })()}<br>canvas ${esc(canvasId)} · channel <span class="kbd">${esc(channelName)}</span>${bc ? '' : ' (unavailable)'}`;
   $('ledgerList').innerHTML = recs.slice(0, 500).map(r => {
     const tag = r.neg !== null ? `<span class="tag t-neg">${r.type} N-${r.neg ? 1 : 0}</span>` : `<span class="tag t-${r.type}">${r.type}</span>`;
     const deny = S.D.denied?.has(r.cid) ? '<span class="tag t-neg">not permitted</span>' : '';
@@ -32,3 +33,4 @@ $('ledgerList').addEventListener('click', e => {
   if (r && ELEMENT.has(r.type)){ S.sel = new Set([r.cid]); expandSel(); announceSel(); const b = box(r); if (b){ const c = center(b); S.view.x = c.x - innerWidth / 2 / S.view.zoom; S.view.y = c.y - innerHeight / 2 / S.view.zoom; } dirty = true; }
 });
 
+$('ledgerStats').addEventListener('click', e => { if (e.target.id === 'ledgerCompact') compactHistory(); });

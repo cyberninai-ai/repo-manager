@@ -40,7 +40,8 @@ async function flushSave(){
   } catch { toast('Storage is full or blocked; new records live in this tab only.'); }
 }
 // Load a canvas: from IndexedDB, else migrate it from localStorage (older versions), else the localStorage fallback.
-async function loadCanvas(id){
+function loadCanvas(id){ return bulk(() => loadLines(id)); }
+async function loadLines(id){
   const legacyKey = 'flux:canvas:' + id;
   if (await dbReady){
     const recs = await dbAll('records', id);
@@ -61,7 +62,8 @@ async function loadCanvas(id){
   if (saved) await importText(saved, false);
   return saved ? S.records.size : 0;
 }
-async function importText(text, persist = true){
+function importText(text, persist = true){ return bulk(() => importLines(text, persist)); }
+async function importLines(text, persist){
   const ls = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   let added = 0, before = S.rejected;
   for (const l of ls) if (l.startsWith('BLOB-')){

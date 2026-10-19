@@ -8,7 +8,7 @@ let G = null, hoverEdge = null, spaceDown = false, lastTap = null;
 const pointers = new Map();
 function edgeHit(sx, sy){
   const w = toWorld(sx, sy), band = 8 / S.view.zoom, els = S.D.els;
-  for (let i = els.length - 1; i >= 0; i--){
+  for (const i of idxNear(w, band)){
     const el = els[i];
     if (el.type === 'ARROW' || el.type === 'IMAGE' || el.locked || !visible(el) || S.D.hidden.has(el.cid)) continue;
     const b = box(el); if (!b) continue;
@@ -20,9 +20,34 @@ function edgeHit(sx, sy){
   }
   return null;
 }
+/* spatial index (audit P1): a uniform grid of element indices, rebuilt lazily after each derive. Hit tests look only at the
+   cells around the pointer instead of every element; very large elements (frames, long arrows) live in an always-checked list. */
+const CELL = 400;
+let spx = null;
+function spatialIndex(){
+  if (spx && spx.D === S.D) return spx;
+  const map = new Map(), wide = [], els = S.D.els;
+  for (let i = 0; i < els.length; i++){
+    const b = box(els[i]); if (!b){ wide.push(i); continue; }
+    const x0 = Math.floor(b.x / CELL), x1 = Math.floor((b.x + b.w) / CELL), y0 = Math.floor(b.y / CELL), y1 = Math.floor((b.y + b.h) / CELL);
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 16){ wide.push(i); continue; }
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++){ const k = cx + ',' + cy; let a = map.get(k); if (!a) map.set(k, a = []); a.push(i); }
+  }
+  return spx = { D: S.D, map, wide };
+}
+// element indices near w (padding in world units), topmost first
+function nearIdx(w, pad){
+  const s = spatialIndex(), out = new Set(s.wide);
+  for (let cx = Math.floor((w.x - pad) / CELL); cx <= Math.floor((w.x + pad) / CELL); cx++)
+    for (let cy = Math.floor((w.y - pad) / CELL); cy <= Math.floor((w.y + pad) / CELL); cy++) for (const i of s.map.get(cx + ',' + cy) || []) out.add(i);
+  return [...out].sort((a, b) => b - a);
+}
+// while elements are being dragged or resized their boxes move away from the index: fall back to a full scan
+const scanAll = () => G && (G.kind === 'move' || G.kind === 'resize') || S.D.els.length < 200;
+const idxNear = (w, pad) => scanAll() ? [...S.D.els.keys()].reverse() : nearIdx(w, pad);
 function elementAt(w, except){
   const pad = 6 / S.view.zoom, els = S.D.els;
-  for (let i = els.length - 1; i >= 0; i--){
+  for (const i of idxNear(w, pad)){
     const el = els[i];
     if (el === except || el.type === 'ARROW' || !visible(el) || S.D.hidden.has(el.cid)) continue;
     const b = box(el); if (b && inside(w, grow(b, pad))) return el;
@@ -32,7 +57,7 @@ function elementAt(w, except){
 // Precise hit test: strokes and arrows by distance to their path, shapes by outline (or body when filled), text and images by box.
 function hitTest(w, tolPx = 6){
   const tol = tolPx / S.view.zoom, els = S.D.els;
-  for (let i = els.length - 1; i >= 0; i--){
+  for (const i of idxNear(w, tol + 40 / S.view.zoom)){
     const el = els[i];
     if (!visible(el) || el.locked) continue;
     const b = box(el); if (!b || !inside(w, grow(b, tol))) continue;
