@@ -60,10 +60,11 @@ body.presenting #corner,body.presenting #bar,body.presenting #zoomui,body.presen
 
 /* history */
 #history{position:fixed;left:50%;top:calc(max(12px,env(safe-area-inset-top)) + 60px);transform:translateX(-50%);z-index:12;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  border-color:var(--amber);border-radius:14px;padding:8px 12px;width:min(720px,calc(100% - 24px));font-size:13px;box-shadow:var(--shadow-lg)}
+  border-color:var(--amber);border-radius:14px;padding:6px 8px 6px 14px;width:min(820px,calc(100% - 24px));font-size:13px;box-shadow:var(--shadow-lg)}
 #history input{flex:1;min-width:160px;accent-color:var(--amber)}
 #history .ro{color:var(--amber);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:color-mix(in srgb,var(--amber) 12%,transparent);padding:2px 7px;border-radius:999px}
-#histLabel{color:var(--muted);font-size:12px;flex-basis:100%}
+#histLabel{color:var(--muted);font-size:12px;min-width:120px;white-space:nowrap}
+body.history #bar,body.history #insp{display:none!important}
 body.history #c{outline:3px solid color-mix(in srgb,var(--amber) 60%,transparent);outline-offset:-3px}
 body.history #tools{opacity:.45;pointer-events:none}
 

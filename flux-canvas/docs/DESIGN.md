@@ -16,7 +16,11 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 
 - **Top left:** canvas menu and title. Vote and timer chips appear only while they're in use.
 - **Top centre: the tool dock.** Select (V), Hand (Space), Draw (P), Eraser (E); Rectangle, Ellipse, Line; Sticky note, Shapes and cards (N), Text (T), Image (I); Comment (M).
-- **Top right:** people on the canvas (click one to see only their work), comments, search and commands (⌘K), signatures, and **Share**. Share holds export, summary, audit report, present, history, ledger, import, theme, grid and shortcuts.
+- **Top right:**
+  - **Live chip:** appears while connected to a relay. It shows "Live · 3", or "Reconnecting…" with a pulsing dot.
+  - **People on the canvas:** up to four avatars with initials; yours has an accent ring. Click one to see only their work. With more than four people, a "+N" opens People and permissions.
+  - **Icon buttons:** comments, outline (⇧O), search and commands (⌘K), signatures.
+  - **Share:** people and permissions, going live over a relay, export, summary, audit report, present, history, ledger, import, theme, grid and shortcuts.
 - **Bottom centre: the style bar.** It is contextual:
 
   | Tool or selection | Groups shown |
@@ -31,10 +35,13 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 
 - **Bottom left:** zoom out, zoom level (click for 100%), zoom in, fit, overview map (off by default).
 - **Selection toolbar:** floats above the selection with icon actions: edit, comment, duplicate, align, layer order, lock, group, vote, react, details, delete.
-- **Side panels** (comments, ledger, audit) open below the top bar, so it stays usable.
+- **Side panels** (comments, outline, ledger, audit) open below the top bar, so it stays usable.
+- **Context menu:** right-click an element (or press the Menu key or Shift+F10) for edit, comment, duplicate, copy, layer order, lock, group and delete. On empty paper it offers paste, a sticky note or text right there, select all, fit and the outline. A right-drag still pans.
+- **People and permissions:** a table with one row per person and a column per permission: draw and write; comment, vote and react; move others' work; audit and sign off. "Everyone else" sets the default. Only the owner can change it. Each change is a signed `GRANT`.
+- **Outline:** the canvas as a tree. Frames hold what sits inside them, in reading order. Each entry lists its connections and their meaning, votes and comments. Enter shows an element on the canvas.
 
 **Medium widths (641–1100 px):** the dock moves to the left edge, vertically, and zoom moves to the bottom right.
-**Phones (≤ 640 px):** the dock runs along the bottom and scrolls sideways. The style bar sits above it. Zoom is by pinch; the overview, search and signature buttons go into the menus.
+**Phones (≤ 640 px):** the dock runs along the bottom and scrolls sideways, with a fade on the edge that shows there is more. Hand is hidden because two fingers pan. The style bar sits above the dock. Zoom is by pinch; the overview, search and signature buttons go into the menus. Comment cards show on demand, so pins don't cover the notes.
 
 ## Tools behave like tools
 
@@ -60,7 +67,7 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 
 ## Components (`css/01-base.css`)
 
-- `.ic`: one SVG icon from the sprite in `index.html` (24px grid, 1.75px stroke, `currentColor`). `ic('name')` in JS. 78 icons. `face(x)` falls back to a glyph for anything that is not a sprite name.
+- `.ic`: one SVG icon from the sprite in `index.html` (24px grid, 1.75px stroke, `currentColor`). `ic('name')` in JS. 81 icons. `face(x)` falls back to a glyph for anything that is not a sprite name.
 - `.ibtn`: a 36px icon button (`.sm` is 30px). The pressed or expanded state uses the accent tint. In the dock, the active tool is solid accent.
 - `.btn` (`.primary`, `.danger`): text buttons, 32px.
 - `.chip`: compact status buttons (votes, timer).

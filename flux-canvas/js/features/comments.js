@@ -68,7 +68,7 @@ function paintComments(){
   let html = '';
   if (draft) html += `<div class="compose" role="group" aria-label="New comment"><label for="cmNew">New comment on ${esc(draft.on ? targetName(draft) : 'the canvas')}</label>
     <textarea id="cmNew" data-k="new" placeholder="Write a comment… (Enter posts, Shift+Enter new line)">${esc(drafts.new || '')}</textarea>
-    <div class="row2"><button class="btn" data-a="cancel">cancel</button><button class="btn" data-a="post">post</button></div></div>`;
+    <div class="row2"><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="post">Post</button></div></div>`;
   html += list.map(([id, t]) => {
     const msgs = [t.root, ...t.replies].filter(c => !S.D.hidden.has(c.cid));
     return `<article class="thread${id === activeThread ? ' active' : ''}${t.resolved ? ' done' : ''}" data-id="${id}" aria-label="Thread on ${esc(targetName(t.root))}">
@@ -76,10 +76,10 @@ function paintComments(){
       <canvas class="thumb" data-thumb="${id}" aria-hidden="true" title="Show on canvas"></canvas>
       ${msgs.map(msgHtml).join('')}
       <textarea data-k="${id}" aria-label="Reply" placeholder="Reply… (Enter posts)">${esc(drafts[id] || '')}</textarea>
-      <div class="row2"><button class="btn" data-a="show" data-id="${id}">show on canvas</button>
-        <button class="btn" data-a="movepin" data-id="${id}">move pin</button>
-        <button class="btn" data-a="${t.resolved ? 'reopen' : 'resolve'}" data-id="${id}">${t.resolved ? 'reopen' : 'resolve'}</button>
-        <button class="btn" data-a="reply" data-id="${id}">reply</button></div></article>`;
+      <div class="row2"><button class="btn" data-a="show" data-id="${id}">Show</button>
+        <button class="btn" data-a="movepin" data-id="${id}">Move pin</button>
+        <button class="btn" data-a="${t.resolved ? 'reopen' : 'resolve'}" data-id="${id}">${t.resolved ? 'Reopen' : 'Resolve'}</button>
+        <span class="sp"></span><button class="btn primary" data-a="reply" data-id="${id}">Reply</button></div></article>`;
   }).join('');
   if (!html) html = '<div class="empty">No comments yet. Pick the Comment tool (M), then click an element or a spot.</div>';
   $('cmList').innerHTML = html;

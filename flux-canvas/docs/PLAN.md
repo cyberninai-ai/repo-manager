@@ -2,7 +2,7 @@
 
 **Goal:** a collaborative space where people think together. They brainstorm, build ideas, collect feedback, build stories and moodboards, and run audits, and every contribution is a signed record anyone can verify.
 
-The plan is ordered so each phase ships on its own and leaves the app working. Phases 0–7 are done in this pass. Phase 8 lists decisions and work for the team.
+The plan is ordered so each phase ships on its own and leaves the app working. Phases 0–12 are done: 0–7 build the collaboration features, 8 the interface, and 9–12 resolve the audit. The end lists decisions and next work for the team.
 
 ## Principles
 
@@ -17,7 +17,7 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 ### 0 · Modular source (done)
 - `index.html` + `css/` (11 files) + `js/` (core, render, model, interaction, ui, features), in load order.
 - `tools/build.mjs` inlines them into `../flux-canvas.html`; `--check` fails CI when the bundle is stale.
-- `tests/`: 14 browser suites plus a runner that fails on page errors or axe violations. They run against the bundle or the source.
+- `tests/`: browser suites (14 then, 23 now) plus a runner that fails on page errors or axe violations. They run against the bundle or the source.
 - **Accept:** the first build is byte-identical to the original file, and both targets pass all suites.
 
 ### 1 · Canvases and use cases (done)
@@ -67,13 +67,48 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 - **History scrubber**: replay the canvas at any point in its record order (read-only).
 - **Accept:** each verdict and the sign-off verify; the report matches the badges; scrubbing back hides later records and returning restores them.
 
-### 8 · Next (for the team)
+### 8 · Interface (done)
+- A design system: tokens, an 81-icon set, components ([DESIGN.md](DESIGN.md)).
+- A real tool dock, a contextual style bar, a Share menu, tooltips with shortcuts, a welcome card with quick starts, a dot grid and clean selection.
+- Responsive: the dock moves to the left edge on medium widths and to the bottom on phones.
+- **Accept:** `tests/tools.mjs` (25 checks); axe clean in light and dark; screenshots reviewed at desktop, tablet and phone sizes.
+
+### 9 · Storage and keys (done) · audit S1, S5, P2
+- Signing keys are non-extractable `CryptoKey`s in IndexedDB. Keys left by older versions are imported and deleted.
+- Records are an append-only log in IndexedDB, with blobs (capped at 2 MB) beside them and a canvas summary for the home list. Sandboxes fall back to localStorage.
+- **Accept:** `tests/store.mjs`: the key can't be exported, nothing secret sits in localStorage, records reload, the legacy canvas and key migrate, oversized blobs are refused.
+
+### 10 · Integrity and permissions (done) · audit S2, S3, S4
+- A built-in Ed25519 verifier for browsers without it.
+- Implausible `Z` or `T` is parked until the canvas catches up; refusals are listed by reason.
+- Owner-bound canvas ids (an `OWNER` hash commitment) and owner-only `GRANT`s for draw, comment, move and audit, enforced in `derive()` and before signing.
+- The People and permissions dialog; an owned copy for older canvases.
+- **Accept:** `tests/verify.mjs`, `tests/perm.mjs`: a forged claim is refused, a non-owner grant is ignored, denied work is hidden and then shown once granted.
+
+### 11 · Data and performance (done) · audit D1, D2, D3, P1
+- Compaction (MOVEs folded and replaced CIDs dropped by every peer; overridden STYLE and revokes dropped).
+- `GROUP` by member CIDs; the undo stack rebuilt after reload.
+- Bulk loading derives once; a spatial index for hit testing.
+- **Accept:** `tests/data.mjs`: nothing visible changes after compaction, the other tab follows, and undo works after a reload. `tests/perf.mjs`: 5,000 records load in about 0.5 s; derive < 120 ms, render < 40 ms, hit test < 1 ms.
+
+### 12 · Network, boundaries, tests (done) · audit C1, A1, T1, X2
+- **Network:** a WebSocket transport with HELLO/records catch-up sync. `tools/relay.mjs` is dependency-free: it serves the app, forwards records and keeps an optional per-canvas log. A live chip; Share → Go live.
+- **Boundaries:** `tools/deps.mjs` enforces the core → render → model → app layers and the absence of duplicate globals; [DEPENDENCIES.md](DEPENDENCIES.md) is generated.
+- **Tests:** assertions in new suites, golden output for older ones, and CI.
+- **Accessibility:** the Outline panel (an ARIA tree of the canvas structure); a context menu reachable by keyboard.
+- **Accept:** `tests/net.mjs`: two browsers sync live and after being offline, the relay survives a restart, and a forged record from the relay is refused. `tests/polish.mjs`: outline and context menu. `npm run check` passes.
+
+### Decisions recorded
+- **Transport:** a plain WebSocket relay rather than Gun or WebRTC. It is simplest to run, works through proxies, and is untrusted by design because clients verify every record. WebRTC can be added as another transport behind the same `post()`/`onWire()` pair.
+- **ES modules:** deferred. `file://` refuses them, and the shared frame state would need setters everywhere. Enforced layers give the boundary guarantee now.
+- **Grants are retroactive:** this is the only rule that a signer-chosen `Z` can't get around.
+
+## Next (for the team)
 
 | Item | Why | Notes |
 |---|---|---|
-| ES modules with explicit imports | Enforce module boundaries | Serve over http in dev; the build keeps producing the single file |
-| IndexedDB storage, non-extractable keys | Audit S1, S5, P2 | Keys as `CryptoKey` in IDB; blobs and an append-only record log in IDB |
-| `GRANT` records (permissions) | Audit S2 | Owner-issued grants per canvas: draw, comment, move, audit |
-| Network transport | Audit C1 | Decide Gun relay vs WebRTC with a signalling server; the record format doesn't change |
-| Compaction (`SNAPSHOT`) | Audit D1 | Per-author signed checkpoint of current state |
-| Assertions in tests | Audit T1 | Turn printed checks into `expect` calls; run in CI with `npm run check && npm test` |
+| Passkeys (WebAuthn) as the signing root | Non-extractable keys can't be backed up; a passkey syncs across a person's devices | Sign a per-device key with the passkey; records stay the same |
+| End-to-end encryption on the relay | The relay can read what it forwards and stores | Per-canvas symmetric key shared in the link fragment; encrypt `msg` bodies |
+| WebRTC transport | Peer-to-peer when both sides are online, relay as fallback | Same `post()`/`onWire()` interface |
+| Incremental `derive()` | Only needed past about 50,000 records (a full derive is 1.6 ms at 5,000) | Keep `derive()` pure; memoise per record type |
+| Profiles | Display names for real people, not just example authors | A signed `PROFILE` record per author, latest wins |

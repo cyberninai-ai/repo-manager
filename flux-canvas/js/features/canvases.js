@@ -107,6 +107,7 @@ async function newCanvasFrom(tpl){
   if (tpl.build) await tpl.build(viewCenter());
   await new Promise(r => setTimeout(r, 0));
   if (tpl.id !== 'blank') zoomFit();
+  if (tpl.id !== 'blank') setTool('select');
   dirty = true; toast(`New canvas · ${tpl.name}`);
 }
 async function openExample(x){
@@ -120,7 +121,8 @@ async function openExample(x){
   changed();   // re-derive as you: views painted while examples signed as Ana, Ben or Chen (e.g. votes left) must be yours
   await new Promise(r => setTimeout(r, 0));
   zoomFit(); dirty = true;
-  toast(`Example · ${x.title} · signed by ${EXAMPLE_NAMES.join(', ')} (example keys)`);
+  setTool('select');
+  toast(`Example signed by ${EXAMPLE_NAMES.join(', ')} · explore, vote and comment`);
 }
 $('home').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;

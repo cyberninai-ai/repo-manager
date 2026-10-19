@@ -38,7 +38,7 @@ function paintAuthors(){
   if (S.me && !counts.has(S.me.id)) counts.set(S.me.id, 0);
   const box = $('authors'); box.innerHTML = '';
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
-  for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
+  for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, counts.size > 4 ? 3 : 4)){
     const b = document.createElement('button');
     b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA)
     b.textContent = initials(id);
@@ -46,7 +46,7 @@ function paintAuthors(){
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.dataset.tip = `${id === S.me?.id ? 'You' : NAMES.get(id) || short(id)} · ${n} element${n === 1 ? '' : 's'} · click to show only theirs`;
     if (S.filter){ b.classList.toggle('off', !S.filter.has(id)); b.classList.toggle('solo', S.filter.has(id)); }
-    b.classList.toggle('live', peers.has(id));
+    b.classList.toggle('live', peers.has(id)); b.classList.toggle('me', id === S.me?.id);
     b.onclick = e => {
       if (e.shiftKey){ S.filter = new Set(S.filter || counts.keys()); S.filter.has(id) ? S.filter.delete(id) : S.filter.add(id); if (!S.filter.size || S.filter.size === counts.size) S.filter = null; }
       else S.filter = S.filter && S.filter.size === 1 && S.filter.has(id) ? null : new Set([id]);
@@ -54,6 +54,11 @@ function paintAuthors(){
       toast(S.filter ? `Showing ${S.filter.size} author${S.filter.size > 1 ? 's' : ''} · export from ⌘K gives this sub-canvas` : 'Showing all authors');
     };
     box.appendChild(b);
+  }
+  if (counts.size > 4){   // more people than fit: the rest are one click away
+    const more = document.createElement('button'); more.className = 'more'; more.textContent = `+${counts.size - 3}`;
+    more.setAttribute('aria-label', `${counts.size - 3} more people. People and permissions`); more.dataset.tip = 'Everyone on this canvas';
+    more.onclick = () => openPeople(); box.appendChild(more);
   }
 }
 function recBytes(r){ return r.size + ((r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null && S.blobs.has(r.f.R) ? S.blobs.get(r.f.R).length : 0); }

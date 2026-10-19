@@ -29,3 +29,7 @@
 .pv.big{max-width:300px;z-index:2}
 .pv.big .tx{-webkit-line-clamp:8}
 .pv.done{border-left-color:var(--muted)}
+
+.cm .opts{display:flex;gap:16px;flex-wrap:wrap}
+.cm .row2 .sp{flex:1}
+.cm .row2{justify-content:flex-start}

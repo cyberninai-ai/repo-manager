@@ -2,7 +2,8 @@
 
 A collaborative canvas for brainstorming, idea building, feedback, stories, moodboards and audits. **Every note, stroke, vote and decision is a signed, content-addressed pattern**, so who did what is provable, not just recorded.
 
-- **Use it:** open `../flux-canvas.html` in any browser. It's one self-contained file with no server and no install.
+- **Use it:** open `../flux-canvas.html` in any browser. It's one self-contained file with no server and no install. Tabs in the same browser sync on their own.
+- **Work together across machines:** run `npm run relay` (Node only, no dependencies) and open the address it prints. Anyone who opens the same canvas link on that relay joins live. Or use Share → Go live with any relay address.
 - **Develop it:** this folder holds the modular source behind that file.
 
 ```sh
@@ -10,7 +11,8 @@ npm install          # test tooling only (playwright, axe-core)
 npm run serve        # http://localhost:8080 — the source, file by file
 npm run build        # rebuild ../flux-canvas.html from index.html + css/ + js/
 npm test             # browser suites on the bundle  (npm run test:source for the source)
-npm run check        # CI: fail if the bundle is stale
+npm run check        # CI: fail if the bundle is stale or a module breaks the layer rules
+npm run relay        # http://localhost:8787 — the app plus live sync between browsers (records kept in relay-data/)
 ```
 
 ## Deliverables for the team
@@ -19,6 +21,7 @@ npm run check        # CI: fail if the bundle is stale
 |---|---|
 | [docs/AUDIT.md](docs/AUDIT.md) | Findings by area and severity, what this pass fixed, what's open |
 | [docs/PLAN.md](docs/PLAN.md) | The phased plan: principles, what each phase delivers, acceptance checks, next work |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | Generated module graph: who uses what, checked against the layers |
 | [docs/DESIGN.md](docs/DESIGN.md) | The design system: layout, tools, contextual style bar, tokens, components, accessibility |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layout, load order, data flow, global state, extension hooks, component table, module map, how to add a feature |
 | [docs/PATTERNS.md](docs/PATTERNS.md) | The record format: grammar, every record type, authority rules |
@@ -35,4 +38,4 @@ npm run check        # CI: fail if the bundle is stale
 - **`js/ui`:** chrome and panels.
 - **`js/features`:** one file per capability.
 
-A feature plugs in through `core/hooks.js` (record types, render layers, toolbar, palette, keys, templates, examples) without touching the core.
+A feature plugs in through `core/hooks.js` (record types, render layers, change and frame hooks, toolbar, palette, keys, templates, examples) without touching the core. `tools/deps.mjs` keeps the layers honest.

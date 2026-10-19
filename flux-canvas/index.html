@@ -231,7 +231,7 @@
 <aside class="ledger cm" id="comments" aria-label="Comments">
   <header>
     <h2><span>Comments</span><button class="ibtn sm" id="cmClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
-    <div class="stats"><label><input type="checkbox" id="cmShowDone"> show resolved</label> · <label><input type="checkbox" id="cmPrev" checked> previews on canvas</label> · every comment and reply is a signed record</div>
+    <div class="stats opts"><label><input type="checkbox" id="cmShowDone"> Show resolved</label><label><input type="checkbox" id="cmPrev" checked> Previews on canvas</label></div>
   </header>
   <div class="list" id="cmList"></div>
 </aside>
@@ -304,8 +304,12 @@
     <tr><td>A</td><td>Audit the flow from the selected step: 1 pass · 2 fail · 3 needs info, then sign off</td></tr>
     <tr><td>⇧H</td><td>History: replay the canvas record by record (read-only)</td></tr>
     <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
+    <tr><td>⇧O</td><td>Outline: the canvas as a tree of frames, notes and connections, read in order</td></tr>
+    <tr><td>Right-click · Menu key · ⇧F10</td><td>Actions for the selection, or for the spot on empty paper</td></tr>
+    <tr><td>Share → People and permissions</td><td>On a canvas you own: who may draw, comment, move others' work and audit</td></tr>
+    <tr><td>Share → Go live</td><td>Sync with other browsers through a relay (<span class="kbd">npm run relay</span>)</td></tr>
   </table>
-  <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
+  <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span>; other browsers through a relay (Share → Go live). Use “New identity for this tab” to draw as a second author.</p>
 </div>
 
 <div id="toast" aria-hidden="true"></div>

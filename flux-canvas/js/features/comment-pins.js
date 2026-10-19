@@ -47,7 +47,7 @@ S.cmPrev = true;
 function paintPreviews(){
   const box2 = $('previews'); if (!box2) return;
   const ids = [];
-  for (const [id, t] of S.D.threads) if (threadShown(t) && (S.cmPrev || id === hoverThread || id === activeThread)) ids.push(id);
+  for (const [id, t] of S.D.threads) if (threadShown(t) && ((S.cmPrev && innerWidth > 640) || id === hoverThread || id === activeThread)) ids.push(id);   // phones: pins only, cards on demand
   const keep = new Set();
   for (const id of ids){
     const t = S.D.threads.get(id), p = pinPos(t.root), s = toScreen(p.x, p.y);

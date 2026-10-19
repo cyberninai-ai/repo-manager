@@ -24,6 +24,7 @@
 #authors button.off{opacity:.3}
 #authors button.solo{box-shadow:0 0 0 2px var(--cyan)}
 #authors button.live{box-shadow:0 0 0 2px var(--green)}
+#authors button.me{outline:2px solid var(--cyan);outline-offset:1px}
 .ibtn.cnt{width:auto;padding:0 8px 0 9px}
 .ibtn.cnt .n{font-size:12px;font-weight:600;min-width:10px;font-variant-numeric:tabular-nums}
 .ibtn.cnt .n:empty,.ibtn.cnt .n[data-z]{display:none}
@@ -66,3 +67,4 @@
 .chip.net[data-state="connecting"] i{background:var(--amber);animation:pulse 1.2s infinite}
 .chip.net[data-state="error"]{color:var(--red)}
 @keyframes pulse{50%{opacity:.3}}
+#authors button.more{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line);font-size:11px}
