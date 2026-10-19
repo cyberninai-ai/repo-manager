@@ -9,17 +9,18 @@ function paintHubBadge(){ const b = $('hubN'), n = S.me ? needsYou().length : 0;
 CHANGE_HOOKS.push(paintHubBadge); setInterval(paintHubBadge, 5000);
 function hubItems(){
   const out = [], needs = needsYou();
-  if (needs.length){ out.push({ head: `Needs you (${needs.length})` }, ...needs.slice(0, 8)); if (needs.length > 8) out.push({ label: `${needs.length - 8} more…`, icon: 'list', run: () => openMenu($('hubBtn'), needs) }); }
+  if (needs.length){ out.push({ head: `Needs you · ${needs.length}`, tone: 'mneed' }, ...needs.slice(0, 6).map(n => ({ ...n, tone: 'mneed' }))); if (needs.length > 6) out.push({ label: `${needs.length - 6} more…`, icon: 'list', tone: 'mneed', run: () => openMenu($('hubBtn'), needs) }); }
   for (const [g, title] of HUB_GROUPS){
     const fs = FEATURES.filter(f => f.group === g && f.open); if (!fs.length) continue;
     out.push({ head: title });
-    for (const f of fs){ let st = ''; try { st = f.status?.() || ''; } catch {} out.push({ label: f.name + (st ? ' · ' + st : ''), icon: f.icon, run: f.open }); }
+    for (const f of fs){ let st = ''; try { st = f.status?.() || ''; } catch {} out.push({ label: f.name, sub: st, tone: st ? 'mlive' : '', icon: f.icon, run: f.open }); }
   }
   return out;
 }
-$('hubBtn').onclick = () => $('menu').hidden ? openMenu($('hubBtn'), hubItems()) : closeMenu();
-PALETTE_HOOKS.push(add => { add('team', 'Team: what needs me', () => openMenu($('hubBtn'), hubItems())); for (const f of FEATURES) if (f.open) add('team', `${f.name}: ${f.blurb}`, f.open); });
-KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.shiftKey && e.key === 'T'){ e.preventDefault(); openMenu($('hubBtn'), hubItems()); return true; } return false; });
+const openHub = () => openMenu($('hubBtn'), hubItems(), null, 'hub');
+$('hubBtn').onclick = () => $('menu').hidden ? openHub() : closeMenu();
+PALETTE_HOOKS.push(add => { add('team', 'Team: what needs me', openHub); for (const f of FEATURES) if (f.open) add('team', `${f.name}: ${f.blurb}`, f.open); });
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.shiftKey && e.key === 'T'){ e.preventDefault(); openHub(); return true; } return false; });
 
 /* the session strip under the title bar: what the room is doing right now. Features add a chip: STRIP.push(() => html);
    buttons inside carry data-strip="action" and STRIP_ACTIONS[action](button) handles them */
@@ -29,7 +30,7 @@ document.body.appendChild(strip);
 let stripHTML = '';
 function paintStrip(){
   const html = STRIP.map(f => { try { return f() || ''; } catch { return ''; } }).join('');
-  if (html !== stripHTML){ const keep = document.activeElement?.closest?.('#strip [data-strip]')?.dataset.strip; stripHTML = html; strip.innerHTML = html; if (keep) strip.querySelector(`[data-strip="${keep}"]`)?.focus(); }
+  if (html !== stripHTML){ const keep = document.activeElement?.closest?.('#strip [data-strip]')?.dataset.strip; stripHTML = html; strip.innerHTML = html ? `<div class="bar">${html}</div>` : ''; if (keep) strip.querySelector(`[data-strip="${keep}"]`)?.focus(); }
 }
 strip.addEventListener('click', e => { const b = e.target.closest('[data-strip]'); if (b) STRIP_ACTIONS[b.dataset.strip]?.(b); });
 strip.addEventListener('pointerdown', e => e.stopPropagation());

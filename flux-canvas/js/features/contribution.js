@@ -85,7 +85,7 @@ async function signCredit(x){
 }
 const pct = bp => `${(bp / 100).toFixed(bp % 100 ? 1 : 0)}%`;
 DELIVERY_HOOKS.row.push(x => { const sh = contributionShares(x); if (!sh.size) return ''; const c = creditOf(x);
-  return `<div class="wk-ap">${[...sh].slice(0, 5).map(([k, v]) => `<span class="chip">${esc(whoName(k))} ${pct(v)}</span>`).join('')}${c ? '<span class="chip yes">Credit signed ✓</span>' : samePerson(x.d.author, S.me.id) && x.done ? `<button class="btn" data-credit="${x.d.cid}">Sign credit</button>` : ''}</div>`; });
+  return dlField('Shares', `${[...sh].slice(0, 5).map(([k, v]) => `<span class="chip">${esc(whoName(k))} ${pct(v)}</span>`).join('')}${c ? '<span class="chip yes">Credit signed ✓</span>' : samePerson(x.d.author, S.me.id) && x.done ? `<button class="btn" data-credit="${x.d.cid}">Sign credit</button>` : ''}`); });
 DELIVERY_HOOKS.proof.push((x, out) => {
   const sh = contributionShares(x), c = creditOf(x), m = c ? (c.method === 'default' ? DEFAULT_METHOD : S.records.get(c.method)) : methodInUse(); if (!sh.size) return;
   out.push('', '## Contribution', '', `- **Method:** ${m?.name || 'Default'}${m?.cid && m.cid !== 'default' ? ` (\`${m.cid}\`)` : ''} · ${c ? `signed as \`${c.cid}\`` : 'computed, not yet signed'}`,

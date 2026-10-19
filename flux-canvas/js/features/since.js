@@ -48,7 +48,7 @@ RENDER_HOOKS.screen.push(() => {
     const el = S.records.get(o.cid), b = el && box(el); if (!b) continue;
     const a = toScreen(b.x, b.y), c = toScreen(b.x + b.w, b.y + b.h); if (c.x < -50 || a.x > innerWidth + 50 || c.y < -50 || a.y > innerHeight + 50) continue;
     ctx.save(); ctx.strokeStyle = TONE[KIND_COL[o.kind]][1]; ctx.lineWidth = 2.5; ctx.setLineDash(o.kind === 'removed' ? [6, 4] : []); rr(ctx, a.x - 5, a.y - 5, c.x - a.x + 10, c.y - a.y + 10, 8); ctx.stroke(); ctx.restore();
-    drawBadge(a.x - 5, c.y + 8, `${KIND_NAME[o.kind]} · ${[...o.who].map(whoName).join(', ')}`, KIND_COL[o.kind], () => { SN.i = changesSince().findIndex(x => x.cid === o.cid); paintPanel(); });
+    placeBadge(el, 'bottom', `${KIND_NAME[o.kind]} · ${[...o.who].map(whoName).join(', ')}`, KIND_COL[o.kind], () => { SN.i = changesSince().findIndex(x => x.cid === o.cid); paintPanel(); });
   }
 });
 function stepChange(d){ const l = changesSince(); if (!l.length) return; SN.i = (SN.i + d + l.length) % l.length; const el = S.records.get(l[SN.i].cid); if (el && box(el)){ ensureVisible(el); if (!S.D.hidden.has(el.cid)){ S.sel = new Set([el.cid]); announceSel(); } dirty = true; } say(`${SN.i + 1} of ${l.length}: ${KIND_NAME[l[SN.i].kind]} ${elTitle(l[SN.i].cid)}`); paintPanel(); }

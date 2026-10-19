@@ -78,7 +78,17 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 - `.chip`: compact status buttons (votes, timer).
 - `.link`, `kbd`.
 - `#tip`: a tooltip with label and shortcut. It's taken from `aria-label` ("Name (key)") or `data-tip` plus `data-key`. Hover delay is 420 ms; keyboard focus shows it after 250 ms.
-- `#menu`: `openMenu(anchor, items)` builds a menu; `'-'` is a separator. Each item is `{ label, icon, key, run }`.
+- `#menu`: `openMenu(anchor, items, at, cls)` builds a menu. `'-'` is a separator and `{ head }` is a group title. Each item is `{ label, icon, key, run }`, plus an optional `sub` (a quieter second line) and `tone` (a class). `cls` styles the whole menu: `hub` lays the Team menu out as two columns of tiles, with **Needs you** as a highlighted band on top.
+
+## Team surfaces (`css/12-team.css`)
+
+- **Panels** (`registerPanel`): a header with the feature's icon in an accent tile, a title, and a one-line blurb. On open, focus goes to the panel itself, not to a button, so nothing shows a focus ring until you press Tab. The Work panel follows the same rules.
+- **Session bar** (`#strip`): one segmented pill under the title bar, with one segment per running thing (silent round, agenda item, ritual). Timers sit in tabular figures on a tinted chip, and an overrun turns red. On phones the bar scrolls sideways and keeps only the name, the time and the buttons.
+- **Canvas badges** (`placeBadge(el, 'top' | 'bottom', text, tone, run)`): features stack small pills in a row above or below an element instead of drawing their own shapes. Tones come from `TONE`, which follows the theme. The critical path is an accent bar under each step and a "◆ Critical path" badge, not red boxes.
+- **Form dialog** (`formDialog`): fields can be `half` (two share a row) and grouped under a `{ type: 'section' }` heading. The Deliver dialog uses this for *Approval* and *Payment*.
+- **Delivery cards**: `dlField(label, html)` gives one labelled line per part: Approvals, Flow, Shares, Payment, Witnesses. A feature adding to a delivery returns one of these from `DELIVERY_HOOKS.row`.
+- **Segmented control** (`.seg`): one choice among a few, each with its count. It is used for the stances on a decision, and secondary actions sit below it as quiet links.
+- **Next up** (Work panel): what can start now, and the critical path drawn as a chain of steps.
 
 ## Canvas rendering
 

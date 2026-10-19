@@ -77,8 +77,7 @@ RENDER_HOOKS.screen.push(() => {
     const parts = ['agree', 'disagree', 'unsure', 'alt'].filter(k => c.c[k]).map(k => `${c.c[k]}${STANCES[k].mark}`);
     if (!parts.length) continue;
     const tone = c.level ? LEVEL[c.level][1] : null;
-    ctx.font = `600 11px ${FONTS.sans}`; const w = ctx.measureText(parts.join(' ')).width + 14;
-    drawBadge(sb.x + sb.w - w, sb.y - 24, parts.join(' '), tone, () => stanceMenu([t], cv, { x: sb.x + sb.w - w, y: sb.y - 2 }));
+    placeBadge(el, 'top', parts.join('  '), tone, () => stanceMenu([t], cv, { x: sb.x, y: sb.y - 2 }));
   }
 });
 

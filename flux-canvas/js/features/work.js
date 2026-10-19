@@ -10,6 +10,8 @@
 // APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}[-P-{payment terms seen}][-G-{approvals seen}]-Z-T-SIG
 //   counts only from approvers named on the delivery, and only when H matches; latest per approver wins. P binds the approval to
 //   the payment terms on screen (features/payouts); G lists the approvals it came after (ordered flows, features/flows)
+// one labelled line of a delivery card (Approvals, Flow, Shares, Payment, Witnesses): features return these from DELIVERY_HOOKS.row
+const dlField = (label, html) => `<div class="wk-kv"><span class="k">${esc(label)}</span><div class="v">${html}</div></div>`;
 const WORK_SECTIONS = [];   // () → HTML sections other features add to the Work panel (features/taskflow)
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
 registerRecord('TASK', { parse(r, f){ must(isCid(f.R) && ['todo', 'doing', 'done', 'x'].includes(f.S), 'task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; must(!r.owner || isKey(r.owner), 'task owner'); r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
@@ -110,31 +112,19 @@ KEY_HOOKS.push((e, c) => {   // K: make the selection a task, or move it to the 
 });
 
 /* task chips under the element's right edge: status (click to advance), owner, due date */
-let taskChips = [];
+// the task's status sits in the row under the element (click to move it along), with its owner's initials
 RENDER_HOOKS.screen.push(() => {
-  taskChips = [];
   if (!S.D.tasks?.size) return;
-  ctx.font = `600 11px ${FONTS.sans}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
   for (const [cid, t] of S.D.tasks){
     const el = S.records.get(cid); if (!el || !visible(el)) continue;
-    const b = box(el); if (!b) continue;
-    const s = toScreen(b.x + b.w, b.y + b.h); if (s.x < -50 || s.y < -30 || s.x > innerWidth + 300 || s.y > innerHeight + 30) continue;
-    const label = `${STATUS[t.status].icon} ${STATUS[t.status].name}${t.due ? ' · ' + dueText(t.due) : ''}`, w = ctx.measureText(label).width + 16, ow = t.owner ? 22 : 0;
-    let x = s.x - w - ow, y = s.y + 5;
-    const done = t.status === 'done', late = overdue(t);
-    rr(ctx, x, y, w, 20, 10); ctx.fillStyle = done ? TH.ink : late ? '#fde2e1' : TH.panel; ctx.fill();
-    ctx.lineWidth = 1; ctx.strokeStyle = done ? TH.ink : late ? '#d1242f' : TH.line; ctx.stroke();
-    ctx.fillStyle = done ? TH.paper : late ? '#a3151f' : TH.ink; ctx.fillText(label, x + 8, y + 10.5);
-    taskChips.push({ x, y, w, h: 20, cid });
-    if (t.owner){ ctx.beginPath(); ctx.arc(x + w + 12, y + 10, 10, 0, Math.PI * 2); ctx.fillStyle = `hsl(${authorHue(t.owner)} 55% 30%)`; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = `700 9px ${FONTS.sans}`; ctx.textAlign = 'center'; ctx.fillText(initials(t.owner).toUpperCase(), x + w + 12, y + 10.5); ctx.textAlign = 'left'; ctx.font = `600 11px ${FONTS.sans}`; }
-    if (done){ ctx.save(); ctx.globalAlpha = .9; const tl = toScreen(b.x, b.y); ctx.fillStyle = '#18794e'; ctx.beginPath(); ctx.arc(tl.x, tl.y, 9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tl.x - 4, tl.y); ctx.lineTo(tl.x - 1, tl.y + 3); ctx.lineTo(tl.x + 4, tl.y - 3); ctx.stroke(); ctx.restore(); }
+    const late = overdue(t), tone = t.status === 'done' ? 'good' : late ? 'bad' : t.status === 'doing' ? 'acc' : null;
+    const p = placeBadge(el, 'bottom', `${STATUS[t.status].icon} ${STATUS[t.status].name}${t.due ? ' · ' + dueText(t.due) : ''}`, tone, () => {
+      const next = t.status === 'todo' ? 'doing' : t.status === 'doing' ? 'done' : 'todo';
+      setTask([S.records.get(cid)], { status: next }).then(() => say(`${STATUS[next].name}.`));
+    }, t.owner ? 22 : 0);
+    if (p && t.owner){ const cx = p.x + p.w + 12, cy = p.y + 10; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fillStyle = `hsl(${authorHue(t.owner)} 55% 32%)`; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = TH.panel; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = `700 9px ${FONTS.sans}`; ctx.textAlign = 'center'; ctx.fillText(initials(t.owner).toUpperCase(), cx, cy + .5); ctx.textAlign = 'left'; }
   }
-});
-POINTER_HOOKS.push(e => {
-  const c = taskChips.find(c => e.clientX >= c.x && e.clientX <= c.x + c.w && e.clientY >= c.y && e.clientY <= c.y + c.h); if (!c) return false;
-  const t = S.D.tasks.get(c.cid), next = t.status === 'todo' ? 'doing' : t.status === 'doing' ? 'done' : 'todo';
-  setTask([S.records.get(c.cid)], { status: next }).then(() => say(`${STATUS[next].name}.`)); return true;
 });
 
 /* the Work panel: progress, what is whose, what is late, and deliveries waiting on people */
@@ -155,7 +145,7 @@ function paintWork(){
     const state = x.done ? '<span class="ok">Delivered ✓</span>' : x.changes.length ? '<span class="bad">Changes requested</span>' : esc(x.label || `Waiting · ${x.ok.length} of ${x.d.quorum}`);
     const extra = DELIVERY_HOOKS.row.map(h => { try { return h(x) || ''; } catch { return ''; } }).join('');
     return `<li class="wk-dl"><div class="wk-dh"><b>${esc(x.d.title || 'Delivery')}</b><span>${state}</span></div>
-      <div class="wk-ap">${x.d.approvers.map(id => { const v = x.votes.get(id); return `<span class="chip ${v ? (v.ok && v.root === x.d.root ? 'yes' : v.ok ? '' : 'no') : ''}">${esc(id === S.me.id ? 'You' : short(id))} ${v ? (v.ok ? (v.root === x.d.root ? '✓' : '≠') : '✕') : '…'}</span>`; }).join('')}</div>
+      ${dlField('Approvals', x.d.approvers.map(id => { const v = x.votes.get(id); return `<span class="chip ${v ? (v.ok && v.root === x.d.root ? 'yes' : v.ok ? '' : 'no') : 'wait'}">${esc(id === S.me.id ? 'You' : short(id))}${v ? (v.ok ? (v.root === x.d.root ? ' ✓' : ' ≠') : ' ✕') : ''}</span>`; }).join(''))}
       ${x.changes.map(a => a.note ? `<p class="wk-note">${esc(short(a.author))}: ${esc(a.note)}</p>` : '').join('')}
       ${x.blockers.length ? `<ul class="wk-block">${x.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}${extra}
       <div class="se-acts">${mine && !x.done ? `<button class="btn primary" data-ap="${x.d.cid}">${myVote?.ok ? 'Approved' : 'Approve'}</button><button class="btn" data-ch="${x.d.cid}">Request changes</button>` : ''}
@@ -172,7 +162,7 @@ function toggleWork(force){
   WK.on = force ?? !WK.on;
   if (WK.on){ closePanel(false); if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); if (ST.on) toggleStructure(false); }
   $('work').style.display = WK.on ? 'flex' : 'none'; $('workBtn').setAttribute('aria-expanded', String(WK.on));
-  paintWork(); if (WK.on) $('workClose').focus(); else cv.focus({ preventScroll: true });
+  paintWork(); if (WK.on) $('work').focus({ preventScroll: true }); else cv.focus({ preventScroll: true });
 }
 $('workBtn').onclick = () => toggleWork();
 $('workClose').onclick = () => toggleWork(false);
@@ -194,8 +184,9 @@ async function openDeliver(){
   const others = people().filter(id => id !== S.me.id), ext = DELIVERY_HOOKS.compose;
   const v = await formDialog('Deliver this work', [
     { id: 'title', label: 'What are you delivering?', type: 'text', value: canvasTitle() },
+    { id: 'sec-ap', label: 'Approval', type: 'section' },
     { id: 'who', label: 'Who approves it', type: 'people', value: others.length ? others : [S.me.id], options: [S.me.id, ...others], hint: 'They approve this exact version of the canvas. Work added later isn’t part of it.' },
-    { id: 'q', label: 'Approvals needed', type: 'number', value: Math.max(1, others.length || 1), min: 1 },
+    { id: 'q', label: 'Approvals needed', type: 'number', value: Math.max(1, others.length || 1), min: 1, half: true },
     ...ext.flatMap(h => { try { return h.fields() || []; } catch { return []; } }),
   ], { ok: 'Send for approval', why: 'Everyone named gets a request; when enough of them sign, the work is delivered and everyone gets a proof.' });
   if (!v) return;

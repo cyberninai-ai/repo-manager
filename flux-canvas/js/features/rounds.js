@@ -59,7 +59,7 @@ STRIP.push(() => {
   const seals = roundSeals(o.id), mine = seals.filter(x => samePerson(x.s.author, S.me.id)).length, left = o.cur.end - Date.now();
   if (left > 0){
     const who = new Set(seals.map(x => personOf(x.s.author))).size;
-    return `<span class="sp sealed">${ic('lock')}<b>Silent round</b><span>${esc(o.cur.prompt.slice(0, 48))}</span><span class="t">${clock(left)}</span><span>${o.cur.mode === 'stances' ? `${seals.length} sealed stance${seals.length === 1 ? '' : 's'}` : `you ${mine} · room ${seals.length} from ${who}`}</span>
+    return `<span class="sp sealed">${ic('lock')}<b>Silent round</b><span class="q" title="${esc(o.cur.prompt)}">${esc(o.cur.prompt.slice(0, 48))}</span><span class="t">${clock(left)}</span><span>${o.cur.mode === 'stances' ? `${seals.length} sealed stance${seals.length === 1 ? '' : 's'}` : seals.length ? `${plural(seals.length, 'idea')} sealed${mine ? ` · ${mine} yours` : ''}` : 'write in silence'}</span>
       ${o.cur.mode === 'stances' ? Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="btn" data-strip="bs-${k}" aria-label="${s.name}, sealed">${s.mark}</button>`).join('') : '<button class="btn" data-strip="idea">Add idea</button>'}
       ${samePerson(o.first.author, S.me.id) ? '<button class="btn" data-strip="endround">End now</button>' : ''}</span>`;
   }

@@ -26,6 +26,9 @@ setInterval(() => {
   if (Date.now() - mismatchSince > 2500 && Date.now() - lastResync > 6000){ lastResync = Date.now(); sendHello(false); }
 }, 1000);
 
+// the team tools of one hub group as tiles, each with its live status
+const featureTiles = g => FEATURES.filter(f => f.group === g && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {}
+  return `<button class="se-tile${st ? ' on' : ''}" data-feature="${f.id}">${ic(f.icon)}<span>${esc(f.name)}${st ? `<small><i class="mdot"> · </i>${esc(st)}</small>` : ''}</span></button>`; }).join('');
 function paintSession(){
   paintLive();
   if (!SES.open) return;
@@ -44,7 +47,7 @@ function paintSession(){
       <button class="btn sm" data-follow="${esc(id)}" aria-pressed="${S.follow === id}">${S.follow === id ? 'Following' : 'Follow'}</button></li>`).join('')}</ul>
       <button class="btn" id="seSpot">${ic('present')}Bring everyone to my view</button>` : '<p class="se-empty">Nobody else yet. Invite someone below; they appear here the moment they join.</p>'}
     <h3>Run this session</h3>
-    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'meet' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>
+    <div class="se-acts se-team">${featureTiles('meet')}</div>
     <h3>Invite people</h3>
     ${/^https?:/.test(location.href) ? `<button class="btn" id="seLink">${ic('link')}Copy invite link</button>` : ''}
     <div class="se-p2p">
@@ -62,7 +65,7 @@ function paintSession(){
     <div class="se-relay"><div class="se-row"><b>Relay</b><small>${NET.state === 'live' ? `Connected to ${esc(NET.url.replace(/^wss?:\/\//, ''))}` : NET.state === 'connecting' ? 'Reconnecting…' : 'A relay keeps the canvas available when people aren’t online at the same time.'}</small></div>
       <div class="se-acts">${NET.state === 'off' ? '<button class="btn" id="seRelay">Connect to a relay…</button>' : '<button class="btn" id="seRelayOff">Disconnect</button>'}</div></div>
     <h3>Network and identity</h3>
-    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'network' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>`;
+    <div class="se-acts se-team">${featureTiles('network')}</div>`;
   if (keep && $(keep) && keep !== 'seName') $(keep).focus();
 }
 function toggleSession(force){

@@ -46,7 +46,7 @@ DELIVERY_HOOKS.evaluate.push(x => {
   for (const [i, g] of ev.groups.entries()) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[i - 1].g.name}`);
   for (const c of ev.conds) if (c.r !== true) x.blockers.push(`${c.c?.label || c.id}: ${c.r}`);
 });
-DELIVERY_HOOKS.row.push(x => x.flow ? `<div class="wk-ap">${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}</div><small class="wk-note">Flow: ${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>` : '');
+DELIVERY_HOOKS.row.push(x => x.flow ? dlField('Flow', `${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}<small class="wk-note">${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>`) : '');
 DELIVERY_HOOKS.proof.push((x, out) => {
   if (!x.flow) return;
   out.push('', `## Approval flow — ${x.flow.flow.name}`, '', `- **Rule record:** \`${x.flow.flow.cid}\`${x.flow.flow.ordered ? ' · groups sign in order' : ''}`,
@@ -55,7 +55,7 @@ DELIVERY_HOOKS.proof.push((x, out) => {
 });
 DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
 DELIVERY_HOOKS.compose.push({
-  fields: () => flowsHere().length ? [{ id: 'flow', label: 'Approval flow', type: 'select', value: '', options: [['', 'None: the people and number above'], ...flowsHere().map(f => [f.cid, `${f.name} (${f.groups.map(g => `${g.name} ${g.need}`).join(', ')})`])], hint: 'A flow sets its own approvers, order and conditions.' }] : [],
+  fields: () => flowsHere().length ? [{ id: 'flow', label: 'Approval flow', type: 'select', value: '', options: [['', 'None: the people and number above'], ...flowsHere().map(f => [f.cid, `${f.name} (${f.groups.map(g => `${g.name} ${g.need}`).join(', ')})`])], hint: 'A flow sets its own approvers, order and conditions.', half: true }] : [],
   apply: (v, plan) => { const f = v.flow && flowsHere().find(f => f.cid === v.flow); return f ? { ...plan, approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } : plan; },
 });
 const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && r.neg === null && inView(r)).sort(byZ);
@@ -64,11 +64,12 @@ async function flowForm(){
   const ppl = people(), conds = Object.entries(FLOW_CONDITIONS);
   const v = await formDialog('New approval flow', [
     { id: 'name', label: 'Name', type: 'text', value: 'Launch approval' },
-    ...[1, 2, 3].flatMap(i => [{ id: `g${i}`, label: `Group ${i} name`, type: 'text', value: ['Engineering', 'Legal', ''][i - 1], hint: i === 3 ? 'Leave a name empty to skip that group.' : '' },
-      { id: `p${i}`, label: `Group ${i} people`, type: 'people', value: [], options: ppl }, { id: `n${i}`, label: `Group ${i}: signatures needed`, type: 'number', value: 1, min: 1 }]),
+    ...[1, 2, 3].flatMap(i => [{ id: `s${i}`, label: `Group ${i}`, type: 'section' }, { id: `g${i}`, label: 'Name', type: 'text', value: ['Engineering', 'Legal', ''][i - 1], hint: i === 3 ? 'Leave it empty to skip this group.' : '', half: true },
+      { id: `n${i}`, label: 'Signatures needed', type: 'number', value: 1, min: 1, half: true }, { id: `p${i}`, label: 'People', type: 'people', value: [], options: ppl }]),
+    { id: 's0', label: 'Rules', type: 'section' },
     { id: 'ordered', label: 'Order', type: 'select', value: '0', options: [['0', 'Groups sign in any order'], ['1', 'Groups sign in the order above']] },
     { id: 'conds', label: 'The canvas must also have', type: 'checks', value: [], options: conds.map(([k, c]) => [k, c.label]) },
-    ...(flowsHere().length ? [{ id: 'esc', label: 'If it stalls, also accept', type: 'select', value: '', options: [['', 'No escalation'], ...flowsHere().map(f => [f.cid, f.name])] }, { id: 'after', label: 'Escalate after (hours)', type: 'number', value: 48, min: 1 }] : []),
+    ...(flowsHere().length ? [{ id: 'esc', label: 'If it stalls, also accept', type: 'select', value: '', options: [['', 'No escalation'], ...flowsHere().map(f => [f.cid, f.name])], half: true }, { id: 'after', label: 'Escalate after (hours)', type: 'number', value: 48, min: 1, half: true }] : []),
   ], { ok: 'Sign the flow', why: 'A flow is a signed rule. Deliveries that use it are approved only when every group and condition is met.' });
   if (!v) return;
   const groups = [1, 2, 3].map(i => ({ name: v[`g${i}`].trim(), members: v[`p${i}`], need: Math.max(1, Math.min(v[`p${i}`].length, v[`n${i}`] || 1)) })).filter(g => g.name && g.members.length);

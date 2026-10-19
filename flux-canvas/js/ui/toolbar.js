@@ -99,10 +99,12 @@ addEventListener('wheel', hideTip, { passive: true });
 
 /* menu: role=menu, arrow keys, Home/End, Escape returns focus to the button that opened it */
 let menuItems = [], menuAnchor = null;
-function openMenu(anchor, items, at = null){
-  const m = $('menu'); menuItems = items; menuAnchor = anchor;
-  m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>' : it.head ? `<div class="mhead" role="presentation">${esc(it.head)}</div>`
-    : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
+// items: '-' (separator), {head} (a group title), or {label, icon|sw, run, on?, key?, sub? (a second, quieter line), tone? (a class)};
+// cls styles the whole menu (the Team hub lays its items out as tiles)
+function openMenu(anchor, items, at = null, cls = ''){
+  const m = $('menu'); menuItems = items; menuAnchor = anchor; m.className = cls;
+  m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>' : it.head ? `<div class="mhead${it.tone ? ' ' + it.tone : ''}" role="presentation">${esc(it.head)}</div>`
+    : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.tone ? ` class="${it.tone}"` : ''}${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}${it.sub ? `<small class="msub"><i class="mdot"> · </i>${esc(it.sub)}</small>` : ''}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
   m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
   if (at){   // a context menu opens at the pointer, flipped to stay on screen
     m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, at.x)) + 'px';

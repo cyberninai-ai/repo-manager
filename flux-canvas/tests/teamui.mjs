@@ -34,7 +34,7 @@ await A.click('#formOk'); await A.waitForTimeout(300);
 ok(await until(B, () => S.D.deliveries?.length === 1 && S.D.pays?.size === 1), 'the delivery reaches Ben with its payment terms');
 ok(await until(B, () => document.getElementById('hubN').textContent === '1'), 'Ben’s Team button counts one thing waiting for him');
 await B.click('#hubBtn'); await B.waitForTimeout(100);
-ok(await B.evaluate(() => /Needs you \(1\)/.test(document.getElementById('menu').textContent)), '“Needs you” heads the Team menu');
+ok(await B.evaluate(() => /Needs you · 1/.test(document.getElementById('menu').textContent)), '“Needs you” heads the Team menu');
 await B.locator('#menu [role^=menuitem]', { hasText: 'Approve “Homepage”' }).click(); await B.waitForTimeout(200);
 ok(await shown(B, '#work'), 'the item opens the Work panel');
 await B.locator('#work [data-ap]').first().click();

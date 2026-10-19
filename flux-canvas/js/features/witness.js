@@ -44,7 +44,7 @@ const witnessesOf = root => { const seen = new Set(); return (S.D.witnessed?.get
 const spread = ws => { if (!ws.length) return ''; const ts = ws.map(w => w.t).sort(), a = new Date(ts[0]), b = new Date(ts.at(-1)); const f = d => d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); return f(a) === f(b) ? f(a) : `${f(a)} – ${f(b)}`; };
 DELIVERY_HOOKS.row.push(x => {
   const ws = witnessesOf(x.d.root), me = (S.D.witnessed?.get(x.d.root) || []).some(w => samePerson(w.author, S.me.id));
-  return `<div class="row2">${ws.length ? `<span class="pill good">${ic('stamp')}Witnessed by ${ws.length}</span><small>${ws.map(w => esc(whoName(w.author))).join(', ')} · ${spread(ws)}</small>` : '<small>No witnesses yet.</small>'}${me ? '' : `<button class="btn" data-witness="${x.d.cid}">Witness this version</button>`}</div>`;
+  return dlField('Witnesses', `${ws.length ? `<span class="pill good">${ic('stamp')}Witnessed by ${ws.length}</span><small>${ws.map(w => esc(whoName(w.author))).join(', ')} · ${spread(ws)}</small>` : '<small>None yet</small>'}${me ? '' : `<button class="btn" data-witness="${x.d.cid}">Witness</button>`}`);
 });
 DELIVERY_HOOKS.proof.push((x, out) => {
   const ws = witnessesOf(x.d.root); if (!ws.length) return;

@@ -540,12 +540,31 @@ body.history #tools{opacity:.45;pointer-events:none}
 .em-name:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px var(--accent-weak)}
 #menu .mhead{font-size:11px;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px 10px 3px}
 #menu .mhead:first-child{padding-top:3px}
+#menu .msub{color:var(--muted)} #menu .mdot{font-style:normal}
+/* the Team hub: features as two columns of tiles, "Needs you" on top as a highlighted band */
+#menu.hub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 4px;width:min(540px,calc(100vw - 16px));padding:8px}
+#menu.hub .mhead{grid-column:1/-1;padding:10px 8px 4px}
+#menu.hub .mhead:first-child{padding-top:2px}
+#menu.hub .mhead.mneed{color:var(--cyan)}
+#menu.hub [role^=menuitem]{height:auto;min-height:44px;padding:6px 8px;align-items:center;gap:10px;border-radius:9px}
+#menu.hub [role^=menuitem] > .ic{flex:none;width:30px;height:30px;padding:7px;border-radius:8px;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line2);color:var(--ink)}
+#menu.hub [role^=menuitem] span{display:flex;flex-direction:column;min-width:0;line-height:1.25;font-weight:550}
+#menu.hub .msub{display:block;font-size:11.5px;font-weight:450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)} #menu.hub .mlive .msub{color:var(--cyan)} #menu.hub .mdot{display:none}
+#menu.hub button.mneed{grid-column:1/-1;background:var(--accent-weak)}
+#menu.hub button.mneed + button.mneed{margin-top:2px}
+#menu.hub button.mneed > .ic{background:var(--panel);color:var(--cyan);box-shadow:inset 0 0 0 1px var(--accent-line)}
+#menu.hub button.mneed:hover,#menu.hub button.mneed:focus{background:color-mix(in srgb,var(--cyan) 16%,var(--panel))}
 /* form dialog */
 #formDlg{position:fixed;inset:0;z-index:32;display:none;background:var(--scrim);backdrop-filter:blur(3px)}
 #formDlg .dlg{position:absolute;left:50%;top:10vh;transform:translateX(-50%);width:min(480px,calc(100% - 32px));max-height:80vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:18px 20px}
 #formDlg h2{margin:0 0 4px;font-size:16px}
 #formDlg .why{color:var(--muted);font-size:13px;margin:0 0 12px}
-#formDlg .ff{display:grid;gap:4px;margin:0 0 12px;border:0;padding:0}
+#formBody{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}
+#formBody > *{grid-column:1/-1} #formBody > .half{grid-column:auto}
+#formDlg .ff{display:grid;gap:4px;margin:0 0 12px;border:0;padding:0;min-width:0}
+#formDlg .ff-sec{font-size:11px;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:6px 0 8px;padding-top:12px;border-top:1px solid var(--line2)}
+#formDlg .ff-sec:first-child{border-top:0;padding-top:0;margin-top:0}
+@media (max-width:420px){ #formBody > .half{grid-column:1/-1} }
 #formDlg .ff label,#formDlg legend{font-size:13px;font-weight:600;padding:0}
 #formDlg .ff small,.ff-info{color:var(--muted);font-size:12px;margin:0 0 10px}
 #formDlg input:not([type=checkbox]),#formDlg select,#formDlg textarea{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
@@ -555,6 +574,25 @@ body.history #tools{opacity:.45;pointer-events:none}
 #formDlg input[type=checkbox]{accent-color:var(--cyan)}
 #formDlg .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 /* feature panels (ui/panels) */
+.fx:focus,.wk:focus{outline:none} :is(.fx,.wk) h2{gap:10px} :is(.fx,.wk) h2 > span{flex:1;min-width:0}
+:is(.fx,.wk) .pxi{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent-weak);color:var(--cyan);flex:none} :is(.fx,.wk) .pxi .ic{width:16px;height:16px}
+/* a delivery card: one labelled line per part (approvals, flow, shares, payment, witnesses) */
+.wk-kv{display:grid;grid-template-columns:82px minmax(0,1fr);gap:8px;align-items:start;font-size:12.5px;padding-top:8px;border-top:1px solid var(--line2)}
+.wk-kv > .k{color:var(--muted);font-size:11.5px;font-weight:600;padding-top:4px;line-height:1.3}
+.wk-kv > .v{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0} .wk-kv > .v small{color:var(--muted);font-size:12px}
+.wk-kv .btn{height:26px;font-size:12px;padding:0 10px} .wk-kv .chip{height:24px;font-size:11.5px;cursor:default}
+.wk-ap .chip.wait,.wk-kv .chip.wait{color:var(--muted);border-style:dashed}
+/* the Work panel's "Next up" card: what can start, and the chain of steps that sets the date */
+.tf-card{border:1px solid var(--accent-line);background:color-mix(in srgb,var(--accent-weak) 55%,var(--panel));border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.tf-h{display:flex;align-items:center;gap:6px;font-size:13px} .tf-h b{margin-right:2px}
+.tf-sub{font-size:11px;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tf-chain{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.tf-step{display:flex;align-items:center;gap:10px;width:100%;min-height:34px;padding:4px 6px;border:0;border-radius:8px;background:transparent;text-align:left;font-size:13px;cursor:pointer;position:relative}
+.tf-step:hover{background:var(--panel)} .tf-step .wk-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tf-step small{color:var(--muted);font-size:11px} .tf-step.ready small{color:var(--cyan);font-weight:600}
+.tf-step > i{width:10px;height:10px;border-radius:50%;border:2px solid var(--cyan);background:var(--panel);flex:none;z-index:1} .tf-step.ready > i{background:var(--cyan)}
+.tf-chain:not(.loose) li:not(:last-child) .tf-step::after{content:'';position:absolute;left:10px;top:calc(50% + 5px);height:calc(100% - 10px);width:2px;background:var(--accent-line)}
+.tf-step .av{width:20px;height:20px;font-size:9px}
 .fx .fx-body{display:flex;flex-direction:column;gap:10px;padding:12px}
 .fx h3{margin:6px 0 0;font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px;align-items:center}
 .fx h3 .n{font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
@@ -568,6 +606,17 @@ body.history #tools{opacity:.45;pointer-events:none}
 .fx .card .hd b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .fx .row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
 .fx .acts{display:flex;gap:6px;flex-wrap:wrap}
+/* a segmented control: one choice of a few, each with its count (stances on a decision) */
+.fx .seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel2)}
+.fx .seg button{display:flex;align-items:center;justify-content:center;gap:4px;height:32px;border:0;border-left:1px solid var(--line);background:transparent;font:inherit;font-size:12px;color:var(--ink);cursor:pointer;padding:0 4px;white-space:nowrap}
+.fx .seg button:first-child{border-left:0} .fx .seg button:hover{background:var(--hover)}
+.fx .seg button b{font-weight:650;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fx .seg button[aria-pressed="true"]{background:var(--panel);box-shadow:inset 0 -2px 0 var(--cyan);color:var(--cyan)}
+.fx .seg button.good[aria-pressed="true"]{color:var(--green);box-shadow:inset 0 -2px 0 var(--green)} .fx .seg button.bad[aria-pressed="true"]{color:var(--red);box-shadow:inset 0 -2px 0 var(--red)} .fx .seg button.warn[aria-pressed="true"]{color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
+.fx .dec-ev{display:flex;flex-wrap:wrap;gap:5px;align-items:center} .fx .dec-ev small{margin-right:2px}
+.fx .ev{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;height:24px;padding:0 9px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
+.fx .ev:hover{border-color:var(--accent-line);color:var(--cyan)}
+.fx .dec-foot{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding-top:6px;border-top:1px solid var(--line2)} .fx .dec-foot .link{font-size:12.5px;display:inline-flex;gap:4px;align-items:center} .fx .dec-foot .link .ic{width:14px;height:14px}
 .fx .btn{height:30px;font-size:12.5px} .fx .btn .ic{width:15px;height:15px}
 .fx .btn[aria-pressed="true"]{background:var(--accent-weak);border-color:var(--accent-line);color:var(--cyan)}
 .fx ul.plain{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -588,15 +637,18 @@ body.history #tools{opacity:.45;pointer-events:none}
 .pill.bad{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
 .pill.acc{color:var(--cyan);border-color:var(--accent-line);background:var(--accent-weak)}
 .wk-block{margin:0;padding-left:18px;font-size:12px;color:var(--amber)}
-/* the session strip: what the room is doing right now (agenda item, timebox, silent round, ritual) */
-#strip{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(12px,env(safe-area-inset-top)) + 54px);z-index:5;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:none;max-width:calc(100% - 24px)}
-#strip > *{pointer-events:auto}
-#strip .sp{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 12px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);font-size:12.5px}
-#strip .sp b{font-weight:650} #strip .sp .t{font-variant-numeric:tabular-nums;color:var(--muted)}
-#strip .sp.over{border-color:var(--red)} #strip .sp.over .t{color:var(--red);font-weight:700}
-#strip .sp.sealed{border-color:var(--accent-line);background:var(--accent-weak)}
-#strip .sp .btn{height:24px;font-size:12px;padding:0 8px;border-radius:12px}
-#strip .sp:not(:has(.btn)){padding-right:12px}
+/* the session bar: what the room is doing right now (agenda item, timebox, silent round, ritual), one quiet segmented pill */
+#strip{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(12px,env(safe-area-inset-top)) + 56px);z-index:5;display:flex;justify-content:center;pointer-events:none;max-width:calc(100% - 24px)}
+#strip .bar{pointer-events:auto;display:flex;align-items:center;max-width:100%;overflow-x:auto;scrollbar-width:none;padding:3px;border-radius:19px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+#strip .sp{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 4px 0 10px;font-size:12.5px;white-space:nowrap;flex:none}
+#strip .sp + .sp{border-left:1px solid var(--line2);margin-left:2px;padding-left:12px}
+#strip .sp .ic{width:15px;height:15px;color:var(--muted)} #strip .sp b{font-weight:650}
+#strip .sp .q{color:var(--muted);max-width:28ch;overflow:hidden;text-overflow:ellipsis}
+#strip .sp .t{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;padding:1px 7px;border-radius:9px;background:var(--panel2)}
+#strip .sp.over .t{color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--panel))}
+#strip .sp.sealed .ic{color:var(--cyan)} #strip .sp .btn{height:26px;font-size:12px;padding:0 10px;border-radius:13px}
+#strip .sp:not(:has(.btn)){padding-right:10px}
+@media (max-width:640px){ #strip{top:calc(max(10px,env(safe-area-inset-top)) + 52px);max-width:calc(100% - 20px)} #strip .sp .q,#strip .sp > span:not(.t):not(.q){display:none} #strip .sp{font-size:12px;gap:6px} }
 body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 /* replay */
 #history select{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
@@ -606,7 +658,13 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 #history .rp-marks .pill:hover{background:var(--hover)}
 .fx details summary{cursor:pointer;font-size:13px;font-weight:600}
 /* the live session panel launches the meeting and network features */
-#session .se-team{gap:6px} #session .se-team .btn{height:30px;font-size:12.5px} #session .se-team small{color:var(--muted)}
+#session .se-team{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#session .se-tile{display:flex;align-items:center;gap:9px;min-height:46px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font:inherit;font-size:12.5px;font-weight:550;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
+#session .se-tile:hover{background:var(--hover)} #session .se-tile .ic{width:16px;height:16px;flex:none;color:var(--muted)}
+#session .se-tile span{display:flex;flex-direction:column;min-width:0;line-height:1.25} #session .se-tile small{font-size:11px;font-weight:450;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #session .se-tile .mdot{display:none}
+#session .se-tile.on{border-color:var(--accent-line);background:var(--accent-weak)} #session .se-tile.on .ic{color:var(--cyan)}
+.fx .cl-sum{display:grid;gap:8px} .fx .cl-bar{display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden}
+.fx .cl-bar i{min-width:4px;background:var(--faint)} .fx .cl-bar i.good{background:var(--green)} .fx .cl-bar i.acc{background:var(--cyan)} .fx .cl-bar i.warn{background:var(--amber)} .fx .cl-bar i.bad{background:var(--red)}
 </style>
 </head>
 <body>
@@ -849,9 +907,9 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
   <header><h2 id="sessionT">Live session</h2><button class="ibtn sm" id="sessionClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
   <div id="sessionBody"></div>
 </section>
-<aside class="ledger wk" id="work" aria-label="Work">
+<aside class="ledger wk" id="work" aria-label="Work" tabindex="-1">
   <header>
-    <h2><span>Work</span><button class="ibtn sm" id="workClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
+    <h2><i class="pxi" aria-hidden="true"><svg class="ic"><use href="#i-check"/></svg></i><span>Work</span><button class="ibtn sm" id="workClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
     <div class="stats">Tasks, who owns them, and deliveries approved by the people you name.</div>
   </header>
   <div class="list" id="workBody"></div>
@@ -5640,6 +5698,9 @@ setInterval(() => {
   if (Date.now() - mismatchSince > 2500 && Date.now() - lastResync > 6000){ lastResync = Date.now(); sendHello(false); }
 }, 1000);
 
+// the team tools of one hub group as tiles, each with its live status
+const featureTiles = g => FEATURES.filter(f => f.group === g && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {}
+  return `<button class="se-tile${st ? ' on' : ''}" data-feature="${f.id}">${ic(f.icon)}<span>${esc(f.name)}${st ? `<small><i class="mdot"> · </i>${esc(st)}</small>` : ''}</span></button>`; }).join('');
 function paintSession(){
   paintLive();
   if (!SES.open) return;
@@ -5658,7 +5719,7 @@ function paintSession(){
       <button class="btn sm" data-follow="${esc(id)}" aria-pressed="${S.follow === id}">${S.follow === id ? 'Following' : 'Follow'}</button></li>`).join('')}</ul>
       <button class="btn" id="seSpot">${ic('present')}Bring everyone to my view</button>` : '<p class="se-empty">Nobody else yet. Invite someone below; they appear here the moment they join.</p>'}
     <h3>Run this session</h3>
-    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'meet' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>
+    <div class="se-acts se-team">${featureTiles('meet')}</div>
     <h3>Invite people</h3>
     ${/^https?:/.test(location.href) ? `<button class="btn" id="seLink">${ic('link')}Copy invite link</button>` : ''}
     <div class="se-p2p">
@@ -5676,7 +5737,7 @@ function paintSession(){
     <div class="se-relay"><div class="se-row"><b>Relay</b><small>${NET.state === 'live' ? `Connected to ${esc(NET.url.replace(/^wss?:\/\//, ''))}` : NET.state === 'connecting' ? 'Reconnecting…' : 'A relay keeps the canvas available when people aren’t online at the same time.'}</small></div>
       <div class="se-acts">${NET.state === 'off' ? '<button class="btn" id="seRelay">Connect to a relay…</button>' : '<button class="btn" id="seRelayOff">Disconnect</button>'}</div></div>
     <h3>Network and identity</h3>
-    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'network' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>`;
+    <div class="se-acts se-team">${featureTiles('network')}</div>`;
   if (keep && $(keep) && keep !== 'seName') $(keep).focus();
 }
 function toggleSession(force){
@@ -5886,6 +5947,8 @@ PALETTE_HOOKS.push(add => add('view', 'Outline of the canvas', () => toggleStruc
 // APPROVE-I-R-{delivery}-H-{root as the approver computed it}-S-{1 approve|0 request changes}-M-{note}[-P-{payment terms seen}][-G-{approvals seen}]-Z-T-SIG
 //   counts only from approvers named on the delivery, and only when H matches; latest per approver wins. P binds the approval to
 //   the payment terms on screen (features/payouts); G lists the approvals it came after (ordered flows, features/flows)
+// one labelled line of a delivery card (Approvals, Flow, Shares, Payment, Witnesses): features return these from DELIVERY_HOOKS.row
+const dlField = (label, html) => `<div class="wk-kv"><span class="k">${esc(label)}</span><div class="v">${html}</div></div>`;
 const WORK_SECTIONS = [];   // () → HTML sections other features add to the Work panel (features/taskflow)
 const STATUS = { todo: { name: 'To do', icon: '○' }, doing: { name: 'Doing', icon: '◐' }, done: { name: 'Done', icon: '✓' } };
 registerRecord('TASK', { parse(r, f){ must(isCid(f.R) && ['todo', 'doing', 'done', 'x'].includes(f.S), 'task'); r.status = f.S; r.owner = f.A && f.A !== '0' ? f.A : null; must(!r.owner || isKey(r.owner), 'task owner'); r.due = /^\d{8}$/.test(f.D || '') ? f.D : null; } });
@@ -5986,31 +6049,19 @@ KEY_HOOKS.push((e, c) => {   // K: make the selection a task, or move it to the 
 });
 
 /* task chips under the element's right edge: status (click to advance), owner, due date */
-let taskChips = [];
+// the task's status sits in the row under the element (click to move it along), with its owner's initials
 RENDER_HOOKS.screen.push(() => {
-  taskChips = [];
   if (!S.D.tasks?.size) return;
-  ctx.font = `600 11px ${FONTS.sans}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
   for (const [cid, t] of S.D.tasks){
     const el = S.records.get(cid); if (!el || !visible(el)) continue;
-    const b = box(el); if (!b) continue;
-    const s = toScreen(b.x + b.w, b.y + b.h); if (s.x < -50 || s.y < -30 || s.x > innerWidth + 300 || s.y > innerHeight + 30) continue;
-    const label = `${STATUS[t.status].icon} ${STATUS[t.status].name}${t.due ? ' · ' + dueText(t.due) : ''}`, w = ctx.measureText(label).width + 16, ow = t.owner ? 22 : 0;
-    let x = s.x - w - ow, y = s.y + 5;
-    const done = t.status === 'done', late = overdue(t);
-    rr(ctx, x, y, w, 20, 10); ctx.fillStyle = done ? TH.ink : late ? '#fde2e1' : TH.panel; ctx.fill();
-    ctx.lineWidth = 1; ctx.strokeStyle = done ? TH.ink : late ? '#d1242f' : TH.line; ctx.stroke();
-    ctx.fillStyle = done ? TH.paper : late ? '#a3151f' : TH.ink; ctx.fillText(label, x + 8, y + 10.5);
-    taskChips.push({ x, y, w, h: 20, cid });
-    if (t.owner){ ctx.beginPath(); ctx.arc(x + w + 12, y + 10, 10, 0, Math.PI * 2); ctx.fillStyle = `hsl(${authorHue(t.owner)} 55% 30%)`; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = `700 9px ${FONTS.sans}`; ctx.textAlign = 'center'; ctx.fillText(initials(t.owner).toUpperCase(), x + w + 12, y + 10.5); ctx.textAlign = 'left'; ctx.font = `600 11px ${FONTS.sans}`; }
-    if (done){ ctx.save(); ctx.globalAlpha = .9; const tl = toScreen(b.x, b.y); ctx.fillStyle = '#18794e'; ctx.beginPath(); ctx.arc(tl.x, tl.y, 9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tl.x - 4, tl.y); ctx.lineTo(tl.x - 1, tl.y + 3); ctx.lineTo(tl.x + 4, tl.y - 3); ctx.stroke(); ctx.restore(); }
+    const late = overdue(t), tone = t.status === 'done' ? 'good' : late ? 'bad' : t.status === 'doing' ? 'acc' : null;
+    const p = placeBadge(el, 'bottom', `${STATUS[t.status].icon} ${STATUS[t.status].name}${t.due ? ' · ' + dueText(t.due) : ''}`, tone, () => {
+      const next = t.status === 'todo' ? 'doing' : t.status === 'doing' ? 'done' : 'todo';
+      setTask([S.records.get(cid)], { status: next }).then(() => say(`${STATUS[next].name}.`));
+    }, t.owner ? 22 : 0);
+    if (p && t.owner){ const cx = p.x + p.w + 12, cy = p.y + 10; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fillStyle = `hsl(${authorHue(t.owner)} 55% 32%)`; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = TH.panel; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = `700 9px ${FONTS.sans}`; ctx.textAlign = 'center'; ctx.fillText(initials(t.owner).toUpperCase(), cx, cy + .5); ctx.textAlign = 'left'; }
   }
-});
-POINTER_HOOKS.push(e => {
-  const c = taskChips.find(c => e.clientX >= c.x && e.clientX <= c.x + c.w && e.clientY >= c.y && e.clientY <= c.y + c.h); if (!c) return false;
-  const t = S.D.tasks.get(c.cid), next = t.status === 'todo' ? 'doing' : t.status === 'doing' ? 'done' : 'todo';
-  setTask([S.records.get(c.cid)], { status: next }).then(() => say(`${STATUS[next].name}.`)); return true;
 });
 
 /* the Work panel: progress, what is whose, what is late, and deliveries waiting on people */
@@ -6031,7 +6082,7 @@ function paintWork(){
     const state = x.done ? '<span class="ok">Delivered ✓</span>' : x.changes.length ? '<span class="bad">Changes requested</span>' : esc(x.label || `Waiting · ${x.ok.length} of ${x.d.quorum}`);
     const extra = DELIVERY_HOOKS.row.map(h => { try { return h(x) || ''; } catch { return ''; } }).join('');
     return `<li class="wk-dl"><div class="wk-dh"><b>${esc(x.d.title || 'Delivery')}</b><span>${state}</span></div>
-      <div class="wk-ap">${x.d.approvers.map(id => { const v = x.votes.get(id); return `<span class="chip ${v ? (v.ok && v.root === x.d.root ? 'yes' : v.ok ? '' : 'no') : ''}">${esc(id === S.me.id ? 'You' : short(id))} ${v ? (v.ok ? (v.root === x.d.root ? '✓' : '≠') : '✕') : '…'}</span>`; }).join('')}</div>
+      ${dlField('Approvals', x.d.approvers.map(id => { const v = x.votes.get(id); return `<span class="chip ${v ? (v.ok && v.root === x.d.root ? 'yes' : v.ok ? '' : 'no') : 'wait'}">${esc(id === S.me.id ? 'You' : short(id))}${v ? (v.ok ? (v.root === x.d.root ? ' ✓' : ' ≠') : ' ✕') : ''}</span>`; }).join(''))}
       ${x.changes.map(a => a.note ? `<p class="wk-note">${esc(short(a.author))}: ${esc(a.note)}</p>` : '').join('')}
       ${x.blockers.length ? `<ul class="wk-block">${x.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}${extra}
       <div class="se-acts">${mine && !x.done ? `<button class="btn primary" data-ap="${x.d.cid}">${myVote?.ok ? 'Approved' : 'Approve'}</button><button class="btn" data-ch="${x.d.cid}">Request changes</button>` : ''}
@@ -6048,7 +6099,7 @@ function toggleWork(force){
   WK.on = force ?? !WK.on;
   if (WK.on){ closePanel(false); if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); if (ST.on) toggleStructure(false); }
   $('work').style.display = WK.on ? 'flex' : 'none'; $('workBtn').setAttribute('aria-expanded', String(WK.on));
-  paintWork(); if (WK.on) $('workClose').focus(); else cv.focus({ preventScroll: true });
+  paintWork(); if (WK.on) $('work').focus({ preventScroll: true }); else cv.focus({ preventScroll: true });
 }
 $('workBtn').onclick = () => toggleWork();
 $('workClose').onclick = () => toggleWork(false);
@@ -6070,8 +6121,9 @@ async function openDeliver(){
   const others = people().filter(id => id !== S.me.id), ext = DELIVERY_HOOKS.compose;
   const v = await formDialog('Deliver this work', [
     { id: 'title', label: 'What are you delivering?', type: 'text', value: canvasTitle() },
+    { id: 'sec-ap', label: 'Approval', type: 'section' },
     { id: 'who', label: 'Who approves it', type: 'people', value: others.length ? others : [S.me.id], options: [S.me.id, ...others], hint: 'They approve this exact version of the canvas. Work added later isn’t part of it.' },
-    { id: 'q', label: 'Approvals needed', type: 'number', value: Math.max(1, others.length || 1), min: 1 },
+    { id: 'q', label: 'Approvals needed', type: 'number', value: Math.max(1, others.length || 1), min: 1, half: true },
     ...ext.flatMap(h => { try { return h.fields() || []; } catch { return []; } }),
   ], { ok: 'Send for approval', why: 'Everyone named gets a request; when enough of them sign, the work is delivered and everyone gets a proof.' });
   if (!v) return;
@@ -6134,8 +6186,8 @@ let panelOpen = null;
 // p: { id, title, blurb, paint(body), click?(e, button), change?(e), onOpen?(), onClose?(), live?: false to skip repaint on change }
 function registerPanel(p){
   const el = document.createElement('aside');
-  el.className = 'ledger fx'; el.id = 'px-' + p.id; el.setAttribute('aria-label', p.title); el.style.display = 'none';
-  el.innerHTML = `<header><h2><span>${esc(p.title)}</span><button class="ibtn sm" data-close aria-label="Close ${esc(p.title)}">${ic('x')}</button></h2>
+  el.className = 'ledger fx'; el.id = 'px-' + p.id; el.setAttribute('aria-label', p.title); el.tabIndex = -1; el.style.display = 'none';
+  el.innerHTML = `<header><h2><i class="pxi" aria-hidden="true"></i><span>${esc(p.title)}</span><button class="ibtn sm" data-close aria-label="Close ${esc(p.title)}">${ic('x')}</button></h2>
     ${p.blurb ? `<div class="stats">${esc(p.blurb)}</div>` : ''}</header><div class="list fx-body"></div>`;
   document.body.appendChild(el);
   el.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closePanel(); });
@@ -6148,8 +6200,10 @@ function openPanel(id){
   const p = PANELS.get(id); if (!p) return;
   closeOlderPanels();
   if (panelOpen && panelOpen !== id) closePanel(false);
+  const icon = p.el.querySelector('.pxi'); if (!icon.firstChild) icon.innerHTML = ic(p.icon || FEATURES.find(f => f.id === p.id)?.icon || 'blank');
   panelOpen = id; p.el.style.display = 'flex'; p.onOpen?.(); paintPanel(id);
-  setTimeout(() => (p.el.querySelector('[data-autofocus]') || p.el.querySelector('[data-close]')).focus(), 0);
+  // focus lands on the panel itself (Tab then walks it), not on a button that would wear a focus ring for no reason
+  setTimeout(() => (p.el.querySelector('[data-autofocus]') || p.el).focus({ preventScroll: true }), 0);
 }
 function closePanel(back = true){
   const p = PANELS.get(panelOpen); if (!p) return;
@@ -6186,16 +6240,33 @@ function goTo(cid){ const el = current(cid); if (!el) return; S.sel = new Set([e
 const when = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
 const plural = (n, w, pl = w + 's') => `${n} ${n === 1 ? w : pl}`;
 
-/* canvas badges: small labels team features draw beside elements (screen pixels), clickable */
+/* canvas badges: small labels team features draw beside elements (screen pixels), clickable. One look for all of them:
+   rounded, 20 px, a tone per meaning, readable in both themes; placeBadge lines them up in a row above or below an element */
 const BADGES = [];   // this frame's clickable badges: { x, y, w, h, run }
-const TONE = { good: ['#e3f4ea', '#14633f'], warn: ['#fdf0dc', '#7a4404'], bad: ['#fde2e1', '#a3151f'], acc: ['#eceafd', '#4a43c9'], ink: ['#1d2129', '#ffffff'] };
+const TONE_LIGHT = { good: ['#e3f4ea', '#14633f'], warn: ['#fdf0dc', '#7a4404'], bad: ['#fde2e1', '#a3151f'], acc: ['#eceafd', '#4a43c9'], ink: ['#1d2129', '#ffffff'] };
+const TONE_DARK = { good: ['#173a2a', '#8fe0b2'], warn: ['#3d2e14', '#f3c483'], bad: ['#43201f', '#ffa3a0'], acc: ['#2a2853', '#c5c0ff'], ink: ['#eceef3', '#16181d'] };
+const TONE = new Proxy({}, { get: (_, k) => (isDarkTheme() ? TONE_DARK : TONE_LIGHT)[k] });
+let darkMemo = { paper: null, dark: false };
+function isDarkTheme(){ if (darkMemo.paper !== TH.paper){ const m = (TH.paper || '#fff').match(/\w\w/g) || ['ff', 'ff', 'ff']; const [r, g, b] = m.slice(-3).map(h => parseInt(h, 16)); darkMemo = { paper: TH.paper, dark: (r * 299 + g * 587 + b * 114) / 1000 < 128 }; } return darkMemo.dark; }
 function drawBadge(x, y, text, tone = null, run = null){
   ctx.font = `600 11px ${FONTS.sans}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  const w = Math.ceil(ctx.measureText(text).width) + 14, [bg, fg] = tone ? TONE[tone] : [TH.panel, TH.ink];
-  rr(ctx, x, y, w, 20, 10); ctx.fillStyle = bg; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = tone ? fg : TH.line; ctx.globalAlpha *= tone ? .35 : 1; ctx.stroke(); ctx.globalAlpha = 1;
-  ctx.fillStyle = fg; ctx.fillText(text, x + 7, y + 10.5);
+  const w = Math.ceil(ctx.measureText(text).width) + 16, [bg, fg] = tone ? TONE[tone] : [TH.panel, TH.ink];
+  ctx.save();
+  if (!isDarkTheme()){ ctx.shadowColor = 'rgba(20,22,30,.10)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 1; }
+  rr(ctx, x, y, w, 20, 10); ctx.fillStyle = bg; ctx.fill(); ctx.restore();
+  rr(ctx, x + .5, y + .5, w - 1, 19, 9.5); ctx.lineWidth = 1; ctx.strokeStyle = tone ? fg : TH.line; ctx.globalAlpha = tone ? .28 : 1; ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.fillStyle = fg; ctx.fillText(text, x + 8, y + 10.5);
   if (run) BADGES.push({ x, y, w, h: 20, run });
   return w;
+}
+// badges in a row: 'top' sits above the element, 'bottom' below it; each feature adds to the row in turn, so nothing overlaps
+const BADGE_ROWS = new Map();
+function placeBadge(el, row, text, tone = null, run = null, extra = 0){
+  const sb = screenBox(el); if (!sb) return null;
+  const key = el.cid + row, used = BADGE_ROWS.get(key) || 0;
+  const x = sb.x + used, y = row === 'top' ? sb.y - 26 : sb.y + sb.h + 6, w = drawBadge(x, y, text, tone, run);
+  BADGE_ROWS.set(key, used + w + extra + 5);
+  return { x, y, w, sb };
 }
 // an element's box on screen, or null when it is off screen or hidden
 function screenBox(el){
@@ -6204,11 +6275,12 @@ function screenBox(el){
   if (c.x < -80 || c.y < -40 || a.x > innerWidth + 80 || a.y > innerHeight + 40) return null;
   return { x: a.x, y: a.y, w: c.x - a.x, h: c.y - a.y };
 }
-RENDER_HOOKS.screen.unshift(() => { BADGES.length = 0; });
+RENDER_HOOKS.screen.unshift(() => { BADGES.length = 0; BADGE_ROWS.clear(); });
 POINTER_HOOKS.push(e => { const b = BADGES.find(b => e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h); if (!b) return false; b.run(e); return true; });
 // labelled fields, keyboard and screen-reader friendly, no <form> element so it works in sandboxed frames
 // @uses ui/dialogs (trapTab), ui/icons
-// fields: [{ id, label, type: text|textarea|number|date|datetime|select|people|checks|info, value, options: [[value, label]…], hint, min, max }]
+// fields: [{ id, label, type: text|textarea|number|date|datetime|select|people|checks|info|section, value, options: [[value, label]…], hint, min, max,
+//            half (two half fields share a row) }]; a section is a small heading that groups the fields after it
 let formRes = null, formBack = null;
 function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
   if (formRes) formRes(null);
@@ -6232,17 +6304,18 @@ function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
   d._fields = fields;
   d.querySelector('#formBody').innerHTML = fields.map(f => {
     const id = 'ff-' + f.id, hint = f.hint ? `<small id="${id}-h">${esc(f.hint)}</small>` : '', desc = f.hint ? ` aria-describedby="${id}-h"` : '';
-    const v = f.value ?? '';
+    const v = f.value ?? '', ff = f.half ? 'ff half' : 'ff';
+    if (f.type === 'section') return `<h3 class="ff-sec">${esc(f.label)}</h3>`;
     if (f.type === 'info') return `<p class="ff-info">${esc(f.label)}</p>`;
-    if (f.type === 'textarea') return `<div class="ff"><label for="${id}">${esc(f.label)}</label><textarea id="${id}"${desc} rows="3">${esc(v)}</textarea>${hint}</div>`;
-    if (f.type === 'select') return `<div class="ff"><label for="${id}">${esc(f.label)}</label><select id="${id}"${desc}>${f.options.map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>${hint}</div>`;
+    if (f.type === 'textarea') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><textarea id="${id}"${desc} rows="3">${esc(v)}</textarea>${hint}</div>`;
+    if (f.type === 'select') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><select id="${id}"${desc}>${f.options.map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>${hint}</div>`;
     if (f.type === 'people' || f.type === 'checks'){
       const opts = f.type === 'people' ? (f.options || []).map(k => [k, k === S.me?.id ? `${short(k)} (you)` : short(k)]) : f.options;
       const on = new Set(Array.isArray(v) ? v : []);
-      return `<fieldset class="ff"${desc}><legend>${esc(f.label)}</legend><div class="ff-checks">${opts.map(([k, l], i) => `<label><input type="checkbox" id="${id}-${i}" value="${esc(k)}"${on.has(k) ? ' checked' : ''}> ${esc(l)}</label>`).join('') || '<small>Nobody else yet.</small>'}</div>${hint}</fieldset>`;
+      return `<fieldset class="${ff}"${desc}><legend>${esc(f.label)}</legend><div class="ff-checks">${opts.map(([k, l], i) => `<label><input type="checkbox" id="${id}-${i}" value="${esc(k)}"${on.has(k) ? ' checked' : ''}> ${esc(l)}</label>`).join('') || '<small>Nobody else yet.</small>'}</div>${hint}</fieldset>`;
     }
     const type = { number: 'number', date: 'date', datetime: 'datetime-local' }[f.type] || 'text';
-    return `<div class="ff"><label for="${id}">${esc(f.label)}</label><input id="${id}" type="${type}" value="${esc(v)}"${f.min != null ? ` min="${f.min}"` : ''}${f.max != null ? ` max="${f.max}"` : ''}${desc} autocomplete="off">${hint}</div>`;
+    return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><input id="${id}" type="${type}" value="${esc(v)}"${f.min != null ? ` min="${f.min}"` : ''}${f.max != null ? ` max="${f.max}"` : ''}${desc} autocomplete="off">${hint}</div>`;
   }).join('');
   d.style.display = 'block';
   setTimeout(() => d.querySelector('#formBody input, #formBody textarea, #formBody select, #formOk')?.focus(), 0);
@@ -6251,7 +6324,7 @@ function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
 function readForm(){
   const d = $('formDlg'), out = {};
   for (const f of d._fields){
-    if (f.type === 'info') continue;
+    if (f.type === 'info' || f.type === 'section') continue;
     if (f.type === 'people' || f.type === 'checks') out[f.id] = [...d.querySelectorAll(`[id^="ff-${f.id}-"]`)].filter(c => c.checked).map(c => c.value);
     else { const el = d.querySelector('#ff-' + f.id); out[f.id] = f.type === 'number' ? Number(el.value) : el.value; }
   }
@@ -6272,17 +6345,18 @@ function paintHubBadge(){ const b = $('hubN'), n = S.me ? needsYou().length : 0;
 CHANGE_HOOKS.push(paintHubBadge); setInterval(paintHubBadge, 5000);
 function hubItems(){
   const out = [], needs = needsYou();
-  if (needs.length){ out.push({ head: `Needs you (${needs.length})` }, ...needs.slice(0, 8)); if (needs.length > 8) out.push({ label: `${needs.length - 8} more…`, icon: 'list', run: () => openMenu($('hubBtn'), needs) }); }
+  if (needs.length){ out.push({ head: `Needs you · ${needs.length}`, tone: 'mneed' }, ...needs.slice(0, 6).map(n => ({ ...n, tone: 'mneed' }))); if (needs.length > 6) out.push({ label: `${needs.length - 6} more…`, icon: 'list', tone: 'mneed', run: () => openMenu($('hubBtn'), needs) }); }
   for (const [g, title] of HUB_GROUPS){
     const fs = FEATURES.filter(f => f.group === g && f.open); if (!fs.length) continue;
     out.push({ head: title });
-    for (const f of fs){ let st = ''; try { st = f.status?.() || ''; } catch {} out.push({ label: f.name + (st ? ' · ' + st : ''), icon: f.icon, run: f.open }); }
+    for (const f of fs){ let st = ''; try { st = f.status?.() || ''; } catch {} out.push({ label: f.name, sub: st, tone: st ? 'mlive' : '', icon: f.icon, run: f.open }); }
   }
   return out;
 }
-$('hubBtn').onclick = () => $('menu').hidden ? openMenu($('hubBtn'), hubItems()) : closeMenu();
-PALETTE_HOOKS.push(add => { add('team', 'Team: what needs me', () => openMenu($('hubBtn'), hubItems())); for (const f of FEATURES) if (f.open) add('team', `${f.name}: ${f.blurb}`, f.open); });
-KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.shiftKey && e.key === 'T'){ e.preventDefault(); openMenu($('hubBtn'), hubItems()); return true; } return false; });
+const openHub = () => openMenu($('hubBtn'), hubItems(), null, 'hub');
+$('hubBtn').onclick = () => $('menu').hidden ? openHub() : closeMenu();
+PALETTE_HOOKS.push(add => { add('team', 'Team: what needs me', openHub); for (const f of FEATURES) if (f.open) add('team', `${f.name}: ${f.blurb}`, f.open); });
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.shiftKey && e.key === 'T'){ e.preventDefault(); openHub(); return true; } return false; });
 
 /* the session strip under the title bar: what the room is doing right now. Features add a chip: STRIP.push(() => html);
    buttons inside carry data-strip="action" and STRIP_ACTIONS[action](button) handles them */
@@ -6292,7 +6366,7 @@ document.body.appendChild(strip);
 let stripHTML = '';
 function paintStrip(){
   const html = STRIP.map(f => { try { return f() || ''; } catch { return ''; } }).join('');
-  if (html !== stripHTML){ const keep = document.activeElement?.closest?.('#strip [data-strip]')?.dataset.strip; stripHTML = html; strip.innerHTML = html; if (keep) strip.querySelector(`[data-strip="${keep}"]`)?.focus(); }
+  if (html !== stripHTML){ const keep = document.activeElement?.closest?.('#strip [data-strip]')?.dataset.strip; stripHTML = html; strip.innerHTML = html ? `<div class="bar">${html}</div>` : ''; if (keep) strip.querySelector(`[data-strip="${keep}"]`)?.focus(); }
 }
 strip.addEventListener('click', e => { const b = e.target.closest('[data-strip]'); if (b) STRIP_ACTIONS[b.dataset.strip]?.(b); });
 strip.addEventListener('pointerdown', e => e.stopPropagation());
@@ -6377,8 +6451,7 @@ RENDER_HOOKS.screen.push(() => {
     const parts = ['agree', 'disagree', 'unsure', 'alt'].filter(k => c.c[k]).map(k => `${c.c[k]}${STANCES[k].mark}`);
     if (!parts.length) continue;
     const tone = c.level ? LEVEL[c.level][1] : null;
-    ctx.font = `600 11px ${FONTS.sans}`; const w = ctx.measureText(parts.join(' ')).width + 14;
-    drawBadge(sb.x + sb.w - w, sb.y - 24, parts.join(' '), tone, () => stanceMenu([t], cv, { x: sb.x + sb.w - w, y: sb.y - 2 }));
+    placeBadge(el, 'top', parts.join('  '), tone, () => stanceMenu([t], cv, { x: sb.x, y: sb.y - 2 }));
   }
 });
 
@@ -6472,7 +6545,7 @@ RENDER_HOOKS.screen.push(() => {
   for (const [on, x] of S.D.decisionOf || []){
     const sb = screenBox(current(on)); if (!sb) continue;
     const c = typeof consensus === 'function' ? consensus(x.d.cid) : null;
-    drawBadge(sb.x, sb.y - 24, `⚑ Decided${reviewDue(x) ? ' · review due' : c?.level === 'split' ? ' · split' : ''}`, reviewDue(x) || c?.level === 'split' ? 'warn' : 'ink', () => { DEC.focus = x.d.cid; openPanel('decisions'); });
+    placeBadge(current(on), 'top', `⚑ Decided${reviewDue(x) ? ' · review due' : c?.level === 'split' ? ' · split' : ''}`, reviewDue(x) || c?.level === 'split' ? 'warn' : 'ink', () => { DEC.focus = x.d.cid; openPanel('decisions'); });
   }
 });
 
@@ -6487,12 +6560,12 @@ registerPanel({
       const c = consensus(x.d.cid), dis = Math.round(c.disagree * 100);
       return `<li class="card${DEC.focus === x.d.cid ? ' hot' : ''}${reviewDue(x) ? ' warn' : ''}" id="dec-${x.d.cid.slice(-8)}"><div class="hd"><b>${esc(x.d.text)}</b>${x.status !== 'active' ? `<span class="pill ${x.status === 'reversed' ? 'bad' : ''}">${x.status === 'reversed' ? 'Reversed' : 'Replaced'}</span>` : x.d.reversible ? '' : '<span class="pill warn">One-way</span>'}</div>
         <small>${avatar(x.d.author)} ${esc(whoName(x.d.author))} · ${when(x.d.t)}${x.review ? ` · review ${ymdText(x.review)}` : ''}${x.d.supersedes ? ' · replaces an earlier decision' : ''}</small>
-        ${x.d.evidence.length ? `<div class="row2"><small>Rests on:</small>${x.d.evidence.slice(0, 6).map(e => `<button class="link" data-go="${e}">${esc(elTitle(e))}</button>`).join(' · ')}</div>` : ''}
-        ${c.n ? `<div class="row2"><span class="pill ${LEVEL[c.level][1] || ''}">${LEVEL[c.level][0]}</span><small>${c.c.agree} agree · ${c.c.disagree} disagree · ${c.c.unsure + c.c.alt} unsure or other${c.level === 'split' ? ` · made over ${dis}% disagreement: review it soon` : ''}</small></div>` : '<small>No stances yet.</small>'}
+        ${x.d.evidence.length ? `<div class="dec-ev"><small>Rests on</small>${x.d.evidence.slice(0, 6).map(e => `<button class="ev" data-go="${e}">${esc(elTitle(e))}</button>`).join('')}</div>` : ''}
+        ${c.n ? `<div class="row2"><span class="pill ${LEVEL[c.level][1] || ''}">${LEVEL[c.level][0]}</span>${c.level === 'split' ? `<small>made over ${dis}% disagreement: review it soon</small>` : ''}</div>` : ''}
         ${x.reviews.map(r => `<small>${r.keep ? 'Kept' : 'Reversed'} by ${esc(whoName(r.author))} · ${when(r.t)}${r.note ? `: ${esc(r.note)}` : ''}</small>`).join('')}
-        <div class="acts">${Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="btn" data-st="${k}" data-t="${x.d.cid}" aria-pressed="${c.mine === k}" aria-label="${s.name}">${s.mark}</button>`).join('')}
-          ${x.status === 'active' ? `<button class="btn" data-keep="${x.d.cid}">Still right</button><button class="btn" data-rev="${x.d.cid}">Reverse</button><button class="btn" data-sup="${x.d.cid}">Replace…</button>` : ''}
-          ${x.d.on ? `<button class="btn" data-go="${x.d.on}">Show</button>` : ''}</div></li>`;
+        <div class="seg" role="group" aria-label="Where you stand">${Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="${s.tone || ''}" data-st="${k}" data-t="${x.d.cid}" aria-pressed="${c.mine === k}"><span aria-hidden="true">${s.mark}</span>${k === 'alt' ? 'Other' : s.name}<b>${c.c[k] || 0}</b></button>`).join('')}</div>
+        <div class="dec-foot">${x.status === 'active' ? `<button class="link" data-keep="${x.d.cid}">Still right</button><button class="link" data-rev="${x.d.cid}">Reverse</button><button class="link" data-sup="${x.d.cid}">Replace…</button>` : ''}
+          ${x.d.on ? `<button class="link" data-go="${x.d.on}">${ic('target')}Show</button>` : ''}</div></li>`;
     };
     body.innerHTML = `<div class="row2"><input data-k="q" class="grow" placeholder="Search decisions" aria-label="Search decisions" value="${esc(DEC.q)}"><label class="muted"><input type="checkbox" data-k="all"${DEC.all ? ' checked' : ''}> Show replaced</label></div>
       ${due.length ? `<p class="pill warn">${plural(due.length, 'decision')} due for review</p>` : ''}
@@ -6639,7 +6712,7 @@ RENDER_HOOKS.screen.push(() => {
   for (const [t, c] of S.D.claims || []){
     const sb = screenBox(S.records.get(t)); if (!sb) continue;
     const [name, tone] = CLAIM_STATE[c.state];
-    drawBadge(sb.x, sb.y + sb.h + 5, `${c.state === 'grounded' ? '●' : c.state === 'contradicted' ? '✕' : '○'} ${name}${c.score != null && c.state !== 'asserted' ? ` ${c.score.toFixed(2)}` : ''}`, tone, () => { S.sel = new Set([t]); dirty = true; claimMenu([S.records.get(t)], cv, { x: sb.x, y: sb.y + sb.h + 28 }); });
+    placeBadge(S.records.get(t), 'bottom', `${c.state === 'grounded' ? '●' : c.state === 'contradicted' ? '✕' : '○'} ${name}${c.score != null && c.state !== 'asserted' ? ` ${c.score.toFixed(2)}` : ''}`, tone, () => { S.sel = new Set([t]); dirty = true; claimMenu([S.records.get(t)], cv, { x: sb.x, y: sb.y + sb.h + 28 }); });
     if (S.sel.has(t)) for (const e of c.ev){ const eb = e.ev && screenBox(current(e.ev)); if (!eb) continue;
       ctx.save(); ctx.strokeStyle = TONE[e.supports ? 'good' : 'bad'][1]; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath();
       ctx.moveTo(eb.x + eb.w / 2, eb.y + eb.h / 2); ctx.lineTo(sb.x + sb.w / 2, sb.y + sb.h / 2); ctx.stroke(); ctx.restore(); }
@@ -6657,7 +6730,9 @@ registerPanel({
       ${c.ev.length ? `<small class="muted">${esc(matchHint(c))}</small>` : ''}
       ${c.checks.size ? `<small>Checked: ${[...c.checks.values()].map(r => `${esc(whoName(r.author))} ${r.verdict === 'ok' ? '✓' : r.verdict === 'no' ? '✕' : '?'}${r.note ? ` (${esc(r.note)})` : ''}`).join(', ')}</small>` : ''}
       <div class="acts"><button class="btn" data-ev="${c.t}">Attach evidence…</button><button class="btn" data-ok="${c.t}">✓ Holds</button><button class="btn" data-no="${c.t}">✕ Doesn’t</button></div></li>`;
-    body.innerHTML = all.length ? `<div class="row2">${Object.entries(CLAIM_STATE).map(([k, [n, tone]]) => `<span class="pill ${tone}">${count(k)} ${n.toLowerCase()}</span>`).join('')}</div>
+    const states = Object.entries(CLAIM_STATE).filter(([k]) => count(k));
+    body.innerHTML = all.length ? `<div class="cl-sum"><div class="cl-bar" aria-hidden="true">${states.map(([k, [, tone]]) => `<i class="${tone}" style="flex:${count(k)}"></i>`).join('')}</div>
+      <div class="row2"><b>${plural(all.length, 'claim')}</b>${states.map(([k, [n, tone]]) => `<span class="pill ${tone}">${count(k)} ${n.toLowerCase()}</span>`).join('')}</div></div>
       ${['contradicted', 'asserted', 'evidenced', 'grounded'].map(k => count(k) ? `<h3>${CLAIM_STATE[k][0]} <span class="n">${count(k)}</span></h3><ul class="plain">${all.filter(c => c.state === k).map(card).join('')}</ul>` : '').join('')}
       <p class="muted">${GROUNDERS.length ? `Automatic grounding: ${GROUNDERS.map(g => esc(g.name)).join(', ')}.` : 'Automatic grounding: no grounder connected. A resolver or model can be added; its checks are signed with its own key and count like anyone else’s.'}</p>`
       : '<p class="empty">No claims yet. Select a note that states a fact (“Competitor raised $50M in 2024”) and choose “Mark as a claim to ground”.</p>';
@@ -6672,7 +6747,8 @@ registerPanel({
 registerFeature({ id: 'claims',
   needs: () => [...(S.D.claims?.values() || [])].filter(c => c.state === 'evidenced' && !samePerson(S.records.get(c.t)?.author, S.me.id) && !samePerson(c.by, S.me.id) && !c.checks.has(personOf(S.me.id))).slice(0, 5).map(c => ({ label: `Check the claim: ${elTitle(c.t).slice(0, 36)}`, run: () => { goTo(c.t); openPanel('claims'); } })), name: 'Claim grounding', group: 'decide', icon: 'claim', records: ['CLAIM', 'EVIDENCE', 'CHECK'],
   blurb: 'Mark facts as claims, attach evidence, have others check them; deliveries can require grounded claims',
-  status: () => { const v = [...(S.D.claims?.values() || [])]; const bad = v.filter(c => c.state === 'contradicted' || c.state === 'asserted').length; return bad ? `${bad} unverified` : v.length ? 'all grounded' : ''; },
+  status: () => { const v = [...(S.D.claims?.values() || [])]; const bad = v.filter(c => c.state === 'contradicted' || c.state === 'asserted').length; const open = v.filter(c => c.state === 'evidenced').length;
+    return bad ? `${bad} unverified` : open ? `${open} to check` : v.length ? 'all grounded' : ''; },
   open: () => openPanel('claims') });
 FLOW_CONDITIONS.claims = { label: 'Every claim is grounded', test: () => { const n = [...(S.D.claims?.values() || [])].filter(c => S.records.has(c.t) && !S.D.hidden.has(c.t) && c.state !== 'grounded').length; return n ? `${plural(n, 'claim')} not grounded` : true; } };
 // the proof records what was believed at the moment of delivery, and on what evidence
@@ -6863,7 +6939,7 @@ STRIP.push(() => {
   const seals = roundSeals(o.id), mine = seals.filter(x => samePerson(x.s.author, S.me.id)).length, left = o.cur.end - Date.now();
   if (left > 0){
     const who = new Set(seals.map(x => personOf(x.s.author))).size;
-    return `<span class="sp sealed">${ic('lock')}<b>Silent round</b><span>${esc(o.cur.prompt.slice(0, 48))}</span><span class="t">${clock(left)}</span><span>${o.cur.mode === 'stances' ? `${seals.length} sealed stance${seals.length === 1 ? '' : 's'}` : `you ${mine} · room ${seals.length} from ${who}`}</span>
+    return `<span class="sp sealed">${ic('lock')}<b>Silent round</b><span class="q" title="${esc(o.cur.prompt)}">${esc(o.cur.prompt.slice(0, 48))}</span><span class="t">${clock(left)}</span><span>${o.cur.mode === 'stances' ? `${seals.length} sealed stance${seals.length === 1 ? '' : 's'}` : seals.length ? `${plural(seals.length, 'idea')} sealed${mine ? ` · ${mine} yours` : ''}` : 'write in silence'}</span>
       ${o.cur.mode === 'stances' ? Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="btn" data-strip="bs-${k}" aria-label="${s.name}, sealed">${s.mark}</button>`).join('') : '<button class="btn" data-strip="idea">Add idea</button>'}
       ${samePerson(o.first.author, S.me.id) ? '<button class="btn" data-strip="endround">End now</button>' : ''}</span>`;
   }
@@ -7209,7 +7285,7 @@ function hotSpots(){
   return [...n].filter(([c, s]) => s.size >= 2 && S.records.has(c)).sort((a, b) => b[1].size - a[1].size);
 }
 RENDER_HOOKS.screen.push(() => {
-  for (const [c, who] of hotSpots()){ const sb = screenBox(current(c)); if (!sb) continue; drawBadge(sb.x + sb.w / 2 - 34, sb.y + sb.h + 30, `👁 ${who.size} here`, 'acc', () => openPanel('room')); }
+  for (const [c, who] of hotSpots()){ placeBadge(current(c), 'bottom', `👁 ${who.size} here`, 'acc', () => openPanel('room')); }
 });
 registerPanel({
   id: 'room', title: 'Room', blurb: 'What everyone is doing right now, who may be stuck, and where attention gathers. Live only: none of this is signed or kept.', sync: true,
@@ -7277,7 +7353,7 @@ DELIVERY_HOOKS.evaluate.push(x => {
   for (const [i, g] of ev.groups.entries()) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[i - 1].g.name}`);
   for (const c of ev.conds) if (c.r !== true) x.blockers.push(`${c.c?.label || c.id}: ${c.r}`);
 });
-DELIVERY_HOOKS.row.push(x => x.flow ? `<div class="wk-ap">${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}</div><small class="wk-note">Flow: ${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>` : '');
+DELIVERY_HOOKS.row.push(x => x.flow ? dlField('Flow', `${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}<small class="wk-note">${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>`) : '');
 DELIVERY_HOOKS.proof.push((x, out) => {
   if (!x.flow) return;
   out.push('', `## Approval flow — ${x.flow.flow.name}`, '', `- **Rule record:** \`${x.flow.flow.cid}\`${x.flow.flow.ordered ? ' · groups sign in order' : ''}`,
@@ -7286,7 +7362,7 @@ DELIVERY_HOOKS.proof.push((x, out) => {
 });
 DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
 DELIVERY_HOOKS.compose.push({
-  fields: () => flowsHere().length ? [{ id: 'flow', label: 'Approval flow', type: 'select', value: '', options: [['', 'None: the people and number above'], ...flowsHere().map(f => [f.cid, `${f.name} (${f.groups.map(g => `${g.name} ${g.need}`).join(', ')})`])], hint: 'A flow sets its own approvers, order and conditions.' }] : [],
+  fields: () => flowsHere().length ? [{ id: 'flow', label: 'Approval flow', type: 'select', value: '', options: [['', 'None: the people and number above'], ...flowsHere().map(f => [f.cid, `${f.name} (${f.groups.map(g => `${g.name} ${g.need}`).join(', ')})`])], hint: 'A flow sets its own approvers, order and conditions.', half: true }] : [],
   apply: (v, plan) => { const f = v.flow && flowsHere().find(f => f.cid === v.flow); return f ? { ...plan, approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } : plan; },
 });
 const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && r.neg === null && inView(r)).sort(byZ);
@@ -7295,11 +7371,12 @@ async function flowForm(){
   const ppl = people(), conds = Object.entries(FLOW_CONDITIONS);
   const v = await formDialog('New approval flow', [
     { id: 'name', label: 'Name', type: 'text', value: 'Launch approval' },
-    ...[1, 2, 3].flatMap(i => [{ id: `g${i}`, label: `Group ${i} name`, type: 'text', value: ['Engineering', 'Legal', ''][i - 1], hint: i === 3 ? 'Leave a name empty to skip that group.' : '' },
-      { id: `p${i}`, label: `Group ${i} people`, type: 'people', value: [], options: ppl }, { id: `n${i}`, label: `Group ${i}: signatures needed`, type: 'number', value: 1, min: 1 }]),
+    ...[1, 2, 3].flatMap(i => [{ id: `s${i}`, label: `Group ${i}`, type: 'section' }, { id: `g${i}`, label: 'Name', type: 'text', value: ['Engineering', 'Legal', ''][i - 1], hint: i === 3 ? 'Leave it empty to skip this group.' : '', half: true },
+      { id: `n${i}`, label: 'Signatures needed', type: 'number', value: 1, min: 1, half: true }, { id: `p${i}`, label: 'People', type: 'people', value: [], options: ppl }]),
+    { id: 's0', label: 'Rules', type: 'section' },
     { id: 'ordered', label: 'Order', type: 'select', value: '0', options: [['0', 'Groups sign in any order'], ['1', 'Groups sign in the order above']] },
     { id: 'conds', label: 'The canvas must also have', type: 'checks', value: [], options: conds.map(([k, c]) => [k, c.label]) },
-    ...(flowsHere().length ? [{ id: 'esc', label: 'If it stalls, also accept', type: 'select', value: '', options: [['', 'No escalation'], ...flowsHere().map(f => [f.cid, f.name])] }, { id: 'after', label: 'Escalate after (hours)', type: 'number', value: 48, min: 1 }] : []),
+    ...(flowsHere().length ? [{ id: 'esc', label: 'If it stalls, also accept', type: 'select', value: '', options: [['', 'No escalation'], ...flowsHere().map(f => [f.cid, f.name])], half: true }, { id: 'after', label: 'Escalate after (hours)', type: 'number', value: 48, min: 1, half: true }] : []),
   ], { ok: 'Sign the flow', why: 'A flow is a signed rule. Deliveries that use it are approved only when every group and condition is met.' });
   if (!v) return;
   const groups = [1, 2, 3].map(i => ({ name: v[`g${i}`].trim(), members: v[`p${i}`], need: Math.max(1, Math.min(v[`p${i}`].length, v[`n${i}`] || 1)) })).filter(g => g.name && g.members.length);
@@ -7408,7 +7485,7 @@ async function signCredit(x){
 }
 const pct = bp => `${(bp / 100).toFixed(bp % 100 ? 1 : 0)}%`;
 DELIVERY_HOOKS.row.push(x => { const sh = contributionShares(x); if (!sh.size) return ''; const c = creditOf(x);
-  return `<div class="wk-ap">${[...sh].slice(0, 5).map(([k, v]) => `<span class="chip">${esc(whoName(k))} ${pct(v)}</span>`).join('')}${c ? '<span class="chip yes">Credit signed ✓</span>' : samePerson(x.d.author, S.me.id) && x.done ? `<button class="btn" data-credit="${x.d.cid}">Sign credit</button>` : ''}</div>`; });
+  return dlField('Shares', `${[...sh].slice(0, 5).map(([k, v]) => `<span class="chip">${esc(whoName(k))} ${pct(v)}</span>`).join('')}${c ? '<span class="chip yes">Credit signed ✓</span>' : samePerson(x.d.author, S.me.id) && x.done ? `<button class="btn" data-credit="${x.d.cid}">Sign credit</button>` : ''}`); });
 DELIVERY_HOOKS.proof.push((x, out) => {
   const sh = contributionShares(x), c = creditOf(x), m = c ? (c.method === 'default' ? DEFAULT_METHOD : S.records.get(c.method)) : methodInUse(); if (!sh.size) return;
   out.push('', '## Contribution', '', `- **Method:** ${m?.name || 'Default'}${m?.cid && m.cid !== 'default' ? ` (\`${m.cid}\`)` : ''} · ${c ? `signed as \`${c.cid}\`` : 'computed, not yet signed'}`,
@@ -7506,13 +7583,13 @@ DERIVE_FINAL.push((D, by) => {
 const settleValid = (x, s) => S.D.settles?.get(x.d.cid) === s;
 // payment terms can go on in the Deliver dialog itself, before anyone approves
 DELIVERY_HOOKS.compose.push({
-  fields: () => [{ id: 'pay', label: 'Payment on approval (0 for none)', type: 'number', value: 0, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...(S.D.pool?.keys() || [])][0] || 'FXN' },
+  fields: () => [{ id: 'sec-pay', label: 'Payment', type: 'section' }, { id: 'pay', label: 'Amount on approval (0 for none)', type: 'number', value: 0, min: 0, half: true }, { id: 'unit', label: 'Unit', type: 'text', value: [...(S.D.pool?.keys() || [])][0] || 'FXN', half: true },
     { id: 'split', label: 'Split the payment', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors']] }],
   after: async (v, cid) => { if (!(v.pay > 0) || !unitOk(v.unit)) return; await publish(await signed('PAY', [['I', S.me.id], ['R', cid], ['A', Math.round(v.pay * 100)], ['U', v.unit.toUpperCase()], ['S', v.split], ['P', '0'], ['Z', ++S.lamport], ['T', Date.now()]])); },
 });
 async function attachPay(x){
   const v = await formDialog('Payment for this delivery', [
-    { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
+    { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0, half: true }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN', half: true },
     { id: 'split', label: 'Split', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors'], ['fixed', 'Fixed shares (below)']] },
     { id: 'fixed', label: 'Fixed shares: one per line, name or key, then a percent', type: 'textarea', value: people().map(id => `${short(id)} ${Math.floor(100 / people().length)}`).join('\n'), hint: 'Only used for fixed shares.' },
   ], { ok: 'Sign the terms', why: `When “${x.d.title}” is approved, you release the payment; the lines are computed from these terms, so everyone can check them.` });
@@ -7536,12 +7613,12 @@ function manifest(x){
 function downloadJSON(name, text){ const a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(text); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 function payRow(x){
   const p = S.D.pays?.get(x.d.cid), s = S.D.settles?.get(x.d.cid), mine = samePerson(x.d.author, S.me.id);
-  if (!p) return mine ? `<div class="acts"><button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button></div>` : '';
+  if (!p) return mine ? dlField('Payment', `<button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button>`) : '';
   const bound = termsApproved(x, p), pooled = S.D.fromPool?.has(x.d.cid);
-  return `<div class="row2"><span class="pill ${s ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
+  return dlField('Payment', `<span class="pill ${s ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
     ${s ? `<small>Paid${pooled ? ' from the pool' : ''}: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>`
       : !x.done ? '<small>Released when approved</small>' : !bound ? '<span class="pill warn">Terms changed after approval: approvers must approve again</span>'
-      : mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Waiting for the release</small>'}</div>`;
+      : mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Waiting for the release</small>'}`);
 }
 DELIVERY_HOOKS.row.push(payRow);
 DELIVERY_HOOKS.proof.push((x, out) => {
@@ -7554,7 +7631,7 @@ document.addEventListener('click', e => {
   if (b.dataset.pay) attachPay(x); else if (b.dataset.release) release(x); else downloadJSON(`payout-${x.d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(manifest(x), null, 2));
 });
 async function pledge(){
-  const v = await formDialog('Back this canvas', [{ id: 'amt', label: 'Amount', type: 'number', value: 500, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' }, { id: 'note', label: 'Note', type: 'text', value: '' }],
+  const v = await formDialog('Back this canvas', [{ id: 'amt', label: 'Amount', type: 'number', value: 500, min: 0, half: true }, { id: 'unit', label: 'Unit', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN', half: true }, { id: 'note', label: 'Note', type: 'text', value: '' }],
     { ok: 'Sign the pledge', why: 'A pledge is a signed promise to fund deliveries on this canvas. It moves no money by itself; a payment connector does.' });
   if (!v || !unitOk(v.unit) || !(v.amt > 0)) return;
   await publish(await signed('FUND', [['I', S.me.id], ['R', canvasId], ['A', Math.round(v.amt * 100)], ['U', v.unit.toUpperCase()], ['M', encTxt(v.note)], ['Z', ++S.lamport], ['T', Date.now()]]));
@@ -7620,7 +7697,7 @@ const witnessesOf = root => { const seen = new Set(); return (S.D.witnessed?.get
 const spread = ws => { if (!ws.length) return ''; const ts = ws.map(w => w.t).sort(), a = new Date(ts[0]), b = new Date(ts.at(-1)); const f = d => d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); return f(a) === f(b) ? f(a) : `${f(a)} – ${f(b)}`; };
 DELIVERY_HOOKS.row.push(x => {
   const ws = witnessesOf(x.d.root), me = (S.D.witnessed?.get(x.d.root) || []).some(w => samePerson(w.author, S.me.id));
-  return `<div class="row2">${ws.length ? `<span class="pill good">${ic('stamp')}Witnessed by ${ws.length}</span><small>${ws.map(w => esc(whoName(w.author))).join(', ')} · ${spread(ws)}</small>` : '<small>No witnesses yet.</small>'}${me ? '' : `<button class="btn" data-witness="${x.d.cid}">Witness this version</button>`}</div>`;
+  return dlField('Witnesses', `${ws.length ? `<span class="pill good">${ic('stamp')}Witnessed by ${ws.length}</span><small>${ws.map(w => esc(whoName(w.author))).join(', ')} · ${spread(ws)}</small>` : '<small>None yet</small>'}${me ? '' : `<button class="btn" data-witness="${x.d.cid}">Witness</button>`}`);
 });
 DELIVERY_HOOKS.proof.push((x, out) => {
   const ws = witnessesOf(x.d.root); if (!ws.length) return;
@@ -7921,7 +7998,7 @@ RENDER_HOOKS.screen.push(() => {
     const el = S.records.get(o.cid), b = el && box(el); if (!b) continue;
     const a = toScreen(b.x, b.y), c = toScreen(b.x + b.w, b.y + b.h); if (c.x < -50 || a.x > innerWidth + 50 || c.y < -50 || a.y > innerHeight + 50) continue;
     ctx.save(); ctx.strokeStyle = TONE[KIND_COL[o.kind]][1]; ctx.lineWidth = 2.5; ctx.setLineDash(o.kind === 'removed' ? [6, 4] : []); rr(ctx, a.x - 5, a.y - 5, c.x - a.x + 10, c.y - a.y + 10, 8); ctx.stroke(); ctx.restore();
-    drawBadge(a.x - 5, c.y + 8, `${KIND_NAME[o.kind]} · ${[...o.who].map(whoName).join(', ')}`, KIND_COL[o.kind], () => { SN.i = changesSince().findIndex(x => x.cid === o.cid); paintPanel(); });
+    placeBadge(el, 'bottom', `${KIND_NAME[o.kind]} · ${[...o.who].map(whoName).join(', ')}`, KIND_COL[o.kind], () => { SN.i = changesSince().findIndex(x => x.cid === o.cid); paintPanel(); });
   }
 });
 function stepChange(d){ const l = changesSince(); if (!l.length) return; SN.i = (SN.i + d + l.length) % l.length; const el = S.records.get(l[SN.i].cid); if (el && box(el)){ ensureVisible(el); if (!S.D.hidden.has(el.cid)){ S.sel = new Set([el.cid]); announceSel(); } dirty = true; } say(`${SN.i + 1} of ${l.length}: ${KIND_NAME[l[SN.i].kind]} ${elTitle(l[SN.i].cid)}`); paintPanel(); }
@@ -8406,18 +8483,24 @@ function planNow(){
 RENDER_HOOKS.screen.push(() => {
   if (!S.D.tasks?.size) return;
   const p = plan(), onPath = new Set(p.path);
-  for (const c of onPath){ const sb = screenBox(S.records.get(c)); if (!sb) continue; ctx.save(); ctx.strokeStyle = TONE.bad[1]; ctx.lineWidth = 2; ctx.setLineDash([8, 5]); rr(ctx, sb.x - 9, sb.y - 9, sb.w + 18, sb.h + 18, 12); ctx.stroke(); ctx.restore(); }
-  for (const [c, w] of p.blocked){ const sb = screenBox(S.records.get(c)); if (!sb) continue; drawBadge(sb.x, sb.y + sb.h + 28, `⛔ waits on ${w.length === 1 ? elTitle(w[0]).slice(0, 22) : plural(w.length, 'task')}`, 'warn', () => { goTo(w[0]); }); }
-  for (const c of p.cycles){ const sb = screenBox(S.records.get(c)); if (sb) drawBadge(sb.x + sb.w - 70, sb.y + sb.h + 28, '↻ loop', 'bad'); }
+  // the critical path: an accent line along each step's foot and a badge, calm rather than alarming
+  for (const c of onPath){ const el = S.records.get(c), sb = screenBox(el); if (!sb) continue;
+    ctx.save(); ctx.fillStyle = TH.accent; rr(ctx, sb.x + 6, sb.y + sb.h - 3, sb.w - 12, 3, 1.5); ctx.fill(); ctx.restore();
+    placeBadge(el, 'bottom', '◆ Critical path', 'acc', () => toggleWork(true)); }
+  for (const [c, w] of p.blocked){ placeBadge(S.records.get(c), 'bottom', `Waits on ${w.length === 1 ? elTitle(w[0]).slice(0, 22) : plural(w.length, 'task')}`, 'warn', () => { goTo(w[0]); }); }
+  for (const c of p.cycles) placeBadge(S.records.get(c), 'bottom', '↻ Loop', 'bad');
 });
-// the Work panel gets a "Next up" section: ready now, blocked, the critical path
+// the Work panel gets one "Next up" card: what can start now, and the chain of steps that sets the date
 WORK_SECTIONS.push(() => {
   const p = plan(); if (!p.edges.length) return '';
-  const li = c => `<li><button class="wk-row" data-c="${c}"><span class="wk-t">${esc(elTitle(c))}</span>${S.D.tasks.get(c)?.owner ? `<span class="av" style="background:hsl(${authorHue(S.D.tasks.get(c).owner)} 55% 30%)">${esc(initials(S.D.tasks.get(c).owner))}</span>` : ''}</button></li>`;
-  return `<h3>Ready now <span class="n">${p.ready.length}</span></h3><ul class="wk-list">${p.ready.map(li).join('')}</ul>
-    ${p.path.length ? `<h3>Critical path <span class="n">${p.path.length} steps</span></h3><ul class="wk-list">${p.path.map(li).join('')}</ul>` : ''}
-    ${p.blocked.size ? `<h3>Blocked <span class="n">${p.blocked.size}</span></h3><ul class="wk-list">${[...p.blocked.keys()].map(li).join('')}</ul>` : ''}
-    ${p.cycles.size ? `<p class="wk-note">${plural(p.cycles.size, 'task')} wait on each other in a loop.</p>` : ''}`;
+  const step = c => { const o = S.D.tasks.get(c)?.owner, ready = p.ready.includes(c);
+    return `<li><button class="tf-step${ready ? ' ready' : ''}" data-c="${c}"><i aria-hidden="true"></i><span class="wk-t">${esc(elTitle(c))}</span>${ready ? '<small>ready</small>' : p.blocked.has(c) ? '<small>waiting</small>' : ''}${o ? `<span class="av" style="background:hsl(${authorHue(o)} 55% 30%)">${esc(initials(o))}</span>` : ''}</button></li>`; };
+  const offPath = p.ready.filter(c => !p.path.includes(c));
+  return `<section class="tf-card" aria-label="Next up">
+    <div class="tf-h"><b>Ready now</b><span class="pill acc">${p.ready.length}</span>${p.blocked.size ? `<span class="pill warn">${p.blocked.size} blocked</span>` : ''}${p.cycles.size ? `<span class="pill bad">↻ ${p.cycles.size} in a loop</span>` : ''}</div>
+    ${p.path.length ? `<div class="tf-sub">Critical path · ${plural(p.path.length, 'step')}</div><ol class="tf-chain">${p.path.map(step).join('')}</ol>` : ''}
+    ${offPath.length ? `<div class="tf-sub">Also ready</div><ol class="tf-chain loose">${offPath.map(step).join('')}</ol>` : ''}
+  </section>`;
 });
 FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.cycles.size ? `${plural(p.cycles.size, 'task')} wait on each other in a loop` : p.longest ? `${plural(p.longest, 'task')} still open on the critical path` : true; } };
 registerFeature({ id: 'taskflow', name: 'Dependencies and critical path', group: 'deliver', icon: 'deps', records: [],
@@ -8523,10 +8606,12 @@ addEventListener('wheel', hideTip, { passive: true });
 
 /* menu: role=menu, arrow keys, Home/End, Escape returns focus to the button that opened it */
 let menuItems = [], menuAnchor = null;
-function openMenu(anchor, items, at = null){
-  const m = $('menu'); menuItems = items; menuAnchor = anchor;
-  m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>' : it.head ? `<div class="mhead" role="presentation">${esc(it.head)}</div>`
-    : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
+// items: '-' (separator), {head} (a group title), or {label, icon|sw, run, on?, key?, sub? (a second, quieter line), tone? (a class)};
+// cls styles the whole menu (the Team hub lays its items out as tiles)
+function openMenu(anchor, items, at = null, cls = ''){
+  const m = $('menu'); menuItems = items; menuAnchor = anchor; m.className = cls;
+  m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>' : it.head ? `<div class="mhead${it.tone ? ' ' + it.tone : ''}" role="presentation">${esc(it.head)}</div>`
+    : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.tone ? ` class="${it.tone}"` : ''}${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}${it.sub ? `<small class="msub"><i class="mdot"> · </i>${esc(it.sub)}</small>` : ''}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
   m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
   if (at){   // a context menu opens at the pointer, flipped to stay on screen
     m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, at.x)) + 'px';

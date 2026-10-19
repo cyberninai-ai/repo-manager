@@ -38,7 +38,7 @@ function hotSpots(){
   return [...n].filter(([c, s]) => s.size >= 2 && S.records.has(c)).sort((a, b) => b[1].size - a[1].size);
 }
 RENDER_HOOKS.screen.push(() => {
-  for (const [c, who] of hotSpots()){ const sb = screenBox(current(c)); if (!sb) continue; drawBadge(sb.x + sb.w / 2 - 34, sb.y + sb.h + 30, `👁 ${who.size} here`, 'acc', () => openPanel('room')); }
+  for (const [c, who] of hotSpots()){ placeBadge(current(c), 'bottom', `👁 ${who.size} here`, 'acc', () => openPanel('room')); }
 });
 registerPanel({
   id: 'room', title: 'Room', blurb: 'What everyone is doing right now, who may be stuck, and where attention gathers. Live only: none of this is signed or kept.', sync: true,

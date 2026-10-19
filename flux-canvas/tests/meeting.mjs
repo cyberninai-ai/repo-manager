@@ -73,7 +73,7 @@ v.push(...await axeOn(A, '#px-rituals'));
 // 6. structural presence: where attention gathers, who is reading, who stopped sharing
 await A.evaluate(t => { S.sel = new Set([t]); sendPresence(false, true); }, target); await B.evaluate(t => { S.sel = new Set([t]); sendPresence(false, true); }, target);
 ok(await until(A, t => hotSpots().some(([c, s]) => c === t && s.size === 2), target), 'two people on one item: a hot spot');
-await B.evaluate(() => { ATT.since = Date.now() - 30000; sendPresence(false, true); });
+await B.evaluate(t => { ATT.hov = t; ATT.since = Date.now() - 30000; sendPresence(false, true); }, target);   // set what B looks at too: under load the frame that records it may not have run yet
 ok(await until(A, b => modeOf(b, peers.get(b)).mode === 'reading', id.B), 'Ben has been on it for 30s: reading');
 await B.evaluate(() => { ATT.share = false; sendPresence(false, true); });
 ok(await until(A, b => modeOf(b, peers.get(b)).mode === 'private', id.B), 'Ben stops sharing: shown as not sharing');

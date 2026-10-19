@@ -7,8 +7,8 @@ let panelOpen = null;
 // p: { id, title, blurb, paint(body), click?(e, button), change?(e), onOpen?(), onClose?(), live?: false to skip repaint on change }
 function registerPanel(p){
   const el = document.createElement('aside');
-  el.className = 'ledger fx'; el.id = 'px-' + p.id; el.setAttribute('aria-label', p.title); el.style.display = 'none';
-  el.innerHTML = `<header><h2><span>${esc(p.title)}</span><button class="ibtn sm" data-close aria-label="Close ${esc(p.title)}">${ic('x')}</button></h2>
+  el.className = 'ledger fx'; el.id = 'px-' + p.id; el.setAttribute('aria-label', p.title); el.tabIndex = -1; el.style.display = 'none';
+  el.innerHTML = `<header><h2><i class="pxi" aria-hidden="true"></i><span>${esc(p.title)}</span><button class="ibtn sm" data-close aria-label="Close ${esc(p.title)}">${ic('x')}</button></h2>
     ${p.blurb ? `<div class="stats">${esc(p.blurb)}</div>` : ''}</header><div class="list fx-body"></div>`;
   document.body.appendChild(el);
   el.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closePanel(); });
@@ -21,8 +21,10 @@ function openPanel(id){
   const p = PANELS.get(id); if (!p) return;
   closeOlderPanels();
   if (panelOpen && panelOpen !== id) closePanel(false);
+  const icon = p.el.querySelector('.pxi'); if (!icon.firstChild) icon.innerHTML = ic(p.icon || FEATURES.find(f => f.id === p.id)?.icon || 'blank');
   panelOpen = id; p.el.style.display = 'flex'; p.onOpen?.(); paintPanel(id);
-  setTimeout(() => (p.el.querySelector('[data-autofocus]') || p.el.querySelector('[data-close]')).focus(), 0);
+  // focus lands on the panel itself (Tab then walks it), not on a button that would wear a focus ring for no reason
+  setTimeout(() => (p.el.querySelector('[data-autofocus]') || p.el).focus({ preventScroll: true }), 0);
 }
 function closePanel(back = true){
   const p = PANELS.get(panelOpen); if (!p) return;
@@ -59,16 +61,33 @@ function goTo(cid){ const el = current(cid); if (!el) return; S.sel = new Set([e
 const when = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
 const plural = (n, w, pl = w + 's') => `${n} ${n === 1 ? w : pl}`;
 
-/* canvas badges: small labels team features draw beside elements (screen pixels), clickable */
+/* canvas badges: small labels team features draw beside elements (screen pixels), clickable. One look for all of them:
+   rounded, 20 px, a tone per meaning, readable in both themes; placeBadge lines them up in a row above or below an element */
 const BADGES = [];   // this frame's clickable badges: { x, y, w, h, run }
-const TONE = { good: ['#e3f4ea', '#14633f'], warn: ['#fdf0dc', '#7a4404'], bad: ['#fde2e1', '#a3151f'], acc: ['#eceafd', '#4a43c9'], ink: ['#1d2129', '#ffffff'] };
+const TONE_LIGHT = { good: ['#e3f4ea', '#14633f'], warn: ['#fdf0dc', '#7a4404'], bad: ['#fde2e1', '#a3151f'], acc: ['#eceafd', '#4a43c9'], ink: ['#1d2129', '#ffffff'] };
+const TONE_DARK = { good: ['#173a2a', '#8fe0b2'], warn: ['#3d2e14', '#f3c483'], bad: ['#43201f', '#ffa3a0'], acc: ['#2a2853', '#c5c0ff'], ink: ['#eceef3', '#16181d'] };
+const TONE = new Proxy({}, { get: (_, k) => (isDarkTheme() ? TONE_DARK : TONE_LIGHT)[k] });
+let darkMemo = { paper: null, dark: false };
+function isDarkTheme(){ if (darkMemo.paper !== TH.paper){ const m = (TH.paper || '#fff').match(/\w\w/g) || ['ff', 'ff', 'ff']; const [r, g, b] = m.slice(-3).map(h => parseInt(h, 16)); darkMemo = { paper: TH.paper, dark: (r * 299 + g * 587 + b * 114) / 1000 < 128 }; } return darkMemo.dark; }
 function drawBadge(x, y, text, tone = null, run = null){
   ctx.font = `600 11px ${FONTS.sans}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  const w = Math.ceil(ctx.measureText(text).width) + 14, [bg, fg] = tone ? TONE[tone] : [TH.panel, TH.ink];
-  rr(ctx, x, y, w, 20, 10); ctx.fillStyle = bg; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = tone ? fg : TH.line; ctx.globalAlpha *= tone ? .35 : 1; ctx.stroke(); ctx.globalAlpha = 1;
-  ctx.fillStyle = fg; ctx.fillText(text, x + 7, y + 10.5);
+  const w = Math.ceil(ctx.measureText(text).width) + 16, [bg, fg] = tone ? TONE[tone] : [TH.panel, TH.ink];
+  ctx.save();
+  if (!isDarkTheme()){ ctx.shadowColor = 'rgba(20,22,30,.10)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 1; }
+  rr(ctx, x, y, w, 20, 10); ctx.fillStyle = bg; ctx.fill(); ctx.restore();
+  rr(ctx, x + .5, y + .5, w - 1, 19, 9.5); ctx.lineWidth = 1; ctx.strokeStyle = tone ? fg : TH.line; ctx.globalAlpha = tone ? .28 : 1; ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.fillStyle = fg; ctx.fillText(text, x + 8, y + 10.5);
   if (run) BADGES.push({ x, y, w, h: 20, run });
   return w;
+}
+// badges in a row: 'top' sits above the element, 'bottom' below it; each feature adds to the row in turn, so nothing overlaps
+const BADGE_ROWS = new Map();
+function placeBadge(el, row, text, tone = null, run = null, extra = 0){
+  const sb = screenBox(el); if (!sb) return null;
+  const key = el.cid + row, used = BADGE_ROWS.get(key) || 0;
+  const x = sb.x + used, y = row === 'top' ? sb.y - 26 : sb.y + sb.h + 6, w = drawBadge(x, y, text, tone, run);
+  BADGE_ROWS.set(key, used + w + extra + 5);
+  return { x, y, w, sb };
 }
 // an element's box on screen, or null when it is off screen or hidden
 function screenBox(el){
@@ -77,5 +96,5 @@ function screenBox(el){
   if (c.x < -80 || c.y < -40 || a.x > innerWidth + 80 || a.y > innerHeight + 40) return null;
   return { x: a.x, y: a.y, w: c.x - a.x, h: c.y - a.y };
 }
-RENDER_HOOKS.screen.unshift(() => { BADGES.length = 0; });
+RENDER_HOOKS.screen.unshift(() => { BADGES.length = 0; BADGE_ROWS.clear(); });
 POINTER_HOOKS.push(e => { const b = BADGES.find(b => e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h); if (!b) return false; b.run(e); return true; });

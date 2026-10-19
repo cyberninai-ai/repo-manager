@@ -65,13 +65,13 @@ DERIVE_FINAL.push((D, by) => {
 const settleValid = (x, s) => S.D.settles?.get(x.d.cid) === s;
 // payment terms can go on in the Deliver dialog itself, before anyone approves
 DELIVERY_HOOKS.compose.push({
-  fields: () => [{ id: 'pay', label: 'Payment on approval (0 for none)', type: 'number', value: 0, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...(S.D.pool?.keys() || [])][0] || 'FXN' },
+  fields: () => [{ id: 'sec-pay', label: 'Payment', type: 'section' }, { id: 'pay', label: 'Amount on approval (0 for none)', type: 'number', value: 0, min: 0, half: true }, { id: 'unit', label: 'Unit', type: 'text', value: [...(S.D.pool?.keys() || [])][0] || 'FXN', half: true },
     { id: 'split', label: 'Split the payment', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors']] }],
   after: async (v, cid) => { if (!(v.pay > 0) || !unitOk(v.unit)) return; await publish(await signed('PAY', [['I', S.me.id], ['R', cid], ['A', Math.round(v.pay * 100)], ['U', v.unit.toUpperCase()], ['S', v.split], ['P', '0'], ['Z', ++S.lamport], ['T', Date.now()]])); },
 });
 async function attachPay(x){
   const v = await formDialog('Payment for this delivery', [
-    { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
+    { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0, half: true }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN', half: true },
     { id: 'split', label: 'Split', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors'], ['fixed', 'Fixed shares (below)']] },
     { id: 'fixed', label: 'Fixed shares: one per line, name or key, then a percent', type: 'textarea', value: people().map(id => `${short(id)} ${Math.floor(100 / people().length)}`).join('\n'), hint: 'Only used for fixed shares.' },
   ], { ok: 'Sign the terms', why: `When “${x.d.title}” is approved, you release the payment; the lines are computed from these terms, so everyone can check them.` });
@@ -95,12 +95,12 @@ function manifest(x){
 function downloadJSON(name, text){ const a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(text); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 function payRow(x){
   const p = S.D.pays?.get(x.d.cid), s = S.D.settles?.get(x.d.cid), mine = samePerson(x.d.author, S.me.id);
-  if (!p) return mine ? `<div class="acts"><button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button></div>` : '';
+  if (!p) return mine ? dlField('Payment', `<button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button>`) : '';
   const bound = termsApproved(x, p), pooled = S.D.fromPool?.has(x.d.cid);
-  return `<div class="row2"><span class="pill ${s ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
+  return dlField('Payment', `<span class="pill ${s ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
     ${s ? `<small>Paid${pooled ? ' from the pool' : ''}: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>`
       : !x.done ? '<small>Released when approved</small>' : !bound ? '<span class="pill warn">Terms changed after approval: approvers must approve again</span>'
-      : mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Waiting for the release</small>'}</div>`;
+      : mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Waiting for the release</small>'}`);
 }
 DELIVERY_HOOKS.row.push(payRow);
 DELIVERY_HOOKS.proof.push((x, out) => {
@@ -113,7 +113,7 @@ document.addEventListener('click', e => {
   if (b.dataset.pay) attachPay(x); else if (b.dataset.release) release(x); else downloadJSON(`payout-${x.d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(manifest(x), null, 2));
 });
 async function pledge(){
-  const v = await formDialog('Back this canvas', [{ id: 'amt', label: 'Amount', type: 'number', value: 500, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' }, { id: 'note', label: 'Note', type: 'text', value: '' }],
+  const v = await formDialog('Back this canvas', [{ id: 'amt', label: 'Amount', type: 'number', value: 500, min: 0, half: true }, { id: 'unit', label: 'Unit', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN', half: true }, { id: 'note', label: 'Note', type: 'text', value: '' }],
     { ok: 'Sign the pledge', why: 'A pledge is a signed promise to fund deliveries on this canvas. It moves no money by itself; a payment connector does.' });
   if (!v || !unitOk(v.unit) || !(v.amt > 0)) return;
   await publish(await signed('FUND', [['I', S.me.id], ['R', canvasId], ['A', Math.round(v.amt * 100)], ['U', v.unit.toUpperCase()], ['M', encTxt(v.note)], ['Z', ++S.lamport], ['T', Date.now()]]));

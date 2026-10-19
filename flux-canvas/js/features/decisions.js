@@ -55,7 +55,7 @@ RENDER_HOOKS.screen.push(() => {
   for (const [on, x] of S.D.decisionOf || []){
     const sb = screenBox(current(on)); if (!sb) continue;
     const c = typeof consensus === 'function' ? consensus(x.d.cid) : null;
-    drawBadge(sb.x, sb.y - 24, `⚑ Decided${reviewDue(x) ? ' · review due' : c?.level === 'split' ? ' · split' : ''}`, reviewDue(x) || c?.level === 'split' ? 'warn' : 'ink', () => { DEC.focus = x.d.cid; openPanel('decisions'); });
+    placeBadge(current(on), 'top', `⚑ Decided${reviewDue(x) ? ' · review due' : c?.level === 'split' ? ' · split' : ''}`, reviewDue(x) || c?.level === 'split' ? 'warn' : 'ink', () => { DEC.focus = x.d.cid; openPanel('decisions'); });
   }
 });
 
@@ -70,12 +70,12 @@ registerPanel({
       const c = consensus(x.d.cid), dis = Math.round(c.disagree * 100);
       return `<li class="card${DEC.focus === x.d.cid ? ' hot' : ''}${reviewDue(x) ? ' warn' : ''}" id="dec-${x.d.cid.slice(-8)}"><div class="hd"><b>${esc(x.d.text)}</b>${x.status !== 'active' ? `<span class="pill ${x.status === 'reversed' ? 'bad' : ''}">${x.status === 'reversed' ? 'Reversed' : 'Replaced'}</span>` : x.d.reversible ? '' : '<span class="pill warn">One-way</span>'}</div>
         <small>${avatar(x.d.author)} ${esc(whoName(x.d.author))} · ${when(x.d.t)}${x.review ? ` · review ${ymdText(x.review)}` : ''}${x.d.supersedes ? ' · replaces an earlier decision' : ''}</small>
-        ${x.d.evidence.length ? `<div class="row2"><small>Rests on:</small>${x.d.evidence.slice(0, 6).map(e => `<button class="link" data-go="${e}">${esc(elTitle(e))}</button>`).join(' · ')}</div>` : ''}
-        ${c.n ? `<div class="row2"><span class="pill ${LEVEL[c.level][1] || ''}">${LEVEL[c.level][0]}</span><small>${c.c.agree} agree · ${c.c.disagree} disagree · ${c.c.unsure + c.c.alt} unsure or other${c.level === 'split' ? ` · made over ${dis}% disagreement: review it soon` : ''}</small></div>` : '<small>No stances yet.</small>'}
+        ${x.d.evidence.length ? `<div class="dec-ev"><small>Rests on</small>${x.d.evidence.slice(0, 6).map(e => `<button class="ev" data-go="${e}">${esc(elTitle(e))}</button>`).join('')}</div>` : ''}
+        ${c.n ? `<div class="row2"><span class="pill ${LEVEL[c.level][1] || ''}">${LEVEL[c.level][0]}</span>${c.level === 'split' ? `<small>made over ${dis}% disagreement: review it soon</small>` : ''}</div>` : ''}
         ${x.reviews.map(r => `<small>${r.keep ? 'Kept' : 'Reversed'} by ${esc(whoName(r.author))} · ${when(r.t)}${r.note ? `: ${esc(r.note)}` : ''}</small>`).join('')}
-        <div class="acts">${Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="btn" data-st="${k}" data-t="${x.d.cid}" aria-pressed="${c.mine === k}" aria-label="${s.name}">${s.mark}</button>`).join('')}
-          ${x.status === 'active' ? `<button class="btn" data-keep="${x.d.cid}">Still right</button><button class="btn" data-rev="${x.d.cid}">Reverse</button><button class="btn" data-sup="${x.d.cid}">Replace…</button>` : ''}
-          ${x.d.on ? `<button class="btn" data-go="${x.d.on}">Show</button>` : ''}</div></li>`;
+        <div class="seg" role="group" aria-label="Where you stand">${Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="${s.tone || ''}" data-st="${k}" data-t="${x.d.cid}" aria-pressed="${c.mine === k}"><span aria-hidden="true">${s.mark}</span>${k === 'alt' ? 'Other' : s.name}<b>${c.c[k] || 0}</b></button>`).join('')}</div>
+        <div class="dec-foot">${x.status === 'active' ? `<button class="link" data-keep="${x.d.cid}">Still right</button><button class="link" data-rev="${x.d.cid}">Reverse</button><button class="link" data-sup="${x.d.cid}">Replace…</button>` : ''}
+          ${x.d.on ? `<button class="link" data-go="${x.d.on}">${ic('target')}Show</button>` : ''}</div></li>`;
     };
     body.innerHTML = `<div class="row2"><input data-k="q" class="grow" placeholder="Search decisions" aria-label="Search decisions" value="${esc(DEC.q)}"><label class="muted"><input type="checkbox" data-k="all"${DEC.all ? ' checked' : ''}> Show replaced</label></div>
       ${due.length ? `<p class="pill warn">${plural(due.length, 'decision')} due for review</p>` : ''}

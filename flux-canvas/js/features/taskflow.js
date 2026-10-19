@@ -39,18 +39,24 @@ function planNow(){
 RENDER_HOOKS.screen.push(() => {
   if (!S.D.tasks?.size) return;
   const p = plan(), onPath = new Set(p.path);
-  for (const c of onPath){ const sb = screenBox(S.records.get(c)); if (!sb) continue; ctx.save(); ctx.strokeStyle = TONE.bad[1]; ctx.lineWidth = 2; ctx.setLineDash([8, 5]); rr(ctx, sb.x - 9, sb.y - 9, sb.w + 18, sb.h + 18, 12); ctx.stroke(); ctx.restore(); }
-  for (const [c, w] of p.blocked){ const sb = screenBox(S.records.get(c)); if (!sb) continue; drawBadge(sb.x, sb.y + sb.h + 28, `⛔ waits on ${w.length === 1 ? elTitle(w[0]).slice(0, 22) : plural(w.length, 'task')}`, 'warn', () => { goTo(w[0]); }); }
-  for (const c of p.cycles){ const sb = screenBox(S.records.get(c)); if (sb) drawBadge(sb.x + sb.w - 70, sb.y + sb.h + 28, '↻ loop', 'bad'); }
+  // the critical path: an accent line along each step's foot and a badge, calm rather than alarming
+  for (const c of onPath){ const el = S.records.get(c), sb = screenBox(el); if (!sb) continue;
+    ctx.save(); ctx.fillStyle = TH.accent; rr(ctx, sb.x + 6, sb.y + sb.h - 3, sb.w - 12, 3, 1.5); ctx.fill(); ctx.restore();
+    placeBadge(el, 'bottom', '◆ Critical path', 'acc', () => toggleWork(true)); }
+  for (const [c, w] of p.blocked){ placeBadge(S.records.get(c), 'bottom', `Waits on ${w.length === 1 ? elTitle(w[0]).slice(0, 22) : plural(w.length, 'task')}`, 'warn', () => { goTo(w[0]); }); }
+  for (const c of p.cycles) placeBadge(S.records.get(c), 'bottom', '↻ Loop', 'bad');
 });
-// the Work panel gets a "Next up" section: ready now, blocked, the critical path
+// the Work panel gets one "Next up" card: what can start now, and the chain of steps that sets the date
 WORK_SECTIONS.push(() => {
   const p = plan(); if (!p.edges.length) return '';
-  const li = c => `<li><button class="wk-row" data-c="${c}"><span class="wk-t">${esc(elTitle(c))}</span>${S.D.tasks.get(c)?.owner ? `<span class="av" style="background:hsl(${authorHue(S.D.tasks.get(c).owner)} 55% 30%)">${esc(initials(S.D.tasks.get(c).owner))}</span>` : ''}</button></li>`;
-  return `<h3>Ready now <span class="n">${p.ready.length}</span></h3><ul class="wk-list">${p.ready.map(li).join('')}</ul>
-    ${p.path.length ? `<h3>Critical path <span class="n">${p.path.length} steps</span></h3><ul class="wk-list">${p.path.map(li).join('')}</ul>` : ''}
-    ${p.blocked.size ? `<h3>Blocked <span class="n">${p.blocked.size}</span></h3><ul class="wk-list">${[...p.blocked.keys()].map(li).join('')}</ul>` : ''}
-    ${p.cycles.size ? `<p class="wk-note">${plural(p.cycles.size, 'task')} wait on each other in a loop.</p>` : ''}`;
+  const step = c => { const o = S.D.tasks.get(c)?.owner, ready = p.ready.includes(c);
+    return `<li><button class="tf-step${ready ? ' ready' : ''}" data-c="${c}"><i aria-hidden="true"></i><span class="wk-t">${esc(elTitle(c))}</span>${ready ? '<small>ready</small>' : p.blocked.has(c) ? '<small>waiting</small>' : ''}${o ? `<span class="av" style="background:hsl(${authorHue(o)} 55% 30%)">${esc(initials(o))}</span>` : ''}</button></li>`; };
+  const offPath = p.ready.filter(c => !p.path.includes(c));
+  return `<section class="tf-card" aria-label="Next up">
+    <div class="tf-h"><b>Ready now</b><span class="pill acc">${p.ready.length}</span>${p.blocked.size ? `<span class="pill warn">${p.blocked.size} blocked</span>` : ''}${p.cycles.size ? `<span class="pill bad">↻ ${p.cycles.size} in a loop</span>` : ''}</div>
+    ${p.path.length ? `<div class="tf-sub">Critical path · ${plural(p.path.length, 'step')}</div><ol class="tf-chain">${p.path.map(step).join('')}</ol>` : ''}
+    ${offPath.length ? `<div class="tf-sub">Also ready</div><ol class="tf-chain loose">${offPath.map(step).join('')}</ol>` : ''}
+  </section>`;
 });
 FLOW_CONDITIONS.path = { label: 'Nothing on the critical path is open', test: () => { const p = plan(); return p.cycles.size ? `${plural(p.cycles.size, 'task')} wait on each other in a loop` : p.longest ? `${plural(p.longest, 'task')} still open on the critical path` : true; } };
 registerFeature({ id: 'taskflow', name: 'Dependencies and critical path', group: 'deliver', icon: 'deps', records: [],

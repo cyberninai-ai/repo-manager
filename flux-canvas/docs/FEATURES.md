@@ -15,11 +15,11 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 
 | Place | What is there |
 |---|---|
-| **Team button** (four squares, top right; ⇧T; ⌘K) | Every feature, grouped by what you're doing, with live status. **Needs you** at the top lists what waits on you (approvals, payments to release, suggestions in your zones, reviews due, claims to check, stances to take, link and recovery requests, a ritual or agenda item whose time is up); the number on the button counts them |
+| **Team button** (four squares, top right; ⇧T; ⌘K) | Every feature as a tile, grouped by what you're doing, with live status on a second line. **Needs you** at the top lists what waits on you (approvals, payments to release, suggestions in your zones, reviews due, claims to check, stances to take, link and recovery requests, a ritual or agenda item whose time is up); the number on the button counts them |
 | **Live button** | Who is here and how to invite, plus *Run this session* (silent round, facilitated meeting, rituals, room, zones) and *Network and identity* (mesh, canvas graph, devices and recovery) |
 | **Selection toolbar** | Stance (scales; its menu also starts a blind round), task (✓, K); under More: mark as a claim, record a decision, and zone on a frame you own |
-| **Work panel** | Deliver this work: one dialog for what, who approves (or an approval flow) and the payment terms, which approvers see before they sign. Each delivery shows its flow, contribution, payment, witnesses and an excerpt button; ready-now work and the critical path sit above the tasks |
-| **Session strip** (under the title) | A silent round's prompt and time, the agenda item and its time box with the queue for the floor, a ritual's outputs; each with its buttons |
+| **Work panel** | Deliver this work: one dialog for what, who approves (or an approval flow) and the payment terms, which approvers see before they sign. Each delivery card has one labelled line per part (approvals, flow, shares, payment, witnesses) and an excerpt button. A *Next up* card above the tasks shows what can start now and the critical path as a chain |
+| **Session bar** (under the title) | A silent round's prompt and time, the agenda item and its time box with the queue for the floor, a ritual's outputs; each with its buttons |
 | **On the canvas** | Stance counts, "Decided", claim states, tasks blocked and the critical path, zone owners and suggestions to accept, where attention gathers, sealed cards, replay's marker, what changed |
 | **Canvas home** | Retro, sprint planning, design review and kickoff with their contract running |
 | **Help (?)** | *Working as a team* explains all of this |

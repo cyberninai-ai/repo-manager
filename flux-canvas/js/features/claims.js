@@ -106,7 +106,7 @@ RENDER_HOOKS.screen.push(() => {
   for (const [t, c] of S.D.claims || []){
     const sb = screenBox(S.records.get(t)); if (!sb) continue;
     const [name, tone] = CLAIM_STATE[c.state];
-    drawBadge(sb.x, sb.y + sb.h + 5, `${c.state === 'grounded' ? '●' : c.state === 'contradicted' ? '✕' : '○'} ${name}${c.score != null && c.state !== 'asserted' ? ` ${c.score.toFixed(2)}` : ''}`, tone, () => { S.sel = new Set([t]); dirty = true; claimMenu([S.records.get(t)], cv, { x: sb.x, y: sb.y + sb.h + 28 }); });
+    placeBadge(S.records.get(t), 'bottom', `${c.state === 'grounded' ? '●' : c.state === 'contradicted' ? '✕' : '○'} ${name}${c.score != null && c.state !== 'asserted' ? ` ${c.score.toFixed(2)}` : ''}`, tone, () => { S.sel = new Set([t]); dirty = true; claimMenu([S.records.get(t)], cv, { x: sb.x, y: sb.y + sb.h + 28 }); });
     if (S.sel.has(t)) for (const e of c.ev){ const eb = e.ev && screenBox(current(e.ev)); if (!eb) continue;
       ctx.save(); ctx.strokeStyle = TONE[e.supports ? 'good' : 'bad'][1]; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath();
       ctx.moveTo(eb.x + eb.w / 2, eb.y + eb.h / 2); ctx.lineTo(sb.x + sb.w / 2, sb.y + sb.h / 2); ctx.stroke(); ctx.restore(); }
@@ -124,7 +124,9 @@ registerPanel({
       ${c.ev.length ? `<small class="muted">${esc(matchHint(c))}</small>` : ''}
       ${c.checks.size ? `<small>Checked: ${[...c.checks.values()].map(r => `${esc(whoName(r.author))} ${r.verdict === 'ok' ? '✓' : r.verdict === 'no' ? '✕' : '?'}${r.note ? ` (${esc(r.note)})` : ''}`).join(', ')}</small>` : ''}
       <div class="acts"><button class="btn" data-ev="${c.t}">Attach evidence…</button><button class="btn" data-ok="${c.t}">✓ Holds</button><button class="btn" data-no="${c.t}">✕ Doesn’t</button></div></li>`;
-    body.innerHTML = all.length ? `<div class="row2">${Object.entries(CLAIM_STATE).map(([k, [n, tone]]) => `<span class="pill ${tone}">${count(k)} ${n.toLowerCase()}</span>`).join('')}</div>
+    const states = Object.entries(CLAIM_STATE).filter(([k]) => count(k));
+    body.innerHTML = all.length ? `<div class="cl-sum"><div class="cl-bar" aria-hidden="true">${states.map(([k, [, tone]]) => `<i class="${tone}" style="flex:${count(k)}"></i>`).join('')}</div>
+      <div class="row2"><b>${plural(all.length, 'claim')}</b>${states.map(([k, [n, tone]]) => `<span class="pill ${tone}">${count(k)} ${n.toLowerCase()}</span>`).join('')}</div></div>
       ${['contradicted', 'asserted', 'evidenced', 'grounded'].map(k => count(k) ? `<h3>${CLAIM_STATE[k][0]} <span class="n">${count(k)}</span></h3><ul class="plain">${all.filter(c => c.state === k).map(card).join('')}</ul>` : '').join('')}
       <p class="muted">${GROUNDERS.length ? `Automatic grounding: ${GROUNDERS.map(g => esc(g.name)).join(', ')}.` : 'Automatic grounding: no grounder connected. A resolver or model can be added; its checks are signed with its own key and count like anyone else’s.'}</p>`
       : '<p class="empty">No claims yet. Select a note that states a fact (“Competitor raised $50M in 2024”) and choose “Mark as a claim to ground”.</p>';
@@ -139,7 +141,8 @@ registerPanel({
 registerFeature({ id: 'claims',
   needs: () => [...(S.D.claims?.values() || [])].filter(c => c.state === 'evidenced' && !samePerson(S.records.get(c.t)?.author, S.me.id) && !samePerson(c.by, S.me.id) && !c.checks.has(personOf(S.me.id))).slice(0, 5).map(c => ({ label: `Check the claim: ${elTitle(c.t).slice(0, 36)}`, run: () => { goTo(c.t); openPanel('claims'); } })), name: 'Claim grounding', group: 'decide', icon: 'claim', records: ['CLAIM', 'EVIDENCE', 'CHECK'],
   blurb: 'Mark facts as claims, attach evidence, have others check them; deliveries can require grounded claims',
-  status: () => { const v = [...(S.D.claims?.values() || [])]; const bad = v.filter(c => c.state === 'contradicted' || c.state === 'asserted').length; return bad ? `${bad} unverified` : v.length ? 'all grounded' : ''; },
+  status: () => { const v = [...(S.D.claims?.values() || [])]; const bad = v.filter(c => c.state === 'contradicted' || c.state === 'asserted').length; const open = v.filter(c => c.state === 'evidenced').length;
+    return bad ? `${bad} unverified` : open ? `${open} to check` : v.length ? 'all grounded' : ''; },
   open: () => openPanel('claims') });
 FLOW_CONDITIONS.claims = { label: 'Every claim is grounded', test: () => { const n = [...(S.D.claims?.values() || [])].filter(c => S.records.has(c.t) && !S.D.hidden.has(c.t) && c.state !== 'grounded').length; return n ? `${plural(n, 'claim')} not grounded` : true; } };
 // the proof records what was believed at the moment of delivery, and on what evidence
