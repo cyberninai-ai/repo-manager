@@ -1,5 +1,5 @@
 empty state shown true
-home {"open":true,"tpl":9,"ex":5,"focus":"inside"}
+home {"open":true,"tpl":13,"ex":5,"focus":"inside"}
 focus trapped in home true
 template blank {"title":"Untitled canvas","els":0,"rej":0}
 template brainstorm {"title":"Brainstorm","els":6,"rej":0}

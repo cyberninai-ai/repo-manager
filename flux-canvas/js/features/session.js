@@ -43,6 +43,8 @@ function paintSession(){
     ${people.length ? `<ul class="se-people">${people.map(([id, p]) => `<li>${av(id)}<div class="se-who"><b>${esc(short(id))}</b><small>${esc(activityOf(p))} · ${viaName[p.via] || p.via}${p.root && p.root !== S.root ? ' · syncing' : ''}</small></div>
       <button class="btn sm" data-follow="${esc(id)}" aria-pressed="${S.follow === id}">${S.follow === id ? 'Following' : 'Follow'}</button></li>`).join('')}</ul>
       <button class="btn" id="seSpot">${ic('present')}Bring everyone to my view</button>` : '<p class="se-empty">Nobody else yet. Invite someone below; they appear here the moment they join.</p>'}
+    <h3>Run this session</h3>
+    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'meet' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>
     <h3>Invite people</h3>
     ${/^https?:/.test(location.href) ? `<button class="btn" id="seLink">${ic('link')}Copy invite link</button>` : ''}
     <div class="se-p2p">
@@ -58,7 +60,9 @@ function paintSession(){
       ${RTC.chans.size ? `<small class="ok">● ${RTC.chans.size} direct connection${RTC.chans.size > 1 ? 's' : ''} open</small>` : ''}
     </div>
     <div class="se-relay"><div class="se-row"><b>Relay</b><small>${NET.state === 'live' ? `Connected to ${esc(NET.url.replace(/^wss?:\/\//, ''))}` : NET.state === 'connecting' ? 'Reconnecting…' : 'A relay keeps the canvas available when people aren’t online at the same time.'}</small></div>
-      <div class="se-acts">${NET.state === 'off' ? '<button class="btn" id="seRelay">Connect to a relay…</button>' : '<button class="btn" id="seRelayOff">Disconnect</button>'}</div></div>`;
+      <div class="se-acts">${NET.state === 'off' ? '<button class="btn" id="seRelay">Connect to a relay…</button>' : '<button class="btn" id="seRelayOff">Disconnect</button>'}</div></div>
+    <h3>Network and identity</h3>
+    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'network' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>`;
   if (keep && $(keep) && keep !== 'seName') $(keep).focus();
 }
 function toggleSession(force){
@@ -75,6 +79,7 @@ $('session').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
   try {
     if (b.dataset.follow){ S.follow === b.dataset.follow ? stopFollow() : startFollow(b.dataset.follow); return; }
+    if (b.dataset.feature){ const f = FEATURES.find(f => f.id === b.dataset.feature); toggleSession(false); f?.open(); return; }
     switch (b.id){
       case 'seSpot': spotlight(); break;
       case 'seLink': copy(location.href.split('#')[0] + '#' + canvasId, 'Invite link copied. Anyone who opens it on this server joins live.'); break;

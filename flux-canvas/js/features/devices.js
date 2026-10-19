@@ -110,7 +110,8 @@ registerPanel({
     } catch (err){ toast(/code/.test(err.message) ? 'That isn’t a link code.' : err.message); }
   },
 });
-registerFeature({ id: 'devices', name: 'Devices and recovery', group: 'network', icon: 'key', records: ['LINK', 'GUARD', 'RECOVER'],
+registerFeature({ id: 'devices',
+  needs: () => [...(S.D.linkAsks || []).filter(([a, b]) => b === S.me.id && !(S.D.recoveries || []).some(r => r.key === a)).map(() => ({ label: 'A device asks to be linked to you', run: () => openPanel('devices') })), ...(S.D.recoveries || []).filter(r => !r.done && r.asked && S.D.guards?.get(r.lost)?.who.has(S.me.id)).map(r => ({ label: `${short(r.lost)} asks you to confirm their recovery`, run: () => openPanel('devices') }))], name: 'Devices and recovery', group: 'network', icon: 'key', records: ['LINK', 'GUARD', 'RECOVER'],
   blurb: 'Link your devices as one person; guardians restore you if one is lost',
   status: () => { const n = (S.D.linkAsks || []).filter(([, b]) => b === S.me?.id).length + (S.D.recoveries || []).filter(r => !r.done && S.D.guards?.get(r.lost)?.who.has(S.me?.id)).length; return n ? `${n} waiting` : S.D.guards?.get(S.me?.id)?.who.size ? '' : 'no guardians'; },
   open: () => openPanel('devices') });

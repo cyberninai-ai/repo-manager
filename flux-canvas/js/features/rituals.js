@@ -103,8 +103,22 @@ registerPanel({
   },
 });
 setInterval(() => { if (panelOpen === 'rituals') paintPanel(); }, 1000);
-registerFeature({ id: 'rituals', name: 'Ritual contracts', group: 'meet', icon: 'target', records: ['RITUAL', 'CLOSE'],
+registerFeature({ id: 'rituals',
+  needs: () => { const x = openRitual(); return x && samePerson(x.r.author, S.me.id) && Date.now() > x.r.ends ? [{ label: `Close “${x.r.name}”: its time is up`, run: () => openPanel('rituals') }] : []; }, name: 'Ritual contracts', group: 'meet', icon: 'target', records: ['RITUAL', 'CLOSE'],
   blurb: 'Retros, plannings and reviews that only close when their outputs exist',
   status: () => { const x = openRitual(); if (x) return needText(x.r, ritualProgress(x.r).got).split(' · ')[0]; const c = (S.D.rituals || []).filter(y => y.close); return c.length ? `${c.filter(y => outcomeOf(y) === 'success').length}/${c.length} closed` : ''; },
   open: () => openPanel('rituals') });
 FLOW_CONDITIONS.ritual = { label: 'The latest ritual closed as a success', test: () => { const c = (S.D.rituals || []).filter(y => y.close).at(-1); return !c ? 'no ritual closed yet' : outcomeOf(c) === 'success' || `${c.r.name} closed ${outcomeOf(c)}`; } };
+// in the canvas home: start a ritual with its board laid out and its contract running
+const RITUAL_BOARDS = {
+  retro: [['What went well', 'green'], ['What to improve', 'orange'], ['Action items', 'blue']],
+  planning: [['Backlog', 'ink'], ['This sprint', 'blue'], ['Decisions', 'violet']],
+  review: [['The design', 'ink'], ['Where we stand', 'violet']],
+  kickoff: [['Goals', 'green'], ['Risks', 'orange'], ['First tasks', 'blue']],
+};
+for (const [k, cols] of Object.entries(RITUAL_BOARDS)) TEMPLATES.push({ id: 'ritual-' + k, name: `${RITUAL_KINDS[k].name} (contract)`, icon: 'target', blurb: RITUAL_KINDS[k].blurb, build: async c => {
+  await mk('card', c.x - 160 * cols.length, c.y - 400, `${RITUAL_KINDS[k].name}: it closes as a success when it has ${needText({ need: RITUAL_KINDS[k].need }, {}).replace(/0\//g, '')}. The strip shows what’s missing.`, { W: 640 });
+  for (const [i, [title, col]] of cols.entries()) await mk('frame', c.x - 160 * cols.length + i * 330, c.y - 330, title, { W: 310, H: 560, color: col });
+  await startRitual(k);
+} });
+Object.assign(CARD_ICONS, Object.fromEntries(Object.keys(RITUAL_BOARDS).map(k => ['ritual-' + k, ['target', 'teal']])));

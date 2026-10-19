@@ -54,6 +54,10 @@ DELIVERY_HOOKS.proof.push((x, out) => {
     ...x.flow.conds.map(c => `- **Condition:** ${c.c?.label || c.id} — ${c.r === true ? 'met' : c.r}`));
 });
 DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
+DELIVERY_HOOKS.compose.push({
+  fields: () => flowsHere().length ? [{ id: 'flow', label: 'Approval flow', type: 'select', value: '', options: [['', 'None: the people and number above'], ...flowsHere().map(f => [f.cid, `${f.name} (${f.groups.map(g => `${g.name} ${g.need}`).join(', ')})`])], hint: 'A flow sets its own approvers, order and conditions.' }] : [],
+  apply: (v, plan) => { const f = v.flow && flowsHere().find(f => f.cid === v.flow); return f ? { ...plan, approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } : plan; },
+});
 const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && r.neg === null && inView(r)).sort(byZ);
 
 async function flowForm(){

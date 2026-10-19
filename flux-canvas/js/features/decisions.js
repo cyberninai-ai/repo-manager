@@ -108,7 +108,8 @@ function decisionLog(){
   }
   return out.join('\n');
 }
-registerFeature({ id: 'decisions', name: 'Decision ledger', group: 'decide', icon: 'flag', records: ['DECISION', 'REVIEW'],
+registerFeature({ id: 'decisions',
+  needs: () => (S.D.decisions || []).filter(reviewDue).map(x => ({ label: `Review: ${x.d.text.slice(0, 40)}`, run: () => { DEC.focus = x.d.cid; openPanel('decisions'); } })), name: 'Decision ledger', group: 'decide', icon: 'flag', records: ['DECISION', 'REVIEW'],
   blurb: 'Decisions as signed records with their evidence, stances and review dates',
   status: () => { const n = (S.D.decisions || []).filter(reviewDue).length; return n ? `${n} to review` : ''; },
   open: () => openPanel('decisions') });

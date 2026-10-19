@@ -11,6 +11,21 @@ Where two ideas overlapped, they were split into one primitive plus the feature 
 
 Every feature is **one module** in `js/features/`. It registers itself (`registerFeature`), its record types (`registerRecord`), its panel (`registerPanel`) and its hooks. It touches no other feature's code. Open them all from the **Team** button (the four squares, top right), or with ⌘K.
 
+## Where you find them
+
+| Place | What is there |
+|---|---|
+| **Team button** (four squares, top right; ⇧T; ⌘K) | Every feature, grouped by what you're doing, with live status. **Needs you** at the top lists what waits on you (approvals, payments to release, suggestions in your zones, reviews due, claims to check, stances to take, link and recovery requests, a ritual or agenda item whose time is up); the number on the button counts them |
+| **Live button** | Who is here and how to invite, plus *Run this session* (silent round, facilitated meeting, rituals, room, zones) and *Network and identity* (mesh, canvas graph, devices and recovery) |
+| **Selection toolbar** | Stance (scales; its menu also starts a blind round), task (✓, K); under More: mark as a claim, record a decision, and zone on a frame you own |
+| **Work panel** | Deliver this work: one dialog for what, who approves (or an approval flow) and the payment terms, which approvers see before they sign. Each delivery shows its flow, contribution, payment, witnesses and an excerpt button; ready-now work and the critical path sit above the tasks |
+| **Session strip** (under the title) | A silent round's prompt and time, the agenda item and its time box with the queue for the floor, a ritual's outputs; each with its buttons |
+| **On the canvas** | Stance counts, "Decided", claim states, tasks blocked and the critical path, zone owners and suggestions to accept, where attention gathers, sealed cards, replay's marker, what changed |
+| **Canvas home** | Retro, sprint planning, design review and kickoff with their contract running |
+| **Help (?)** | *Working as a team* explains all of this |
+
+`tests/teamui.mjs` clicks through every one of these as a person would.
+
 ## At a glance
 
 | # | Feature | Group | Records | Module | Origin |
@@ -284,6 +299,7 @@ features/*.js     one file per feature; each declares its records, its panel and
 | `tests/economy.mjs` | 25 | Mesh sync, ordered approval flows with conditions, contribution and methods, payouts and pool, witnesses, excerpts and tampering (three people) |
 | `tests/memory.mjs` | 29 | Zones, dependencies, linked devices and guardian recovery, what changed, replay, lineage with royalties, the canvas graph (four people) |
 
+| `tests/teamui.mjs` | 39 | Every Team hub item opens by clicking; Deliver with payment terms; approving and releasing from “Needs you”; the stance button and blind round; the live panel's shortcuts; ritual templates; help and ⇧T |
 | `tests/attacks.mjs` | 17 | The attacks from the round-4 audit, replayed: zone blanking, flow conditions, backdated versions, forged credits and settlements, round hijacking, seal length, facilitation rerouting, decision and claim tampering, malformed records, markup in presence ids |
 
 Every suite runs people in separate browser contexts connected peer to peer, and scans each feature panel with axe. The rules each feature enforces against a malicious peer are listed in [AUDIT.md](AUDIT.md), round 4.

@@ -50,6 +50,7 @@ function stanceMenu(targets, anchor, at = null){
   openMenu(anchor, [
     ...Object.entries(STANCES).map(([k, s]) => ({ label: `${s.mark}  ${s.name}`, icon: 'blank', on: one === k, run: () => takeStance(targets, k) })),
     '-', { label: 'Say why…', icon: 'comment', run: async () => { const k = await new Promise(res => openMenu(anchor, Object.entries(STANCES).map(([k, s]) => ({ label: s.name, icon: 'blank', run: () => res(k) })), at)); const note = await ask(`${STANCES[k].name}: why?`, '', 'Your reason is signed with your stance, so the group sees it next to the item.'); if (note !== null) takeStance(targets, k, note.trim()); } },
+    ...(targets.length === 1 ? [{ label: 'Blind round on this: everyone’s stance opens at once…', icon: 'lock', run: () => { S.sel = new Set(targets); roundForm(); } }] : []),
     { label: 'Consensus map', icon: 'scale', run: () => openPanel('consensus') },
   ], at);
 }
@@ -110,7 +111,8 @@ registerPanel({
     if (b.dataset.st) takeStance([b.dataset.t], b.dataset.st);
   },
 });
-registerFeature({ id: 'consensus', name: 'Consensus map', group: 'decide', icon: 'scale', records: ['STANCE'],
+registerFeature({ id: 'consensus',
+  needs: () => (S.D.decisions || []).filter(x => x.status === 'active' && !consensus(x.d.cid).by?.has(personOf(S.me.id))).slice(0, 5).map(x => ({ label: `Where do you stand: ${x.d.text.slice(0, 34)}`, run: () => { DEC.focus = x.d.cid; openPanel('decisions'); } })), name: 'Consensus map', group: 'decide', icon: 'scale', records: ['STANCE'],
   blurb: 'Signed stances on any item: see where the room agrees, is split or unsure, and how it is converging',
   status: () => { const n = [...(S.D.stances?.keys() || [])].filter(t => consensus(t).level === 'split').length; return n ? `${n} split` : ''; },
   open: () => openPanel('consensus') });

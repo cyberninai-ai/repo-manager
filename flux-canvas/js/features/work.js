@@ -188,24 +188,26 @@ $('work').addEventListener('click', async e => {
 });
 
 /* deliveries */
+// the Deliver dialog: what, who approves and how many, plus whatever features add (an approval flow, payment terms), so the
+// approvers see the terms before they sign: an approval covers the terms that were on it
 async function openDeliver(){
-  const title = await ask('What are you delivering?', canvasTitle(), 'People you name approve this exact version of the canvas. Everything added later is not part of it.');
-  if (title === null) return;
-  const others = people().filter(id => id !== S.me.id);
-  const extra = DELIVERY_HOOKS.choices.flatMap(h => { try { return h(others) || []; } catch { return []; } });
-  const pick = others.length || extra.length ? await new Promise(res => openMenu($('workBtn'), [
-    ...(others.length ? [{ label: `Everyone (${others.length + 1})`, icon: 'users', run: () => res({ approvers: [S.me.id, ...others] }) },
-      { label: 'Everyone else, not me', icon: 'users', run: () => res({ approvers: others }) },
-      ...others.map(id => ({ label: `Only ${short(id)}`, icon: 'users', run: () => res({ approvers: [id] }) }))] : []),
-    { label: 'Just me', icon: 'users', run: () => res({ approvers: [S.me.id] }) },
-    ...(extra.length ? ['-', ...extra.map(it => ({ ...it, run: () => res(it.value) }))] : []),
-  ])) : { approvers: [S.me.id] };
-  if (!pick) return;
-  const picks = pick.approvers;
-  const scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
-  await deliver({ title: title.trim() || 'Delivery', approvers: picks, quorum: pick.quorum || picks.length, flow: pick.flow, scope });
-  post({ ask: { to: picks, title: title.trim() } });
-  toWork(); toast(`Sent for approval to ${picks.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
+  const others = people().filter(id => id !== S.me.id), ext = DELIVERY_HOOKS.compose;
+  const v = await formDialog('Deliver this work', [
+    { id: 'title', label: 'What are you delivering?', type: 'text', value: canvasTitle() },
+    { id: 'who', label: 'Who approves it', type: 'people', value: others.length ? others : [S.me.id], options: [S.me.id, ...others], hint: 'They approve this exact version of the canvas. Work added later isn’t part of it.' },
+    { id: 'q', label: 'Approvals needed', type: 'number', value: Math.max(1, others.length || 1), min: 1 },
+    ...ext.flatMap(h => { try { return h.fields() || []; } catch { return []; } }),
+  ], { ok: 'Send for approval', why: 'Everyone named gets a request; when enough of them sign, the work is delivered and everyone gets a proof.' });
+  if (!v) return;
+  let plan = { title: v.title.trim() || 'Delivery', approvers: v.who.length ? v.who : [S.me.id], quorum: 0, flow: null };
+  plan.quorum = Math.max(1, Math.min(plan.approvers.length, v.q || plan.approvers.length));
+  for (const h of ext) if (h.apply) try { plan = h.apply(v, plan) || plan; } catch {}
+  plan.scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
+  const cid = await deliver(plan);
+  for (const h of ext) if (h.after) try { await h.after(v, cid); } catch (err){ console.warn(err); }
+  post({ ask: { to: plan.approvers, title: plan.title } });
+  toWork(); toast(`Sent for approval to ${plan.approvers.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
+  return cid;
 }
 // sign a delivery of the canvas as it is now: the version list goes with it as a blob, its hash is the root
 async function deliver({ title, approvers, quorum = approvers.length, flow = null, scope = '0', nonce = null }){
@@ -244,3 +246,8 @@ function showProof(cid){
 }
 CHANGE_HOOKS.push(paintWork);
 PALETTE_HOOKS.push(add => { add('work', 'Work: tasks and deliveries', () => toggleWork(true)); add('work', 'Deliver this work…', openDeliver); add('work', 'Make the selection a task', () => setTask(taskable([...S.sel].map(c => S.records.get(c)).filter(Boolean)), { status: 'todo' }), { k: 'K' }); });
+// in the Team hub too: tasks and deliveries, and the approvals waiting on you
+registerFeature({ id: 'work', name: 'Tasks and deliveries', group: 'deliver', icon: 'check', records: ['TASK', 'DELIVER', 'APPROVE'],
+  blurb: 'Tasks with owners and due dates; deliveries approved on an exact version',
+  needs: () => (S.D.deliveries || []).filter(x => !x.done && x.d.approvers.some(id => samePerson(id, S.me?.id)) && ![...x.votes.keys()].some(id => samePerson(id, S.me?.id))).map(x => ({ label: `Approve “${x.d.title}”`, run: () => toggleWork(true) })),
+  open: () => toggleWork(true) });

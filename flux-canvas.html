@@ -605,6 +605,8 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 #history .rp-marks .pill{cursor:pointer}
 #history .rp-marks .pill:hover{background:var(--hover)}
 .fx details summary{cursor:pointer;font-size:13px;font-weight:600}
+/* the live session panel launches the meeting and network features */
+#session .se-team{gap:6px} #session .se-team .btn{height:30px;font-size:12.5px} #session .se-team small{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -772,7 +774,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
   <button class="ibtn cnt" id="workBtn" aria-expanded="false" data-tip="Work: tasks and deliveries"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span class="sr">Work</span> <span class="n" id="workN"></span></button>
-  <button class="ibtn" id="hubBtn" aria-label="Team: meetings, decisions, delivery, memory" aria-haspopup="menu" aria-expanded="false" data-tip="Team: meetings, decisions, delivery, memory"><svg class="ic" aria-hidden="true"><use href="#i-hub"/></svg></button>
+  <button class="ibtn cnt" id="hubBtn" aria-label="Team: meetings, decisions, delivery, memory" aria-haspopup="menu" aria-expanded="false" data-tip="Team (⇧T): meetings, decisions, delivery, memory"><svg class="ic" aria-hidden="true"><use href="#i-hub"/></svg> <span class="n" id="hubN" aria-hidden="true"></span></button>
   <button class="ibtn" id="moreBtn" aria-label="More: outline, present, history, reports, settings" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
   </div>
   <button class="share" id="shareBtn" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
@@ -895,6 +897,17 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
     <tr><td>` (backtick)</td><td>Activity: every change, who made it and when</td></tr>
     <tr><td>⌘K or /</td><td>Command palette</td></tr>
   </table>
+  <h2>Working as a team</h2>
+  <table>
+    <tr><td>Team button (four squares) · ⇧T</td><td>Every team feature, grouped: run the session, decide, deliver and get paid, remember, network. “Needs you” at the top lists what waits on you; the number on the button counts it</td></tr>
+    <tr><td>Live button</td><td>Who is here, invites and peer-to-peer codes, and shortcuts to silent rounds, the facilitated meeting, rituals, the room, zones, the mesh and your devices</td></tr>
+    <tr><td>Scales on a selected item</td><td>Take a stance: agree, disagree, unsure, an alternative. The badge above the item counts them; a blind round opens everyone’s stance at once</td></tr>
+    <tr><td>K · ✓ on a selected item</td><td>Make it a task, then move it along (to do, doing, done). Connect tasks with “depends on” to order them</td></tr>
+    <tr><td>More (⋯) on a selected item</td><td>Mark it as a claim to ground, record a decision on it, or make a frame you own a zone</td></tr>
+    <tr><td>Work → Deliver this work</td><td>Name who approves (or an approval flow) and, if you like, the payment; they sign this exact version</td></tr>
+    <tr><td>⇧H</td><td>Replay: watch the canvas being made, or only its decisions</td></tr>
+    <tr><td>The strip under the title</td><td>What the room is doing now: a silent round, the agenda item and its time, a ritual and its outputs</td></tr>
+  </table>
   <h2>Keyboard only</h2>
   <table>
     <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
@@ -995,6 +1008,7 @@ const DELIVERY_HOOKS = {        // features that extend a delivery (features/wor
   proof: [],                    // (x, lines) add sections to the proof
   row: [],                      // (x) → HTML under a delivery in the Work panel
   choices: [],                  // (others) → menu items that resolve how a new delivery is approved: { approvers, quorum, flow }
+  compose: [],                  // { fields: () → form fields, apply?: (values, plan) → plan, after?: async (values, deliveryCid) } in the Deliver dialog
 };
 const FLOW_CONDITIONS = {};     // id → { label, test(D) → true or the reason it isn't met }: what an approval flow can require
 const RECORD_GATES = [];        // (allRecords, policy) → null | (r) → null | 'deny' | 'pending'; run in derive after permissions (zones)
@@ -5643,6 +5657,8 @@ function paintSession(){
     ${people.length ? `<ul class="se-people">${people.map(([id, p]) => `<li>${av(id)}<div class="se-who"><b>${esc(short(id))}</b><small>${esc(activityOf(p))} · ${viaName[p.via] || p.via}${p.root && p.root !== S.root ? ' · syncing' : ''}</small></div>
       <button class="btn sm" data-follow="${esc(id)}" aria-pressed="${S.follow === id}">${S.follow === id ? 'Following' : 'Follow'}</button></li>`).join('')}</ul>
       <button class="btn" id="seSpot">${ic('present')}Bring everyone to my view</button>` : '<p class="se-empty">Nobody else yet. Invite someone below; they appear here the moment they join.</p>'}
+    <h3>Run this session</h3>
+    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'meet' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>
     <h3>Invite people</h3>
     ${/^https?:/.test(location.href) ? `<button class="btn" id="seLink">${ic('link')}Copy invite link</button>` : ''}
     <div class="se-p2p">
@@ -5658,7 +5674,9 @@ function paintSession(){
       ${RTC.chans.size ? `<small class="ok">● ${RTC.chans.size} direct connection${RTC.chans.size > 1 ? 's' : ''} open</small>` : ''}
     </div>
     <div class="se-relay"><div class="se-row"><b>Relay</b><small>${NET.state === 'live' ? `Connected to ${esc(NET.url.replace(/^wss?:\/\//, ''))}` : NET.state === 'connecting' ? 'Reconnecting…' : 'A relay keeps the canvas available when people aren’t online at the same time.'}</small></div>
-      <div class="se-acts">${NET.state === 'off' ? '<button class="btn" id="seRelay">Connect to a relay…</button>' : '<button class="btn" id="seRelayOff">Disconnect</button>'}</div></div>`;
+      <div class="se-acts">${NET.state === 'off' ? '<button class="btn" id="seRelay">Connect to a relay…</button>' : '<button class="btn" id="seRelayOff">Disconnect</button>'}</div></div>
+    <h3>Network and identity</h3>
+    <div class="se-acts se-team">${FEATURES.filter(f => f.group === 'network' && f.open).map(f => { let st = ''; try { st = f.status?.() || ''; } catch {} return `<button class="btn" data-feature="${f.id}">${ic(f.icon)}${esc(f.name)}${st ? ` <small>· ${esc(st)}</small>` : ''}</button>`; }).join('')}</div>`;
   if (keep && $(keep) && keep !== 'seName') $(keep).focus();
 }
 function toggleSession(force){
@@ -5675,6 +5693,7 @@ $('session').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
   try {
     if (b.dataset.follow){ S.follow === b.dataset.follow ? stopFollow() : startFollow(b.dataset.follow); return; }
+    if (b.dataset.feature){ const f = FEATURES.find(f => f.id === b.dataset.feature); toggleSession(false); f?.open(); return; }
     switch (b.id){
       case 'seSpot': spotlight(); break;
       case 'seLink': copy(location.href.split('#')[0] + '#' + canvasId, 'Invite link copied. Anyone who opens it on this server joins live.'); break;
@@ -6045,24 +6064,26 @@ $('work').addEventListener('click', async e => {
 });
 
 /* deliveries */
+// the Deliver dialog: what, who approves and how many, plus whatever features add (an approval flow, payment terms), so the
+// approvers see the terms before they sign: an approval covers the terms that were on it
 async function openDeliver(){
-  const title = await ask('What are you delivering?', canvasTitle(), 'People you name approve this exact version of the canvas. Everything added later is not part of it.');
-  if (title === null) return;
-  const others = people().filter(id => id !== S.me.id);
-  const extra = DELIVERY_HOOKS.choices.flatMap(h => { try { return h(others) || []; } catch { return []; } });
-  const pick = others.length || extra.length ? await new Promise(res => openMenu($('workBtn'), [
-    ...(others.length ? [{ label: `Everyone (${others.length + 1})`, icon: 'users', run: () => res({ approvers: [S.me.id, ...others] }) },
-      { label: 'Everyone else, not me', icon: 'users', run: () => res({ approvers: others }) },
-      ...others.map(id => ({ label: `Only ${short(id)}`, icon: 'users', run: () => res({ approvers: [id] }) }))] : []),
-    { label: 'Just me', icon: 'users', run: () => res({ approvers: [S.me.id] }) },
-    ...(extra.length ? ['-', ...extra.map(it => ({ ...it, run: () => res(it.value) }))] : []),
-  ])) : { approvers: [S.me.id] };
-  if (!pick) return;
-  const picks = pick.approvers;
-  const scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
-  await deliver({ title: title.trim() || 'Delivery', approvers: picks, quorum: pick.quorum || picks.length, flow: pick.flow, scope });
-  post({ ask: { to: picks, title: title.trim() } });
-  toWork(); toast(`Sent for approval to ${picks.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
+  const others = people().filter(id => id !== S.me.id), ext = DELIVERY_HOOKS.compose;
+  const v = await formDialog('Deliver this work', [
+    { id: 'title', label: 'What are you delivering?', type: 'text', value: canvasTitle() },
+    { id: 'who', label: 'Who approves it', type: 'people', value: others.length ? others : [S.me.id], options: [S.me.id, ...others], hint: 'They approve this exact version of the canvas. Work added later isn’t part of it.' },
+    { id: 'q', label: 'Approvals needed', type: 'number', value: Math.max(1, others.length || 1), min: 1 },
+    ...ext.flatMap(h => { try { return h.fields() || []; } catch { return []; } }),
+  ], { ok: 'Send for approval', why: 'Everyone named gets a request; when enough of them sign, the work is delivered and everyone gets a proof.' });
+  if (!v) return;
+  let plan = { title: v.title.trim() || 'Delivery', approvers: v.who.length ? v.who : [S.me.id], quorum: 0, flow: null };
+  plan.quorum = Math.max(1, Math.min(plan.approvers.length, v.q || plan.approvers.length));
+  for (const h of ext) if (h.apply) try { plan = h.apply(v, plan) || plan; } catch {}
+  plan.scope = S.sel.size === 1 && S.records.get([...S.sel][0])?.ek === 'frame' ? [...S.sel][0] : '0';
+  const cid = await deliver(plan);
+  for (const h of ext) if (h.after) try { await h.after(v, cid); } catch (err){ console.warn(err); }
+  post({ ask: { to: plan.approvers, title: plan.title } });
+  toWork(); toast(`Sent for approval to ${plan.approvers.map(id => id === S.me.id ? 'you' : short(id)).join(', ')}`);
+  return cid;
 }
 // sign a delivery of the canvas as it is now: the version list goes with it as a blob, its hash is the root
 async function deliver({ title, approvers, quorum = approvers.length, flow = null, scope = '0', nonce = null }){
@@ -6101,6 +6122,11 @@ function showProof(cid){
 }
 CHANGE_HOOKS.push(paintWork);
 PALETTE_HOOKS.push(add => { add('work', 'Work: tasks and deliveries', () => toggleWork(true)); add('work', 'Deliver this work…', openDeliver); add('work', 'Make the selection a task', () => setTask(taskable([...S.sel].map(c => S.records.get(c)).filter(Boolean)), { status: 'todo' }), { k: 'K' }); });
+// in the Team hub too: tasks and deliveries, and the approvals waiting on you
+registerFeature({ id: 'work', name: 'Tasks and deliveries', group: 'deliver', icon: 'check', records: ['TASK', 'DELIVER', 'APPROVE'],
+  blurb: 'Tasks with owners and due dates; deliveries approved on an exact version',
+  needs: () => (S.D.deliveries || []).filter(x => !x.done && x.d.approvers.some(id => samePerson(id, S.me?.id)) && ![...x.votes.keys()].some(id => samePerson(id, S.me?.id))).map(x => ({ label: `Approve “${x.d.title}”`, run: () => toggleWork(true) })),
+  open: () => toggleWork(true) });
 // time, repaints when the canvas changes (keeping focus and anything typed), and closes on Escape
 // @uses ui/icons, features/work, features/comments, features/structure, ui/ledger (to close the older panels)
 const PANELS = new Map();
@@ -6240,8 +6266,13 @@ const localDT = t => { const d = new Date(t - new Date(t).getTimezoneOffset() * 
 // (a silent round running, a decision due for review). Features add themselves with registerFeature (core/hooks).
 // @uses ui/toolbar (menus), ui/palette
 const HUB_GROUPS = [['meet', 'Run the session'], ['decide', 'Decide'], ['deliver', 'Deliver and get paid'], ['remember', 'Remember'], ['network', 'Network and identity']];
+// what is waiting on you, from every feature: approvals, suggestions to answer, reviews due, checks to make…
+function needsYou(){ const out = []; for (const f of FEATURES) if (f.needs) try { for (const n of f.needs() || []) out.push({ ...n, icon: n.icon || f.icon }); } catch {} return out; }
+function paintHubBadge(){ const b = $('hubN'), n = S.me ? needsYou().length : 0; if (b) b.textContent = n || ''; $('hubBtn').setAttribute('aria-label', `Team: meetings, decisions, delivery, memory${n ? ` · ${n} waiting for you` : ''}`); }
+CHANGE_HOOKS.push(paintHubBadge); setInterval(paintHubBadge, 5000);
 function hubItems(){
-  const out = [];
+  const out = [], needs = needsYou();
+  if (needs.length){ out.push({ head: `Needs you (${needs.length})` }, ...needs.slice(0, 8)); if (needs.length > 8) out.push({ label: `${needs.length - 8} more…`, icon: 'list', run: () => openMenu($('hubBtn'), needs) }); }
   for (const [g, title] of HUB_GROUPS){
     const fs = FEATURES.filter(f => f.group === g && f.open); if (!fs.length) continue;
     out.push({ head: title });
@@ -6250,7 +6281,8 @@ function hubItems(){
   return out;
 }
 $('hubBtn').onclick = () => $('menu').hidden ? openMenu($('hubBtn'), hubItems()) : closeMenu();
-PALETTE_HOOKS.push(add => { for (const f of FEATURES) if (f.open) add('team', `${f.name}: ${f.blurb}`, f.open); });
+PALETTE_HOOKS.push(add => { add('team', 'Team: what needs me', () => openMenu($('hubBtn'), hubItems())); for (const f of FEATURES) if (f.open) add('team', `${f.name}: ${f.blurb}`, f.open); });
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.shiftKey && e.key === 'T'){ e.preventDefault(); openMenu($('hubBtn'), hubItems()); return true; } return false; });
 
 /* the session strip under the title bar: what the room is doing right now. Features add a chip: STRIP.push(() => html);
    buttons inside carry data-strip="action" and STRIP_ACTIONS[action](button) handles them */
@@ -6318,6 +6350,7 @@ function stanceMenu(targets, anchor, at = null){
   openMenu(anchor, [
     ...Object.entries(STANCES).map(([k, s]) => ({ label: `${s.mark}  ${s.name}`, icon: 'blank', on: one === k, run: () => takeStance(targets, k) })),
     '-', { label: 'Say why…', icon: 'comment', run: async () => { const k = await new Promise(res => openMenu(anchor, Object.entries(STANCES).map(([k, s]) => ({ label: s.name, icon: 'blank', run: () => res(k) })), at)); const note = await ask(`${STANCES[k].name}: why?`, '', 'Your reason is signed with your stance, so the group sees it next to the item.'); if (note !== null) takeStance(targets, k, note.trim()); } },
+    ...(targets.length === 1 ? [{ label: 'Blind round on this: everyone’s stance opens at once…', icon: 'lock', run: () => { S.sel = new Set(targets); roundForm(); } }] : []),
     { label: 'Consensus map', icon: 'scale', run: () => openPanel('consensus') },
   ], at);
 }
@@ -6378,7 +6411,8 @@ registerPanel({
     if (b.dataset.st) takeStance([b.dataset.t], b.dataset.st);
   },
 });
-registerFeature({ id: 'consensus', name: 'Consensus map', group: 'decide', icon: 'scale', records: ['STANCE'],
+registerFeature({ id: 'consensus',
+  needs: () => (S.D.decisions || []).filter(x => x.status === 'active' && !consensus(x.d.cid).by?.has(personOf(S.me.id))).slice(0, 5).map(x => ({ label: `Where do you stand: ${x.d.text.slice(0, 34)}`, run: () => { DEC.focus = x.d.cid; openPanel('decisions'); } })), name: 'Consensus map', group: 'decide', icon: 'scale', records: ['STANCE'],
   blurb: 'Signed stances on any item: see where the room agrees, is split or unsure, and how it is converging',
   status: () => { const n = [...(S.D.stances?.keys() || [])].filter(t => consensus(t).level === 'split').length; return n ? `${n} split` : ''; },
   open: () => openPanel('consensus') });
@@ -6491,7 +6525,8 @@ function decisionLog(){
   }
   return out.join('\n');
 }
-registerFeature({ id: 'decisions', name: 'Decision ledger', group: 'decide', icon: 'flag', records: ['DECISION', 'REVIEW'],
+registerFeature({ id: 'decisions',
+  needs: () => (S.D.decisions || []).filter(reviewDue).map(x => ({ label: `Review: ${x.d.text.slice(0, 40)}`, run: () => { DEC.focus = x.d.cid; openPanel('decisions'); } })), name: 'Decision ledger', group: 'decide', icon: 'flag', records: ['DECISION', 'REVIEW'],
   blurb: 'Decisions as signed records with their evidence, stances and review dates',
   status: () => { const n = (S.D.decisions || []).filter(reviewDue).length; return n ? `${n} to review` : ''; },
   open: () => openPanel('decisions') });
@@ -6634,7 +6669,8 @@ registerPanel({
     if (b.dataset.no){ const n = await ask('Why doesn’t it hold?', '', 'Your reason is signed with your check.'); if (n !== null) checkClaim(b.dataset.no, 'no', n.trim()); }
   },
 });
-registerFeature({ id: 'claims', name: 'Claim grounding', group: 'decide', icon: 'claim', records: ['CLAIM', 'EVIDENCE', 'CHECK'],
+registerFeature({ id: 'claims',
+  needs: () => [...(S.D.claims?.values() || [])].filter(c => c.state === 'evidenced' && !samePerson(S.records.get(c.t)?.author, S.me.id) && !samePerson(c.by, S.me.id) && !c.checks.has(personOf(S.me.id))).slice(0, 5).map(c => ({ label: `Check the claim: ${elTitle(c.t).slice(0, 36)}`, run: () => { goTo(c.t); openPanel('claims'); } })), name: 'Claim grounding', group: 'decide', icon: 'claim', records: ['CLAIM', 'EVIDENCE', 'CHECK'],
   blurb: 'Mark facts as claims, attach evidence, have others check them; deliveries can require grounded claims',
   status: () => { const v = [...(S.D.claims?.values() || [])]; const bad = v.filter(c => c.state === 'contradicted' || c.state === 'asserted').length; return bad ? `${bad} unverified` : v.length ? 'all grounded' : ''; },
   open: () => openPanel('claims') });
@@ -7007,7 +7043,8 @@ function minutes(){
   }
   return out.join('\n');
 }
-registerFeature({ id: 'meeting', name: 'Facilitated meeting', group: 'meet', icon: 'present', records: ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'],
+registerFeature({ id: 'meeting',
+  needs: () => { const it = item(); return it && amFac() && Date.now() > meet().started + it.min * 6e4 ? [{ label: `Time is up for “${it.title}”: move on`, run: () => openPanel('meeting') }] : []; }, name: 'Facilitated meeting', group: 'meet', icon: 'present', records: ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'],
   blurb: 'A facilitator, an agenda with time boxes, a queue for the floor, note-takers, minutes',
   status: () => { const it = item(); return it ? `${meet().at + 1}/${meet().agenda.items.length} ${it.title.slice(0, 18)}` : ''; },
   open: () => openPanel('meeting') });
@@ -7115,11 +7152,25 @@ registerPanel({
   },
 });
 setInterval(() => { if (panelOpen === 'rituals') paintPanel(); }, 1000);
-registerFeature({ id: 'rituals', name: 'Ritual contracts', group: 'meet', icon: 'target', records: ['RITUAL', 'CLOSE'],
+registerFeature({ id: 'rituals',
+  needs: () => { const x = openRitual(); return x && samePerson(x.r.author, S.me.id) && Date.now() > x.r.ends ? [{ label: `Close “${x.r.name}”: its time is up`, run: () => openPanel('rituals') }] : []; }, name: 'Ritual contracts', group: 'meet', icon: 'target', records: ['RITUAL', 'CLOSE'],
   blurb: 'Retros, plannings and reviews that only close when their outputs exist',
   status: () => { const x = openRitual(); if (x) return needText(x.r, ritualProgress(x.r).got).split(' · ')[0]; const c = (S.D.rituals || []).filter(y => y.close); return c.length ? `${c.filter(y => outcomeOf(y) === 'success').length}/${c.length} closed` : ''; },
   open: () => openPanel('rituals') });
 FLOW_CONDITIONS.ritual = { label: 'The latest ritual closed as a success', test: () => { const c = (S.D.rituals || []).filter(y => y.close).at(-1); return !c ? 'no ritual closed yet' : outcomeOf(c) === 'success' || `${c.r.name} closed ${outcomeOf(c)}`; } };
+// in the canvas home: start a ritual with its board laid out and its contract running
+const RITUAL_BOARDS = {
+  retro: [['What went well', 'green'], ['What to improve', 'orange'], ['Action items', 'blue']],
+  planning: [['Backlog', 'ink'], ['This sprint', 'blue'], ['Decisions', 'violet']],
+  review: [['The design', 'ink'], ['Where we stand', 'violet']],
+  kickoff: [['Goals', 'green'], ['Risks', 'orange'], ['First tasks', 'blue']],
+};
+for (const [k, cols] of Object.entries(RITUAL_BOARDS)) TEMPLATES.push({ id: 'ritual-' + k, name: `${RITUAL_KINDS[k].name} (contract)`, icon: 'target', blurb: RITUAL_KINDS[k].blurb, build: async c => {
+  await mk('card', c.x - 160 * cols.length, c.y - 400, `${RITUAL_KINDS[k].name}: it closes as a success when it has ${needText({ need: RITUAL_KINDS[k].need }, {}).replace(/0\//g, '')}. The strip shows what’s missing.`, { W: 640 });
+  for (const [i, [title, col]] of cols.entries()) await mk('frame', c.x - 160 * cols.length + i * 330, c.y - 330, title, { W: 310, H: 560, color: col });
+  await startRitual(k);
+} });
+Object.assign(CARD_ICONS, Object.fromEntries(Object.keys(RITUAL_BOARDS).map(k => ['ritual-' + k, ['target', 'teal']])));
 // item and for how long, reading the same note for minutes, idle, or looking at a decision without taking a stance. The Room
 // panel shows the room at a glance (who may be stuck, where attention gathers); the canvas marks items several people are on.
 // Attention travels with live presence and is never signed or stored: a permanent log of where everyone looked would bloat the
@@ -7234,6 +7285,10 @@ DELIVERY_HOOKS.proof.push((x, out) => {
     ...x.flow.conds.map(c => `- **Condition:** ${c.c?.label || c.id} — ${c.r === true ? 'met' : c.r}`));
 });
 DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
+DELIVERY_HOOKS.compose.push({
+  fields: () => flowsHere().length ? [{ id: 'flow', label: 'Approval flow', type: 'select', value: '', options: [['', 'None: the people and number above'], ...flowsHere().map(f => [f.cid, `${f.name} (${f.groups.map(g => `${g.name} ${g.need}`).join(', ')})`])], hint: 'A flow sets its own approvers, order and conditions.' }] : [],
+  apply: (v, plan) => { const f = v.flow && flowsHere().find(f => f.cid === v.flow); return f ? { ...plan, approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } : plan; },
+});
 const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && r.neg === null && inView(r)).sort(byZ);
 
 async function flowForm(){
@@ -7449,6 +7504,12 @@ DERIVE_FINAL.push((D, by) => {
   D.pays = pays; D.settles = settles; D.pool = pool; D.fromPool = fromPool;
 });
 const settleValid = (x, s) => S.D.settles?.get(x.d.cid) === s;
+// payment terms can go on in the Deliver dialog itself, before anyone approves
+DELIVERY_HOOKS.compose.push({
+  fields: () => [{ id: 'pay', label: 'Payment on approval (0 for none)', type: 'number', value: 0, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...(S.D.pool?.keys() || [])][0] || 'FXN' },
+    { id: 'split', label: 'Split the payment', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors']] }],
+  after: async (v, cid) => { if (!(v.pay > 0) || !unitOk(v.unit)) return; await publish(await signed('PAY', [['I', S.me.id], ['R', cid], ['A', Math.round(v.pay * 100)], ['U', v.unit.toUpperCase()], ['S', v.split], ['P', '0'], ['Z', ++S.lamport], ['T', Date.now()]])); },
+});
 async function attachPay(x){
   const v = await formDialog('Payment for this delivery', [
     { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
@@ -7511,7 +7572,8 @@ registerPanel({
   },
   click(e, b){ if (b.hasAttribute('data-pledge')) pledge(); },
 });
-registerFeature({ id: 'funding', name: 'Canvas-to-Cash', group: 'deliver', icon: 'coin', records: ['FUND', 'PAY', 'SETTLE'],
+registerFeature({ id: 'funding',
+  needs: () => (S.D.deliveries || []).filter(x => x.done && samePerson(x.d.author, S.me.id) && S.D.pays?.get(x.d.cid) && !S.D.settles?.get(x.d.cid) && termsApproved(x, S.D.pays.get(x.d.cid))).map(x => ({ label: `Release the payment for “${x.d.title}”`, run: () => toggleWork(true) })), name: 'Canvas-to-Cash', group: 'deliver', icon: 'coin', records: ['FUND', 'PAY', 'SETTLE'],
   blurb: 'Pledges to a pool, payment terms on deliveries, approval releases a signed settlement',
   status: () => { const p = [...(S.D.pool?.entries() || [])][0]; return p ? `${money(p[1].pledged - p[1].paid, p[0])} in pool` : ''; }, open: () => openPanel('funding') });
 // independent witnesses on the same version give it a timestamp and an existence proof without a blockchain: to deny the
@@ -8182,7 +8244,8 @@ registerPanel({
     } catch (err){ toast(/code/.test(err.message) ? 'That isn’t a link code.' : err.message); }
   },
 });
-registerFeature({ id: 'devices', name: 'Devices and recovery', group: 'network', icon: 'key', records: ['LINK', 'GUARD', 'RECOVER'],
+registerFeature({ id: 'devices',
+  needs: () => [...(S.D.linkAsks || []).filter(([a, b]) => b === S.me.id && !(S.D.recoveries || []).some(r => r.key === a)).map(() => ({ label: 'A device asks to be linked to you', run: () => openPanel('devices') })), ...(S.D.recoveries || []).filter(r => !r.done && r.asked && S.D.guards?.get(r.lost)?.who.has(S.me.id)).map(r => ({ label: `${short(r.lost)} asks you to confirm their recovery`, run: () => openPanel('devices') }))], name: 'Devices and recovery', group: 'network', icon: 'key', records: ['LINK', 'GUARD', 'RECOVER'],
   blurb: 'Link your devices as one person; guardians restore you if one is lost',
   status: () => { const n = (S.D.linkAsks || []).filter(([, b]) => b === S.me?.id).length + (S.D.recoveries || []).filter(r => !r.done && S.D.guards?.get(r.lost)?.who.has(S.me?.id)).length; return n ? `${n} waiting` : S.D.guards?.get(S.me?.id)?.who.size ? '' : 'no guardians'; },
   open: () => openPanel('devices') });
@@ -8300,7 +8363,8 @@ registerPanel({
   },
   async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me.id)))) await answer(s.r.cid, true); },
 });
-registerFeature({ id: 'zones', name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
+registerFeature({ id: 'zones',
+  needs: () => suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me.id))).map(s => ({ label: `${whoName(s.r.author)} suggests a change in your zone`, run: () => openPanel('zones') })), name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
   blurb: 'Own an area: others’ changes inside it wait as suggestions, or are locked out',
   status: () => { const n = suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me?.id))).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });
 // on" points at what must finish first; "leads to" or a plain arrow points at what comes next). Blocked tasks say what they wait

@@ -146,7 +146,8 @@ function minutes(){
   }
   return out.join('\n');
 }
-registerFeature({ id: 'meeting', name: 'Facilitated meeting', group: 'meet', icon: 'present', records: ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'],
+registerFeature({ id: 'meeting',
+  needs: () => { const it = item(); return it && amFac() && Date.now() > meet().started + it.min * 6e4 ? [{ label: `Time is up for “${it.title}”: move on`, run: () => openPanel('meeting') }] : []; }, name: 'Facilitated meeting', group: 'meet', icon: 'present', records: ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'],
   blurb: 'A facilitator, an agenda with time boxes, a queue for the floor, note-takers, minutes',
   status: () => { const it = item(); return it ? `${meet().at + 1}/${meet().agenda.items.length} ${it.title.slice(0, 18)}` : ''; },
   open: () => openPanel('meeting') });

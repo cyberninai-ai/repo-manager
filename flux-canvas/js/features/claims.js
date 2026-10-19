@@ -136,7 +136,8 @@ registerPanel({
     if (b.dataset.no){ const n = await ask('Why doesn’t it hold?', '', 'Your reason is signed with your check.'); if (n !== null) checkClaim(b.dataset.no, 'no', n.trim()); }
   },
 });
-registerFeature({ id: 'claims', name: 'Claim grounding', group: 'decide', icon: 'claim', records: ['CLAIM', 'EVIDENCE', 'CHECK'],
+registerFeature({ id: 'claims',
+  needs: () => [...(S.D.claims?.values() || [])].filter(c => c.state === 'evidenced' && !samePerson(S.records.get(c.t)?.author, S.me.id) && !samePerson(c.by, S.me.id) && !c.checks.has(personOf(S.me.id))).slice(0, 5).map(c => ({ label: `Check the claim: ${elTitle(c.t).slice(0, 36)}`, run: () => { goTo(c.t); openPanel('claims'); } })), name: 'Claim grounding', group: 'decide', icon: 'claim', records: ['CLAIM', 'EVIDENCE', 'CHECK'],
   blurb: 'Mark facts as claims, attach evidence, have others check them; deliveries can require grounded claims',
   status: () => { const v = [...(S.D.claims?.values() || [])]; const bad = v.filter(c => c.state === 'contradicted' || c.state === 'asserted').length; return bad ? `${bad} unverified` : v.length ? 'all grounded' : ''; },
   open: () => openPanel('claims') });

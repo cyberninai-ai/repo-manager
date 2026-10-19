@@ -34,6 +34,7 @@ const DELIVERY_HOOKS = {        // features that extend a delivery (features/wor
   proof: [],                    // (x, lines) add sections to the proof
   row: [],                      // (x) → HTML under a delivery in the Work panel
   choices: [],                  // (others) → menu items that resolve how a new delivery is approved: { approvers, quorum, flow }
+  compose: [],                  // { fields: () → form fields, apply?: (values, plan) → plan, after?: async (values, deliveryCid) } in the Deliver dialog
 };
 const FLOW_CONDITIONS = {};     // id → { label, test(D) → true or the reason it isn't met }: what an approval flow can require
 const RECORD_GATES = [];        // (allRecords, policy) → null | (r) → null | 'deny' | 'pending'; run in derive after permissions (zones)

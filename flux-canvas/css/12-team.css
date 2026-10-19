@@ -66,3 +66,5 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 #history .rp-marks .pill{cursor:pointer}
 #history .rp-marks .pill:hover{background:var(--hover)}
 .fx details summary{cursor:pointer;font-size:13px;font-weight:600}
+/* the live session panel launches the meeting and network features */
+#session .se-team{gap:6px} #session .se-team .btn{height:30px;font-size:12.5px} #session .se-team small{color:var(--muted)}

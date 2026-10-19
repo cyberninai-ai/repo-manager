@@ -114,6 +114,7 @@ registerPanel({
   },
   async click(e, b){ if (b.dataset.yes) return answer(b.dataset.yes, true); if (b.dataset.no) return answer(b.dataset.no, false); if (b.dataset.go) return goTo(b.dataset.go); if (b.hasAttribute('data-all')) for (const s of suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me.id)))) await answer(s.r.cid, true); },
 });
-registerFeature({ id: 'zones', name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
+registerFeature({ id: 'zones',
+  needs: () => suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me.id))).map(s => ({ label: `${whoName(s.r.author)} suggests a change in your zone`, run: () => openPanel('zones') })), name: 'Zones and suggestions', group: 'meet', icon: 'zone', records: ['ZONE', 'ACCEPT'],
   blurb: 'Own an area: others’ changes inside it wait as suggestions, or are locked out',
   status: () => { const n = suggestions().filter(s => s.zones.some(z => samePerson(z.author, S.me?.id))).length; return n ? `${n} to answer` : ''; }, open: () => openPanel('zones') });

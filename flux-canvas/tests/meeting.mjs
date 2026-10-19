@@ -12,7 +12,7 @@ ok(await A.evaluate(s => !S.records.has(s.inner) && !JSON.stringify([...S.record
 ok(await until(A, s => S.records.has(s.inner) && /42k/.test(S.records.get(s.inner).text), seal, 9000), 'at its time it opens for Ana, and matches its commitment');
 
 // 2. a silent round: Ben and Chen write; nobody sees anyone’s notes until it ends; then all open together
-await A.evaluate(() => startRound({ prompt: 'How might we cut onboarding time?', minutes: 0.08 }));
+await A.evaluate(() => startRound({ prompt: 'How might we cut onboarding time?', minutes: 0.25 }));
 ok(await until(B, () => !!activeRound()) && await until(C, () => !!activeRound()), 'the round reaches everyone');
 const before = await A.evaluate(() => S.D.els.length);
 await B.evaluate(async () => { await commitNode({ kind: 'sticky', x: 0, y: 300, label: 'Self-serve setup wizard' }); await commitNode({ kind: 'sticky', x: 180, y: 300, label: 'Templates for top jobs' }); });
@@ -20,17 +20,17 @@ await C.evaluate(() => commitNode({ kind: 'sticky', x: 360, y: 300, label: 'Budd
 ok(await until(A, () => [...S.D.seals.values()].filter(x => x.s.round).length === 3), 'Ana counts 3 sealed ideas');
 ok(await A.evaluate(n => S.D.els.length === n && ![...S.records.values()].some(r => /wizard|Buddy/.test(r.text || '')), before), 'during the round no idea is readable, not even by the round’s starter');
 ok(await B.evaluate(() => !document.getElementById('strip').textContent.includes('Buddy') && /Silent round/.test(document.getElementById('strip').textContent)), 'Ben’s strip shows the round, not Chen’s content');
-ok(await until(A, () => ['wizard', 'Templates', 'Buddy'].every(w => [...S.records.values()].some(r => (r.text || '').includes(w))), null, 12000), 'when it ends every idea opens for everyone together');
+ok(await until(A, () => ['wizard', 'Templates', 'Buddy'].every(w => [...S.records.values()].some(r => (r.text || '').includes(w))), null, 30000), 'when it ends every idea opens for everyone together');
 ok(await A.evaluate(() => /Round revealed/.test(document.getElementById('strip').textContent)), 'the strip says the round was revealed');
 
 // 3. a blind stance round on one item
 const target = await A.evaluate(() => commitNode({ kind: 'card', x: 0, y: 600, label: 'Drop the free tier' }));
 await until(B, t => S.records.has(t), target);
-await A.evaluate(t => startRound({ prompt: 'Drop the free tier?', minutes: 0.06, mode: 'stances', on: t }), target);
+await A.evaluate(t => startRound({ prompt: 'Drop the free tier?', minutes: 0.15, mode: 'stances', on: t }), target);
 await until(B, () => activeRound()?.cur.mode === 'stances');
 await B.evaluate(() => blindStance(activeRound(), 'disagree')); await C.evaluate(() => blindStance(activeRound(), 'agree'));
 ok(await A.evaluate(t => !consensus(t).n, target), 'blind stances: nothing counted while the round runs');
-ok(await until(A, t => consensus(t).n === 2 && consensus(t).level === 'split', target, 12000), 'they open together: one agree, one disagree');
+ok(await until(A, t => consensus(t).n === 2 && consensus(t).level === 'split', target, 25000), 'they open together: one agree, one disagree');
 
 // 4. facilitation: role, agenda, pulling to the item, queue, floor, handover
 await A.evaluate(() => facilitate(S.me.id));

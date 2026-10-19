@@ -63,6 +63,12 @@ DERIVE_FINAL.push((D, by) => {
   D.pays = pays; D.settles = settles; D.pool = pool; D.fromPool = fromPool;
 });
 const settleValid = (x, s) => S.D.settles?.get(x.d.cid) === s;
+// payment terms can go on in the Deliver dialog itself, before anyone approves
+DELIVERY_HOOKS.compose.push({
+  fields: () => [{ id: 'pay', label: 'Payment on approval (0 for none)', type: 'number', value: 0, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...(S.D.pool?.keys() || [])][0] || 'FXN' },
+    { id: 'split', label: 'Split the payment', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors']] }],
+  after: async (v, cid) => { if (!(v.pay > 0) || !unitOk(v.unit)) return; await publish(await signed('PAY', [['I', S.me.id], ['R', cid], ['A', Math.round(v.pay * 100)], ['U', v.unit.toUpperCase()], ['S', v.split], ['P', '0'], ['Z', ++S.lamport], ['T', Date.now()]])); },
+});
 async function attachPay(x){
   const v = await formDialog('Payment for this delivery', [
     { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
@@ -125,6 +131,7 @@ registerPanel({
   },
   click(e, b){ if (b.hasAttribute('data-pledge')) pledge(); },
 });
-registerFeature({ id: 'funding', name: 'Canvas-to-Cash', group: 'deliver', icon: 'coin', records: ['FUND', 'PAY', 'SETTLE'],
+registerFeature({ id: 'funding',
+  needs: () => (S.D.deliveries || []).filter(x => x.done && samePerson(x.d.author, S.me.id) && S.D.pays?.get(x.d.cid) && !S.D.settles?.get(x.d.cid) && termsApproved(x, S.D.pays.get(x.d.cid))).map(x => ({ label: `Release the payment for “${x.d.title}”`, run: () => toggleWork(true) })), name: 'Canvas-to-Cash', group: 'deliver', icon: 'coin', records: ['FUND', 'PAY', 'SETTLE'],
   blurb: 'Pledges to a pool, payment terms on deliveries, approval releases a signed settlement',
   status: () => { const p = [...(S.D.pool?.entries() || [])][0]; return p ? `${money(p[1].pledged - p[1].paid, p[0])} in pool` : ''; }, open: () => openPanel('funding') });
