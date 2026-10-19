@@ -46,8 +46,8 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = authorColor(id); b.textContent = id.slice(2, 4);
-    b.setAttribute('aria-label', `${id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
+    b.style.background = authorColor(id); b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.title = `${id === S.me?.id ? 'you · ' : ''}${short(id)} · ${n} element${n === 1 ? '' : 's'}\nclick: show only this author · shift-click: add/remove`;
     if (S.filter){ b.classList.toggle('off', !S.filter.has(id)); b.classList.toggle('solo', S.filter.has(id)); }
@@ -81,6 +81,7 @@ function paintInspector(){
   if (mine.length) tb += B('front', '⬆', 'Bring to front (⌘⇧↑)') + B('back', '⬇', 'Send to back (⌘⇧↓)') + B('lock', allLocked ? '🔓' : '🔒', allLocked ? 'Unlock (⌘⇧L)' : 'Lock (⌘⇧L)', `aria-pressed="${allLocked}"`);
   if (rs.length >= 2) tb += B('group', '▣', 'Group (⌘G)');
   if (rs.some(r => S.D.groupOf.has(r.cid))) tb += B('ungroup', '▢', 'Ungroup (⌘⇧G)');
+  for (const h of TOOLBAR_HOOKS){ try { tb += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }   // feature buttons (core/hooks)
   tb += B('info', 'ⓘ', 'Details and signature', `aria-pressed="${inspInfo}"`);
   if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? '↺' : '🗑', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Revoke (Delete)', 'class="danger"');
   let html = `<div class="tb" role="toolbar" aria-label="Selection actions">${tb}</div>`;
@@ -134,6 +135,7 @@ $('insp').addEventListener('click', async e => {
   if (a === 'lock') await toggleLock();
   if (a === 'label') await labelArrow(rs[0]);
   if (a.startsWith('al-') || a.startsWith('dist-')) await alignSel(a);
+  if (TOOLBAR_ACTIONS[a]) await TOOLBAR_ACTIONS[a](rs, e.target.closest('[data-a]'));
   dirty = true;
 });
 async function copy(text, msg){ try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Clipboard blocked by the browser.'); } }

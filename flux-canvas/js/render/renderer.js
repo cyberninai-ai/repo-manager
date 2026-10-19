@@ -31,15 +31,11 @@ function drawEl(el){
   if (el.type === 'ARROW'){
     const g = arrowGeom(el); if (!g){ ctx.restore(); return; }
     ctx.lineWidth = lw(el);
-    const A = current(el.f.FROM), B = current(el.f.TO);
-    if (A?.type === 'NODE' && B?.type === 'NODE'){   // diagram connectors curve
-      drawLink(box(A), box(B), true, col, lw(el));
-      if (el.elabel){ const q = linkGeom(box(A), box(B)); drawEdgeLabel(el.elabel, { x: (q.p0.x + 3 * q.c0.x + 3 * q.c1.x + q.p1.x) / 8, y: (q.p0.y + 3 * q.c0.y + 3 * q.c1.y + q.p1.y) / 8 }, col); }
-      ctx.restore(); return;
-    }
-    ctx.beginPath(); ctx.moveTo(g.a.x, g.a.y); ctx.lineTo(g.b.x, g.b.y); ctx.stroke();
-    drawArrowHead(g.a, g.b, 8 + lw(el) * 2);
-    if (el.elabel) drawEdgeLabel(el.elabel, { x: (g.a.x + g.b.x) / 2, y: (g.a.y + g.b.y) / 2 }, col);
+    // diagram connectors default to a curve, other arrows to a straight line; STYLE Y/D override (features/connectors)
+    const A = current(el.f.FROM), B = current(el.f.TO), nodes = A?.type === 'NODE' && B?.type === 'NODE';
+    const c = connGeom(box(A), box(B), el.eshape || (nodes ? 'curve' : 'straight'));
+    strokeConn(c, col, lw(el), el.edash, true);
+    if (el.elabel) drawEdgeLabel(el.elabel, c.mid, col);
     ctx.restore(); return;
   }
   const o = offsetOf(el.cid); ctx.translate(o.x, o.y);
@@ -124,6 +120,7 @@ function render(){
     }
   }
   ctx.restore();
+  runHooks(RENDER_HOOKS.world, z);
   drawNodeGhost(); drawGrowHandles(accent);
   if (G?.kind === 'erase' && G.pts.length > 1){ ctx.save(); ctx.strokeStyle = TH.muted; ctx.globalAlpha = .35; ctx.lineWidth = 14 / z; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); ctx.restore(); }
@@ -143,6 +140,7 @@ function render(){
   }
   drawPins();
   drawPeers();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); runHooks(RENDER_HOOKS.screen);
   paintMini();
   paintPreviews();
   paintBar();

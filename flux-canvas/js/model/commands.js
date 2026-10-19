@@ -42,12 +42,14 @@ async function commitComment({ on = null, x, y, text, re = null }){
     ['M', encTxt(text)], ['RE', re || '0'], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
 }
-async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = null, M = null }){
+async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = null, M = null, Y = null, D = null }){
   const pairs = [['I', S.me.id], ['R', cid]];
   if (K) pairs.push(['K', K]);
   if (O != null) pairs.push(['O', encInt(Math.round(O))]);
   if (L != null) pairs.push(['L', L ? '1' : '0']);
   if (M != null) pairs.push(['M', encTxt(M)]);
+  if (Y) pairs.push(['Y', Y]);
+  if (D) pairs.push(['D', D]);
   if (W != null) pairs.push(['W', Math.max(1, Math.round(W))]);
   if (C) pairs.push(['C', C]);
   return publish(await signed('STYLE', [...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
@@ -120,6 +122,7 @@ async function undo(){
   else if (h.kind === 'style') for (const it of h.items) await commitStyle(it.cid, it.before);
   else if (h.kind === 'moves') for (const it of h.items) await commitMove(it.t, -it.dx, -it.dy);
   else if (h.kind === 'creates') for (const c of h.cids) await setNeg(c, true);
+  else if (h.kind === 'fn') await h.undo();   // features record their own inverse
   S.redo.push(h);
 }
 async function redo(){
@@ -130,6 +133,7 @@ async function redo(){
   else if (h.kind === 'style') for (const it of h.items) await commitStyle(it.cid, it.after);
   else if (h.kind === 'moves') for (const it of h.items) await commitMove(it.t, it.dx, it.dy);
   else if (h.kind === 'creates') for (const c of h.cids) await setNeg(c, false);
+  else if (h.kind === 'fn') await h.redo();
   S.hist.push(h);
 }
 async function revokeSelection(){

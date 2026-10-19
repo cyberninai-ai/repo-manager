@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="css/08-a11y-dialogs.css">
 <link rel="stylesheet" href="css/09-comments.css">
 <link rel="stylesheet" href="css/10-responsive.css">
+<link rel="stylesheet" href="css/11-collab.css">
 </head>
 <body>
 <main>
@@ -25,6 +26,26 @@
 <p id="summary" class="sr">Empty canvas.</p>
 <div id="sr" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
 
+<div id="titlebar" role="group" aria-label="Canvas">
+  <button class="pill" id="homeBtn" title="Canvases, templates and examples (H)"><span aria-hidden="true">☰</span><span class="sr">Canvases, templates and examples</span></button>
+  <button class="pill tt" id="ctitle" title="Rename this canvas">Untitled canvas</button>
+  <button class="pill" id="votes" hidden></button>
+  <button class="pill" id="timer" hidden></button>
+</div>
+<div id="empty" hidden><b>Empty canvas.</b> Draw freely, double-click in select mode for a note, or <button class="btn" id="emptyBtn">start from a template or an example</button></div>
+<div id="present" role="toolbar" aria-label="Presentation" hidden>
+  <button class="btn" id="presentPrev" aria-label="Previous scene">‹</button>
+  <div class="pt"><b id="presentT"></b> <span id="presentN"></span><div id="presentCap"></div></div>
+  <button class="btn" id="presentNext" aria-label="Next scene">›</button>
+  <button class="btn" id="presentEnd">end <kbd>Esc</kbd></button>
+</div>
+<div id="history" role="region" aria-label="History" hidden>
+  <b>History</b> <span class="ro">read-only</span>
+  <button class="btn" id="histPlay" aria-label="Play or pause the replay">▶</button>
+  <input type="range" id="histRange" min="0" max="1" step="1" aria-label="Replay position">
+  <span id="histLabel"></span>
+  <button class="btn" id="histNow">back to now</button>
+</div>
 <div id="corner" role="toolbar" aria-label="Canvas tools">
   <button class="pill" id="mode" aria-pressed="false" title="Pen mode · V for select"><span aria-hidden="true">✎</span><span class="lbl">pen</span></button>
   <button class="pill" id="addImg" title="Insert image (I)" aria-label="Insert image"><span aria-hidden="true">＋</span><span class="lbl">image</span></button>
@@ -90,6 +111,13 @@
   <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off"><textarea id="askTa" hidden aria-labelledby="askT"></textarea>
   <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="button" class="btn" id="askOk">OK</button></div></div></div>
 
+<aside class="ledger au" id="audit" aria-label="Audit">
+  <header>
+    <h2><span>Audit</span><button class="btn" id="auditClose">close</button></h2>
+    <div class="stats">Walk the flow step by step. Each verdict is signed; a sign-off fences them all.</div>
+  </header>
+  <div class="list" id="auditBody"></div>
+</aside>
 <aside class="ledger cm" id="comments" aria-label="Comments">
   <header>
     <h2><span>Comments</span><button class="btn" id="cmClose">close</button></h2>
@@ -150,16 +178,39 @@
     <tr><td>⌘⇧↑ · ⌘⇧↓ · ⌘⇧L</td><td>Bring to front · send to back · lock or unlock (locked elements can be drawn over but not moved)</td></tr>
     <tr><td>Dragging</td><td>Snaps to the edges and centres of nearby elements; press ⌘/Ctrl during the drag to place freely</td></tr>
     <tr><td>Paste an indented list</td><td>Becomes a connected mind map (also ⌘K → Mind map from outline)</td></tr>
+    <tr><td>H · ☰</td><td>Canvas home: your canvases, templates and worked examples</td></tr>
+    <tr><td>Double-click empty space (select mode)</td><td>A sticky note, ready to type</td></tr>
+    <tr><td>D · ☺ in the toolbar</td><td>Dot-vote the selection (within your vote budget) · react with 👍 💡 ❤️ ❓ ⚠️. Click a chip under a note to toggle yours</td></tr>
+    <tr><td>⇧S</td><td>Summary of notes, votes, reactions and comments as Markdown</td></tr>
+    <tr><td>F5 · ⇧P</td><td>Present frames as a story (← → Space, Esc to end)</td></tr>
+    <tr><td>A</td><td>Audit the flow from the selected step: 1 pass · 2 fail · 3 needs info, then sign off</td></tr>
+    <tr><td>⇧H</td><td>History: replay the canvas record by record (read-only)</td></tr>
     <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
   </table>
   <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
 </div>
 
 <div id="toast" aria-hidden="true"></div>
+<div id="home" role="dialog" aria-modal="true" aria-labelledby="homeT" hidden>
+  <div class="hm">
+    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">A collaborative canvas where every note, vote and decision is signed.</span><button class="btn" id="homeClose">close</button></header>
+    <section aria-labelledby="homeS1"><h3 id="homeS1">Start something</h3><div class="cards" id="homeTpl"></div></section>
+    <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. They are signed by three example authors (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
+    <section aria-labelledby="homeS3"><h3 id="homeS3">Your canvases <span class="sub">in this browser</span></h3><ul class="clist" id="homeList"></ul></section>
+  </div>
+</div>
+<div id="report" role="dialog" aria-modal="true" aria-labelledby="reportT" hidden>
+  <div class="rp">
+    <header><h2 id="reportT"></h2><button class="btn" id="reportClose">close</button></header>
+    <pre id="reportBody" tabindex="0"></pre>
+    <div class="acts"><button class="btn" id="reportCopy">copy Markdown</button><button class="btn" id="reportSave">download .md</button></div>
+  </div>
+</div>
 <input type="file" id="file" accept=".flux,.txt,text/plain">
 <input type="file" id="imgFile" accept="image/*" style="display:none">
 
 <!-- load order matters: classic scripts share one global scope (works from file:// too) -->
+<script src="js/core/hooks.js"></script>
 <script src="js/core/encoding.js"></script>
 <script src="js/core/grammar.js"></script>
 <script src="js/core/identity.js"></script>
@@ -191,6 +242,15 @@
 <script src="js/ui/ledger.js"></script>
 <script src="js/ui/palette.js"></script>
 <script src="js/ui/actions.js"></script>
+<script src="js/ui/dialogs.js"></script>
+<script src="js/features/builders.js"></script>
+<script src="js/features/canvases.js"></script>
+<script src="js/features/connectors.js"></script>
+<script src="js/features/brainstorm.js"></script>
+<script src="js/features/feedback.js"></script>
+<script src="js/features/story.js"></script>
+<script src="js/features/moodboard.js"></script>
+<script src="js/features/audit.js"></script>
 <script src="js/interaction/keyboard.js"></script>
 <script src="js/boot.js"></script>
 </body>

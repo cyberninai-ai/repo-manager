@@ -7,6 +7,7 @@ addEventListener('keydown', e => {
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   // canvas keys apply when the canvas (or nothing) has focus; buttons and ledger rows keep their own keys
   const onCanvas = e.target === cv || e.target === document.body;
+  for (const h of KEY_HOOKS) if (h(e, { onCanvas, mod, k })) return;   // feature keys (core/hooks)
   if (onCanvas && e.altKey && !mod && e.key.startsWith('Arrow')){
     const n = soleNode();
     if (n){ e.preventDefault(); startChild(n, { ArrowRight: 'right', ArrowLeft: 'left', ArrowUp: 'up', ArrowDown: 'down' }[e.key]); return; }

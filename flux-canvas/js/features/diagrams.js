@@ -14,6 +14,7 @@ const NODE_KINDS = {
   button:  { name: 'button',            icon: '⏵', label: 'Button',    font: 14, pad: [20, 9],  wrap: 220, min: [96, 38],  bold: true },
   input:   { name: 'input field',       icon: '⎁', label: 'Email',     font: 14, pad: [12, 10], wrap: 260, min: [240, 40], align: 'left' },
   image:   { name: 'image placeholder', icon: '⊠', label: 'Image',     font: 13, pad: [10, 10], wrap: 200, min: [200, 130] },
+  swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
   frame:   { name: 'screen frame',      icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
 };
 S.nodeKind = 'card';
@@ -104,6 +105,10 @@ function drawNode(kind, p, L, col, noText, colName){
       ctx.fillStyle = tint(TH.line, .5); ctx.fillRect(x, y, w, h); ctx.strokeStyle = accent || TH.muted; ctx.lineWidth = 1.2; ctx.strokeRect(x, y, w, h);
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y + h); ctx.moveTo(x + w, y); ctx.lineTo(x, y + h); ctx.globalAlpha *= .5; ctx.stroke(); ctx.globalAlpha /= .5;
       textCol = TH.muted; break;
+    case 'swatch':   // moodboards: a colour chip with its name or hex underneath
+      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      rr(ctx, x, y, w, h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent'; ctx.strokeStyle = TH.line; ctx.lineWidth = 1; ctx.stroke();
+      rr(ctx, x + 6, y + 6, w - 12, h - 40, 7); ctx.fillStyle = col; ctx.fill(); break;
     case 'frame':
       rr(ctx, x, y, w, h, 18); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x, y + 30); ctx.lineTo(x + w, y + 30); ctx.lineWidth = 1; ctx.strokeStyle = TH.line; ctx.stroke(); textCol = TH.muted; break;
@@ -113,6 +118,7 @@ function drawNode(kind, p, L, col, noText, colName){
     const left = K.align === 'left', th = L.lines.length * L.lh;
     let ty = K.top ? y + K.pad[1] + L.lh / 2 : y + h / 2 - th / 2 + L.lh / 2;
     if (kind === 'frame') ty = y + 15;
+    if (kind === 'swatch') ty = y + h - 17;
     ctx.textAlign = left ? 'left' : 'center';
     const tx = left ? x + K.pad[0] + (kind === 'card' && accent ? 4 : 0) : x + w / 2;
     for (const l of L.lines){ ctx.fillText(l, tx, ty); ty += L.lh; }
@@ -133,13 +139,29 @@ function linkGeom(a, b){
   }
   return { p0, c0, c1, p1 };
 }
-function drawLink(a, b, head, col, width){
-  const g = linkGeom(a, b);
-  ctx.save(); ctx.setLineDash([]); ctx.strokeStyle = col; ctx.lineWidth = width; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(g.p0.x, g.p0.y); ctx.bezierCurveTo(g.c0.x, g.c0.y, g.c1.x, g.c1.y, g.p1.x, g.p1.y); ctx.stroke();
-  if (head) drawArrowHead(g.c1, g.p1, 7 + width * 2);
+// Connector geometry between two boxes: curve (bezier between facing sides), straight (centre to centre, clipped) or elbow.
+// Returns { bez } or { pts }, plus mid (label anchor) and from → to (arrowhead direction).
+function connGeom(a, b, shape = 'curve'){
+  const g = linkGeom(a, b), hz = g.c0.y === g.p0.y;
+  if (shape === 'straight'){ const p = edgePoint(a, center(b), 6), q = edgePoint(b, center(a), 6); return { pts: [p, q], mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, from: p, to: q }; }
+  if (shape === 'elbow'){
+    const m = hz ? (g.p0.x + g.p1.x) / 2 : (g.p0.y + g.p1.y) / 2;
+    const pts = hz ? [g.p0, { x: m, y: g.p0.y }, { x: m, y: g.p1.y }, g.p1] : [g.p0, { x: g.p0.x, y: m }, { x: g.p1.x, y: m }, g.p1];
+    return { pts, mid: { x: (pts[1].x + pts[2].x) / 2, y: (pts[1].y + pts[2].y) / 2 }, from: pts[2], to: g.p1 };
+  }
+  return { bez: g, mid: { x: (g.p0.x + 3 * g.c0.x + 3 * g.c1.x + g.p1.x) / 8, y: (g.p0.y + 3 * g.c0.y + 3 * g.c1.y + g.p1.y) / 8 }, from: g.c1, to: g.p1 };
+}
+function strokeConn(c, col, width, dash, head){
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.setLineDash(dash && dash !== 'solid' ? dashOf(dash, width) : []);
+  ctx.beginPath();
+  if (c.bez){ const g = c.bez; ctx.moveTo(g.p0.x, g.p0.y); ctx.bezierCurveTo(g.c0.x, g.c0.y, g.c1.x, g.c1.y, g.p1.x, g.p1.y); }
+  else c.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+  ctx.stroke(); ctx.setLineDash([]);
+  if (head) drawArrowHead(c.from, c.to, 7 + width * 2);
   ctx.restore();
 }
+function drawLink(a, b, head, col, width){ strokeConn(connGeom(a, b, 'curve'), col, width, 'solid', head); }
 function drawTreeLinks(){
   for (const el of S.D.els){
     if (el.type !== 'NODE' || !el.parent || !visible(el)) continue;

@@ -39,30 +39,31 @@ function toSVG(){
       const b = box(el), bytes = S.blobs.get(el.f.R); if (!bytes) continue;
       o.push(`<image x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" preserveAspectRatio="none" href="data:${sniffImage(bytes) || 'image/png'};base64,${b64enc(bytes)}"><title>${xe(el.alt || '')}</title></image>`);
     } else if (el.type === 'ARROW'){
-      const A = current(el.f.FROM), B = current(el.f.TO);
-      if (A?.type === 'NODE' && B?.type === 'NODE') curve(linkGeom(box(A), box(B)), col, lw(el), true);
-      if (el.elabel){ const q = A?.type === 'NODE' && B?.type === 'NODE' ? linkGeom(box(A), box(B)) : null, g2 = arrowGeom(el);
-        const m = q ? { x: (q.p0.x + 3 * q.c0.x + 3 * q.c1.x + q.p1.x) / 8, y: (q.p0.y + 3 * q.c0.y + 3 * q.c1.y + q.p1.y) / 8 } : g2 ? { x: (g2.a.x + g2.b.x) / 2, y: (g2.a.y + g2.b.y) / 2 } : null;
-        if (m) o.push(`<text x="${n(m.x)}" y="${n(m.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`); }
-      else { const g = arrowGeom(el); if (!g) continue; o.push(`<line x1="${n(g.a.x)}" y1="${n(g.a.y)}" x2="${n(g.b.x)}" y2="${n(g.b.y)}" stroke="${col}" stroke-width="${lw(el)}" stroke-linecap="round"/>`, headSVG(g.a, g.b, 8 + lw(el) * 2, col, lw(el))); }
+      // one path per connector, whatever its shape, then its head and label
+      const A = current(el.f.FROM), B = current(el.f.TO); if (!arrowGeom(el)) continue;
+      const nodes = A.type === 'NODE' && B.type === 'NODE', c = connGeom(box(A), box(B), el.eshape || (nodes ? 'curve' : 'straight')), w = lw(el);
+      const d = c.bez ? `M${n(c.bez.p0.x)} ${n(c.bez.p0.y)} C${n(c.bez.c0.x)} ${n(c.bez.c0.y)} ${n(c.bez.c1.x)} ${n(c.bez.c1.y)} ${n(c.bez.p1.x)} ${n(c.bez.p1.y)}` : 'M' + c.pts.map(p => `${n(p.x)} ${n(p.y)}`).join(' L');
+      o.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${svgDash(el.edash, w)}/>`, headSVG(c.from, c.to, 7 + w * 2, col, w));
+      if (el.elabel) o.push(`<text x="${n(c.mid.x)}" y="${n(c.mid.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`);
     } else if (el.type === 'NODE'){
       const b = box(el), L = nodeBox(el), K = L.K, ac = ecol(el) !== 'ink' ? col : null, k = el.ek;
       const fillN = { card: TH.panel, topic: mix(ac || TH.accent, .16), rect: mix(ac || TH.ink, .07), ellipse: mix(ac || TH.ink, .07), diamond: mix(ac || TH.ink, .07),
-        sticky: ac ? mixHex(ac, '#ffffff', .35) : '#ffe066', button: ac || TH.ink, input: TH.panel, image: mix(TH.line, .5), frame: 'none' }[k];
-      const strokeN = { card: ac || TH.line, topic: ac || TH.accent, rect: ac || TH.ink, ellipse: ac || TH.ink, diamond: ac || TH.ink, sticky: 'none', button: 'none', input: ac || TH.line, image: ac || TH.muted, frame: ac || TH.ink }[k];
+        sticky: ac ? mixHex(ac, '#ffffff', .35) : '#ffe066', swatch: TH.panel, button: ac || TH.ink, input: TH.panel, image: mix(TH.line, .5), frame: 'none' }[k];
+      const strokeN = { card: ac || TH.line, topic: ac || TH.accent, rect: ac || TH.ink, ellipse: ac || TH.ink, diamond: ac || TH.ink, sticky: 'none', button: 'none', input: ac || TH.line, image: ac || TH.muted, frame: ac || TH.ink, swatch: TH.line }[k];
       const sw = ['topic', 'rect', 'ellipse', 'diamond', 'frame'].includes(k) ? 2 : 1.5, attrs = `fill="${fillN}" stroke="${strokeN}" stroke-width="${sw}"`;
       if (k === 'ellipse') o.push(`<ellipse cx="${n(b.x + b.w / 2)}" cy="${n(b.y + b.h / 2)}" rx="${n(b.w / 2)}" ry="${n(b.h / 2)}" ${attrs}/>`);
       else if (k === 'diamond') o.push(`<polygon points="${n(b.x + b.w / 2)},${n(b.y)} ${n(b.x + b.w)},${n(b.y + b.h / 2)} ${n(b.x + b.w / 2)},${n(b.y + b.h)} ${n(b.x)},${n(b.y + b.h / 2)}" ${attrs}/>`);
       else {
-        const rad = { card: 10, topic: b.h / 2, rect: 6, button: 8, input: 6, frame: 18 }[k] || 0;
+        const rad = { card: 10, topic: b.h / 2, rect: 6, button: 8, input: 6, frame: 18, swatch: 10 }[k] || 0;
         o.push(`<rect x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" rx="${n(rad)}" ${attrs}/>`);
         if (k === 'card' && ac) o.push(`<rect x="${n(b.x)}" y="${n(b.y + 6)}" width="4" height="${n(b.h - 12)}" fill="${ac}"/>`);
         if (k === 'image') o.push(`<path d="M${n(b.x)} ${n(b.y)} L${n(b.x + b.w)} ${n(b.y + b.h)} M${n(b.x + b.w)} ${n(b.y)} L${n(b.x)} ${n(b.y + b.h)}" stroke="${TH.muted}" stroke-opacity=".5"/>`);
+        if (k === 'swatch') o.push(`<rect x="${n(b.x + 6)}" y="${n(b.y + 6)}" width="${n(b.w - 12)}" height="${n(b.h - 40)}" rx="7" fill="${col}"/>`);
         if (k === 'frame') o.push(`<line x1="${n(b.x)}" y1="${n(b.y + 30)}" x2="${n(b.x + b.w)}" y2="${n(b.y + 30)}" stroke="${TH.line}"/>`);
       }
       const tcol = k === 'sticky' ? '#1d1d1f' : k === 'button' ? (ac ? '#fff' : TH.paper) : ['input', 'image', 'frame'].includes(k) ? TH.muted : TH.ink;
       const left = K.align === 'left', th = L.lines.length * L.lh;
-      let ty = K.top ? b.y + K.pad[1] + L.lh / 2 : b.y + b.h / 2 - th / 2 + L.lh / 2; if (k === 'frame') ty = b.y + 15;
+      let ty = K.top ? b.y + K.pad[1] + L.lh / 2 : b.y + b.h / 2 - th / 2 + L.lh / 2; if (k === 'frame') ty = b.y + 15; if (k === 'swatch') ty = b.y + b.h - 17;
       const tx = left ? b.x + K.pad[0] + (k === 'card' && ac ? 4 : 0) : b.x + b.w / 2;
       o.push(`<text font-family="${xe(FONTS.sans)}" font-size="${K.font}" font-weight="${K.bold ? 600 : 400}" fill="${tcol}" text-anchor="${left ? 'start' : 'middle'}" dominant-baseline="central">${L.lines.map((l, i) => `<tspan x="${n(tx)}" y="${n(ty + i * L.lh)}">${xe(l)}</tspan>`).join('')}</text>`);
     }

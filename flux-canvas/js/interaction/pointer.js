@@ -6,6 +6,7 @@ function setCursor(){
     : spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
     : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
 }
+let lastEmpty = null;
 let hoverSel = false, hoverHandle = false, hoverPick = false, hoverPin = false, lastPick = null, lastPointer = null, erasing = false;
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
@@ -25,6 +26,7 @@ cv.addEventListener('pointerdown', e => {
   if (e.button === 0 && pointers.size === 1){
     const pid = pinAt(e.clientX, e.clientY);
     if (pid){ G = { kind: 'pin', id: pid, targets: new Set([pid]), start: w, dx: 0, dy: 0, sx: e.clientX, sy: e.clientY, moved: false }; setCursor(); return; }
+    for (const h of POINTER_HOOKS) if (h(e, w)){ G = { kind: 'none' }; dirty = true; return; }   // feature hit targets (core/hooks)
     if (placing === 'text'){ G = { kind: 'none' }; const t = hitTest(w); if (!(t && t.type === 'TEXT' && editText(t))) openText(w); return; }
     if (erasing){ G = { kind: 'erase', pts: [w], hit: new Set(), others: 0 }; eraseAt(w); dirty = true; return; }
     if (placing === 'node'){ G = { kind: 'none' }; setPlacing(null); startNode({ kind: S.nodeKind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return; }
@@ -47,6 +49,12 @@ cv.addEventListener('pointerdown', e => {
     const sb = S.sel.size && selBox();
     if (sb && !e.shiftKey && inside(w, grow(sb, 10 / S.view.zoom))){ G = startMoveG(w, e.altKey); setCursor(); return; }
     if (!e.shiftKey && S.sel.size){ S.sel.clear(); announceSel(); }
+    // double-click on empty space drops a sticky note: the quickest way to add a thought
+    const now = Date.now();
+    if (!e.shiftKey && lastEmpty && now - lastEmpty.t < 350 && Math.hypot(e.clientX - lastEmpty.x, e.clientY - lastEmpty.y) < 8){
+      lastEmpty = null; G = { kind: 'none' }; startNode({ kind: 'sticky', anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return;
+    }
+    lastEmpty = { t: now, x: e.clientX, y: e.clientY };
     G = { kind: 'lasso', pts: [w] }; dirty = true; return;
   }
   if (S.sel.size){

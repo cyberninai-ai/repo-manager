@@ -193,6 +193,93 @@ button{font:inherit;color:inherit}
 #help h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 4px}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 @media (max-width:600px){ #hint .wide{display:none} .pill .lbl{display:none} }
+[hidden]{display:none!important}   /* the attribute must win over component display rules */
+#titlebar{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;z-index:5;display:flex;gap:6px;align-items:center;max-width:calc(100% - 24px)}
+#titlebar .pill{box-shadow:var(--shadow);color:var(--ink)}
+#titlebar .tt{max-width:min(320px,40vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;line-height:26px;font-weight:600}
+#votes{color:var(--cyan)!important;font-weight:600}
+#timer{font-variant-numeric:tabular-nums;font-weight:600}
+#timer.alarm{border-color:var(--red);color:var(--red)!important}
+#empty{position:fixed;top:calc(max(12px,env(safe-area-inset-top)) + 40px);left:12px;z-index:4;max-width:min(420px,calc(100% - 24px));
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+#empty b{color:var(--ink)}
+#empty .btn{margin-top:6px;color:var(--cyan);border-color:var(--cyan)}
+
+/* canvas home */
+#home{position:fixed;inset:0;z-index:25;background:color-mix(in srgb,var(--paper) 70%,transparent);backdrop-filter:blur(3px);overflow:auto}
+#home .hm{max-width:980px;margin:6vh auto 40px;padding:20px 22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);width:calc(100% - 24px)}
+#home header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+#home h2{margin:0;font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+#home header .btn{margin-left:auto}
+#home h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:18px 0 8px}
+#home .sub{color:var(--muted);font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin:0 0 8px}
+#home .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card2{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto 1fr;column-gap:10px;text-align:left;padding:12px;border:1px solid var(--line);
+  border-radius:10px;background:var(--paper);cursor:pointer;min-height:78px}
+.card2:hover,.card2:focus-visible{border-color:var(--cyan)}
+.card2 .ic{grid-row:1 / span 2;font-size:22px;line-height:34px;text-align:center;border-radius:8px;background:var(--panel);border:1px solid var(--line);height:34px}
+.card2 b{font-size:12px}
+.card2 span:last-child{color:var(--muted);font-size:11px;line-height:1.35}
+#home .clist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#home .clist li{display:flex;gap:8px;align-items:center}
+#home .clist .open{flex:1;display:flex;justify-content:space-between;gap:12px;text-align:left;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:transparent;cursor:pointer}
+#home .clist .open:hover,#home .clist .open:focus-visible{border-color:var(--cyan)}
+#home .clist .open span{color:var(--muted);font-size:11px}
+#home .clist li.cur .open{border-color:var(--cyan)}
+
+/* report */
+#report{position:fixed;inset:0;z-index:26;background:color-mix(in srgb,var(--paper) 60%,transparent)}
+#report .rp{position:absolute;left:50%;top:6vh;transform:translateX(-50%);width:min(820px,calc(100% - 24px));max-height:86vh;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px}
+#report header{display:flex;align-items:center;gap:10px}
+#report h2{margin:0;font-size:13px;flex:1}
+#report pre{flex:1;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0}
+#report .acts{display:flex;gap:8px;justify-content:flex-end}
+
+/* presentation */
+#present{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:12;display:flex;align-items:center;gap:10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:8px 10px;max-width:calc(100% - 24px)}
+#present .btn{font-size:14px;padding:4px 10px}
+#present .pt{min-width:200px;max-width:520px;text-align:center}
+#present #presentN{color:var(--muted);font-size:11px}
+#presentCap{color:var(--muted);font-size:12px;margin-top:2px}
+body.presenting #corner,body.presenting #bar,body.presenting #zoomui,body.presenting #titlebar,body.presenting #insp,body.presenting #hint,body.presenting #empty,body.presenting #previews{display:none!important}
+
+/* history */
+#history{position:fixed;left:50%;top:max(56px,calc(env(safe-area-inset-top) + 44px));transform:translateX(-50%);z-index:12;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--amber);border-radius:12px;box-shadow:var(--shadow);padding:8px 12px;width:min(720px,calc(100% - 24px));font-size:12px}
+#history input{flex:1;min-width:160px;accent-color:var(--amber)}
+#history .ro{color:var(--amber);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+#histLabel{color:var(--muted);font-size:11px;flex-basis:100%}
+body.history #c{outline:3px solid color-mix(in srgb,var(--amber) 60%,transparent);outline-offset:-3px}
+
+/* audit panel (shares the side-panel shell with the ledger and comments) */
+.au .list{padding:12px}
+.au-prog{position:relative;display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-bottom:8px;margin-bottom:10px}
+.au-prog i{position:absolute;left:0;bottom:0;height:3px;background:var(--green);border-radius:2px}
+.au-prog::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--line);z-index:-1;border-radius:2px}
+.au-step{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.au-step h3{margin:2px 0 4px;font-size:14px}
+.au .k{color:var(--muted);font-size:11px}
+.au-v{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.au-v .btn{font-size:12px;padding:5px 10px}
+.au-v .btn[aria-pressed="true"]{border-width:2px}
+.au-v kbd{font:inherit;font-size:10px;color:var(--muted)}
+.v-pass{color:var(--green)} .v-fail{color:var(--red)} .v-info{color:var(--amber)}
+.au-v .btn.v-pass[aria-pressed="true"]{border-color:var(--green)} .au-v .btn.v-fail[aria-pressed="true"]{border-color:var(--red)} .au-v .btn.v-info[aria-pressed="true"]{border-color:var(--amber)}
+.au label{font-size:11px;color:var(--muted)}
+.au textarea{width:100%;min-height:60px;font:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);resize:vertical;margin:4px 0 8px}
+.au-others{list-style:none;padding:0;margin:6px 0 10px;font-size:12px;display:grid;gap:4px}
+.au h4{font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 4px}
+.au .row2{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
+.t-REACT,.t-AUDIT,.t-SIGNOFF{color:var(--green)} .t-META{color:var(--muted)}
+
+@media (max-width:600px){
+  #titlebar{top:calc(max(12px,env(safe-area-inset-top)) + 84px)}
+  #titlebar .tt{max-width:52vw}
+  #empty{top:calc(max(12px,env(safe-area-inset-top)) + 124px)}
+  #home .hm{margin-top:12px;padding:14px}
+}
 </style>
 </head>
 <body>
@@ -203,6 +290,26 @@ button{font:inherit;color:inherit}
 <p id="summary" class="sr">Empty canvas.</p>
 <div id="sr" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
 
+<div id="titlebar" role="group" aria-label="Canvas">
+  <button class="pill" id="homeBtn" title="Canvases, templates and examples (H)"><span aria-hidden="true">☰</span><span class="sr">Canvases, templates and examples</span></button>
+  <button class="pill tt" id="ctitle" title="Rename this canvas">Untitled canvas</button>
+  <button class="pill" id="votes" hidden></button>
+  <button class="pill" id="timer" hidden></button>
+</div>
+<div id="empty" hidden><b>Empty canvas.</b> Draw freely, double-click in select mode for a note, or <button class="btn" id="emptyBtn">start from a template or an example</button></div>
+<div id="present" role="toolbar" aria-label="Presentation" hidden>
+  <button class="btn" id="presentPrev" aria-label="Previous scene">‹</button>
+  <div class="pt"><b id="presentT"></b> <span id="presentN"></span><div id="presentCap"></div></div>
+  <button class="btn" id="presentNext" aria-label="Next scene">›</button>
+  <button class="btn" id="presentEnd">end <kbd>Esc</kbd></button>
+</div>
+<div id="history" role="region" aria-label="History" hidden>
+  <b>History</b> <span class="ro">read-only</span>
+  <button class="btn" id="histPlay" aria-label="Play or pause the replay">▶</button>
+  <input type="range" id="histRange" min="0" max="1" step="1" aria-label="Replay position">
+  <span id="histLabel"></span>
+  <button class="btn" id="histNow">back to now</button>
+</div>
 <div id="corner" role="toolbar" aria-label="Canvas tools">
   <button class="pill" id="mode" aria-pressed="false" title="Pen mode · V for select"><span aria-hidden="true">✎</span><span class="lbl">pen</span></button>
   <button class="pill" id="addImg" title="Insert image (I)" aria-label="Insert image"><span aria-hidden="true">＋</span><span class="lbl">image</span></button>
@@ -268,6 +375,13 @@ button{font:inherit;color:inherit}
   <label id="askT" for="askIn"></label><div class="why" id="askWhy"></div><input id="askIn" autocomplete="off"><textarea id="askTa" hidden aria-labelledby="askT"></textarea>
   <div class="acts"><button type="button" class="btn" id="askNo">Cancel</button><button type="button" class="btn" id="askOk">OK</button></div></div></div>
 
+<aside class="ledger au" id="audit" aria-label="Audit">
+  <header>
+    <h2><span>Audit</span><button class="btn" id="auditClose">close</button></h2>
+    <div class="stats">Walk the flow step by step. Each verdict is signed; a sign-off fences them all.</div>
+  </header>
+  <div class="list" id="auditBody"></div>
+</aside>
 <aside class="ledger cm" id="comments" aria-label="Comments">
   <header>
     <h2><span>Comments</span><button class="btn" id="cmClose">close</button></h2>
@@ -328,17 +442,63 @@ button{font:inherit;color:inherit}
     <tr><td>⌘⇧↑ · ⌘⇧↓ · ⌘⇧L</td><td>Bring to front · send to back · lock or unlock (locked elements can be drawn over but not moved)</td></tr>
     <tr><td>Dragging</td><td>Snaps to the edges and centres of nearby elements; press ⌘/Ctrl during the drag to place freely</td></tr>
     <tr><td>Paste an indented list</td><td>Becomes a connected mind map (also ⌘K → Mind map from outline)</td></tr>
+    <tr><td>H · ☰</td><td>Canvas home: your canvases, templates and worked examples</td></tr>
+    <tr><td>Double-click empty space (select mode)</td><td>A sticky note, ready to type</td></tr>
+    <tr><td>D · ☺ in the toolbar</td><td>Dot-vote the selection (within your vote budget) · react with 👍 💡 ❤️ ❓ ⚠️. Click a chip under a note to toggle yours</td></tr>
+    <tr><td>⇧S</td><td>Summary of notes, votes, reactions and comments as Markdown</td></tr>
+    <tr><td>F5 · ⇧P</td><td>Present frames as a story (← → Space, Esc to end)</td></tr>
+    <tr><td>A</td><td>Audit the flow from the selected step: 1 pass · 2 fail · 3 needs info, then sign off</td></tr>
+    <tr><td>⇧H</td><td>History: replay the canvas record by record (read-only)</td></tr>
     <tr><td>Esc · 0</td><td>Clear selection · zoom to fit</td></tr>
   </table>
   <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span> named like the Gun channel. Use “New identity for this tab” to draw as a second author.</p>
 </div>
 
 <div id="toast" aria-hidden="true"></div>
+<div id="home" role="dialog" aria-modal="true" aria-labelledby="homeT" hidden>
+  <div class="hm">
+    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">A collaborative canvas where every note, vote and decision is signed.</span><button class="btn" id="homeClose">close</button></header>
+    <section aria-labelledby="homeS1"><h3 id="homeS1">Start something</h3><div class="cards" id="homeTpl"></div></section>
+    <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. They are signed by three example authors (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
+    <section aria-labelledby="homeS3"><h3 id="homeS3">Your canvases <span class="sub">in this browser</span></h3><ul class="clist" id="homeList"></ul></section>
+  </div>
+</div>
+<div id="report" role="dialog" aria-modal="true" aria-labelledby="reportT" hidden>
+  <div class="rp">
+    <header><h2 id="reportT"></h2><button class="btn" id="reportClose">close</button></header>
+    <pre id="reportBody" tabindex="0"></pre>
+    <div class="acts"><button class="btn" id="reportCopy">copy Markdown</button><button class="btn" id="reportSave">download .md</button></div>
+  </div>
+</div>
 <input type="file" id="file" accept=".flux,.txt,text/plain">
 <input type="file" id="imgFile" accept="image/*" style="display:none">
 
 <script>
 'use strict';
+// toolbar buttons, palette commands, keys, channel messages, templates and examples here instead of editing the core.
+// Every hook list is read at the moment it is used, so a feature only has to load before boot.
+
+// ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence }
+const RECORD_TYPES = {};
+const NAMES = new Map();           // author key → display name (example authors; profiles later)
+function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(action); }
+
+const DERIVE_HOOKS = [];        // (D, byType) after the core derive; byType[action] = that action's records in z order
+const RENDER_HOOKS = {
+  world: [],                    // (z) drawn in canvas coordinates above elements
+  screen: [],                   // () drawn in screen pixels above everything else
+};
+const POINTER_HOOKS = [];       // (e, w) on primary press before any tool; return true when handled
+const TOOLBAR_HOOKS = [];       // (rs, one, B) → extra selection-toolbar buttons (HTML)
+const TOOLBAR_ACTIONS = {};     // data-a → async (rs, button) when a toolbar button is clicked
+const PALETTE_HOOKS = [];       // (add) → add(group, title, run, { k, on })
+const KEY_HOOKS = [];           // (e, { onCanvas, mod, k }) → true when handled; runs before the built-in keymap
+const WIRE_HOOKS = {};          // key → handler for ephemeral channel messages { [key]: payload }
+const TEMPLATES = [];           // { id, name, icon, blurb, build: async (at) } — "Start something" in the canvas home
+const EXAMPLES = [];            // { id, title, icon, blurb, build: async (authors) } — worked use cases
+
+// Run a feature hook without letting one feature's bug stop the others.
+function runHooks(list, ...args){ for (const h of list){ try { h(...args); } catch (err){ console.warn('hook failed', err); } } }
 /* =====================================================================
    Encoding: base58 (keys, sigs), base32 (CIDv1), varints (points)
    ===================================================================== */
@@ -507,6 +667,7 @@ async function verifyRaw(node){
 const auth = { until: 0, count: 0 };
 const AUTH_IDLE = 5000;
 async function signed(action, pairs){
+  if (S.histZ != null){ toast('Viewing history: go back to now to make changes.'); const e = new Error('history view'); e.name = 'HistoryView'; throw e; }
   auth.until = Date.now() + AUTH_IDLE; auth.count++; paintAuth();
   const payload = build(action, pairs);
   const sig = new Uint8Array(await crypto.subtle.sign(SIGALG[S.me.alg], S.me.priv, te.encode(payload)));
@@ -605,7 +766,8 @@ function toRec(node, cid){
     case 'COMMENT': r.on = f.ON && f.ON !== '0' ? f.ON : null; r.re = f.RE && f.RE !== '0' ? f.RE : null; r.x = decInt(f.X); r.y = decInt(f.Y); r.text = decTxt(f.M || ''); break;
     case 'RESOLVE': if (!f.R) throw Error('resolve'); r.state = f.S === '1'; break;
     case 'STYLE': if (!f.R) throw Error('style'); r.sw2 = f.W ? Math.max(1, decInt(f.W)) : null; r.sc = f.C || null; r.sk = f.K || null;
-      r.so = f.O ? decInt(f.O) : null; r.sl = f.L ? f.L === '1' : null; r.sm = 'M' in f ? decTxt(f.M) : null; break;
+      r.so = f.O ? decInt(f.O) : null; r.sl = f.L ? f.L === '1' : null; r.sm = 'M' in f ? decTxt(f.M) : null;
+      r.sy = ['curve', 'straight', 'elbow'].includes(f.Y) ? f.Y : null; r.sd = ['solid', 'dash', 'dot'].includes(f.D) ? f.D : null; break;
     case 'NODE': r.k = f.K || 'card'; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(0, decInt(f.W || '0')); r.bh = Math.max(0, decInt(f.H || '0'));
       r.text = decTxt(f.M || ''); r.parent = f.P && f.P !== '0' ? f.P : null; r.edits = f.E || null; r.sw = 2; break;
     case 'ARROW': if (!f.FROM || !f.TO) throw Error('arrow'); r.sw = Math.max(1, decInt(f.S)); r.label = decTxt(f.M || ''); break;
@@ -613,6 +775,7 @@ function toRec(node, cid){
     case 'IMAGE': if (!f.R) throw Error('image'); r.alt = decTxt(f.M || ''); r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(1, decInt(f.W)); r.bh = Math.max(1, decInt(f.H)); break;
     case 'GROUP': if (!Array.isArray(f.P)) throw Error('group'); break;
   }
+  if (RECORD_TYPES[r.type]) RECORD_TYPES[r.type].parse(r, f);   // feature record types (core/hooks)
   return r;
 }
 async function ingest(raw, persist = true){
@@ -623,10 +786,11 @@ async function ingest(raw, persist = true){
   if (S.records.has(cid)) return cid;
   if (!await verifyRaw(node)){ S.rejected++; return null; }
   let rec; try { rec = toRec(node, cid); } catch { S.rejected++; return null; }
-  if (rec.type === 'GROUP' && rec.neg === null){
+  const fence = rec.type === 'GROUP' ? (a => ELEMENT.has(a)) : RECORD_TYPES[rec.type]?.fence ? (a => a === RECORD_TYPES[rec.type].fence) : null;
+  if (fence && rec.neg === null && Array.isArray(node.fields.P)){   // every fenced child is verified and ingested on its own
     rec.members = [];
     for (const child of node.fields.P){
-      if (!ELEMENT.has(child.action)){ S.rejected++; return null; }
+      if (!fence(child.action)){ S.rejected++; return null; }
       const c = await ingest(child.raw, false);
       if (!c){ S.rejected++; return null; }
       rec.members.push(c);
@@ -649,6 +813,7 @@ async function publish(raw, blobs = {}){
 }
 async function onWire({ data }){
   if (data && data.presence){ onPresence(data.presence); return; }
+  for (const k of Object.keys(WIRE_HOOKS)) if (data && data[k] !== undefined){ WIRE_HOOKS[k](data[k]); return; }
   if (!data || typeof data.raw !== 'string') return;
   for (const [c, b] of Object.entries(data.blobs || {})) try { await addBlob(c, b64dec(b)); } catch {}
   await ingest(data.raw);
@@ -696,7 +861,9 @@ async function importText(text, persist = true){
 
 /* ---------- derived view of the union ---------- */
 function derive(){
-  const recs = [...S.records.values()].sort(byZ);
+  // the history scrubber replays the union as it stood at record order S.histZ
+  const recs = [...S.records.values()].filter(r => S.histZ == null || r.z <= S.histZ).sort(byZ);
+  const byType = {};
   const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map(), styles = new Map();
   for (const r of recs){
     if (r.neg !== null){
@@ -706,17 +873,18 @@ function derive(){
       const o = off.get(r.f.R) || { x: 0, y: 0, w: 0, h: 0 }; o.x += r.dx; o.y += r.dy; o.w += r.dw; o.h += r.dh; off.set(r.f.R, o);
     } else if (r.type === 'GROUP') groups.push(r);
     else if (r.type === 'COMMENT') comments.push(r);
+    else if (RECORD_TYPES[r.type]) (byType[r.type] ||= []).push(r);
     else if (r.type === 'RESOLVE') resolves.set(r.f.R, r);   // latest z wins; anyone may resolve or reopen
     else if (r.type === 'STYLE'){
       // restyle: the author's own element only; latest z wins per property
       const t = S.records.get(r.f.R);
-      if (t && t.author === r.author){ const o = styles.get(t.cid) || {}; if (r.sw2 != null) o.W = r.sw2; if (r.sc) o.C = r.sc; if (r.sk) o.K = r.sk; if (r.so != null) o.O = r.so; if (r.sl != null) o.L = r.sl; if (r.sm != null) o.M = r.sm; styles.set(t.cid, o); }
+      if (t && t.author === r.author){ const o = styles.get(t.cid) || {}; if (r.sw2 != null) o.W = r.sw2; if (r.sc) o.C = r.sc; if (r.sk) o.K = r.sk; if (r.so != null) o.O = r.so; if (r.sl != null) o.L = r.sl; if (r.sm != null) o.M = r.sm; if (r.sy) o.Y = r.sy; if (r.sd) o.D = r.sd; styles.set(t.cid, o); }
     }
     else els.push(r);
   }
   const hidden = new Set(); for (const [k, v] of negs) if (v) hidden.add(k);
   for (const el of els){ const o = styles.get(el.cid) || {}; el.ew = o.W ?? (el.type === 'DRAW' ? el.w : el.sw); el.ec = o.C ?? el.f.C; if (el.type === 'NODE') el.ek = NODE_KINDS[o.K] ? o.K : (NODE_KINDS[el.k] ? el.k : 'card');
-    el.ez = o.O ?? el.z; el.locked = !!o.L; el.elabel = o.M ?? el.label ?? ''; }
+    el.ez = o.O ?? el.z; el.locked = !!o.L; el.elabel = o.M ?? el.label ?? ''; el.eshape = o.Y || null; el.edash = o.D || null; }
   els.sort((a, b) => a.ez - b.ez || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0));   // layer order: STYLE O overrides z
   // text edits: an author's TEXT with -E-{cid} supersedes that earlier version (unless the edit itself is revoked)
   const next = new Map(), superseded = new Set();
@@ -738,6 +906,7 @@ function derive(){
   const groupOf = new Map();
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
   S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids };
+  runHooks(DERIVE_HOOKS, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
 let derivePending = false;
@@ -752,7 +921,7 @@ let INK = '#14181f';
 const colorOf = c => c === 'ink' || !c ? INK : COLORS[c] || (/^[0-9a-fA-F]{6}$/.test(c) ? '#' + c : INK);
 function authorHue(id){ let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return h % 360; }
 const authorColor = id => `hsl(${authorHue(id)} 62% 48%)`;
-const short = id => id ? id.slice(2, 8) : '?';
+const short = id => id ? (NAMES.get(id) || id.slice(2, 8)) : '?';
 
 function pathOf(pts){
   const p = new Path2D();
@@ -879,15 +1048,11 @@ function drawEl(el){
   if (el.type === 'ARROW'){
     const g = arrowGeom(el); if (!g){ ctx.restore(); return; }
     ctx.lineWidth = lw(el);
-    const A = current(el.f.FROM), B = current(el.f.TO);
-    if (A?.type === 'NODE' && B?.type === 'NODE'){   // diagram connectors curve
-      drawLink(box(A), box(B), true, col, lw(el));
-      if (el.elabel){ const q = linkGeom(box(A), box(B)); drawEdgeLabel(el.elabel, { x: (q.p0.x + 3 * q.c0.x + 3 * q.c1.x + q.p1.x) / 8, y: (q.p0.y + 3 * q.c0.y + 3 * q.c1.y + q.p1.y) / 8 }, col); }
-      ctx.restore(); return;
-    }
-    ctx.beginPath(); ctx.moveTo(g.a.x, g.a.y); ctx.lineTo(g.b.x, g.b.y); ctx.stroke();
-    drawArrowHead(g.a, g.b, 8 + lw(el) * 2);
-    if (el.elabel) drawEdgeLabel(el.elabel, { x: (g.a.x + g.b.x) / 2, y: (g.a.y + g.b.y) / 2 }, col);
+    // diagram connectors default to a curve, other arrows to a straight line; STYLE Y/D override (features/connectors)
+    const A = current(el.f.FROM), B = current(el.f.TO), nodes = A?.type === 'NODE' && B?.type === 'NODE';
+    const c = connGeom(box(A), box(B), el.eshape || (nodes ? 'curve' : 'straight'));
+    strokeConn(c, col, lw(el), el.edash, true);
+    if (el.elabel) drawEdgeLabel(el.elabel, c.mid, col);
     ctx.restore(); return;
   }
   const o = offsetOf(el.cid); ctx.translate(o.x, o.y);
@@ -972,6 +1137,7 @@ function render(){
     }
   }
   ctx.restore();
+  runHooks(RENDER_HOOKS.world, z);
   drawNodeGhost(); drawGrowHandles(accent);
   if (G?.kind === 'erase' && G.pts.length > 1){ ctx.save(); ctx.strokeStyle = TH.muted; ctx.globalAlpha = .35; ctx.lineWidth = 14 / z; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); ctx.restore(); }
@@ -991,6 +1157,7 @@ function render(){
   }
   drawPins();
   drawPeers();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); runHooks(RENDER_HOOKS.screen);
   paintMini();
   paintPreviews();
   paintBar();
@@ -1039,12 +1206,14 @@ async function commitComment({ on = null, x, y, text, re = null }){
     ['M', encTxt(text)], ['RE', re || '0'], ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid); return cid;
 }
-async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = null, M = null }){
+async function commitStyle(cid, { W = null, C = null, K = null, O = null, L = null, M = null, Y = null, D = null }){
   const pairs = [['I', S.me.id], ['R', cid]];
   if (K) pairs.push(['K', K]);
   if (O != null) pairs.push(['O', encInt(Math.round(O))]);
   if (L != null) pairs.push(['L', L ? '1' : '0']);
   if (M != null) pairs.push(['M', encTxt(M)]);
+  if (Y) pairs.push(['Y', Y]);
+  if (D) pairs.push(['D', D]);
   if (W != null) pairs.push(['W', Math.max(1, Math.round(W))]);
   if (C) pairs.push(['C', C]);
   return publish(await signed('STYLE', [...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
@@ -1117,6 +1286,7 @@ async function undo(){
   else if (h.kind === 'style') for (const it of h.items) await commitStyle(it.cid, it.before);
   else if (h.kind === 'moves') for (const it of h.items) await commitMove(it.t, -it.dx, -it.dy);
   else if (h.kind === 'creates') for (const c of h.cids) await setNeg(c, true);
+  else if (h.kind === 'fn') await h.undo();   // features record their own inverse
   S.redo.push(h);
 }
 async function redo(){
@@ -1127,6 +1297,7 @@ async function redo(){
   else if (h.kind === 'style') for (const it of h.items) await commitStyle(it.cid, it.after);
   else if (h.kind === 'moves') for (const it of h.items) await commitMove(it.t, it.dx, it.dy);
   else if (h.kind === 'creates') for (const c of h.cids) await setNeg(c, false);
+  else if (h.kind === 'fn') await h.redo();
   S.hist.push(h);
 }
 async function revokeSelection(){
@@ -1420,6 +1591,7 @@ function setCursor(){
     : spaceDown || G?.kind === 'pan' ? (G ? 'grabbing' : 'grab') : G?.kind === 'resize' || hoverHandle ? 'nwse-resize' : G?.kind === 'move' ? 'move'
     : S.lassoMode ? (hoverSel || hoverPick ? 'move' : 'default') : hoverEdge ? 'alias' : hoverSel ? 'move' : 'crosshair';
 }
+let lastEmpty = null;
 let hoverSel = false, hoverHandle = false, hoverPick = false, hoverPin = false, lastPick = null, lastPointer = null, erasing = false;
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
@@ -1439,6 +1611,7 @@ cv.addEventListener('pointerdown', e => {
   if (e.button === 0 && pointers.size === 1){
     const pid = pinAt(e.clientX, e.clientY);
     if (pid){ G = { kind: 'pin', id: pid, targets: new Set([pid]), start: w, dx: 0, dy: 0, sx: e.clientX, sy: e.clientY, moved: false }; setCursor(); return; }
+    for (const h of POINTER_HOOKS) if (h(e, w)){ G = { kind: 'none' }; dirty = true; return; }   // feature hit targets (core/hooks)
     if (placing === 'text'){ G = { kind: 'none' }; const t = hitTest(w); if (!(t && t.type === 'TEXT' && editText(t))) openText(w); return; }
     if (erasing){ G = { kind: 'erase', pts: [w], hit: new Set(), others: 0 }; eraseAt(w); dirty = true; return; }
     if (placing === 'node'){ G = { kind: 'none' }; setPlacing(null); startNode({ kind: S.nodeKind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return; }
@@ -1461,6 +1634,12 @@ cv.addEventListener('pointerdown', e => {
     const sb = S.sel.size && selBox();
     if (sb && !e.shiftKey && inside(w, grow(sb, 10 / S.view.zoom))){ G = startMoveG(w, e.altKey); setCursor(); return; }
     if (!e.shiftKey && S.sel.size){ S.sel.clear(); announceSel(); }
+    // double-click on empty space drops a sticky note: the quickest way to add a thought
+    const now = Date.now();
+    if (!e.shiftKey && lastEmpty && now - lastEmpty.t < 350 && Math.hypot(e.clientX - lastEmpty.x, e.clientY - lastEmpty.y) < 8){
+      lastEmpty = null; G = { kind: 'none' }; startNode({ kind: 'sticky', anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return;
+    }
+    lastEmpty = { t: now, x: e.clientX, y: e.clientY };
     G = { kind: 'lasso', pts: [w] }; dirty = true; return;
   }
   if (S.sel.size){
@@ -1723,8 +1902,8 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = authorColor(id); b.textContent = id.slice(2, 4);
-    b.setAttribute('aria-label', `${id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
+    b.style.background = authorColor(id); b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.title = `${id === S.me?.id ? 'you · ' : ''}${short(id)} · ${n} element${n === 1 ? '' : 's'}\nclick: show only this author · shift-click: add/remove`;
     if (S.filter){ b.classList.toggle('off', !S.filter.has(id)); b.classList.toggle('solo', S.filter.has(id)); }
@@ -1758,6 +1937,7 @@ function paintInspector(){
   if (mine.length) tb += B('front', '⬆', 'Bring to front (⌘⇧↑)') + B('back', '⬇', 'Send to back (⌘⇧↓)') + B('lock', allLocked ? '🔓' : '🔒', allLocked ? 'Unlock (⌘⇧L)' : 'Lock (⌘⇧L)', `aria-pressed="${allLocked}"`);
   if (rs.length >= 2) tb += B('group', '▣', 'Group (⌘G)');
   if (rs.some(r => S.D.groupOf.has(r.cid))) tb += B('ungroup', '▢', 'Ungroup (⌘⇧G)');
+  for (const h of TOOLBAR_HOOKS){ try { tb += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }   // feature buttons (core/hooks)
   tb += B('info', 'ⓘ', 'Details and signature', `aria-pressed="${inspInfo}"`);
   if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? '↺' : '🗑', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Revoke (Delete)', 'class="danger"');
   let html = `<div class="tb" role="toolbar" aria-label="Selection actions">${tb}</div>`;
@@ -1811,6 +1991,7 @@ $('insp').addEventListener('click', async e => {
   if (a === 'lock') await toggleLock();
   if (a === 'label') await labelArrow(rs[0]);
   if (a.startsWith('al-') || a.startsWith('dist-')) await alignSel(a);
+  if (TOOLBAR_ACTIONS[a]) await TOOLBAR_ACTIONS[a](rs, e.target.closest('[data-a]'));
   dirty = true;
 });
 async function copy(text, msg){ try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Clipboard blocked by the browser.'); } }
@@ -2088,6 +2269,7 @@ const NODE_KINDS = {
   button:  { name: 'button',            icon: '⏵', label: 'Button',    font: 14, pad: [20, 9],  wrap: 220, min: [96, 38],  bold: true },
   input:   { name: 'input field',       icon: '⎁', label: 'Email',     font: 14, pad: [12, 10], wrap: 260, min: [240, 40], align: 'left' },
   image:   { name: 'image placeholder', icon: '⊠', label: 'Image',     font: 13, pad: [10, 10], wrap: 200, min: [200, 130] },
+  swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
   frame:   { name: 'screen frame',      icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
 };
 S.nodeKind = 'card';
@@ -2178,6 +2360,10 @@ function drawNode(kind, p, L, col, noText, colName){
       ctx.fillStyle = tint(TH.line, .5); ctx.fillRect(x, y, w, h); ctx.strokeStyle = accent || TH.muted; ctx.lineWidth = 1.2; ctx.strokeRect(x, y, w, h);
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y + h); ctx.moveTo(x + w, y); ctx.lineTo(x, y + h); ctx.globalAlpha *= .5; ctx.stroke(); ctx.globalAlpha /= .5;
       textCol = TH.muted; break;
+    case 'swatch':   // moodboards: a colour chip with its name or hex underneath
+      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      rr(ctx, x, y, w, h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent'; ctx.strokeStyle = TH.line; ctx.lineWidth = 1; ctx.stroke();
+      rr(ctx, x + 6, y + 6, w - 12, h - 40, 7); ctx.fillStyle = col; ctx.fill(); break;
     case 'frame':
       rr(ctx, x, y, w, h, 18); ctx.lineWidth = 2; ctx.strokeStyle = accent || TH.ink; ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x, y + 30); ctx.lineTo(x + w, y + 30); ctx.lineWidth = 1; ctx.strokeStyle = TH.line; ctx.stroke(); textCol = TH.muted; break;
@@ -2187,6 +2373,7 @@ function drawNode(kind, p, L, col, noText, colName){
     const left = K.align === 'left', th = L.lines.length * L.lh;
     let ty = K.top ? y + K.pad[1] + L.lh / 2 : y + h / 2 - th / 2 + L.lh / 2;
     if (kind === 'frame') ty = y + 15;
+    if (kind === 'swatch') ty = y + h - 17;
     ctx.textAlign = left ? 'left' : 'center';
     const tx = left ? x + K.pad[0] + (kind === 'card' && accent ? 4 : 0) : x + w / 2;
     for (const l of L.lines){ ctx.fillText(l, tx, ty); ty += L.lh; }
@@ -2207,13 +2394,29 @@ function linkGeom(a, b){
   }
   return { p0, c0, c1, p1 };
 }
-function drawLink(a, b, head, col, width){
-  const g = linkGeom(a, b);
-  ctx.save(); ctx.setLineDash([]); ctx.strokeStyle = col; ctx.lineWidth = width; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(g.p0.x, g.p0.y); ctx.bezierCurveTo(g.c0.x, g.c0.y, g.c1.x, g.c1.y, g.p1.x, g.p1.y); ctx.stroke();
-  if (head) drawArrowHead(g.c1, g.p1, 7 + width * 2);
+// Connector geometry between two boxes: curve (bezier between facing sides), straight (centre to centre, clipped) or elbow.
+// Returns { bez } or { pts }, plus mid (label anchor) and from → to (arrowhead direction).
+function connGeom(a, b, shape = 'curve'){
+  const g = linkGeom(a, b), hz = g.c0.y === g.p0.y;
+  if (shape === 'straight'){ const p = edgePoint(a, center(b), 6), q = edgePoint(b, center(a), 6); return { pts: [p, q], mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, from: p, to: q }; }
+  if (shape === 'elbow'){
+    const m = hz ? (g.p0.x + g.p1.x) / 2 : (g.p0.y + g.p1.y) / 2;
+    const pts = hz ? [g.p0, { x: m, y: g.p0.y }, { x: m, y: g.p1.y }, g.p1] : [g.p0, { x: g.p0.x, y: m }, { x: g.p1.x, y: m }, g.p1];
+    return { pts, mid: { x: (pts[1].x + pts[2].x) / 2, y: (pts[1].y + pts[2].y) / 2 }, from: pts[2], to: g.p1 };
+  }
+  return { bez: g, mid: { x: (g.p0.x + 3 * g.c0.x + 3 * g.c1.x + g.p1.x) / 8, y: (g.p0.y + 3 * g.c0.y + 3 * g.c1.y + g.p1.y) / 8 }, from: g.c1, to: g.p1 };
+}
+function strokeConn(c, col, width, dash, head){
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.setLineDash(dash && dash !== 'solid' ? dashOf(dash, width) : []);
+  ctx.beginPath();
+  if (c.bez){ const g = c.bez; ctx.moveTo(g.p0.x, g.p0.y); ctx.bezierCurveTo(g.c0.x, g.c0.y, g.c1.x, g.c1.y, g.p1.x, g.p1.y); }
+  else c.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+  ctx.stroke(); ctx.setLineDash([]);
+  if (head) drawArrowHead(c.from, c.to, 7 + width * 2);
   ctx.restore();
 }
+function drawLink(a, b, head, col, width){ strokeConn(connGeom(a, b, 'curve'), col, width, 'solid', head); }
 function drawTreeLinks(){
   for (const el of S.D.els){
     if (el.type !== 'NODE' || !el.parent || !visible(el)) continue;
@@ -2487,30 +2690,31 @@ function toSVG(){
       const b = box(el), bytes = S.blobs.get(el.f.R); if (!bytes) continue;
       o.push(`<image x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" preserveAspectRatio="none" href="data:${sniffImage(bytes) || 'image/png'};base64,${b64enc(bytes)}"><title>${xe(el.alt || '')}</title></image>`);
     } else if (el.type === 'ARROW'){
-      const A = current(el.f.FROM), B = current(el.f.TO);
-      if (A?.type === 'NODE' && B?.type === 'NODE') curve(linkGeom(box(A), box(B)), col, lw(el), true);
-      if (el.elabel){ const q = A?.type === 'NODE' && B?.type === 'NODE' ? linkGeom(box(A), box(B)) : null, g2 = arrowGeom(el);
-        const m = q ? { x: (q.p0.x + 3 * q.c0.x + 3 * q.c1.x + q.p1.x) / 8, y: (q.p0.y + 3 * q.c0.y + 3 * q.c1.y + q.p1.y) / 8 } : g2 ? { x: (g2.a.x + g2.b.x) / 2, y: (g2.a.y + g2.b.y) / 2 } : null;
-        if (m) o.push(`<text x="${n(m.x)}" y="${n(m.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`); }
-      else { const g = arrowGeom(el); if (!g) continue; o.push(`<line x1="${n(g.a.x)}" y1="${n(g.a.y)}" x2="${n(g.b.x)}" y2="${n(g.b.y)}" stroke="${col}" stroke-width="${lw(el)}" stroke-linecap="round"/>`, headSVG(g.a, g.b, 8 + lw(el) * 2, col, lw(el))); }
+      // one path per connector, whatever its shape, then its head and label
+      const A = current(el.f.FROM), B = current(el.f.TO); if (!arrowGeom(el)) continue;
+      const nodes = A.type === 'NODE' && B.type === 'NODE', c = connGeom(box(A), box(B), el.eshape || (nodes ? 'curve' : 'straight')), w = lw(el);
+      const d = c.bez ? `M${n(c.bez.p0.x)} ${n(c.bez.p0.y)} C${n(c.bez.c0.x)} ${n(c.bez.c0.y)} ${n(c.bez.c1.x)} ${n(c.bez.c1.y)} ${n(c.bez.p1.x)} ${n(c.bez.p1.y)}` : 'M' + c.pts.map(p => `${n(p.x)} ${n(p.y)}`).join(' L');
+      o.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${svgDash(el.edash, w)}/>`, headSVG(c.from, c.to, 7 + w * 2, col, w));
+      if (el.elabel) o.push(`<text x="${n(c.mid.x)}" y="${n(c.mid.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`);
     } else if (el.type === 'NODE'){
       const b = box(el), L = nodeBox(el), K = L.K, ac = ecol(el) !== 'ink' ? col : null, k = el.ek;
       const fillN = { card: TH.panel, topic: mix(ac || TH.accent, .16), rect: mix(ac || TH.ink, .07), ellipse: mix(ac || TH.ink, .07), diamond: mix(ac || TH.ink, .07),
-        sticky: ac ? mixHex(ac, '#ffffff', .35) : '#ffe066', button: ac || TH.ink, input: TH.panel, image: mix(TH.line, .5), frame: 'none' }[k];
-      const strokeN = { card: ac || TH.line, topic: ac || TH.accent, rect: ac || TH.ink, ellipse: ac || TH.ink, diamond: ac || TH.ink, sticky: 'none', button: 'none', input: ac || TH.line, image: ac || TH.muted, frame: ac || TH.ink }[k];
+        sticky: ac ? mixHex(ac, '#ffffff', .35) : '#ffe066', swatch: TH.panel, button: ac || TH.ink, input: TH.panel, image: mix(TH.line, .5), frame: 'none' }[k];
+      const strokeN = { card: ac || TH.line, topic: ac || TH.accent, rect: ac || TH.ink, ellipse: ac || TH.ink, diamond: ac || TH.ink, sticky: 'none', button: 'none', input: ac || TH.line, image: ac || TH.muted, frame: ac || TH.ink, swatch: TH.line }[k];
       const sw = ['topic', 'rect', 'ellipse', 'diamond', 'frame'].includes(k) ? 2 : 1.5, attrs = `fill="${fillN}" stroke="${strokeN}" stroke-width="${sw}"`;
       if (k === 'ellipse') o.push(`<ellipse cx="${n(b.x + b.w / 2)}" cy="${n(b.y + b.h / 2)}" rx="${n(b.w / 2)}" ry="${n(b.h / 2)}" ${attrs}/>`);
       else if (k === 'diamond') o.push(`<polygon points="${n(b.x + b.w / 2)},${n(b.y)} ${n(b.x + b.w)},${n(b.y + b.h / 2)} ${n(b.x + b.w / 2)},${n(b.y + b.h)} ${n(b.x)},${n(b.y + b.h / 2)}" ${attrs}/>`);
       else {
-        const rad = { card: 10, topic: b.h / 2, rect: 6, button: 8, input: 6, frame: 18 }[k] || 0;
+        const rad = { card: 10, topic: b.h / 2, rect: 6, button: 8, input: 6, frame: 18, swatch: 10 }[k] || 0;
         o.push(`<rect x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" rx="${n(rad)}" ${attrs}/>`);
         if (k === 'card' && ac) o.push(`<rect x="${n(b.x)}" y="${n(b.y + 6)}" width="4" height="${n(b.h - 12)}" fill="${ac}"/>`);
         if (k === 'image') o.push(`<path d="M${n(b.x)} ${n(b.y)} L${n(b.x + b.w)} ${n(b.y + b.h)} M${n(b.x + b.w)} ${n(b.y)} L${n(b.x)} ${n(b.y + b.h)}" stroke="${TH.muted}" stroke-opacity=".5"/>`);
+        if (k === 'swatch') o.push(`<rect x="${n(b.x + 6)}" y="${n(b.y + 6)}" width="${n(b.w - 12)}" height="${n(b.h - 40)}" rx="7" fill="${col}"/>`);
         if (k === 'frame') o.push(`<line x1="${n(b.x)}" y1="${n(b.y + 30)}" x2="${n(b.x + b.w)}" y2="${n(b.y + 30)}" stroke="${TH.line}"/>`);
       }
       const tcol = k === 'sticky' ? '#1d1d1f' : k === 'button' ? (ac ? '#fff' : TH.paper) : ['input', 'image', 'frame'].includes(k) ? TH.muted : TH.ink;
       const left = K.align === 'left', th = L.lines.length * L.lh;
-      let ty = K.top ? b.y + K.pad[1] + L.lh / 2 : b.y + b.h / 2 - th / 2 + L.lh / 2; if (k === 'frame') ty = b.y + 15;
+      let ty = K.top ? b.y + K.pad[1] + L.lh / 2 : b.y + b.h / 2 - th / 2 + L.lh / 2; if (k === 'frame') ty = b.y + 15; if (k === 'swatch') ty = b.y + b.h - 17;
       const tx = left ? b.x + K.pad[0] + (k === 'card' && ac ? 4 : 0) : b.x + b.w / 2;
       o.push(`<text font-family="${xe(FONTS.sans)}" font-size="${K.font}" font-weight="${K.bold ? 600 : 400}" fill="${tcol}" text-anchor="${left ? 'start' : 'middle'}" dominant-baseline="central">${L.lines.map((l, i) => `<tspan x="${n(tx)}" y="${n(ty + i * L.lh)}">${xe(l)}</tspan>`).join('')}</text>`);
     }
@@ -2831,6 +3035,7 @@ const SW = c => `<span class="sw" style="background:${colorOf(c)}"></span>`;
 function commands(){
   const L = [];
   const add = (g, t, run, o = {}) => L.push({ g, t, run, ...o });
+  runHooks(PALETTE_HOOKS, add);   // feature commands (core/hooks) come first
   for (const c of Object.keys(COLORS)) add('color', c[0].toUpperCase() + c.slice(1), () => setColor(c), { sw: c, on: S.color === c });
   add('color', 'Custom hex…', async () => { const v = await ask('Hex colour', '', 'Six hex digits, e.g. 0b7285'); if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); else if (v) toast('Not a hex colour.'); });
   for (const [n, w] of [['Fine', 2], ['Medium', 4], ['Bold', 8], ['Marker', 16]]) add('width', `${n} · ${w}`, () => { S.width = w; }, { on: S.width === w });
@@ -2995,12 +3200,981 @@ addEventListener('paste', async e => {
   else if (t.trim() && S.me){ e.preventDefault(); const c = toWorld(innerWidth / 2, innerHeight / 2); await commitText(c, t.trim().slice(0, 2000)); }
 });
 
+
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([hidden]), textarea:not([hidden]), select, [tabindex]:not([tabindex="-1"])';
+// Keep Tab inside an open dialog: the canvas behind it is inert while the dialog is up.
+function trapTab(e, root){
+  if (e.key !== 'Tab') return;
+  const f = [...root.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+  if (!f.length){ e.preventDefault(); return; }
+  const first = f[0], last = f[f.length - 1];
+  if (f.length === 1 || (e.shiftKey && document.activeElement === first)){ e.preventDefault(); (f.length === 1 ? first : last).focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+for (const id of ['pal', 'ask', 'help', 'home', 'report']){
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => trapTab(e, el));
+}
+
+/* report: a read-only Markdown document with copy and download */
+let reportBack = null;
+function openReport(title, md, fileName = 'report.md'){
+  reportBack = document.activeElement;
+  $('reportT').textContent = title; $('reportBody').textContent = md; $('report').dataset.file = fileName;
+  $('report').hidden = false; setTimeout(() => $('reportCopy').focus(), 0);
+  say(`${title} ready. Copy or download it.`);
+}
+function closeReport(){ $('report').hidden = true; (reportBack && document.contains(reportBack) ? reportBack : cv).focus({ preventScroll: true }); }
+$('reportClose').onclick = closeReport;
+$('reportCopy').onclick = () => copy($('reportBody').textContent, 'Copied as Markdown');
+$('reportSave').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([$('reportBody').textContent], { type: 'text/markdown' }));
+  a.download = $('report').dataset.file || 'report.md'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('report').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeReport(); });
+// generated illustrations, created as ordinary signed records but kept out of the undo history.
+// @uses diagrams (commitNode), commands (commitArrow, groupSelection, commitComment)
+
+const tick = () => new Promise(r => setTimeout(r, 0));   // let derive() catch up
+async function mk(kind, x, y, label, o = {}){
+  const cid = await commitNode({ kind, x, y, label, color: o.color || 'ink', parent: o.parent || null, W: o.W || 0, H: o.H || 0 });
+  S.hist.pop(); return cid;
+}
+async function link(a, b, label = ''){ const cid = await commitArrow(S.records.get(a), S.records.get(b), label); S.hist.pop(); return cid; }
+async function groupAll(cids){ await tick(); S.sel = new Set(cids.filter(Boolean)); await groupSelection(); S.hist.pop(); S.sel.clear(); }
+async function noteOn(cid, text, re = null){ await tick(); const el = S.records.get(cid), b = box(el); const c = await commitComment({ on: cid, x: b.w - 6, y: 4, text, re }); S.hist.pop(); return c; }
+async function replyTo(root, text){ const t = S.records.get(root); const c = await commitComment({ on: t.on, x: t.x, y: t.y, text, re: root }); S.hist.pop(); return c; }
+// several authors at once: run fn as each author in turn
+async function by(author, fn){ return asAuthor(author, fn); }
+const center0 = () => viewCenter();
+
+/* generated illustrations: small JPEG scenes so examples have real images (and real palettes) */
+const SCENES = {
+  dusk(g, w, h, p){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, p[0]); gr.addColorStop(.6, p[1]); gr.addColorStop(1, p[2]); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.fillStyle = p[3]; g.beginPath(); g.arc(w * .68, h * .55, h * .14, 0, Math.PI * 2); g.fill();
+    [[.62, p[4]], [.72, p[5]], [.84, p[6]]].forEach(([y0, c], i) => { g.fillStyle = c; g.beginPath(); g.moveTo(0, h); g.lineTo(0, h * y0);
+      for (let x = 0; x <= w; x += w / 8) g.quadraticCurveTo(x + w / 16, h * (y0 - .08 + (i % 2) * .05), x + w / 8, h * (y0 + ((x / w * 7 + i) % 2 ? .02 : -.03))); g.lineTo(w, h); g.fill(); }); },
+  sea(g, w, h, p){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, p[0]); gr.addColorStop(.45, p[1]); gr.addColorStop(.46, p[2]); gr.addColorStop(1, p[3]); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.strokeStyle = p[4]; g.lineWidth = 3; for (let y = h * .55; y < h; y += h * .07){ g.beginPath(); for (let x = 0; x <= w; x += 12) g.lineTo(x, y + Math.sin(x / 22 + y) * 4); g.globalAlpha = .55; g.stroke(); } g.globalAlpha = 1; },
+  dunes(g, w, h, p){ g.fillStyle = p[0]; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 4; i++){ g.fillStyle = p[1 + i]; g.beginPath(); g.moveTo(0, h); g.lineTo(0, h * (.45 + i * .14)); g.bezierCurveTo(w * .3, h * (.3 + i * .14), w * .6, h * (.65 + i * .1), w, h * (.4 + i * .15)); g.lineTo(w, h); g.fill(); } },
+  circles(g, w, h, p){ g.fillStyle = p[0]; g.fillRect(0, 0, w, h);
+    [[.3, .4, .32], [.62, .55, .38], [.45, .75, .22], [.8, .25, .18]].forEach(([x, y, r], i) => { g.globalAlpha = .85; g.fillStyle = p[1 + i % (p.length - 1)]; g.beginPath(); g.arc(w * x, h * y, h * r, 0, Math.PI * 2); g.fill(); }); g.globalAlpha = 1; },
+  room(g, w, h, p){ g.fillStyle = p[0]; g.fillRect(0, 0, w, h); g.fillStyle = p[1]; g.fillRect(0, h * .72, w, h * .28);
+    g.fillStyle = p[2]; g.fillRect(w * .1, h * .18, w * .28, h * .34); g.fillStyle = p[3]; g.fillRect(w * .55, h * .42, w * .36, h * .3); g.fillStyle = p[4]; g.fillRect(w * .58, h * .3, w * .1, h * .12);
+    g.fillStyle = p[5]; g.beginPath(); g.arc(w * .24, h * .35, h * .07, 0, Math.PI * 2); g.fill(); },
+  people(g, w, h, p){ g.fillStyle = p[0]; g.fillRect(0, 0, w, h);
+    [[.3, p[1]], [.5, p[2]], [.7, p[3]]].forEach(([x, c]) => { g.fillStyle = c; g.beginPath(); g.arc(w * x, h * .38, h * .11, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(w * x, h * .82, h * .17, h * .26, 0, Math.PI, 0); g.fill(); });
+    g.fillStyle = p[4]; g.fillRect(w * .15, h * .7, w * .7, h * .06); },
+};
+async function sceneBytes(kind, palette, w = 480, h = 320){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  SCENES[kind](c.getContext('2d'), w, h, palette);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .86));
+  return new Uint8Array(await blob.arrayBuffer());
+}
+// Place image bytes as an IMAGE record (the blob travels with it), without the alt-text dialog.
+async function placeImage(bytes, x, y, w, h, alt){
+  const R = await cidOf(bytes);
+  const raw = await signed('IMAGE', [['I', S.me.id], ['R', R], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))], ['W', Math.round(w)], ['H', Math.round(h)], ['M', encTxt(alt)], ['Z', ++S.lamport], ['T', Date.now()]]);
+  return publish(raw, { [R]: bytes });
+}
+async function scene(kind, palette, x, y, w, h, alt){ return placeImage(await sceneBytes(kind, palette, Math.round(w * 1.5), Math.round(h * 1.5)), x, y, w, h, alt); }
+
+// META-I-{author}-R-{canvasId}-M-{title}-K-{template}-Z-T-SIG — latest wins; anyone may retitle (audit S2)
+registerRecord('META', { parse(r, f){ if (!f.R) throw Error('meta'); r.title = decTxt(f.M || ''); r.tpl = f.K || ''; } });
+DERIVE_HOOKS.push((D, by) => {
+  let m = null;
+  for (const r of by.META || []) if (r.f.R === canvasId) m = r;   // z order: the last is the latest
+  D.meta = m ? { title: m.title, tpl: m.tpl, author: m.author } : null;
+  paintTitle();
+});
+const canvasTitle = () => S.D.meta?.title || 'Untitled canvas';
+function paintTitle(){
+  const t = canvasTitle();
+  if ($('ctitle').textContent !== t) $('ctitle').textContent = t;
+  document.title = `${t} · Flux Canvas`;
+  const empty = !S.D.els.some(el => visible(el)) && !S.records.size;
+  $('empty').hidden = !empty;
+}
+async function setTitle(title, tpl = S.D.meta?.tpl || ''){
+  title = String(title).trim().slice(0, 120); if (!title) return;
+  await publish(await signed('META', [['I', S.me.id], ['R', canvasId], ['M', encTxt(title)], ['K', tpl || 'blank'], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+async function renameCanvas(){
+  const v = await ask('Canvas title', S.D.meta?.title || '', 'Shown in the title bar, the canvas list and exports. Signed like everything else.');
+  if (v && v.trim()){ await setTitle(v); say(`Canvas renamed “${v.trim()}”.`); }
+}
+
+/* example authors: three stable keys, so an example reads like real collaboration and is never mistaken for your work */
+const EXAMPLE_NAMES = ['Ana', 'Ben', 'Chen'];
+let exampleKeys = null;
+async function exampleAuthors(){
+  if (exampleKeys) return exampleKeys;
+  let saved = null; try { saved = JSON.parse(localStorage.getItem('flux:exampleKeys') || 'null'); } catch {}
+  if (Array.isArray(saved) && saved.length === 3) try { exampleKeys = await Promise.all(saved.map(restoreIdentity)); exampleKeys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i])); return exampleKeys; } catch {}
+  exampleKeys = []; for (let i = 0; i < 3; i++) exampleKeys.push(await newIdentity());
+  try { localStorage.setItem('flux:exampleKeys', JSON.stringify(exampleKeys.map(m => ({ alg: m.alg, id: m.id, jwk: m.jwk })))); } catch {}
+  exampleKeys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i]));
+  return exampleKeys;
+}
+// names for example authors are known on every load, so reopened examples still read "Ana", not a key fragment
+try { (JSON.parse(localStorage.getItem('flux:exampleKeys') || '[]') || []).forEach((k, i) => k?.id && NAMES.set(k.id, EXAMPLE_NAMES[i])); } catch {}
+// Sign everything inside fn as another identity (examples only).
+async function asAuthor(me, fn){ const prev = S.me; S.me = me; try { return await fn(); } finally { S.me = prev; } }
+
+/* canvas list: read straight from local storage, without verifying, for display only */
+function canvasList(){
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++){
+      const key = localStorage.key(i); if (!key || !key.startsWith('flux:canvas:')) continue;
+      const id = key.slice(12); let title = '', n = 0, last = 0;
+      for (const l of (localStorage.getItem(key) || '').split('\n')){
+        if (!l || l.startsWith('BLOB-')) continue; n++;
+        const t = l.match(/-T-(\d{10,})-SIG-/); if (t) last = Math.max(last, +t[1]);
+        if (l.startsWith('META-') && l.includes(`-R-${id}-`)){ const m = l.match(/-M-([^-.]*)/); if (m) title = decTxt(m[1]); }
+      }
+      out.push({ id, title, n, last });
+    }
+  } catch {}
+  const cur = out.find(c => c.id === canvasId);
+  if (cur){ cur.title = S.D.meta?.title || cur.title; cur.n = S.records.size; cur.current = true; }
+  else out.push({ id: canvasId, title: S.D.meta?.title || '', n: S.records.size, last: Date.now(), current: true });
+  return out.sort((a, b) => (b.current - a.current) || b.last - a.last);
+}
+const ago = t => { if (!t) return 'empty'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
+
+/* the canvas home */
+let homeBack = null;
+function openHome(){
+  homeBack = document.activeElement;
+  const card = (attr, x) => `<button class="card2" ${attr}><span class="ic" aria-hidden="true">${x.icon}</span><b>${esc(x.name || x.title)}</b><span>${esc(x.blurb)}</span></button>`;
+  $('homeTpl').innerHTML = TEMPLATES.map(t => card(`data-tpl="${t.id}"`, t)).join('');
+  $('homeEx').innerHTML = EXAMPLES.map(x => card(`data-ex="${x.id}"`, x)).join('');
+  $('homeList').innerHTML = canvasList().map(c => `<li${c.current ? ' class="cur"' : ''}>
+      <button class="open" data-open="${c.id}"><b>${esc(c.title || 'Untitled canvas')}</b><span>${c.n} record${c.n === 1 ? '' : 's'} · ${ago(c.last)}${c.current ? ' · open now' : ''}</span></button>
+      ${c.current ? '' : `<button class="btn danger" data-rm="${c.id}" aria-label="Remove ${esc(c.title || 'untitled canvas')} from this browser">remove</button>`}</li>`).join('');
+  $('home').hidden = false;
+  setTimeout(() => ($('homeTpl').querySelector('button') || $('homeClose')).focus(), 0);
+  say('Canvas home. Start from a template, open an example, or reopen one of your canvases.');
+}
+function closeHome(){ $('home').hidden = true; (homeBack && document.contains(homeBack) && homeBack !== document.body ? homeBack : cv).focus({ preventScroll: true }); }
+async function newCanvasFrom(tpl){
+  closeHome();
+  await switchCanvas(newCanvasId());
+  await setTitle(tpl.id === 'blank' ? 'Untitled canvas' : tpl.name, tpl.id);
+  S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 };
+  if (tpl.build) await tpl.build(viewCenter());
+  await new Promise(r => setTimeout(r, 0));
+  if (tpl.id !== 'blank') zoomFit();
+  dirty = true; toast(`New canvas · ${tpl.name}`);
+}
+async function openExample(x){
+  closeHome();
+  await switchCanvas(newCanvasId());
+  const A = await exampleAuthors();
+  S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 };
+  await asAuthor(A[0], () => setTitle(x.title, 'example:' + x.id));
+  await x.build(A);
+  S.hist = []; S.redo = []; S.sel.clear();
+  changed();   // re-derive as you: views painted while examples signed as Ana, Ben or Chen (e.g. votes left) must be yours
+  await new Promise(r => setTimeout(r, 0));
+  zoomFit(); dirty = true;
+  toast(`Example · ${x.title} · signed by ${EXAMPLE_NAMES.join(', ')} (example keys)`);
+}
+$('home').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'homeClose') return closeHome();
+  if (b.dataset.tpl) return newCanvasFrom(TEMPLATES.find(t => t.id === b.dataset.tpl));
+  if (b.dataset.ex) return openExample(EXAMPLES.find(x => x.id === b.dataset.ex));
+  if (b.dataset.open){ closeHome(); if (b.dataset.open !== canvasId){ await switchCanvas(b.dataset.open); zoomFit(); } return; }
+  if (b.dataset.rm){
+    if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'confirm remove'; b.setAttribute('aria-label', 'Confirm removing this canvas from this browser'); return; }
+    try { localStorage.removeItem('flux:canvas:' + b.dataset.rm); } catch {}
+    b.closest('li').remove(); say('Removed from this browser. Copies other people hold are unaffected.');
+  }
+});
+$('home').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeHome(); });
+$('homeBtn').onclick = openHome;
+$('ctitle').onclick = renameCanvas;
+$('emptyBtn').onclick = openHome;
+
+TEMPLATES.push(
+  { id: 'blank', name: 'Blank canvas', icon: '◻', blurb: 'An empty page. Draw, write, diagram.' },
+  { id: 'mindmap', name: 'Mind map', icon: '✺', blurb: 'A central idea with branches. Tab adds children.', build: () => insertTemplate('mindmap') },
+  { id: 'flow', name: 'Flowchart', icon: '⇣', blurb: 'Start, steps and a decision, connected.', build: () => insertTemplate('flow') },
+  { id: 'wire', name: 'Wireframe', icon: '▯', blurb: 'A mobile sign-in screen to iterate on.', build: () => insertTemplate('mobile') },
+);
+PALETTE_HOOKS.push(add => {
+  add('canvas', 'Canvases, templates and examples…', openHome, { k: 'H' });
+  add('canvas', 'Rename canvas…', renameCanvas);
+  for (const t of TEMPLATES) add('canvas', `New canvas · ${t.name}`, () => newCanvasFrom(t));
+  for (const x of EXAMPLES) add('examples', `Open example · ${x.title}`, () => openExample(x));
+});
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && !e.shiftKey && c.k === 'h'){ e.preventDefault(); openHome(); return true; } return false; });
+// STYLE fields: Y = curve | straight | elbow, D = solid | dash | dot (author-only, latest wins)
+
+const RELATIONS = [
+  { id: 'supports',    label: 'supports',    C: 'green',  D: 'solid', icon: '＋' },
+  { id: 'contradicts', label: 'contradicts', C: 'red',    D: 'dash',  icon: '≠' },
+  { id: 'leads',       label: 'leads to',    C: 'ink',    D: 'solid', icon: '→' },
+  { id: 'depends',     label: 'depends on',  C: 'blue',   D: 'dot',   icon: '⋯' },
+  { id: 'example',     label: 'example of',  C: 'violet', D: 'dash',  icon: 'e.g.' },
+  { id: 'question',    label: 'question',    C: 'orange', D: 'dot',   icon: '?' },
+];
+const SHAPES = ['curve', 'straight', 'elbow'], DASHES = ['solid', 'dash', 'dot'];
+const dashOf = (d, w) => d === 'dash' ? [w * 4 + 4, w * 3 + 3] : d === 'dot' ? [0.1, w * 2 + 3] : [];
+const svgDash = (d, w) => d === 'dash' ? ` stroke-dasharray="${w * 4 + 4} ${w * 3 + 3}"` : d === 'dot' ? ` stroke-dasharray="0.1 ${w * 2 + 3}"` : '';
+
+let relRow = false;
+const ownArrows = rs => rs.filter(r => r.type === 'ARROW' && r.author === S.me.id);
+TOOLBAR_HOOKS.push((rs, one, B) => {
+  const arrows = ownArrows(rs); if (!arrows.length) return '';
+  const a = arrows[0];
+  let h = B('rel', '⇄', 'Relation: what this connection means', `aria-pressed="${relRow}"`)
+    + B('shape', { curve: '⌒', straight: '／', elbow: '⌐' }[a.eshape || 'curve'], `Line shape: ${a.eshape || 'curve'} (click to change)`)
+    + B('dash', { solid: '━', dash: '╍', dot: '┈' }[a.edash || 'solid'], `Line style: ${a.edash || 'solid'} (click to change)`);
+  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => B('rel:' + r.id, r.icon, `Mark as “${r.label}”`, `aria-pressed="${a.elabel === r.label}"`)).join('');
+  return h;
+});
+async function styleArrows(rs, change, msg){
+  const items = [];
+  for (const a of ownArrows(rs)){
+    const after = change(a), before = {};
+    for (const k of Object.keys(after)) before[k] = { M: a.elabel || '', C: ecol(a), Y: a.eshape || 'curve', D: a.edash || 'solid' }[k];
+    items.push({ cid: a.cid, before, after }); await commitStyle(a.cid, after);
+  }
+  if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(msg); }
+}
+TOOLBAR_ACTIONS.rel = () => { relRow = !relRow; };
+TOOLBAR_ACTIONS.shape = rs => styleArrows(rs, a => ({ Y: SHAPES[(SHAPES.indexOf(a.eshape || 'curve') + 1) % 3] }), 'Line shape changed. Signed.');
+TOOLBAR_ACTIONS.dash = rs => styleArrows(rs, a => ({ D: DASHES[(DASHES.indexOf(a.edash || 'solid') + 1) % 3] }), 'Line style changed. Signed.');
+for (const r of RELATIONS) TOOLBAR_ACTIONS['rel:' + r.id] = rs => { relRow = false; return styleArrows(rs, () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”. Signed.`); };
+
+PALETTE_HOOKS.push(add => {
+  for (const r of RELATIONS) add('connect', `Relation · ${r.label}`, () => styleArrows([...S.sel].map(c => S.records.get(c)).filter(Boolean), () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”. Signed.`));
+});
+// grid, sort by votes, cluster into a titled frame. Brainstorm template and example.
+// @uses hooks, builders, commands, diagrams
+// REACT-I-{author}-R-{target}-E-{kind}-S-{1|0}-Z-T-SIG — per author, target and kind the latest wins; anyone may react
+
+const REACTIONS = {
+  vote: { icon: '●', name: 'vote' }, up: { icon: '👍', name: 'agree' }, idea: { icon: '💡', name: 'great idea' },
+  love: { icon: '❤️', name: 'love it' }, q: { icon: '❓', name: 'question' }, risk: { icon: '⚠️', name: 'risk' },
+};
+registerRecord('REACT', { parse(r, f){ if (!f.R || !REACTIONS[f.E]) throw Error('react'); r.kind = f.E; r.on = f.S !== '0'; } });
+DERIVE_HOOKS.push((D, by) => {
+  const latest = new Map();
+  for (const r of by.REACT || []) if (!D.hidden.has(r.cid)) latest.set(`${r.f.R}|${r.kind}|${r.author}`, r);
+  const re = new Map(), keys = new Map();
+  for (const r of latest.values()){
+    if (!r.on) continue;
+    const t = current(r.f.R); if (!t || D.hidden.has(t.cid)) continue;   // reactions follow edits of their element
+    const m = re.get(t.cid) || {}; (m[r.kind] ||= new Set()).add(r.author); re.set(t.cid, m);
+    const k = `${t.cid}|${r.kind}|${r.author}`; if (!keys.has(k)) keys.set(k, []); keys.get(k).push(r.f.R);
+  }
+  D.reactions = re; D.reactKeys = keys;
+  paintVotes();
+});
+const reactsOf = cid => S.D.reactions?.get(cid) || {};
+const reactCount = (cid, kind) => reactsOf(cid)[kind]?.size || 0;
+const reacted = (cid, kind) => !!reactsOf(cid)[kind]?.has(S.me?.id);
+
+S.voteBudget = 5;
+try { const v = +localStorage.getItem('flux:voteBudget'); if (v >= 0 && localStorage.getItem('flux:voteBudget') !== null) S.voteBudget = v; } catch {}
+function myVotes(){ let n = 0; for (const [cid, m] of S.D.reactions || []) if (m.vote?.has(S.me?.id) && visible(S.records.get(cid))) n++; return n; }
+function anyVotes(){ for (const m of (S.D.reactions || new Map()).values()) if (m.vote?.size) return true; return false; }
+function paintVotes(){
+  const el = $('votes'); if (!el) return;
+  const show = anyVotes();
+  el.hidden = !show; if (!show) return;
+  const left = S.voteBudget ? Math.max(0, S.voteBudget - myVotes()) : '∞';
+  el.textContent = `● ${left} vote${left === 1 ? '' : 's'} left`;
+  el.title = `${left} of ${S.voteBudget || 'unlimited'} votes left · click to change the budget`;
+}
+async function setReact(cid, kind, on){
+  const rs = on ? [cid] : (S.D.reactKeys?.get(`${cid}|${kind}|${S.me.id}`) || [cid]);   // switch off every version I voted on
+  for (const R of rs) await publish(await signed('REACT', [['I', S.me.id], ['R', R], ['E', kind], ['S', on ? '1' : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+async function toggleReact(kind, list){
+  const els = list.map(e => e && current(e.cid)).filter(e => e && ELEMENT.has(e.type) && e.type !== 'ARROW' && visible(e));
+  if (!els.length){ toast('Select a note or element to react to.'); return; }
+  const on = !els.every(e => reacted(e.cid, kind));
+  const ids = els.filter(e => reacted(e.cid, kind) !== on).map(e => e.cid);
+  if (on && kind === 'vote' && S.voteBudget && myVotes() + ids.length > S.voteBudget){
+    toast(`Out of votes: ${S.voteBudget} per person on this canvas. Take one back first.`); return;
+  }
+  const before = myVotes();
+  for (const c of ids) await setReact(c, kind, on);
+  S.hist.push({ kind: 'fn', undo: async () => { for (const c of ids) await setReact(c, kind, !on); }, redo: async () => { for (const c of ids) await setReact(c, kind, on); } }); S.redo = [];
+  const r = REACTIONS[kind];
+  const left = S.voteBudget ? Math.max(0, S.voteBudget - before - (on ? ids.length : -ids.length)) : null;
+  say(kind === 'vote' ? `${on ? 'Voted' : 'Vote removed'}${ids.length > 1 ? ` on ${ids.length}` : ''}.${left !== null ? ` ${left} left.` : ''}` : `${on ? 'Reacted' : 'Removed'} ${r.name}.`);
+}
+
+/* reaction chips under each element; click one to add or take back your own */
+let chips = [];
+RENDER_HOOKS.screen.push(() => {
+  chips = [];
+  if (!S.D.reactions?.size) return;
+  ctx.font = `600 11px ${FONTS.sans}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  for (const [cid, m] of S.D.reactions){
+    const el = S.records.get(cid); if (!el || !visible(el)) continue;
+    const b = box(el); if (!b) continue;
+    const s = toScreen(b.x, b.y + b.h); if (s.x > innerWidth || s.y > innerHeight + 30 || s.y < -30 || s.x < -300) continue;
+    let x = s.x, y = s.y + 5;
+    for (const kind of Object.keys(REACTIONS)){
+      const set = m[kind]; if (!set?.size) continue;
+      const label = `${REACTIONS[kind].icon} ${set.size}`, w = ctx.measureText(label).width + 14, mine = set.has(S.me.id), vote = kind === 'vote';
+      rr(ctx, x, y, w, 20, 10); ctx.fillStyle = vote ? TH.accent : TH.panel; ctx.fill();
+      ctx.lineWidth = mine ? 2 : 1; ctx.strokeStyle = mine ? TH.ink : TH.line; ctx.stroke();
+      ctx.fillStyle = vote ? TH.paper : TH.ink; ctx.fillText(label, x + 7, y + 10.5);
+      chips.push({ x, y, w, h: 20, cid, kind }); x += w + 4;
+    }
+  }
+});
+POINTER_HOOKS.push(e => {
+  const c = chips.find(c => e.clientX >= c.x && e.clientX <= c.x + c.w && e.clientY >= c.y && e.clientY <= c.y + c.h);
+  if (!c) return false;
+  toggleReact(c.kind, [S.records.get(c.cid)]); return true;
+});
+
+/* shared timer for time-boxed rounds: ephemeral, synced over the canvas channel */
+let timerEnd = 0, timerDone = true;
+function startTimer(min, remote = false){
+  timerEnd = Date.now() + min * 60000; timerDone = false;
+  if (!remote) try { bc?.postMessage({ timer: { end: timerEnd } }); } catch {}
+  paintTimer(); say(`${remote ? 'A collaborator started a' : 'Timer started:'} ${min} minute${min === 1 ? '' : 's'}${remote ? ' timer' : ''}.`);
+}
+function stopTimer(remote = false){
+  timerEnd = 0; timerDone = true; if (!remote) try { bc?.postMessage({ timer: { end: 0 } }); } catch {}
+  paintTimer(); say('Timer stopped.');
+}
+WIRE_HOOKS.timer = t => { if (t && t.end > Date.now()) startTimer((t.end - Date.now()) / 60000, true); else if (timerEnd) stopTimer(true); };
+function paintTimer(){
+  const el = $('timer'); if (!el) return;
+  if (!timerEnd){ el.hidden = true; return; }
+  const left = Math.max(0, timerEnd - Date.now()), m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
+  el.hidden = false; el.textContent = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+  el.classList.toggle('alarm', left === 0);
+  el.title = left ? 'Shared timer · click to stop' : 'Time is up · click to dismiss';
+  if (!left && !timerDone){ timerDone = true; toast('⏱ Time’s up!'); }
+}
+setInterval(paintTimer, 500);
+
+/* arranging ideas */
+async function moveItems(items, msg){
+  items = items.filter(i => i.dx || i.dy);
+  for (const it of items) await commitMove(it.t, it.dx, it.dy);
+  if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
+  say(items.length ? `${msg}. Signed.` : 'Already in place.');
+}
+const arrangeable = rs => rs.map(e => e && current(e.cid)).filter(e => e && e.type !== 'ARROW' && !e.locked && !(e.type === 'NODE' && e.ek === 'frame') && visible(e));
+async function arrangeGrid(rs){
+  const bs = arrangeable(rs).map(e => ({ e, b: box(e) })).sort((a, b) => a.b.y - b.b.y || a.b.x - b.b.x); if (bs.length < 2) return;
+  const cols = Math.ceil(Math.sqrt(bs.length)), cw = Math.max(...bs.map(x => x.b.w)), ch = Math.max(...bs.map(x => x.b.h)), gap = 24;
+  const ox = Math.min(...bs.map(x => x.b.x)), oy = Math.min(...bs.map(x => x.b.y));
+  await moveItems(bs.map((x, i) => ({ t: x.e.cid, dx: Math.round(ox + (i % cols) * (cw + gap) - x.b.x), dy: Math.round(oy + Math.floor(i / cols) * (ch + gap) - x.b.y) })), `Arranged ${bs.length} in a grid`);
+}
+async function sortByVotes(rs){
+  const bs = arrangeable(rs).map(e => ({ e, b: box(e), v: reactCount(e.cid, 'vote') })).sort((a, b) => b.v - a.v || a.b.y - b.b.y); if (bs.length < 2) return;
+  const ox = Math.min(...bs.map(x => x.b.x)); let y = Math.min(...bs.map(x => x.b.y));
+  const items = bs.map(x => { const it = { t: x.e.cid, dx: Math.round(ox - x.b.x), dy: Math.round(y - x.b.y) }; y += x.b.h + 16; return it; });
+  await moveItems(items, `Sorted ${bs.length} by votes, most voted on top`);
+}
+async function clusterSel(rs){
+  const els = arrangeable(rs); if (els.length < 2){ toast('Select two or more notes to cluster.'); return; }
+  const name = await ask('Name this cluster', 'Cluster', 'A titled frame is drawn around the notes and grouped with them.');
+  if (name === null) return;
+  const bs = els.map(box), x = Math.min(...bs.map(b => b.x)) - 28, y = Math.min(...bs.map(b => b.y)) - 52;
+  const W = Math.max(...bs.map(b => b.x + b.w)) + 28 - x, H = Math.max(...bs.map(b => b.y + b.h)) + 28 - y;
+  const f = await commitNode({ kind: 'frame', x, y, W, H, label: name.trim() || 'Cluster' });
+  await tick(); S.sel = new Set([f, ...els.map(e => e.cid)]); await groupSelection(); S.sel = new Set([f]); dirty = true;
+  say(`Clustered ${els.length} notes into “${name.trim() || 'Cluster'}”. Signed.`);
+}
+
+/* toolbar, palette, keys */
+let reactRow = false;
+TOOLBAR_HOOKS.push((rs, one, B) => {
+  const els = rs.filter(r => r.type !== 'ARROW'); if (!els.length) return '';
+  const allVoted = els.every(e => reacted(e.cid, 'vote'));
+  let h = B('vote', '●', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}"`)
+    + B('react', '☺', 'React', `aria-pressed="${reactRow}"`);
+  if (reactRow) h += Object.entries(REACTIONS).filter(([k]) => k !== 'vote').map(([k, r]) => B('re:' + k, r.icon, r.name[0].toUpperCase() + r.name.slice(1), `aria-pressed="${els.every(e => reacted(e.cid, k))}"`)).join('');
+  if (els.length >= 2) h += '<span class="vs" aria-hidden="true"></span>' + B('grid', '▦', 'Arrange in a grid') + B('sortv', '⇅', 'Sort by votes') + B('cluster', '⬚', 'Cluster into a frame');
+  return h;
+});
+TOOLBAR_ACTIONS.vote = rs => toggleReact('vote', rs);
+TOOLBAR_ACTIONS.react = () => { reactRow = !reactRow; };
+for (const k of Object.keys(REACTIONS)) TOOLBAR_ACTIONS['re:' + k] = rs => toggleReact(k, rs);
+TOOLBAR_ACTIONS.grid = rs => arrangeGrid(rs);
+TOOLBAR_ACTIONS.sortv = rs => sortByVotes(rs);
+TOOLBAR_ACTIONS.cluster = rs => clusterSel(rs);
+const selected = () => [...S.sel].map(c => S.records.get(c)).filter(Boolean);
+PALETTE_HOOKS.push(add => {
+  add('brainstorm', 'Dot vote on selection', () => toggleReact('vote', selected()), { k: 'D' });
+  for (const [k, r] of Object.entries(REACTIONS)) if (k !== 'vote') add('brainstorm', `React · ${r.icon} ${r.name}`, () => toggleReact(k, selected()));
+  for (const n of [3, 5, 10, 0]) add('brainstorm', `Votes per person · ${n || 'unlimited'}`, () => { S.voteBudget = n; try { localStorage.setItem('flux:voteBudget', String(n)); } catch {} paintVotes(); say(`Vote budget ${n || 'unlimited'}.`); }, { on: S.voteBudget === n });
+  for (const m of [1, 3, 5, 10, 15]) add('brainstorm', `Start timer · ${m} min`, () => startTimer(m));
+  if (timerEnd) add('brainstorm', 'Stop timer', () => stopTimer());
+  add('brainstorm', 'Arrange selection in a grid', () => arrangeGrid(selected()));
+  add('brainstorm', 'Sort selection by votes', () => sortByVotes(selected()));
+  add('brainstorm', 'Cluster selection into a frame…', () => clusterSel(selected()));
+});
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && c.k === 'd' && S.sel.size){ e.preventDefault(); toggleReact('vote', selected()); return true; } return false; });
+$('timer').onclick = () => stopTimer();
+$('votes').onclick = async () => {
+  const v = await ask('Votes per person', String(S.voteBudget || 0), 'How many dot votes each person gets on this canvas. 0 means unlimited.');
+  if (v === null) return; const n = Math.max(0, Math.min(99, parseInt(v, 10) || 0));
+  S.voteBudget = n; try { localStorage.setItem('flux:voteBudget', String(n)); } catch {} paintVotes();
+};
+
+/* template and example */
+TEMPLATES.push({ id: 'brainstorm', name: 'Brainstorm', icon: '✸', blurb: 'A question, sticky notes, dot voting and a timer.', build: async c => {
+  const f = await mk('frame', c.x - 480, c.y - 300, 'Brainstorm', { W: 960, H: 600 });
+  const q = await mk('card', c.x - 460, c.y - 250, 'How might we …?  (double-click to edit the question)', { W: 420, color: 'violet' });
+  const tip = await mk('card', c.x + 20, c.y - 250, 'Double-click empty space for a note · D votes · ⌘K → Start timer', { W: 420 });
+  const ns = [];
+  for (const [i, col] of ['orange', 'blue', 'green'].entries()) ns.push(await mk('sticky', c.x - 440 + i * 190, c.y - 120, 'Your idea', { color: col }));
+  await groupAll([f, q, tip, ...ns]);
+} });
+EXAMPLES.push({ id: 'offsite', title: 'Team offsite — brainstorm and vote', icon: '✸', blurb: 'Ideas from three people, dot votes, reactions, a cluster and a comment thread.', build: async ([ana, ben, chen]) => {
+  const c = center0();
+  await by(ana, async () => {
+    await mk('frame', c.x - 560, c.y - 330, 'Offsite 2027 · where and what?', { W: 1120, H: 660 });
+    await mk('card', c.x - 540, c.y - 280, 'How might we make the offsite restful AND useful for planning next year?', { W: 520, color: 'violet' });
+  });
+  const ideas = [[ana, 'Cabin by a lake, no laptops before noon', 'green'], [ben, 'City hotel with a good meeting room', 'blue'], [chen, 'Hike + planning walks in pairs', 'green'],
+    [ana, 'Cook dinner together on night one', 'orange'], [ben, 'Invite two customers for a morning', 'pink'], [chen, 'Pre-read: 1-page bets from each team', 'blue'],
+    [ben, 'Workshop: what to stop doing', 'orange'], [chen, 'Evening: lightning talks, 5 min each', 'pink'], [ana, 'Swim before breakfast (optional!)', 'green']];
+  const ids = [];
+  for (const [i, [who, text, col]] of ideas.entries()) await by(who, async () => ids.push(await mk('sticky', c.x - 520 + (i % 5) * 200, c.y - 170 + Math.floor(i / 5) * 190, text, { color: col })));
+  await tick();
+  const vote = async (who, picks) => by(who, async () => { for (const i of picks) await setReact(ids[i], 'vote', true); });
+  await vote(ana, [0, 5, 6]); await vote(ben, [1, 5, 4, 6]); await vote(chen, [2, 5, 7, 0]);
+  await by(ben, async () => { await setReact(ids[0], 'love', true); await setReact(ids[8], 'q', true); });
+  await by(chen, async () => { await setReact(ids[4], 'idea', true); await setReact(ids[1], 'risk', true); });
+  await by(ana, async () => {
+    const t = await noteOn(ids[5], 'Everyone voted for this one. Who drafts the template?');
+    await by(ben, () => replyTo(t, 'I will. One page, three bets, one risk each.'));
+  });
+} });
+// with reactions and comment counts, as Markdown. Feedback template and a retro example.
+// @uses hooks, builders, brainstorm (reactions), ui/dialogs (openReport)
+
+const isFrame = el => el?.type === 'NODE' && el.ek === 'frame';
+const textOf = el => el.type === 'IMAGE' ? `🖼 ${el.alt || 'image'}` : (el.text || '').replace(/\s+/g, ' ').trim();
+function itemsIn(frame, pool){
+  const fb = box(frame);
+  return pool.filter(el => { const b = box(el); if (!b) return false; const c = center(b); return inside(c, fb); });
+}
+function reactLine(cid){
+  const m = reactsOf(cid), bits = [];
+  for (const [k, r] of Object.entries(REACTIONS)) if (m[k]?.size) bits.push(`${r.icon} ${m[k].size}`);
+  const t = [...S.D.threads.values()].filter(t => t.root.on && current(t.root.on)?.cid === cid && !S.D.hidden.has(t.root.cid));
+  const n = t.reduce((a, x) => a + 1 + x.replies.filter(c => !S.D.hidden.has(c.cid)).length, 0);
+  if (n) bits.push(`💬 ${n}`);
+  return bits.join(' · ');
+}
+function feedbackSummary(){
+  const vis = S.D.els.filter(el => visible(el) && !S.D.hidden.has(el.cid) && el.type !== 'ARROW' && el.type !== 'DRAW' && el.type !== 'SHAPE');
+  const frames = vis.filter(isFrame).sort((a, b) => box(a).x - box(b).x || box(a).y - box(b).y);
+  const pool = vis.filter(el => !isFrame(el) && textOf(el)), placed = new Set();
+  const rank = list => list.sort((a, b) => reactCount(b.cid, 'vote') - reactCount(a.cid, 'vote') || Object.keys(reactsOf(b.cid)).length - Object.keys(reactsOf(a.cid)).length);
+  const line = el => `- ${textOf(el)}${reactLine(el.cid) ? ` — ${reactLine(el.cid)}` : ''}  _(${el.author === S.me.id ? 'you' : short(el.author)})_`;
+  const authors = new Set(vis.map(e => e.author));
+  const out = [`# ${canvasTitle()} — summary`, '', `${new Date().toLocaleString()} · ${pool.length} notes · ${authors.size} contributor${authors.size === 1 ? '' : 's'} · votes ${[...S.D.reactions?.values() || []].reduce((a, m) => a + (m.vote?.size || 0), 0)}`, ''];
+  const top = rank(pool.filter(el => reactCount(el.cid, 'vote'))).slice(0, 5);
+  if (top.length){ out.push('## Top voted', ''); top.forEach((el, i) => out.push(`${i + 1}. ${textOf(el)} — ● ${reactCount(el.cid, 'vote')}`)); out.push(''); }
+  for (const f of frames){
+    const items = rank(itemsIn(f, pool).filter(el => !placed.has(el.cid)));
+    if (!items.length) continue;
+    items.forEach(el => placed.add(el.cid));
+    out.push(`## ${f.text}`, '', ...items.map(line), '');
+  }
+  const rest = rank(pool.filter(el => !placed.has(el.cid)));
+  if (rest.length) out.push(frames.length ? '## Elsewhere on the canvas' : '## Notes', '', ...rest.map(line), '');
+  const open = [...S.D.threads.values()].filter(t => !t.resolved && !S.D.hidden.has(t.root.cid));
+  if (open.length){ out.push('## Open comment threads', ''); for (const t of open) out.push(`- ${t.root.text.replace(/\s+/g, ' ')} — on ${targetName(t.root)} (${1 + t.replies.length} message${t.replies.length ? 's' : ''})`); out.push(''); }
+  out.push('---', `Every note, vote, reaction and comment above is a signed record on canvas \`${canvasId}\`.`);
+  return out.join('\n');
+}
+function showSummary(){ openReport(`${canvasTitle()} — summary`, feedbackSummary(), `${canvasTitle().replace(/[^\w-]+/g, '-').toLowerCase() || 'canvas'}-summary.md`); }
+PALETTE_HOOKS.push(add => add('feedback', 'Summary of notes, votes and comments (Markdown)…', showSummary, { k: 'S' }));
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.key === 'S'){ e.preventDefault(); showSummary(); return true; } return false; });
+
+const COLUMNS = [['What went well', 'green'], ['What to improve', 'orange'], ['Questions', 'blue'], ['Ideas', 'violet']];
+async function feedbackBoard(c, fill = null){
+  const ids = [];
+  await mk('card', c.x - 650, c.y - 400, 'Add a note in any column (double-click), vote with D, then ⌘K → Summary.', { W: 640 });
+  for (const [i, [title, col]] of COLUMNS.entries()){
+    const x = c.x - 650 + i * 330, f = await mk('frame', x, c.y - 330, title, { W: 310, H: 640, color: col });
+    ids.push(f);
+    if (!fill) await mk('sticky', x + 24, c.y - 280, 'Add a note', { color: col });
+  }
+  return ids;
+}
+TEMPLATES.push({ id: 'feedback', name: 'Feedback board', icon: '☷', blurb: 'Columns for what works, what to improve, questions and ideas, plus a summary.', build: c => feedbackBoard(c) });
+EXAMPLES.push({ id: 'retro', title: 'Sprint 42 retro — feedback board', icon: '☷', blurb: 'A retro with notes from three people, votes, reactions, comments and a ready summary.', build: async ([ana, ben, chen]) => {
+  const c = center0();
+  const frames = await by(ana, () => feedbackBoard(c, true));
+  const notes = [
+    [0, ana, 'Release went out on Thursday, no rollbacks'], [0, ben, 'Pairing on the sync bug saved us a week'], [0, chen, 'Design reviews were faster with the new canvas'],
+    [1, ben, 'Flaky e2e tests blocked merges twice'], [1, chen, 'Too many meetings on Wednesday'], [1, ana, 'Specs changed after estimation'],
+    [2, chen, 'Who owns the on-call rotation now?'], [2, ana, 'Are we keeping the beta flag after GA?'],
+    [3, ben, 'Quarantine flaky tests automatically'], [3, chen, 'No-meeting Wednesdays'], [3, ana, 'Freeze scope 2 days before planning'],
+  ];
+  const at = [0, 0, 0, 0], ids = [];
+  for (const [col, who, text] of notes){
+    const fb = box(S.records.get(frames[col]) || { x: 0, y: 0, w: 0, h: 0 });
+    await by(who, async () => ids.push(await mk('sticky', fb.x + 24 + (at[col] % 2) * 0, fb.y + 50 + at[col] * 160, text, { color: COLUMNS[col][1] })));
+    at[col]++;
+  }
+  await tick();
+  const vote = (who, picks) => by(who, async () => { for (const i of picks) await setReact(ids[i], 'vote', true); });
+  await vote(ana, [3, 8, 9]); await vote(ben, [3, 8, 10, 4]); await vote(chen, [9, 4, 3]);
+  await by(ben, async () => { await setReact(ids[1], 'love', true); await setReact(ids[6], 'q', true); });
+  await by(chen, async () => { await setReact(ids[0], 'up', true); await setReact(ids[5], 'risk', true); });
+  const t = await by(chen, () => noteOn(ids[3], 'Three of us hit this. Can we fix it before the next sprint?'));
+  await by(ben, () => replyTo(t, 'Yes: quarantine first, then fix. Taking it.'));
+} });
+// order) and Present mode, which flies from frame to frame. Example: a storyboard with illustrations.
+// @uses hooks, builders, diagrams
+
+function storyOrder(){
+  const frames = S.D.els.filter(e => e.type === 'NODE' && e.ek === 'frame' && visible(e) && !S.D.hidden.has(e.cid));
+  if (!frames.length) return [];
+  const ids = new Set(frames.map(f => f.cid)), next = new Map(), hasIn = new Set();
+  const join = (a, b) => { if (a && b && a !== b && ids.has(a) && ids.has(b) && !next.has(a) && !hasIn.has(b)){ next.set(a, b); hasIn.add(b); } };
+  for (const el of S.D.els) if (el.type === 'ARROW' && visible(el)) join(current(el.f.FROM)?.cid, current(el.f.TO)?.cid);
+  for (const f of frames) if (f.parent) join(current(f.parent)?.cid, f.cid);
+  const reading = frames.slice().sort((a, b) => { const A = box(a), B = box(b); return Math.abs(A.y - B.y) > Math.min(A.h, B.h) / 2 ? A.y - B.y : A.x - B.x; });
+  const order = [], seen = new Set();
+  for (const f of reading){ if (seen.has(f.cid) || hasIn.has(f.cid)) continue; let c = f.cid; while (c && !seen.has(c)){ order.push(c); seen.add(c); c = next.get(c); } }
+  for (const f of reading) if (!seen.has(f.cid)) order.push(f.cid);
+  return order;
+}
+
+let show = null;   // { order, i, back }
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function flyTo(b){
+  const pad = 60, availH = innerHeight - 90;
+  const z = clampZ(Math.min((innerWidth - pad * 2) / b.w, (availH - pad) / b.h, 2.5));
+  const to = { zoom: z, x: b.x + b.w / 2 - innerWidth / 2 / z, y: b.y + b.h / 2 - availH / 2 / z };
+  if (reduceMotion()){ S.view = to; dirty = true; return; }
+  const from = { ...S.view }, t0 = performance.now(), d = 420;
+  const step = now => { const k = Math.min(1, (now - t0) / d), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+    S.view = { zoom: from.zoom + (to.zoom - from.zoom) * e, x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e }; dirty = true; if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function sceneText(f){
+  const fb = box(f);
+  return S.D.els.filter(el => el !== f && (el.type === 'NODE' || el.type === 'TEXT') && el.ek !== 'image' && visible(el) && inside(center(box(el)), fb))
+    .map(el => el.text).filter(Boolean).join(' · ');
+}
+function goScene(i){
+  if (!show) return;
+  show.i = Math.max(0, Math.min(show.order.length - 1, i));
+  const f = S.records.get(show.order[show.i]); if (!f) return;
+  flyTo(box(f));
+  const cap = sceneText(f);
+  $('presentT').textContent = f.text; $('presentN').textContent = `${show.i + 1} / ${show.order.length}`;
+  $('presentCap').textContent = cap;
+  say(`Scene ${show.i + 1} of ${show.order.length}: ${f.text}. ${cap}`);
+}
+function present(){
+  const order = storyOrder();
+  if (!order.length){ toast('Add frames first (◇ → ▯ screen frame), or start from the Storyboard template.'); return; }
+  const sel = S.sel.size === 1 ? current([...S.sel][0])?.cid : null;
+  show = { order, i: Math.max(0, order.indexOf(sel)), back: { ...S.view } };
+  S.sel.clear(); finishText(true);
+  document.body.classList.add('presenting'); $('present').hidden = false;
+  goScene(show.i); setTimeout(() => $('presentNext').focus(), 0);
+}
+function endPresent(){
+  if (!show) return;
+  S.view = show.back; show = null; dirty = true;
+  document.body.classList.remove('presenting'); $('present').hidden = true; cv.focus({ preventScroll: true });
+  say('Presentation ended.');
+}
+function presentKeys(e, c){   // while presenting, the keyboard drives the story and nothing else
+  if (!show){ if (e.key === 'F5' || (c.onCanvas && !c.mod && !e.altKey && e.key === 'P' && e.shiftKey)){ e.preventDefault(); present(); return true; } return false; }
+  const k = e.key;
+  if (e.target.closest?.('#present') && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) return false;   // the focused button acts
+  if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k)){ e.preventDefault(); goScene(show.i + 1); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)){ e.preventDefault(); goScene(show.i - 1); }
+  else if (k === 'Home'){ e.preventDefault(); goScene(0); }
+  else if (k === 'End'){ e.preventDefault(); goScene(show.order.length - 1); }
+  else if (k === 'Escape'){ e.preventDefault(); endPresent(); }
+  else if (k === 'Tab') return false;
+  return true;
+}
+KEY_HOOKS.unshift(presentKeys);
+POINTER_HOOKS.unshift(() => { if (!show) return false; goScene(show.i + 1); return true; });
+$('presentPrev').onclick = () => goScene(show.i - 1);
+$('presentNext').onclick = () => goScene(show.i + 1);
+$('presentEnd').onclick = endPresent;
+PALETTE_HOOKS.push(add => add('story', 'Present frames as a story', present, { k: 'F5 · ⇧P' }));
+
+const SCENES_TPL = [['1 · Setup', 'Who is it about, and where are they?'], ['2 · Trigger', 'What changes?'], ['3 · Struggle', 'What gets in the way?'], ['4 · Turn', 'What do they discover?'], ['5 · Resolution', 'How does it end, and what is different now?']];
+async function storyboard(c, scenes, art = null){
+  const W = 330, H = 320, gap = 90, x0 = c.x - (scenes.length * (W + gap) - gap) / 2, y0 = c.y - H / 2, frames = [];
+  for (const [i, [title, caption]] of scenes.entries()){
+    const x = x0 + i * (W + gap), f = await mk('frame', x, y0, title, { W, H, color: 'violet' });
+    const img = art ? await scene(art[i][0], art[i][1], x + 16, y0 + 44, W - 32, 170, art[i][2]) : await mk('image', x + 16, y0 + 44, 'Sketch the scene', { W: W - 32, H: 170 });
+    const cap = await mk('card', x + 16, y0 + 228, caption, { W: W - 32 });
+    await groupAll([f, img, cap]); frames.push(f);
+  }
+  for (let i = 1; i < frames.length; i++) await link(frames[i - 1], frames[i]);
+  return frames;
+}
+TEMPLATES.push({ id: 'story', name: 'Storyboard', icon: '▤', blurb: 'Five connected scenes with a sketch and a caption each. Present with F5.', build: c => storyboard(c, SCENES_TPL) });
+EXAMPLES.push({ id: 'onboarding', title: 'Onboarding story — Maya’s first week', icon: '▤', blurb: 'A five-scene storyboard with illustrations and comments. Press F5 to present it.', build: async ([ana, ben, chen]) => {
+  const c = center0();
+  const art = [
+    ['room', ['#f1e7d8', '#c9b79c', '#7aa2c4', '#8c6b4f', '#2f4858', '#f7c873'], 'Maya at her new desk, morning light'],
+    ['people', ['#e8eef7', '#f4a261', '#2a9d8f', '#e76f51', '#264653'], 'Three teammates waving hello'],
+    ['dunes', ['#fbe3c4', '#f2c48d', '#e09f5c', '#c97b3d', '#8c4f24'], 'A desert of unread documentation'],
+    ['dusk', ['#283c63', '#928a97', '#f88f01', '#fbe8d3', '#3d5a80', '#293241', '#1b263b'], 'Sunset over hills: the moment it clicks'],
+    ['sea', ['#a8dadc', '#e6f4f1', '#457b9d', '#1d3557', '#f1faee'], 'Calm sea: settled in, shipping'],
+  ];
+  const scenes = [['1 · Monday', 'Maya joins. Laptop works, accounts don’t yet.'], ['2 · The team', 'A buddy and a 30-minute tour beat a 40-page wiki.'],
+    ['3 · Docs desert', 'Too many docs, no path. She asks in five channels.'], ['4 · First PR', 'A starter task with a real reviewer: it clicks.'], ['5 · Friday', 'She ships a fix and writes the guide she wished she had.']];
+  const frames = await by(ana, () => storyboard(c, scenes, art));
+  await tick();
+  const t = await by(ben, () => noteOn(frames[2], 'This is the scene to fix first. One “start here” page?'));
+  await by(chen, () => replyTo(t, 'And a buddy assigned before day one.'));
+  await by(chen, () => setReact(frames[3], 'love', true));
+} });
+// moodboard template and example with generated imagery.
+// @uses hooks, builders, blobs (decodeImage), diagrams (swatch kind), brainstorm (moveItems)
+
+const hex2 = v => Math.round(v).toString(16).padStart(2, '0');
+// k-means on a 64×64 downsample, seeded with far-apart colours; clusters sorted by size.
+async function paletteOf(el, k = 5){
+  const bytes = S.blobs.get(el.f.R); if (!bytes) return [];
+  const src = imageOf(el.f.R) || await decodeImage(typedBlob(bytes));
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(src, 0, 0, 64, 64);
+  const d = g.getImageData(0, 0, 64, 64).data, px = [];
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 127) px.push([d[i], d[i + 1], d[i + 2]]);
+  if (!px.length) return [];
+  const dist = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  const mean = px.reduce((m, p) => [m[0] + p[0] / px.length, m[1] + p[1] / px.length, m[2] + p[2] / px.length], [0, 0, 0]);
+  const cent = [px.reduce((best, p) => dist(p, mean) > dist(best, mean) ? p : best, px[0])];
+  while (cent.length < k){ let best = px[0], bd = -1; for (const p of px){ const m = Math.min(...cent.map(q => dist(p, q))); if (m > bd){ bd = m; best = p; } } cent.push(best); }
+  let groups = [];
+  for (let it = 0; it < 10; it++){
+    groups = cent.map(() => []);
+    for (const p of px){ let bi = 0, bd = Infinity; cent.forEach((q, i) => { const dd = dist(p, q); if (dd < bd){ bd = dd; bi = i; } }); groups[bi].push(p); }
+    groups.forEach((gr, i) => { if (gr.length) cent[i] = [0, 1, 2].map(j => gr.reduce((a, p) => a + p[j], 0) / gr.length); });
+  }
+  return cent.map((q, i) => ({ hex: q.map(hex2).join(''), n: groups[i].length })).filter(x => x.n).sort((a, b) => b.n - a.n).map(x => x.hex);
+}
+async function extractPalette(el, at = null){
+  el = current(el.cid);
+  const cols = await paletteOf(el); if (!cols.length){ toast('That image has no readable pixels yet.'); return []; }
+  const b = box(el), p = at || { x: b.x, y: b.y + b.h + 20 }, made = [];
+  for (const [i, h] of cols.entries()) made.push(await mk('swatch', p.x + i * 118, p.y, '#' + h.toUpperCase(), { color: h }));
+  S.hist.push({ kind: 'creates', cids: made }); S.redo = [];
+  say(`Palette: ${cols.map(c => '#' + c).join(', ')}. ${made.length} swatches added${at ? '' : ' under the image'}. Signed.`);
+  return made;
+}
+// Masonry: keep sizes, fill the shortest column next, in reading order.
+async function masonry(rs){
+  const els = arrangeable(rs); if (els.length < 3){ toast('Select three or more images or notes.'); return; }
+  const bs = els.map(e => ({ e, b: box(e) })).sort((a, b) => a.b.y - b.b.y || a.b.x - b.b.x);
+  const cols = Math.max(2, Math.min(5, Math.round(Math.sqrt(bs.length)))), colW = Math.max(...bs.map(x => x.b.w)), gap = 16;
+  const ox = Math.min(...bs.map(x => x.b.x)), oy = Math.min(...bs.map(x => x.b.y)), hgt = new Array(cols).fill(0);
+  const items = bs.map(x => { const ci = hgt.indexOf(Math.min(...hgt)); const it = { t: x.e.cid, dx: Math.round(ox + ci * (colW + gap) - x.b.x), dy: Math.round(oy + hgt[ci] - x.b.y) }; hgt[ci] += x.b.h + gap; return it; });
+  await moveItems(items, `Masonry layout of ${els.length}`);
+}
+TOOLBAR_HOOKS.push((rs, one, B) => {
+  let h = '';
+  if (one && one.type === 'IMAGE') h += B('palette', '🎨', 'Extract colour palette');
+  if (rs.filter(r => r.type !== 'ARROW').length >= 3) h += B('masonry', '▥', 'Masonry layout');
+  return h;
+});
+TOOLBAR_ACTIONS.palette = rs => extractPalette(rs[0]);
+TOOLBAR_ACTIONS.masonry = rs => masonry(rs);
+PALETTE_HOOKS.push(add => {
+  add('moodboard', 'Extract colour palette from selected image', () => { const el = S.sel.size === 1 && S.records.get([...S.sel][0]); if (el?.type === 'IMAGE') extractPalette(el); else toast('Select one image first.'); });
+  add('moodboard', 'Masonry layout of selection', () => masonry([...S.sel].map(c => S.records.get(c))));
+});
+
+TEMPLATES.push({ id: 'moodboard', name: 'Moodboard', icon: '▥', blurb: 'Image slots, a palette, keywords and type. Drop images in, extract palettes.', build: async c => {
+  const f = await mk('frame', c.x - 520, c.y - 340, 'Moodboard', { W: 1040, H: 680 });
+  const ids = [f];
+  for (const [x, y, w, h, t] of [[20, 50, 300, 200, 'Drop an image'], [340, 50, 220, 300, 'Texture'], [580, 50, 300, 180, 'Place'], [20, 270, 300, 160, 'People']]) ids.push(await mk('image', c.x - 520 + x, c.y - 340 + y, t, { W: w, H: h }));
+  for (const [i, h] of ['1d3557', '457b9d', 'a8dadc', 'f1faee', 'e63946'].entries()) ids.push(await mk('swatch', c.x - 180 + i * 118, c.y + 40, '#' + h.toUpperCase(), { color: h }));
+  ids.push(await mk('sticky', c.x - 500, c.y + 120, 'Keywords: calm · precise · warm', { color: 'orange' }));
+  ids.push(await mk('card', c.x + 320, c.y - 280, 'Type: a humanist sans for UI, a mono for data', { W: 180 }));
+  await groupAll(ids);
+} });
+EXAMPLES.push({ id: 'brand', title: 'Brand refresh — moodboard', icon: '▥', blurb: 'Generated imagery, palettes extracted from it, keywords, reactions and a decision note.', build: async ([ana, ben, chen]) => {
+  const c = center0(), x0 = c.x - 560, y0 = c.y - 380;
+  await by(ana, () => mk('frame', x0 - 30, y0 - 60, 'Brand refresh · “calm technology”', { W: 1180, H: 940 }));
+  const imgs = [];
+  await by(ana, async () => {
+    imgs.push(await scene('dusk', ['#283c63', '#928a97', '#f88f01', '#fbe8d3', '#3d5a80', '#293241', '#1b263b'], x0, y0, 330, 220, 'Dusk over layered hills'));
+    imgs.push(await scene('sea', ['#a8dadc', '#e6f4f1', '#457b9d', '#1d3557', '#f1faee'], x0 + 350, y0, 240, 300, 'Quiet sea at noon'));
+  });
+  await by(ben, async () => {
+    imgs.push(await scene('dunes', ['#fbe3c4', '#f2c48d', '#e09f5c', '#c97b3d', '#8c4f24'], x0 + 610, y0, 330, 200, 'Warm dunes'));
+    imgs.push(await scene('circles', ['#f4f1de', '#e07a5f', '#3d405b', '#81b29a', '#f2cc8f'], x0, y0 + 320, 330, 240, 'Soft overlapping shapes'));
+  });
+  await by(chen, async () => imgs.push(await scene('room', ['#eae4d9', '#b8a990', '#88a0a8', '#5f4b3c', '#2d3a3a', '#e8b04f'], x0 + 350, y0 + 320, 330, 240, 'Calm studio interior')));
+  await tick();
+  await by(ana, async () => { await extractPalette(S.records.get(imgs[0]), { x: x0, y: y0 + 590 }); S.hist = []; });
+  await by(ben, async () => { await extractPalette(S.records.get(imgs[2]), { x: x0, y: y0 + 730 }); S.hist = []; });
+  await by(chen, async () => {
+    await mk('sticky', x0 + 700, y0 + 320, 'Keywords: calm · precise · warm · human', { color: 'orange' });
+    await mk('sticky', x0 + 880, y0 + 320, 'Avoid: neon, gradients on text, stock handshakes', { color: 'pink' });
+  });
+  await tick();
+  await by(ben, async () => { await setReact(imgs[0], 'love', true); await setReact(imgs[1], 'love', true); });
+  await by(chen, async () => { await setReact(imgs[0], 'love', true); await setReact(imgs[3], 'q', true); });
+  const t = await by(ana, () => noteOn(imgs[0], 'Proposal: lead with the dusk palette for the site, sea for product UI.'));
+  await by(ben, () => replyTo(t, 'Agree. The orange works as our single accent.'));
+} });
+// that fences every verdict it attests (SIGNOFF), and a history scrubber that replays the canvas record by record.
+// @uses hooks, builders, diagrams, ui/dialogs
+// AUDIT-I-{author}-R-{step}-V-{pass|fail|info}-M-{note}-Z-T-SIG — latest per auditor and step wins; revocable by its author
+// SIGNOFF-I-{author}-R-{canvasId}-M-{summary}-P-.{AUDIT…}.-Z-T-SIG — every fenced verdict is verified on its own
+
+const VERDICTS = { pass: { icon: '✓', name: 'pass', css: '--green' }, fail: { icon: '✗', name: 'fail', css: '--red' }, info: { icon: '?', name: 'needs info', css: '--amber' } };
+const RANK = { pass: 1, info: 2, fail: 3 };
+registerRecord('AUDIT', { parse(r, f){ if (!f.R || !VERDICTS[f.V]) throw Error('audit'); r.verdict = f.V; r.note = decTxt(f.M || ''); } });
+registerRecord('SIGNOFF', { fence: 'AUDIT', parse(r, f){ if (!f.R) throw Error('signoff'); r.summary = decTxt(f.M || ''); } });
+DERIVE_HOOKS.push((D, by) => {
+  const v = new Map();   // current step cid → Map(auditor → latest AUDIT)
+  for (const r of by.AUDIT || []){
+    if (D.hidden.has(r.cid)) continue;
+    const t = current(r.f.R); if (!t) continue;
+    if (!v.has(t.cid)) v.set(t.cid, new Map()); v.get(t.cid).set(r.author, r);
+  }
+  D.audits = v;
+  D.signoffs = (by.SIGNOFF || []).filter(r => r.f.R === canvasId && !D.hidden.has(r.cid));
+  if (walk) paintAudit();
+});
+const verdictsOn = cid => S.D.audits?.get(cid) || new Map();
+const worstOf = m => { let w = null; for (const r of m.values()) if (!w || RANK[r.verdict] > RANK[w]) w = r.verdict; return w; };
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* verdict badges: top-right of each audited element */
+RENDER_HOOKS.screen.push(() => {
+  if (!S.D.audits?.size) return;
+  for (const [cid, m] of S.D.audits){
+    const el = S.records.get(cid); if (!el || !visible(el) || !m.size) continue;
+    const b = box(el); if (!b) continue;
+    const s = toScreen(b.x + b.w, b.y), w = worstOf(m), V = VERDICTS[w];
+    ctx.beginPath(); ctx.arc(s.x, s.y, 10, 0, Math.PI * 2); ctx.fillStyle = cssVar(V.css); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = TH.paper; ctx.stroke();
+    ctx.fillStyle = TH.paper; ctx.font = `700 12px ${FONTS.sans}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(V.icon, s.x, s.y + .5);
+    if (m.size > 1){ ctx.font = `600 9px ${FONTS.mono}`; ctx.fillStyle = TH.ink; ctx.textAlign = 'left'; ctx.fillText('×' + m.size, s.x + 12, s.y - 6); }
+  }
+});
+
+/* the walk: steps follow tree links, then outgoing arrows, breadth first */
+let walk = null;   // { start, steps: [cid], i }
+function flowFrom(start){
+  const out = [], seen = new Set([start]), q = [start];
+  while (q.length){
+    const c = q.shift(); out.push(c);
+    const nb = [...(S.D.kids.get(c) || [])];
+    for (const el of S.D.els) if (el.type === 'ARROW' && visible(el) && current(el.f.FROM)?.cid === c){ const t = current(el.f.TO); if (t) nb.push(t.cid); }
+    nb.map(id => S.records.get(id)).filter(e => e && visible(e) && !S.D.hidden.has(e.cid) && e.type !== 'ARROW')
+      .sort((a, b) => box(a).y - box(b).y || box(a).x - box(b).x)
+      .forEach(e => { if (!seen.has(e.cid)){ seen.add(e.cid); q.push(e.cid); } });
+  }
+  return out;
+}
+function startAudit(){
+  const el = S.sel.size === 1 && current([...S.sel][0]);
+  if (!el || el.type === 'ARROW'){ toast('Select the first step of the flow, then start the audit (A).'); return; }
+  walk = { start: el.cid, steps: flowFrom(el.cid), i: 0 };
+  $('audit').style.display = 'flex'; document.body.classList.add('drawer');
+  if ($('comments').style.display === 'flex') toggleComments(false);
+  if (S.ledger) toggleLedger(false);
+  showStep(0);
+  say(`Audit started from “${(el.text || describe(el)).slice(0, 60)}”: ${walk.steps.length} steps. 1 pass, 2 fail, 3 needs info.`);
+}
+function closeAudit(){ walk = null; $('audit').style.display = 'none'; document.body.classList.toggle('drawer', S.ledger || $('comments').style.display === 'flex'); cv.focus({ preventScroll: true }); }
+function showStep(i){
+  if (!walk) return;
+  walk.i = Math.max(0, Math.min(walk.steps.length - 1, i));
+  const el = S.records.get(walk.steps[walk.i]);
+  if (el){ S.sel = new Set([el.cid]); ensureVisible(el); dirty = true; }
+  paintAudit();
+  setTimeout(() => $('audit').querySelector('[data-v][aria-pressed="true"], [data-v="pass"]')?.focus(), 0);
+}
+const who = id => id === S.me?.id ? 'you' : short(id);
+function paintAudit(){
+  if (!walk) return;
+  const steps = walk.steps.map(c => S.records.get(c)).filter(Boolean), el = steps[walk.i]; if (!el) return;
+  const m = verdictsOn(el.cid), mine = m.get(S.me.id);
+  const done = steps.filter(s => verdictsOn(s.cid).size).length;
+  const nexts = flowFrom(el.cid).slice(1).filter(c => (S.D.kids.get(el.cid) || []).includes(c) || S.D.els.some(a => a.type === 'ARROW' && visible(a) && current(a.f.FROM)?.cid === el.cid && current(a.f.TO)?.cid === c)).map(c => S.records.get(c)?.text || '…');
+  const keep = document.activeElement?.id === 'auNote' ? $('auNote').value : (mine?.note || '');
+  $('auditBody').innerHTML = `
+    <div class="au-prog" aria-label="Step ${walk.i + 1} of ${steps.length}, ${done} reviewed"><span>Step ${walk.i + 1} of ${steps.length}</span><span>${done} reviewed</span>
+      <i style="width:${Math.round(done / steps.length * 100)}%"></i></div>
+    <div class="au-step"><div class="k">${esc(KIND(el))}</div><h3>${esc(el.text || describe(el))}</h3>
+      ${nexts.length ? `<div class="k">next: ${nexts.map(esc).join(' · ')}</div>` : '<div class="k">end of this branch</div>'}</div>
+    <div class="au-v" role="group" aria-label="Your verdict">${Object.entries(VERDICTS).map(([k, V], n) => `<button class="btn v-${k}" data-v="${k}" aria-pressed="${mine?.verdict === k}">${V.icon} ${V.name} <kbd>${n + 1}</kbd></button>`).join('')}</div>
+    <label for="auNote">Note (optional, signed with your verdict)</label>
+    <textarea id="auNote" placeholder="What did you check? What is missing?">${esc(keep)}</textarea>
+    ${m.size ? `<ul class="au-others">${[...m.values()].map(r => `<li><b class="v-${r.verdict}">${VERDICTS[r.verdict].icon} ${VERDICTS[r.verdict].name}</b> · ${esc(who(r.author))}${r.note ? ` — ${esc(r.note)}` : ''}</li>`).join('')}</ul>` : '<p class="k">No verdicts on this step yet.</p>'}
+    <div class="row2"><button class="btn" data-a="prev">‹ previous</button><button class="btn" data-a="next">next ›</button>
+      <button class="btn" data-a="report">report</button><button class="btn" data-a="signoff">sign off</button></div>
+    ${S.D.signoffs?.length ? `<h4>Signed off</h4><ul class="au-others">${S.D.signoffs.map(s => `<li>✍ ${esc(who(s.author))} · ${new Date(s.t).toLocaleString()} — ${esc(s.summary)}</li>`).join('')}</ul>` : ''}`;
+}
+async function giveVerdict(v){
+  if (!walk) return;
+  const el = S.records.get(walk.steps[walk.i]), note = $('auNote')?.value.trim() || '';
+  const cid = await publish(await signed('AUDIT', [['I', S.me.id], ['R', el.cid], ['V', v], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  if (cid){ S.hist.push({ kind: 'fn', undo: () => setNeg(cid, true), redo: () => setNeg(cid, false) }); S.redo = []; }
+  say(`${VERDICTS[v].name} on “${(el.text || '').slice(0, 50)}”. Signed.`);
+  await tick();
+  if (walk.i < walk.steps.length - 1) showStep(walk.i + 1);
+  else { paintAudit(); say('That was the last step. Open the report or sign off.'); }
+}
+function auditReport(){
+  const steps = (walk ? walk.steps : [...(S.D.audits?.keys() || [])]).map(c => S.records.get(c)).filter(Boolean);
+  const auditors = new Set(); steps.forEach(s => verdictsOn(s.cid).forEach((r, a) => auditors.add(a)));
+  const tally = { pass: 0, fail: 0, info: 0, none: 0 };
+  const rows = steps.map((s, i) => {
+    const m = verdictsOn(s.cid), w = worstOf(m); tally[w || 'none']++;
+    const detail = m.size ? [...m.values()].map(r => `${VERDICTS[r.verdict].icon} ${short(r.author)}${r.note ? `: ${r.note.replace(/\|/g, '/')}` : ''}`).join('<br>') : '—';
+    return `| ${i + 1} | ${(s.text || KIND(s)).replace(/\|/g, '/').replace(/\s+/g, ' ')} | ${w ? `${VERDICTS[w].icon} ${VERDICTS[w].name}` : 'not reviewed'} | ${detail} |`;
+  });
+  const start = walk ? S.records.get(walk.start) : null;
+  const out = [`# Audit report — ${canvasTitle()}`, '', `${start ? `Flow from “${start.text}” · ` : ''}${steps.length} steps · auditors: ${[...auditors].map(short).join(', ') || 'none yet'} · ${new Date().toLocaleString()}`, '',
+    `**Result:** ✓ ${tally.pass} pass · ✗ ${tally.fail} fail · ? ${tally.info} need info · ${tally.none} not reviewed`, '',
+    '| # | Step | Verdict (worst) | Verdicts and notes |', '|---|---|---|---|', ...rows, ''];
+  const open = steps.filter(s => ['fail', 'info'].includes(worstOf(verdictsOn(s.cid))));
+  if (open.length){ out.push('## Failing and open steps', ''); for (const s of open) for (const r of verdictsOn(s.cid).values()) if (r.verdict !== 'pass') out.push(`- ${VERDICTS[r.verdict].icon} **${s.text}** — ${short(r.author)}${r.note ? `: ${r.note}` : ''}`); out.push(''); }
+  if (S.D.signoffs?.length){ out.push('## Sign-offs', ''); for (const so of S.D.signoffs) out.push(`- ✍ ${short(so.author)} · ${new Date(so.t).toLocaleString()} · ${so.members?.length || 0} verdicts · \`${so.cid}\`${so.summary ? ` — ${so.summary}` : ''}`); out.push(''); }
+  out.push('---', `Each verdict and sign-off is a signed record on canvas \`${canvasId}\`; verify them with ⌘K → Verify every signature.`);
+  return out.join('\n');
+}
+async function signOff(){
+  const steps = walk ? walk.steps : [...(S.D.audits?.keys() || [])];
+  const mine = steps.map(c => verdictsOn(c).get(S.me.id)).filter(Boolean);
+  if (!mine.length){ toast('Give at least one verdict before signing off.'); return; }
+  const t = { pass: 0, fail: 0, info: 0 }; mine.forEach(r => t[r.verdict]++);
+  const summary = `${mine.length} of ${steps.length} steps: ${t.pass} pass, ${t.fail} fail, ${t.info} need info`;
+  const v = await ask('Sign off this audit', summary, 'Your signature covers every verdict listed here, fenced inside one SIGNOFF record. Edit the summary if you like.');
+  if (v === null) return;
+  const cid = await publish(await signed('SIGNOFF', [['I', S.me.id], ['R', canvasId], ['M', encTxt(v.trim() || summary)], ['P', mine.map(r => r.raw)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  if (cid){ S.hist.push({ kind: 'fn', undo: () => setNeg(cid, true), redo: () => setNeg(cid, false) }); S.redo = []; }
+  say(`Signed off ${mine.length} verdicts. One signature covers them all.`);
+}
+$('audit').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'auditClose') return closeAudit();
+  if (b.dataset.v) return giveVerdict(b.dataset.v);
+  const a = b.dataset.a;
+  if (a === 'prev') showStep(walk.i - 1);
+  if (a === 'next') showStep(walk.i + 1);
+  if (a === 'report') openReport(`Audit report — ${canvasTitle()}`, auditReport(), 'audit-report.md');
+  if (a === 'signoff') signOff();
+});
+$('audit').addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Escape'){ closeAudit(); return; }
+  if (e.target.tagName === 'TEXTAREA') return;
+  const v = { 1: 'pass', 2: 'fail', 3: 'info' }[e.key]; if (v){ e.preventDefault(); giveVerdict(v); }
+  if (e.key === 'ArrowRight'){ e.preventDefault(); showStep(walk.i + 1); } if (e.key === 'ArrowLeft'){ e.preventDefault(); showStep(walk.i - 1); }
+});
+
+/* history: replay the union record by record (read-only while open) */
+let histRecs = null, histPlay = 0;
+function openHistory(){
+  histRecs = [...S.records.values()].sort(byZ);
+  if (!histRecs.length){ toast('Nothing to replay yet.'); return; }
+  $('history').hidden = false; document.body.classList.add('history');
+  const r = $('histRange'); r.max = histRecs.length; r.value = histRecs.length; setHist(histRecs.length);
+  setTimeout(() => r.focus(), 0);
+  say('History. Move the slider to replay the canvas record by record. Read-only until you go back to now.');
+}
+function setHist(i){
+  i = Math.max(0, Math.min(histRecs.length, i));
+  S.histZ = i >= histRecs.length ? null : i === 0 ? -1e15 : histRecs[i - 1].z;
+  const r = histRecs[Math.max(0, i - 1)];
+  $('histLabel').textContent = i >= histRecs.length ? `now · ${histRecs.length} records` : `${i} of ${histRecs.length} · ${r ? `${r.type.toLowerCase()} by ${short(r.author)} · ${new Date(r.t).toLocaleString()}` : 'before the first record'}`;
+  $('histRange').setAttribute('aria-valuetext', $('histLabel').textContent);
+  S.sel.clear(); changed();
+}
+function closeHistory(){ clearInterval(histPlay); histPlay = 0; S.histZ = null; histRecs = null; $('history').hidden = true; document.body.classList.remove('history'); changed(); cv.focus({ preventScroll: true }); say('Back to now.'); }
+$('histRange').addEventListener('input', e => setHist(+e.target.value));
+$('histPlay').onclick = () => {
+  if (histPlay){ clearInterval(histPlay); histPlay = 0; $('histPlay').textContent = '▶'; return; }
+  const r = $('histRange'); if (+r.value >= histRecs.length){ r.value = 0; setHist(0); }
+  const step = Math.max(1, Math.round(histRecs.length / 80));
+  $('histPlay').textContent = '❚❚';
+  histPlay = setInterval(() => { const v = Math.min(histRecs.length, +r.value + step); r.value = v; setHist(v); if (v >= histRecs.length){ clearInterval(histPlay); histPlay = 0; $('histPlay').textContent = '▶'; } }, 90);
+};
+$('histNow').onclick = closeHistory;
+$('history').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeHistory(); });
+
+PALETTE_HOOKS.push(add => {
+  add('audit', 'Start audit from the selected step', startAudit, { k: 'A' });
+  add('audit', 'Audit report (Markdown)…', () => openReport(`Audit report — ${canvasTitle()}`, auditReport(), 'audit-report.md'));
+  add('audit', 'History: replay the canvas…', openHistory, { k: '⇧H' });
+});
+KEY_HOOKS.push((e, c) => {
+  if (!c.onCanvas || c.mod || e.altKey) return false;
+  if (c.k === 'a' && !e.shiftKey){ e.preventDefault(); startAudit(); return true; }
+  if (e.key === 'H' && e.shiftKey){ e.preventDefault(); openHistory(); return true; }
+  return false;
+});
+$('auditClose').onclick = closeAudit;
+
+TEMPLATES.push({ id: 'audit', name: 'Audit flow', icon: '✓', blurb: 'A process flow to walk step by step: pass, fail or needs info, then sign off.', build: async c => {
+  await insertTemplate('flow');
+  await mk('card', c.x + 260, c.y - 260, 'Select “Start”, press A to audit each step (1 pass · 2 fail · 3 needs info), then sign off.', { W: 300, color: 'green' });
+} });
+EXAMPLES.push({ id: 'expense', title: 'Expense approval — audited flow', icon: '✓', blurb: 'A real process audited by two people, with notes, an open issue and a signed sign-off.', build: async ([ana, ben, chen]) => {
+  const c = center0(), X = c.x - 90;
+  const ids = await by(chen, async () => {
+    const s = await mk('ellipse', X, c.y - 380, 'Submit expense', { color: 'blue' });
+    const r = await mk('rect', X - 10, c.y - 260, 'Attach receipt', { parent: s });
+    const d = await mk('diamond', X - 20, c.y - 150, 'Over $1,000?', { parent: r });
+    const m = await mk('rect', X - 270, c.y + 10, 'Manager approves', { parent: d });
+    const f = await mk('rect', X + 230, c.y + 10, 'Finance approves', { parent: d });
+    const p = await mk('ellipse', X, c.y + 160, 'Paid out', { parent: m, color: 'green' });
+    await link(f, p);
+    return { s, r, d, m, f, p };
+  });
+  await tick();
+  const verdict = (step, v, note) => publish0('AUDIT', [['R', step], ['V', v], ['M', encTxt(note)]]);
+  async function publish0(action, pairs){ return publish(await signed(action, [['I', S.me.id], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]])); }
+  await by(ana, async () => {
+    await verdict(ids.s, 'pass', 'Form validates amount and currency.');
+    await verdict(ids.r, 'fail', 'Receipts over 90 days old are accepted. Policy says 60.');
+    await verdict(ids.d, 'pass', '');
+    await verdict(ids.m, 'pass', 'Delegation works when the manager is away.');
+    await verdict(ids.f, 'info', 'Who approves when Finance is the submitter?');
+    await verdict(ids.p, 'pass', '');
+  });
+  await by(ben, async () => { await verdict(ids.r, 'fail', 'Confirmed on 3 sample claims.'); await verdict(ids.f, 'pass', 'Separation of duties is configured.'); });
+  await tick();
+  await by(ana, async () => {
+    const mine = Object.values(ids).map(c2 => verdictsOn(c2).get(S.me.id)).filter(Boolean);
+    await publish0('SIGNOFF', [['R', canvasId], ['M', encTxt('Q3 controls review: 1 failing control (receipt age), 1 open question.')], ['P', mine.map(r => r.raw)]]);
+  });
+  const t = await by(ben, () => noteOn(ids.r, 'Fix: set the age limit to 60 days and re-test.'));
+  await by(chen, () => replyTo(t, 'Shipping the config change today.'));
+} });
 /* keyboard */
 addEventListener('keydown', e => {
   if (e.target === ta || e.target === $('palIn') || e.target.closest?.('#ask')) return;
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   // canvas keys apply when the canvas (or nothing) has focus; buttons and ledger rows keep their own keys
   const onCanvas = e.target === cv || e.target === document.body;
+  for (const h of KEY_HOOKS) if (h(e, { onCanvas, mod, k })) return;   // feature keys (core/hooks)
   if (onCanvas && e.altKey && !mod && e.key.startsWith('Arrow')){
     const n = soleNode();
     if (n){ e.preventDefault(); startChild(n, { ArrowRight: 'right', ArrowLeft: 'left', ArrowUp: 'up', ArrowDown: 'down' }[e.key]); return; }
@@ -3096,6 +4270,8 @@ async function switchCanvas(id){
   derive(); paintAuthors(); paintAuth(); paintBar(); document.documentElement.style.setProperty('--barH', barH() + 'px'); dirty = true; loop();
   if (saved) setTimeout(() => { $('hint').classList.add('gone'); }, 2500);
 })();
+// a refused signature while viewing history is expected, not an error
+addEventListener('unhandledrejection', e => { if (e.reason?.name === 'HistoryView') e.preventDefault(); });
 </script>
 </body>
 </html>

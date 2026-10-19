@@ -41,7 +41,7 @@ for (const f of files){
   if (code !== 0) problems.push(`exit ${code}`);
   if (/TIMEOUT/.test(out)) problems.push('timeout');
   for (const m of out.matchAll(/^errors (\[[\s\S]*?\])\s*$/gm)) if (m[1].replace(/\s/g, '') !== '[]') problems.push('page errors: ' + m[1].replace(/\s+/g, ' ').slice(0, 300));
-  for (const m of out.matchAll(/^axe(?: \w+)? (.*)$/gm)) if (!/^(\[\]|clean)$/.test(m[1].trim())) problems.push('axe: ' + m[1].slice(0, 300));
+  for (const m of out.matchAll(/^axe\b(.*)$/gm)){ const res = m[1].match(/(\[.*\]|clean)\s*$/); if (!res || !/^(\[\]|clean)$/.test(res[1])) problems.push('axe:' + m[1].slice(0, 300)); }
   if (problems.length){ failed++; console.log(`✗ ${f}\n  ${problems.join('\n  ')}\n${out.split('\n').map(l => '    ' + l).join('\n')}`); }
   else console.log(`✓ ${f}`);
 }

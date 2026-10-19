@@ -13,3 +13,5 @@
   derive(); paintAuthors(); paintAuth(); paintBar(); document.documentElement.style.setProperty('--barH', barH() + 'px'); dirty = true; loop();
   if (saved) setTimeout(() => { $('hint').classList.add('gone'); }, 2500);
 })();
+// a refused signature while viewing history is expected, not an error
+addEventListener('unhandledrejection', e => { if (e.reason?.name === 'HistoryView') e.preventDefault(); });

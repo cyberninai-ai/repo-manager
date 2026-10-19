@@ -6,6 +6,7 @@ const SW = c => `<span class="sw" style="background:${colorOf(c)}"></span>`;
 function commands(){
   const L = [];
   const add = (g, t, run, o = {}) => L.push({ g, t, run, ...o });
+  runHooks(PALETTE_HOOKS, add);   // feature commands (core/hooks) come first
   for (const c of Object.keys(COLORS)) add('color', c[0].toUpperCase() + c.slice(1), () => setColor(c), { sw: c, on: S.color === c });
   add('color', 'Custom hex…', async () => { const v = await ask('Hex colour', '', 'Six hex digits, e.g. 0b7285'); if (v && /^#?[0-9a-f]{6}$/i.test(v.trim())) S.color = v.trim().replace('#', '').toLowerCase(); else if (v) toast('Not a hex colour.'); });
   for (const [n, w] of [['Fine', 2], ['Medium', 4], ['Bold', 8], ['Marker', 16]]) add('width', `${n} · ${w}`, () => { S.width = w; }, { on: S.width === w });

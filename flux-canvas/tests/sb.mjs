@@ -17,9 +17,9 @@ const png = await fr.evaluate(async()=>{ const c=document.createElement('canvas'
 await (await fr.$('#imgFile')).setInputFiles({ name:'713d0847ffa150502660a28411058e09', mimeType:'application/octet-stream', buffer: Buffer.from(png) });
 await p.waitForTimeout(700);
 console.log('dialog', JSON.stringify(await fr.evaluate(()=>{ const el=document.getElementById('askImg'); return {open:document.getElementById('ask').style.display, preview: el.hidden ? 'hidden' : (el.width), tag: el.tagName} })));
-await p.screenshot({path:'sb-dialog.png'});
+await p.screenshot({path:OUT+'/sb-dialog.png'});
 await fr.click('#ask button:last-child'); await p.waitForTimeout(800);
 console.log('after OK', JSON.stringify(await fr.evaluate(()=>({open:document.getElementById('ask').style.display, images:[...S.records.values()].filter(r=>r.type==='IMAGE').length}))));
-await p.screenshot({path:'sb-after.png'});
+await p.screenshot({path:OUT+'/sb-after.png'});
 console.log('errors', errs);
 await b.close();

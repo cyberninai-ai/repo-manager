@@ -50,6 +50,7 @@ async function verifyRaw(node){
 const auth = { until: 0, count: 0 };
 const AUTH_IDLE = 5000;
 async function signed(action, pairs){
+  if (S.histZ != null){ toast('Viewing history: go back to now to make changes.'); const e = new Error('history view'); e.name = 'HistoryView'; throw e; }
   auth.until = Date.now() + AUTH_IDLE; auth.count++; paintAuth();
   const payload = build(action, pairs);
   const sig = new Uint8Array(await crypto.subtle.sign(SIGALG[S.me.alg], S.me.priv, te.encode(payload)));
