@@ -13,7 +13,7 @@ function toRec(node, cid){
     case 'STYLE': if (!f.R) throw Error('style'); r.sw2 = f.W ? Math.max(1, decInt(f.W)) : null; r.sc = f.C || null; r.sk = f.K || null;
       r.so = f.O ? decInt(f.O) : null; r.sl = f.L ? f.L === '1' : null; r.sm = 'M' in f ? decTxt(f.M) : null;
       r.sy = ['curve', 'straight', 'elbow'].includes(f.Y) ? f.Y : null; r.sd = ['solid', 'dash', 'dot'].includes(f.D) ? f.D : null;
-      r.sf = ['none', 'light', 'solid'].includes(f.F) ? f.F : null; break;
+      r.sf = ['none', 'light', 'solid'].includes(f.F) ? f.F : null; r.ss = ['s', 'm', 'l', 'xl'].includes(f.S) ? f.S : null; break;
     case 'NODE': r.k = f.K || 'card'; r.x = decInt(f.X); r.y = decInt(f.Y); r.bw = Math.max(0, decInt(f.W || '0')); r.bh = Math.max(0, decInt(f.H || '0'));
       r.text = decTxt(f.M || ''); r.parent = f.P && f.P !== '0' ? f.P : null; r.edits = f.E || null; r.sw = 2;
       r.fill = ['none', 'light', 'solid'].includes(f.F) ? f.F : null; break;

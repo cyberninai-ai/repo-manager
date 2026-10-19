@@ -164,6 +164,7 @@
   <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
+  <button class="ibtn cnt" id="workBtn" aria-expanded="false" data-tip="Work: tasks and deliveries"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span class="sr">Work</span> <span class="n" id="workN"></span></button>
   <button class="ibtn" id="moreBtn" aria-label="More: outline, present, history, reports, settings" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
   </div>
   <button class="share" id="shareBtn" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
@@ -171,6 +172,7 @@
 <div id="bar" role="toolbar" aria-label="Style">
   <div class="grp" id="gColor"><span class="lbl2" aria-hidden="true">Colour</span><div class="sws" role="radiogroup" aria-label="Colour" id="barColors"></div></div>
   <div class="grp" id="gKind"><span class="lbl2" aria-hidden="true">Shape</span><div class="sws" role="radiogroup" aria-label="Shape" id="barKinds"></div></div>
+  <div class="grp" id="gNSize"><span class="lbl2" aria-hidden="true">Text</span><div class="seg" role="radiogroup" aria-label="Text size" id="barNSize"></div></div>
   <div class="grp" id="gNFill"><span class="lbl2" aria-hidden="true">Fill</span><div class="seg" role="radiogroup" aria-label="Fill" id="barNFill"></div></div>
   <div class="grp" id="gBrush">
     <label class="lbl2" for="brush">Stroke</label>
@@ -237,6 +239,13 @@
   <header><h2 id="sessionT">Live session</h2><button class="ibtn sm" id="sessionClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
   <div id="sessionBody"></div>
 </section>
+<aside class="ledger wk" id="work" aria-label="Work">
+  <header>
+    <h2><span>Work</span><button class="ibtn sm" id="workClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
+    <div class="stats">Tasks, who owns them, and deliveries approved by the people you name.</div>
+  </header>
+  <div class="list" id="workBody"></div>
+</aside>
 <aside class="ledger st" id="structure" aria-label="Outline">
   <header>
     <h2><span>Outline</span><button class="ibtn sm" id="stClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
@@ -398,6 +407,7 @@
 <script src="js/features/session.js"></script>
 <script src="js/features/compaction.js"></script>
 <script src="js/features/structure.js"></script>
+<script src="js/features/work.js"></script>
 <script src="js/ui/toolbar.js"></script>
 <script src="js/interaction/keyboard.js"></script>
 <script src="js/boot.js"></script>

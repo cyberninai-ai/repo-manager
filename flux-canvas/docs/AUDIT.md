@@ -2,7 +2,7 @@
 
 **Scope.** The whole app, first as one 3,100-line `flux-canvas.html` (205 KB), then re-checked after every pass. The audit covers architecture, data model and security, performance, accessibility, UX and testing. Every finding below is now fixed or accepted with a reason.
 **Date.** October 2026 (re-audited after the fixes).
-**Method.** I read the code end to end and ran it in headless Chromium: 23 browser suites in `tests/`, an axe-core accessibility scan, a sandboxed `srcdoc` frame with a strict CSP, two-tab sync, two-browser sync through the relay, and a 5,000-record benchmark. Both the bundle and the modular source were tested.
+**Method.** I read the code end to end and ran it in headless Chromium: 24 browser suites in `tests/`, an axe-core accessibility scan, a sandboxed `srcdoc` frame with a strict CSP, two-tab sync, two-browser sync through the relay, and a 5,000-record benchmark. Both the bundle and the modular source were tested.
 
 Severity: **High** = can lose or forge data, or blocks the product goal. **Medium** = visible defect or scaling limit. **Low** = polish or debt.
 
@@ -15,11 +15,11 @@ The core idea works: every element is a signed, content-addressed record, and th
 | Storage: keys and records in `localStorage` | Non-extractable keys and an append-only log, both in IndexedDB |
 | Permissions: anyone could move, resolve or reorder | Owner-bound canvases with signed `GRANT`s, enforced in `derive()` |
 | Sync: only tabs in the same browser | A WebSocket relay with catch-up sync between browsers |
-| Code structure: one global scope | 55 modules in enforced layers |
+| Code structure: one global scope | 59 modules in enforced layers |
 
 | # | Area | Finding | Severity | Status |
 |---|---|---|---|---|
-| A1 | Architecture | One file, one global scope; features reach into each other's state (`S`, `G`, DOM ids) | Medium | **Fixed**: 55 JS + 12 CSS modules, and layers (core → render → model → app) enforced by `tools/deps.mjs` in `npm run check`. 28 upward reaches were removed through hooks and moves; [DEPENDENCIES.md](DEPENDENCIES.md) is generated. ES modules stay deferred by decision (see ARCHITECTURE) |
+| A1 | Architecture | One file, one global scope; features reach into each other's state (`S`, `G`, DOM ids) | Medium | **Fixed**: 59 JS + 12 CSS modules, and layers (core → render → model → app) enforced by `tools/deps.mjs` in `npm run check`. 28 upward reaches were removed through hooks and moves; [DEPENDENCIES.md](DEPENDENCIES.md) is generated. ES modules stay deferred by decision (see ARCHITECTURE) |
 | A2 | Architecture | Tests lived outside the repo; no build or check step | Medium | **Fixed**: `tests/`, `tools/build.mjs --check`, `npm test`, CI workflow |
 | S1 | Security | Private key stored as an **extractable JWK in `localStorage`**: any script on the origin can copy it | High | **Fixed**: a non-extractable `CryptoKey` in IndexedDB; old JWKs are imported and deleted. Fallback to a JWK only where IndexedDB is missing (sandboxed frames) |
 | S2 | Security | `MOVE`, `RESOLVE`, `REACT` and `META` from any author are accepted; nothing implements the spec's permissions model (§8) | High | **Fixed**: owner-bound canvas ids (`OWNER` record, a hash commitment), owner-only `GRANT` records (draw, comment, move, audit), enforced in `derive()` and before signing; People and permissions dialog; owned copy of older canvases |
@@ -44,6 +44,48 @@ The core idea works: every element is a signed, content-addressed record, and th
 | B3 | Bug | Avatar initials disappeared (a contrast fix had commented them out) | Low | **Fixed**; the people dialog and avatars share one `initials()` |
 | T1 | Testing | Tests print what they checked; most don't assert values | Medium | **Fixed**: 8 suites assert (`node:assert`); the 15 older suites are compared with golden output (normalised for keys, CIDs and times) in `tests/snapshots/`; CI runs check plus both targets |
 
+## Round 3: collaboration-native and canvas editing
+
+**Why a third round.** The first two rounds made the app correct and usable. The feedback after them was that it still *felt* like a web2 whiteboard: one person on one device, drawing alone, with sign-off happening somewhere else. Editing the canvas (placing shapes, sizing, styling) was also called out as poor. This round audits against the product goal instead: real time, peer to peer, people co-working until the work is delivered and proven. [PRODUCT.md](PRODUCT.md) states that goal in plain words.
+
+### Collaboration (W)
+
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| W1 | People were key fragments (`k2a9f…`). Nobody could tell who was who | High | **Fixed**: a signed `PROFILE` record per key (only you can name yourself, latest wins). Names show on cursors, avatars, the activity feed, tasks and approvals. Your name travels with your first contribution |
+| W2 | Sync needed a server: tabs in one browser, or a relay someone had to run | High | **Fixed**: direct WebRTC data channels. One person creates an invite code, the other answers with a code (about 650 characters, deflated), and records, presence and sync flow browser to browser. Tabs and the relay still work; `post()` sends on all three |
+| W3 | No sense of being together: cursors only, no idea what others were doing | High | **Fixed**: presence carries name, selection, what is being edited, view and tool. Others' selections are outlined in their colour with "Ana is editing"; you can **Follow** someone or **Bring everyone to my view** |
+| W4 | No single place showing who is here and whether everyone sees the same thing | Medium | **Fixed**: the Live button (`Just you`, `Live · 3`, `Syncing · 3`) opens the session panel: you, people here, how each is connected, invites, peer codes and the relay |
+| W5 | No way to know two peers hold the same canvas | Medium | **Fixed**: a state root (a hash of every record CID) in presence. Equal roots read "everyone sees state HJBC7Q". A root that differs for 2.5 s triggers a resync, so sync heals itself |
+| W6 | Coming back gave no account of what happened | Medium | **Fixed**: "Caught up · 12 changes from Ana, Ben" after a sync batch; the Activity feed reads as sentences ("Ana added a note "Pricing"") with avatars |
+| W7 | Work stopped at ideas: nothing tracked who does what by when | High | **Fixed**: `TASK` records turn any element into a task with status, owner and due date. A chip on the canvas advances it; the Work panel lists tasks by status, mine first |
+| W8 | Sign-off happened outside the canvas and wasn't tied to a version | High | **Fixed**: `DELIVER` names approvers and a quorum and pins the state root at that moment. Each approver signs `APPROVE` over the root they computed themselves; later edits mark the delivery as changed. The proof file lists the version, contributors and signed approvals |
+| W9 | "Who did this?" needed the ledger | Low | **Fixed**: hovering someone else's element shows their name; your own work stays unlabelled |
+
+### Canvas editing (E)
+
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| E1 | Shapes landed at a fixed size; you couldn't drag out a box | High | **Fixed**: drag to size with every shape tool (Shift keeps proportions); a click places a sensible default |
+| E2 | Only the bottom-right corner resized, and resize committed the wrong size | High | **Fixed**: eight handles with matching cursors on nodes, shapes and images; the commit measures against the drawn size, not the stored minimum |
+| E3 | No marquee: selecting many things meant Shift-clicking each | High | **Fixed**: drag on empty paper to select; Select is the default tool |
+| E4 | Shapes were outlines only, and text had one size | Medium | **Fixed**: fill (none, light, solid) and text size (S, M, L, XL) in the style bar, signed as `STYLE` `F` and `S`; new nodes take `F` at creation; text picks a readable colour on solid fills |
+| E5 | Picking a colour or kind while something was selected restyled it by surprise | Medium | **Fixed**: choosing a creation tool clears the selection; the style bar then sets what you draw next |
+| E6 | Typing on a selected blank shape lost the first characters | Medium | **Fixed**: type-to-edit writes the first key into the editor at once |
+| E7 | Right-click on empty paper kept the old selection, so the menu acted on it | Low | **Fixed** |
+| E8 | No hover feedback: it wasn't clear what a click would hit | Low | **Fixed**: a hover outline, with handles only when the pointer is near |
+
+### Tests added this round
+
+- `tests/tools.mjs`: drag-to-size, eight-handle resize, marquee, fill and text size, hover, type-to-edit.
+- `tests/cowork.mjs` (15 checks): profiles and names, a WebRTC connection made by swapping codes between two browser contexts, records and presence over it, equal state roots, tasks, a two-of-two delivery that is changed after one approval, and the proof.
+
+### Still open from this round
+
+- **Not a blockchain.** The proof is verifiable offline, but nothing timestamps it publicly. Anchoring a delivery's root on a public chain is the next step (see PRODUCT).
+- **Presence is unsigned** (S6 still holds). Names on cursors come from signed `PROFILE` records, but a peer could send a fake cursor.
+- **Direct connections need a code swap.** Two people must exchange codes through some other channel. With a relay or a hosted link, joining is one click.
+
 ## Residual risks (accepted, documented)
 
 - **No key backup.** A non-extractable key can't be exported, so clearing site data loses that identity. The records stay valid; that person signs on with a new key. Next step: passkeys (WebAuthn) as the signing root.
@@ -55,7 +97,7 @@ The core idea works: every element is a signed, content-addressed record, and th
 
 **Before:** one inline `<script>`. Function hoisting hid ordering: any function could call any other, and all state was module-global (`S` for the canvas, `G` for the current gesture, many `let` flags).
 
-**Now:** 55 ordered classic scripts in `js/` and 12 stylesheets in `css/`. `tools/build.mjs` inlines them into the single `flux-canvas.html`, which is still the artifact people download, open from disk, or host in a sandbox.
+**Now:** 59 ordered classic scripts in `js/` and 12 stylesheets in `css/`. `tools/build.mjs` inlines them into the single `flux-canvas.html`, which is still the artifact people download, open from disk, or host in a sandbox.
 - **Why classic scripts and not ES modules:** browsers refuse `<script type="module">` from `file://`.
 - **What the order guarantees:** classic scripts share one global lexical scope, so the split needed no code changes. The first build after the split was **byte-identical** to the original file.
 - **What keeps modules apart:** `tools/deps.mjs` derives the dependency graph from the source and fails `npm run check` when a lower layer reaches up, or when two files declare the same name.

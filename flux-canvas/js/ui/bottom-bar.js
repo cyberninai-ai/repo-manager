@@ -27,6 +27,7 @@ function barGroups(){
     if (rs.some(r => r.type === 'TEXT')) g.add('text');
     if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky')) g.add('kind');   // a sticky note is a sticky note: colour only
     if (rs.some(r => r.type === 'NODE' && FILLABLE.has(r.ek))) g.add('nfill');
+    if (rs.some(r => r.type === 'NODE')) g.add('nsize');
     return g;
   }
   for (const k of (TOOL_GROUPS[t] || '').split(' ')) if (k) g.add(k);
@@ -94,6 +95,11 @@ function paintBar(){
       b.innerHTML = `<svg viewBox="0 0 20 20" class="ic" aria-hidden="true">${svg}</svg>`; b.onclick = () => setNodeFill(v); nf.appendChild(b);
     }
   }
+  const ns = $('barNSize');
+  if (!ns.children.length) for (const [v, label] of [['s', 'Small'], ['m', 'Medium'], ['l', 'Large'], ['xl', 'Extra large']]){
+    const b = document.createElement('button'); b.className = 'ft'; b.dataset.size = v; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', `${label} text`);
+    b.textContent = v.toUpperCase(); b.onclick = () => setNodeSize(v); ns.appendChild(b);
+  }
   const groups = barGroups(), gkey = [...groups].join();
   const selKinds = selOwn(['NODE']).map(n => n.ek), shownKind = selKinds.length ? selKinds[0] : S.nodeKind;
   for (const b of kinds.children){ const on = b.dataset.k === shownKind; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
@@ -108,11 +114,13 @@ function paintBar(){
   const tt = textTargets(), t = tt[0], ts = t ? (t._previewFs || t.fs) : S.textSize;
   const lt = lineTargets(), bw = lt.length ? Math.round(brushOf(lt[0])) : S.width;
   const tf = t ? t.f.F : S.font;
-  const key = [gkey, currentTool(), S.nodeFill, selOwn(['NODE']).map(n => n.cid + n.efill + n.ek).join(), S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
+  const key = [gkey, currentTool(), S.nodeFill, selOwn(['NODE']).map(n => n.cid + n.efill + n.ek + n.esize).join(), S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
   if (key === barShown) return; barShown = key;
   const bar = $('bar'), was = bar.hidden;
   bar.hidden = !groups.size;
-  $('gNFill').hidden = !groups.has('nfill');
+  $('gNFill').hidden = !groups.has('nfill'); $('gNSize').hidden = !groups.has('nsize');
+  const sizeNow = selOwn(['NODE'])[0]?.esize || 'm';
+  for (const b of ns.children){ const on = b.dataset.size === sizeNow; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
   const fillNow = selOwn(['NODE']).find(n => FILLABLE.has(n.ek))?.efill || (S.sel.size ? 'light' : S.nodeFill);
   for (const b of nf.children){ const on = b.dataset.fill === fillNow; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
   $('gColor').hidden = !groups.has('color'); $('gKind').hidden = !groups.has('kind');
@@ -183,6 +191,12 @@ async function setNodeFill(v){
   for (const el of selOwn(['NODE']).filter(n => FILLABLE.has(n.ek))){ const from = el.efill || 'light'; if (from !== v){ items.push({ cid: el.cid, before: { F: from }, after: { F: v } }); await commitStyle(el.cid, { F: v }); } }
   if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
   paintBar(); say(`${{ none: 'No', light: 'Light', solid: 'Solid' }[v]} fill${items.length ? ` on ${items.length} shape${items.length > 1 ? 's' : ''}` : ' for new shapes'}.`);
+}
+async function setNodeSize(v){
+  const items = [];
+  for (const el of selOwn(['NODE'])){ const from = el.esize || 'm'; if (from !== v){ items.push({ cid: el.cid, before: { S: from }, after: { S: v } }); await commitStyle(el.cid, { S: v }); } }
+  if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
+  barShown = ''; paintBar(); say(`Text size ${{ s: 'small', m: 'medium', l: 'large', xl: 'extra large' }[v]}.`);
 }
 $('fillBtn').onclick = () => { S.fill = !S.fill; barShown = ''; paintBar(); say(S.fill ? 'New shapes are filled' : 'New shapes are outlines'); };
 let tsizeT = 0;

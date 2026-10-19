@@ -6,7 +6,7 @@
 //   · your STYLE records whose every field a later STYLE of yours overrides (latest wins, so they no longer count)
 //   · your revoke/restore records on an element, except the latest
 // The history scrubber can no longer replay the steps that were folded together.
-const STYLE_FIELDS = { W: 'sw2', C: 'sc', K: 'sk', O: 'so', L: 'sl', M: 'sm', Y: 'sy', D: 'sd', F: 'sf' };
+const STYLE_FIELDS = { W: 'sw2', C: 'sc', K: 'sk', O: 'so', L: 'sl', M: 'sm', Y: 'sy', D: 'sd', F: 'sf', S: 'ss' };
 function compactionPlan(){
   const mine = [...S.records.values()].filter(r => r.author === S.me?.id).sort(byZ);
   const moves = new Map(), lastField = new Map(), lastNeg = new Map();
@@ -44,7 +44,7 @@ PALETTE_HOOKS.push(add => add('canvas', 'Compact my history', compactHistory));
 function rebuildHistory(limit = 200){
   if (!S.me) return;
   const mine = [...S.records.values()].filter(r => r.author === S.me.id).sort(byZ), hist = [], style = new Map();
-  const base = el => el ? { W: el.type === 'DRAW' ? el.w : el.sw, C: el.f.C, K: el.k, O: el.z, L: false, M: el.label ?? '', Y: 'curve', D: 'solid', F: el.fill || 'light' } : {};
+  const base = el => el ? { W: el.type === 'DRAW' ? el.w : el.sw, C: el.f.C, K: el.k, O: el.z, L: false, M: el.label ?? '', Y: 'curve', D: 'solid', F: el.fill || 'light', S: 'm' } : {};
   for (const r of mine){
     if (r.neg !== null){ hist.push(r.neg ? { kind: 'revoke', cids: [r.f.R] } : { kind: 'create', cid: r.f.R }); continue; }
     if (ELEMENT.has(r.type) || r.type === 'GROUP'){ hist.push({ kind: 'create', cid: r.cid }); continue; }

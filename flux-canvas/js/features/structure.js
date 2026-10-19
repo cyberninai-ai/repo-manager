@@ -66,7 +66,7 @@ function paintStructure(){
 }
 function toggleStructure(force){
   ST.on = force ?? !ST.on;
-  if (ST.on){ if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); }
+  if (ST.on){ if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); if (WK.on) toggleWork(false); }
   $('structure').style.display = ST.on ? 'flex' : 'none'; 
   paintStructure();
   if (ST.on) ($('stTree').querySelector('[tabindex="0"]') || $('stClose')).focus(); else cv.focus({ preventScroll: true });

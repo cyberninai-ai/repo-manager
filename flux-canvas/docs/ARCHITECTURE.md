@@ -178,6 +178,7 @@ Each row is one user-facing surface, with the files that own it.
 | core/state.js | Record kinds, canvas id, the global state S, BroadcastChannel name |
 | core/db.js | IndexedDB: signing keys as non-extractable CryptoKeys, an append-only record log and blobs per canvas, the canvas list |
 | core/net.js | Network transport (audit C1): a WebSocket relay that forwards signed records between browsers, plus sync |
+| core/rtc.js | Direct peer-to-peer connections (WebRTC data channels): invite and answer codes, no server needed |
 | core/blobs.js | CID-addressed blobs: point arrays and images (sniff, decode, cache) |
 | core/records.js | Record ingest: parse, verify, address, union-merge; publish; channel wire |
 | core/persistence.js | The canvas on disk: an append-only record log in IndexedDB (localStorage in sandboxes), .flux import |
@@ -200,7 +201,7 @@ Each row is one user-facing surface, with the files that own it.
 | features/eraser.js | Eraser tool |
 | ui/zoom-minimap.js | Zoom controls and the overview map |
 | features/outline.js | Indented outline → mind map |
-| features/presence.js | Live cursors over the canvas channel (ephemeral, unsigned) |
+| features/presence.js | Presence: named cursors, selections, who is editing what, follow and spotlight (ephemeral, unsigned) |
 | features/diagrams.js | + handles, node editor, tidy, templates (NODE kinds and drawing live in render/nodes) |
 | features/export-svg.js | Vector export of the visible canvas |
 | ui/bottom-bar.js | Contextual style bar: shows only what the current tool or selection can use |
@@ -218,6 +219,9 @@ Each row is one user-facing surface, with the files that own it.
 | features/moodboard.js | Moodboards: extract a five-colour palette from an image (swatch nodes), masonry layout, |
 | features/audit.js | Audit flows: verdicts on steps (AUDIT), a guided walk along a flow, a report, a signed sign-off |
 | features/people.js | People and permissions dialog: who is on the canvas, the owner, and GRANT checkboxes |
+| features/profiles.js | Signed PROFILE names per key, shown everywhere instead of key fragments |
+| features/session.js | The Live button and session panel: who is here, sync state by state root, invites, peer codes, relay |
+| features/work.js | Tasks (TASK), the Work panel, deliveries with named approvers and a quorum (DELIVER, APPROVE), the proof |
 | features/compaction.js | Compact your own history (audit D1) and rebuild undo after a reload (audit D3) |
 | features/structure.js | Outline panel (audit X2): the canvas as a navigable tree — frames, what sits in them, |
 | ui/toolbar.js | The tool model (select, hand, draw, eraser, rectangle, ellipse, line, sticky note, shapes, text, |

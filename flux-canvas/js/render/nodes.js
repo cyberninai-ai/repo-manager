@@ -36,20 +36,20 @@ function wrapLines(text, maxW){
   return out.length ? out : [''];
 }
 const layoutCache = new Map();
-function nodeLayout(kind, text, minW = 0, minH = 0){
-  const K = NODE_KINDS[kind] || NODE_KINDS.card;
-  const key = [kind, text, minW, minH].join('\u0000');
+function nodeLayout(kind, text, minW = 0, minH = 0, size = 'm'){
+  const K = NODE_KINDS[kind] || NODE_KINDS.card, fs = Math.round(K.font * (TEXT_SIZES[size] || 1));
+  const key = [kind, text, minW, minH, fs].join('\u0000');
   if (layoutCache.has(key)) return layoutCache.get(key);
-  const font = `${K.bold ? 600 : 400} ${K.font}px ${FONTS.sans}`;
+  const font = `${K.bold ? 600 : 400} ${fs}px ${FONTS.sans}`;
   mctx.font = font;
   const wrap = Math.max(K.wrap, minW - K.pad[0] * 2);
-  const lines = wrapLines(text || ' ', wrap), lh = Math.round(K.font * 1.35);
+  const lines = wrapLines(text || ' ', wrap * fs / K.font), lh = Math.round(fs * 1.35);
   const tw = Math.max(1, ...lines.map(l => mctx.measureText(l).width)), th = lines.length * lh;
   let w = tw + K.pad[0] * 2, h = th + K.pad[1] * 2;
   if (kind === 'diamond'){ w = tw * 1.7 + 44; h = th * 1.9 + 40; }
   if (kind === 'ellipse'){ w = tw * 1.2 + K.pad[0] * 2; h = th * 1.25 + K.pad[1] * 2; }
   if (kind === 'frame') h = 0;
-  const L = { w: Math.ceil(Math.max(w, K.min[0], minW)), h: Math.ceil(Math.max(h, K.min[1], minH)), lines, font, lh, K };
+  const L = { w: Math.ceil(Math.max(w, K.min[0], minW)), h: Math.ceil(Math.max(h, K.min[1], minH)), lines, font, lh, K, fs };
   if (layoutCache.size > 3000) layoutCache.clear();
   layoutCache.set(key, L);
   return L;
@@ -58,7 +58,7 @@ function nodeBox(el){
   const o = S.D.off.get(el.cid);
   let mw = el.bw + (o ? o.w : 0), mh = el.bh + (o ? o.h : 0);
   if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.nb.w; mh = G.nb.h; }
-  return nodeLayout(el.ek || el.k, el.text, mw, mh);
+  return nodeLayout(el.ek || el.k, el.text, mw, mh, el.esize);
 }
 let TH = {};
 function readTheme(){
@@ -183,3 +183,5 @@ const readableOn = c => { const [r, g, b] = rgbOf(c); return 0.299 * r + 0.587 *
 // shape kinds that take a fill choice, and the size a shape gets from a single click
 const FILLABLE = new Set(['rect', 'ellipse', 'diamond', 'topic']);
 const SHAPE_SIZE = { rect: [160, 100], ellipse: [160, 110], diamond: [150, 120] };   // these appear at once; ideas and cards open their label first
+// text size inside shapes and notes (STYLE S): small, medium (the kind's own size), large, extra large
+const TEXT_SIZES = { s: 0.85, m: 1, l: 1.4, xl: 2 };

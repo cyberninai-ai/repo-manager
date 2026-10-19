@@ -31,3 +31,31 @@
 .st-n{font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:0 7px}
 .st-m{font-size:12px;color:var(--muted);margin:2px 0 0 22px;line-height:1.35}
 .st .empty{color:var(--muted);padding:24px 10px;text-align:center}
+
+/* work panel */
+.wk .list{padding:12px 14px}
+.wk h3{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px;display:flex;gap:6px;align-items:center}
+.wk h3 .n{background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:0 7px;font-size:11px;color:var(--ink)}
+.wk-prog{position:relative;padding-bottom:10px}
+.wk-prog i{position:absolute;left:0;bottom:0;height:6px;border-radius:3px;background:var(--green)}
+.wk-prog::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;border-radius:3px;background:var(--line2);z-index:-1}
+.wk .opts{margin-top:10px;font-size:12px;color:var(--muted)} .wk .opts input{accent-color:var(--cyan)}
+.wk-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.wk-row{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);cursor:pointer;text-align:left;font-size:13px}
+.wk-row:hover{background:var(--hover)}
+.wk-st{width:20px;text-align:center;font-weight:700} .st-done{color:var(--green)} .st-doing{color:var(--amber)}
+.wk-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-due{font-size:11px;color:var(--muted)} .wk-due.late{color:var(--red);font-weight:600}
+.wk .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;flex:none}
+.wk .av.none{background:var(--line);color:var(--muted)}
+.wk-dl{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.wk-dh{display:flex;justify-content:space-between;gap:8px;font-size:13px} .wk-dh span{color:var(--muted);font-size:12px;white-space:nowrap}
+.wk-ap{display:flex;gap:6px;flex-wrap:wrap} .wk-ap .chip{height:24px;font-size:11px;cursor:default}
+.wk-ap .chip.yes{color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,var(--line))} .wk-ap .chip.no{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+.wk-note{margin:0;font-size:12px;color:var(--muted)}
+#wkDeliver{margin-top:12px;width:100%}
+.wk .se-acts{display:flex;gap:6px;flex-wrap:wrap} .wk .se-acts .btn{height:28px;font-size:12px}
+.wk .se-empty{color:var(--muted);font-size:13px;margin:4px 0}
+.ledger .top .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;flex:none}
+.ledger .top .what{flex:1;min-width:0;font-size:13px;line-height:1.35} .ledger .top .what b{font-weight:600}
+.ledger .raw .tag{margin-right:4px}

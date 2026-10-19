@@ -68,7 +68,7 @@ function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, ori
   say(`${orig ? 'Editing' : 'New'} ${K.name}${parent ? ` connected to “${current(parent)?.text.slice(0, 40) || ''}”` : ''}. Type the label, Enter to sign.`);
 }
 function nodeEditBox(){
-  const n = taNode, L = nodeLayout(n.kind, ta.value, n.W, n.H), a = n.anchor;
+  const n = taNode, L = nodeLayout(n.kind, ta.value, n.W, n.H, n.orig?.esize), a = n.anchor;
   return { x: Math.round(a.x - a.ax * L.w), y: Math.round(a.y - a.ay * L.h), L };
 }
 function placeNodeEditor(){
@@ -79,7 +79,7 @@ function placeNodeEditor(){
   if (taNode.kind === 'diamond' || taNode.kind === 'ellipse'){ inner.x = x + L.w * 0.18; inner.w = L.w * 0.64; }
   const si = toScreen(inner.x, inner.y);
   Object.assign(ta.style, { left: si.x + 'px', top: si.y + 'px', width: Math.max(40, inner.w * z) + 'px', height: (L.lines.length * L.lh * z + 2) + 'px',
-    font: `${K.bold ? 600 : 400} ${K.font * z}px ${FONTS.sans}`, lineHeight: (L.lh * z) + 'px', textAlign: left ? 'left' : 'center',
+    font: `${K.bold ? 600 : 400} ${L.fs * z}px ${FONTS.sans}`, lineHeight: (L.lh * z) + 'px', textAlign: left ? 'left' : 'center',
     color: taNode.kind === 'sticky' ? '#1d1d1f' : taNode.kind === 'button' ? (taNode.color !== 'ink' ? '#fff' : TH.paper) : TH.ink || INK });
   void s;
 }

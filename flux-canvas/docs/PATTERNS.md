@@ -59,7 +59,7 @@ On an owned canvas, "anyone" in the table above means "anyone the owner allows".
 | `TEXT` | `I X Y M F S C [E] Z T` | `F` font, `S` size; `E` = the version this edit replaces (author only) |
 | `ARROW` | `I FROM TO C S M Z T` | connects two element CIDs; follows edits; `M` label |
 | `IMAGE` | `I R X Y W H M Z T` | `R` = CID of the image blob; `M` = alt text |
-| `NODE` | `I R K X Y W H M C P [E] Z T` | diagram node; `K` card, topic, rect, ellipse, diamond, sticky, button, input, image, swatch, frame; `W`/`H` minimum size (0 = fit label); `P` parent node (the connector is drawn automatically) |
+| `NODE` | `I R K X Y W H M C P [F] [E] Z T` | diagram node; `K` card, topic, rect, ellipse, diamond, sticky, button, input, image, swatch, frame; `W`/`H` minimum size (0 = fit label); `P` parent node (the connector is drawn automatically); `F` fill `none`, `light` or `solid` |
 
 ## Changes
 
@@ -68,7 +68,7 @@ On an owned canvas, "anyone" in the table above means "anyone the owner allows".
 | `<same action>` + `N` | `I R N Z T` | `N-1` hides, `N-0` restores; only the target's author; latest wins |
 | `MOVE` | `I R DX DY [DW DH] [X] Z T` | offsets accumulate; `DW`/`DH` resize images and nodes. `X` (compaction, audit D1) lists `_`-joined CIDs of the same author's MOVEs on the same target that this one sums up: they no longer count, and every peer may drop them |
 | `GROUP` | `I R K Z T` | `K` = the member CIDs joined by `_` (audit D2); moving the group moves them. The older form `I R P Z T` fenced copies of the members and still reads |
-| `STYLE` | `I R [W] [C] [K] [O] [L] [M] [Y] [D] Z T` | author-only overrides: width, colour, node kind, layer order, lock, label, connector shape (`curve`, `straight`, `elbow`), dash (`solid`, `dash`, `dot`) |
+| `STYLE` | `I R [W] [C] [K] [O] [L] [M] [Y] [D] [F] [S] Z T` | author-only overrides: width, colour, node kind, layer order, lock, label, connector shape (`curve`, `straight`, `elbow`), dash (`solid`, `dash`, `dot`), fill (`none`, `light`, `solid`), text size (`s`, `m`, `l`, `xl`) |
 
 ## Collaboration
 
@@ -82,15 +82,27 @@ On an owned canvas, "anyone" in the table above means "anyone the owner allows".
 | `SIGNOFF` | `I R M P Z T` | `R` = canvas id; `M` summary; `P` fences the `AUDIT` records it attests, so one signature covers the whole audit |
 | `OWNER` | `I R K Z T` | `R` = canvas id, `K` = nonce; valid only if the id is the hash of author and nonce |
 | `GRANT` | `I R A P Z T` | `R` = canvas id; `A` = author key or `all`; `P` = `draw_comment_move_audit` (any subset) or `none`; owner only; latest per `A` wins |
+| `PROFILE` | `I M Z T` | `M` = your display name (40 characters at most); only you can name yourself; latest wins; needs no grant |
+
+## Work and delivery
+
+| Action | Fields | Effect |
+|---|---|---|
+| `TASK` | `I R S A D Z T` | `R` = element; `S` `todo`, `doing`, `done`, or `x` (no longer a task); `A` owner key or `0`; `D` due date `yyyymmdd` or `0`; latest per element wins; needs `comment` |
+| `DELIVER` | `I R M A Q H X Z T` | `R` = nonce; `M` title; `A` = approver keys joined by `_`; `Q` quorum; `H` = the state root being delivered; `X` = a frame it covers or `0`; needs `draw` |
+| `APPROVE` | `I R H S M Z T` | `R` = the delivery; `H` = the root as the approver computed it; `S` 1 approve / 0 request changes; `M` note; counts only from named approvers, latest per approver wins; needs no grant |
+
+A delivery is **approved** when `Q` approvers sign `S-1` with an `H` equal to the delivery's root. It is **changed** when records signed after it alter what it covers; approvals then no longer match the canvas people see.
 
 ## Not records
 
 These are never signed or stored. They travel over the channel or stay local:
-- presence (cursors);
+- presence: cursor, name, selection, what is being edited, view, tool and state root;
 - the shared timer;
 - selection, open panels, the vote budget, the history cursor;
 - the canvas list (a summary kept beside the records, for display only);
-- sync messages: `HELLO` (the CIDs a peer has) and `records` batches, answered with what is missing.
+- sync messages: `HELLO` (the CIDs a peer has) and `records` batches, answered with what is missing;
+- WebRTC invite and answer codes (`fluxz.` + deflated SDP), swapped by hand.
 
 ## Storage and export
 

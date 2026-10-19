@@ -17,7 +17,8 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 - **Top left:** canvas menu and title. Vote and timer chips appear only while they're in use.
 - **Top centre: the tool dock** has nine tools. Select (V, the default), Hand (Space); Draw (P), Eraser (E); Sticky note, Shape (N: drag to size or click and type, kind below), Connector line, Text (T), Image (I); Comment (M).
 - **Top right:**
-  - **Live chip:** appears while connected to a relay. It shows "Live · 3", or "Reconnecting…" with a pulsing dot.
+  - **Live button:** always visible. It reads "Just you", "Live · 3" or "Syncing · 3" and opens the session panel: you and your name, people here (Follow, Bring everyone to my view), invite link, peer-to-peer codes and the relay.
+  - **Work button:** opens the Work panel: tasks by status and deliveries with their approvals. The badge counts open tasks.
   - **People on the canvas:** up to four avatars with initials; yours has an accent ring. Click one to see only their work. With more than four people, a "+N" opens People and permissions.
   - **Comments** (with the open count) and **More** (⋯): search and commands, outline, present, history, summary, audit report, activity log, open a file, theme, grid and shortcuts.
   - **Share:** copy link, people and permissions, go live, download the canvas, export SVG.

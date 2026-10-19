@@ -124,7 +124,7 @@ async function kbResize(f){
   const h = resizeHandle(); if (!h) return false;
   const b = box(h.el);
   if (h.el.type === 'NODE'){
-    const el = h.el, o = S.D.off.get(el.cid) || { w: 0, h: 0 }, L = nodeLayout(el.ek, el.text);
+    const el = h.el, o = S.D.off.get(el.cid) || { w: 0, h: 0 }, L = nodeLayout(el.ek, el.text, 0, 0, el.esize);
     const tw = Math.max(L.w, Math.round(b.w * f)), th = Math.max(L.h, Math.round(b.h * f));
     const dw = tw - (el.bw + (o.w || 0)), dh = th - (el.bh + (o.h || 0));
     if (dw || dh){ await commitMove(el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [el.cid], dx: 0, dy: 0, dw, dh }); S.redo = []; }

@@ -165,7 +165,11 @@ function render(){
   // hover: connectable edge
   if (!G && hoverEdge){ const b = box(hoverEdge); if (b) selOutline(grow(b, 4 / z), accent, z, .45); }
   // hover: what a click would pick
-  if (!G && hoverCid && !S.sel.has(hoverCid)){ const el = S.records.get(hoverCid), b = el && box(el); if (b) selOutline(grow(b, 3 / z), accent, z, .5); }
+  if (!G && hoverCid && !S.sel.has(hoverCid)){ const el = S.records.get(hoverCid), b = el && box(el); if (b){ selOutline(grow(b, 3 / z), accent, z, .5);
+    // who made it: provenance on hover, in the author's colour
+    if (el.author !== S.me?.id){ ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const s = toScreen(b.x, b.y), label = short(el.author);
+    ctx.font = `600 11px ${FONTS.sans}`; const w = ctx.measureText(label).width + 12; rr(ctx, s.x - 3, s.y - 24, w, 18, 5); ctx.fillStyle = `hsl(${authorHue(el.author)} 55% 30%)`; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(label, s.x + 3, s.y - 14.5); ctx.restore(); } } }
   if (G?.kind === 'marquee'){ const r = norm(G.a, G.b); ctx.save(); ctx.fillStyle = accent; ctx.globalAlpha = .07; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.globalAlpha = .8; ctx.strokeStyle = accent; ctx.lineWidth = 1 / z; ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.restore(); }
   // selection
   if (S.sel.size){

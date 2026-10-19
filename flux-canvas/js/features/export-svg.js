@@ -68,7 +68,7 @@ function toSVG(){
       const left = K.align === 'left', th = L.lines.length * L.lh;
       let ty = K.top ? b.y + K.pad[1] + L.lh / 2 : b.y + b.h / 2 - th / 2 + L.lh / 2; if (k === 'frame') ty = b.y + 15; if (k === 'swatch') ty = b.y + b.h - 17;
       const tx = left ? b.x + K.pad[0] + (k === 'card' && ac ? 4 : 0) : b.x + b.w / 2;
-      o.push(`<text font-family="${xe(FONTS.sans)}" font-size="${K.font}" font-weight="${K.bold ? 600 : 400}" fill="${tcol}" text-anchor="${left ? 'start' : 'middle'}" dominant-baseline="central">${L.lines.map((l, i) => `<tspan x="${n(tx)}" y="${n(ty + i * L.lh)}">${xe(l)}</tspan>`).join('')}</text>`);
+      o.push(`<text font-family="${xe(FONTS.sans)}" font-size="${L.fs}" font-weight="${K.bold ? 600 : 400}" fill="${tcol}" text-anchor="${left ? 'start' : 'middle'}" dominant-baseline="central">${L.lines.map((l, i) => `<tspan x="${n(tx)}" y="${n(ty + i * L.lh)}">${xe(l)}</tspan>`).join('')}</text>`);
     }
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(bx.x)} ${n(bx.y)} ${n(bx.w)} ${n(bx.h)}" width="${Math.round(bx.w)}" height="${Math.round(bx.h)}">\n<title>Flux Canvas ${xe(canvasId)}</title>\n<rect x="${n(bx.x)}" y="${n(bx.y)}" width="${n(bx.w)}" height="${n(bx.h)}" fill="${TH.paper}"/>\n${o.join('\n')}\n</svg>`;

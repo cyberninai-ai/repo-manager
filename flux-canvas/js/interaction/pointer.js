@@ -259,7 +259,7 @@ function resizedBox(g, w, shift){
     const a = b.w / b.h; if (nw / a > nh) nh = nw / a; else nw = nh * a;
     if (h.includes('w')) x0 = right - nw; if (h.includes('n')) y0 = bottom - nh;
   }
-  if (g.el.type === 'NODE'){ const L = nodeLayout(g.el.ek, g.el.text); if (nw < L.w){ if (h.includes('w')) x0 = right - L.w; nw = L.w; } if (nh < L.h){ if (h.includes('n')) y0 = bottom - L.h; nh = L.h; } }
+  if (g.el.type === 'NODE'){ const L = nodeLayout(g.el.ek, g.el.text, 0, 0, g.el.esize); if (nw < L.w){ if (h.includes('w')) x0 = right - L.w; nw = L.w; } if (nh < L.h){ if (h.includes('n')) y0 = bottom - L.h; nh = L.h; } }
   return { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) };
 }
 function snap45(a, b){

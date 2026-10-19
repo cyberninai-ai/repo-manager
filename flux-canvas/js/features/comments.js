@@ -10,6 +10,7 @@ function toggleComments(force){
   $('comments').style.display = on ? 'flex' : 'none';
   if (on && S.ledger) toggleLedger(false);
   if (on && ST.on) toggleStructure(false);
+  if (on && WK.on) toggleWork(false);
   if (on) paintComments(); else { activeThread = null; draft = null; dirty = true; cv.focus({ preventScroll: true }); }
   $('cmtList').setAttribute('aria-expanded', String(on));
   document.body.classList.toggle('drawer', on || S.ledger);

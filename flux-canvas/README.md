@@ -3,6 +3,8 @@
 A collaborative canvas for brainstorming, idea building, feedback, stories, moodboards and audits. **Every note, stroke, vote and decision is a signed, content-addressed pattern**, so who did what is provable, not just recorded.
 
 - **Use it:** open `../flux-canvas.html` in any browser. It's one self-contained file with no server and no install. Tabs in the same browser sync on their own.
+- **Work together peer to peer:** open the Live button, create an invite code, and swap codes with someone. You're connected browser to browser, no server. You see each other's names, cursors and selections, and can follow each other.
+- **Deliver and prove:** turn notes into tasks (K), then send the canvas for approval to named people. Each approver signs that exact version; the proof file shows who contributed and who approved.
 - **Work together across machines:** run `npm run relay` (Node only, no dependencies) and open the address it prints. Anyone who opens the same canvas link on that relay joins live. Or use Share → Go live with any relay address.
 - **Develop it:** this folder holds the modular source behind that file.
 

@@ -2,7 +2,7 @@
 
 **Goal:** a collaborative space where people think together. They brainstorm, build ideas, collect feedback, build stories and moodboards, and run audits, and every contribution is a signed record anyone can verify.
 
-The plan is ordered so each phase ships on its own and leaves the app working. Phases 0–12 are done: 0–7 build the collaboration features, 8 the interface, and 9–12 resolve the audit. The end lists decisions and next work for the team.
+The plan is ordered so each phase ships on its own and leaves the app working. Phases 0–14 are done: 0–7 build the collaboration features, 8 the interface, 9–12 resolve the audit, and 13–14 make editing and co-work feel native (audit round 3). The end lists decisions and next work for the team.
 
 ## Principles
 
@@ -17,7 +17,7 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 ### 0 · Modular source (done)
 - `index.html` + `css/` (11 files) + `js/` (core, render, model, interaction, ui, features), in load order.
 - `tools/build.mjs` inlines them into `../flux-canvas.html`; `--check` fails CI when the bundle is stale.
-- `tests/`: browser suites (14 then, 23 now) plus a runner that fails on page errors or axe violations. They run against the bundle or the source.
+- `tests/`: browser suites (14 then, 24 now) plus a runner that fails on page errors or axe violations. They run against the bundle or the source.
 - **Accept:** the first build is byte-identical to the original file, and both targets pass all suites.
 
 ### 1 · Canvases and use cases (done)
@@ -98,8 +98,18 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 - **Accessibility:** the Outline panel (an ARIA tree of the canvas structure); a context menu reachable by keyboard.
 - **Accept:** `tests/net.mjs`: two browsers sync live and after being offline, the relay survives a restart, and a forged record from the relay is refused. `tests/polish.mjs`: outline and context menu. `npm run check` passes.
 
+### 13 · Canvas editing (done) · audit E1–E8
+- Drag-to-size shapes, eight-handle resize, marquee, hover outline, fill and text size, type-to-edit, Select as the default tool.
+- **Accept:** `tests/tools.mjs`.
+
+### 14 · Live co-work and delivery (done) · audit W1–W9
+- **People:** signed `PROFILE` names; presence with selection, editing, view and tool; follow and spotlight; the Live button and session panel.
+- **Peer to peer:** WebRTC data channels via swapped codes, next to tabs and the relay; state roots and self-healing resync; "caught up" notices.
+- **Work:** `TASK`, the Work panel, `DELIVER` with named approvers and a quorum, `APPROVE` on an exact root, the proof file.
+- **Accept:** `tests/cowork.mjs` (two browser contexts over WebRTC).
+
 ### Decisions recorded
-- **Transport:** a plain WebSocket relay rather than Gun or WebRTC. It is simplest to run, works through proxies, and is untrusted by design because clients verify every record. WebRTC can be added as another transport behind the same `post()`/`onWire()` pair.
+- **Transport:** a plain WebSocket relay rather than Gun, untrusted by design because clients verify every record. WebRTC was added in phase 14 as a third transport behind the same `post()`/`onWire()` pair; codes are swapped by hand so no signalling server is needed.
 - **ES modules:** deferred. `file://` refuses them, and the shared frame state would need setters everywhere. Enforced layers give the boundary guarantee now.
 - **Grants are retroactive:** this is the only rule that a signer-chosen `Z` can't get around.
 
@@ -109,6 +119,6 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 |---|---|---|
 | Passkeys (WebAuthn) as the signing root | Non-extractable keys can't be backed up; a passkey syncs across a person's devices | Sign a per-device key with the passkey; records stay the same |
 | End-to-end encryption on the relay | The relay can read what it forwards and stores | Per-canvas symmetric key shared in the link fragment; encrypt `msg` bodies |
-| WebRTC transport | Peer-to-peer when both sides are online, relay as fallback | Same `post()`/`onWire()` interface |
+| Public anchoring of deliveries | A public timestamp for a delivery's state root | One transaction per delivery; the work stays off-chain |
+| Signalling over the relay | Joining peer to peer without swapping codes by hand | Relay forwards offers and answers only; data stays direct |
 | Incremental `derive()` | Only needed past about 50,000 records (a full derive is 1.6 ms at 5,000) | Keep `derive()` pure; memoise per record type |
-| Profiles | Display names for real people, not just example authors | A signed `PROFILE` record per author, latest wins |
