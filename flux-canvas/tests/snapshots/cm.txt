@@ -1,7 +1,7 @@
-edit {"texts":["Final title"],"superseded":1,"arrowVisible":1} | Text edited and signed. The earlier version stays in the ledger.
+edit {"texts":["Final title"],"superseded":1,"arrowVisible":1} | Text updated.
 undo edit ["Draft title"]
 composer focus: cmNew | New comment on rect by you
-posted: Comment posted on rect by you. Signed.
+posted: Comment posted on rect by you.
 threads [{"on":"rect by you","n":2,"resolved":false},{"on":"canvas","n":1,"resolved":false}] badge 2
 pin follows 120 40
 pin click -> { open: 'flex', active: true, focus: 'reply box' }

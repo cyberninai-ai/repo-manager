@@ -18,10 +18,10 @@ const ownArrows = rs => rs.filter(r => r.type === 'ARROW' && r.author === S.me.i
 TOOLBAR_HOOKS.push((rs, one, B) => {
   const arrows = ownArrows(rs); if (!arrows.length) return '';
   const a = arrows[0];
-  let h = B('rel', 'relation', 'Relation: what this connection means', `aria-pressed="${relRow}"`)
+  let h = B('rel', 'relation', 'What this connection means', `aria-pressed="${relRow}" data-primary`)
     + B('shape', a.eshape || 'curve', `Line shape: ${a.eshape || 'curve'} (click to change)`)
     + B('dash', a.edash && a.edash !== 'solid' ? 'dash' : 'straight', `Line style: ${a.edash || 'solid'} (click to change)`);
-  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => `<button class="word rel-${r.C}" data-a="rel:${r.id}" aria-pressed="${a.elabel === r.label}">${r.label}</button>`).join('');
+  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => `<button class="word rel-${r.C}" data-a="rel:${r.id}" aria-pressed="${a.elabel === r.label}" data-primary>${r.label}</button>`).join('');
   return h;
 });
 async function styleArrows(rs, change, msg){
@@ -34,10 +34,10 @@ async function styleArrows(rs, change, msg){
   if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(msg); }
 }
 TOOLBAR_ACTIONS.rel = () => { relRow = !relRow; };
-TOOLBAR_ACTIONS.shape = rs => styleArrows(rs, a => ({ Y: SHAPES[(SHAPES.indexOf(a.eshape || 'curve') + 1) % 3] }), 'Line shape changed. Signed.');
-TOOLBAR_ACTIONS.dash = rs => styleArrows(rs, a => ({ D: DASHES[(DASHES.indexOf(a.edash || 'solid') + 1) % 3] }), 'Line style changed. Signed.');
-for (const r of RELATIONS) TOOLBAR_ACTIONS['rel:' + r.id] = rs => { relRow = false; return styleArrows(rs, () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”. Signed.`); };
+TOOLBAR_ACTIONS.shape = rs => styleArrows(rs, a => ({ Y: SHAPES[(SHAPES.indexOf(a.eshape || 'curve') + 1) % 3] }), 'Line shape changed.');
+TOOLBAR_ACTIONS.dash = rs => styleArrows(rs, a => ({ D: DASHES[(DASHES.indexOf(a.edash || 'solid') + 1) % 3] }), 'Line style changed.');
+for (const r of RELATIONS) TOOLBAR_ACTIONS['rel:' + r.id] = rs => { relRow = false; return styleArrows(rs, () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”.`); };
 
 PALETTE_HOOKS.push(add => {
-  for (const r of RELATIONS) add('connect', `Relation · ${r.label}`, () => styleArrows([...S.sel].map(c => S.records.get(c)).filter(Boolean), () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”. Signed.`));
+  for (const r of RELATIONS) add('connect', `Relation · ${r.label}`, () => styleArrows([...S.sel].map(c => S.records.get(c)).filter(Boolean), () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”.`));
 });

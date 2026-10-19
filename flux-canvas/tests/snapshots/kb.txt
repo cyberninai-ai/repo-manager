@@ -1,13 +1,13 @@
 focused: c
-R -> Rectangle signed and selected. Arrow keys move it.
+R -> Rectangle added and selected. Arrow keys move it.
 records SHAPE,SHAPE,TEXT
-Tab1 -> rect by you, 1 of 3. Arrow keys move, Delete revokes.
-Tab2 -> circle by you, 2 of 3. Arrow keys move, Delete revokes.
-moved 30 1 -> Moved 1 element 30 right and 1 down. Signed.
-C -> Arrow signed from rect by you to circle by you.
-Delete -> 1 revoked with -N-1
+Tab1 -> rect by you, 1 of 3. Arrow keys move, Delete removes.
+Tab2 -> circle by you, 2 of 3. Arrow keys move, Delete removes.
+moved 30 1 -> Moved 1 element 30 right and 1 down.
+C -> Connected rect by you to circle by you.
+Delete -> Deleted 1 · ⌘Z undoes
 V -> Select mode. Tap an element to select it, drag to move it, drag on empty space to lasso.
-tap select -> Selected circle by you. Arrow keys move, Delete revokes.
+tap select -> Selected circle by you. Arrow keys move, Delete removes.
 moves: 2
 ask focused: askIn value: site plan
 image alt: sketch | sel: circle by you

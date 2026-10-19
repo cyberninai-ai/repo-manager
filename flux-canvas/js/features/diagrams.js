@@ -19,6 +19,9 @@ function drawGrowHandles(accent){
     if (t) dashedBox(grow(t, 4 / z), accent, z);
     return;
   }
+  // the + handles appear when the pointer comes near the selected node, so a plain selection stays clean
+  const n = soleNode(), near = n && lastPointer && inside(lastPointer, grow(box(n), 44 / z));
+  if (!near) return;
   for (const h of growHandles()){
     ctx.save(); ctx.beginPath(); ctx.arc(h.x, h.y, 8 / z, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill();
     ctx.strokeStyle = TH.paper; ctx.lineWidth = 2 / z; ctx.stroke();
@@ -46,13 +49,14 @@ function placeNear(pb, dir, w, h, skip){
   }
   return { x, y, w, h };
 }
-function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, orig = null, label = null }){
+function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, orig = null, label = null, size = null }){
   if (taOpen()) finishText(true);
   setPlacing(null);
   kind = NODE_KINDS[kind] ? kind : 'card';
   const K = NODE_KINDS[kind];
   taNode = { kind, parent, color: color || (S.color === 'ink' ? 'ink' : S.color), anchor, orig, W: 0, H: 0 };
   if (kind === 'frame' && !orig){ taNode.W = 375; taNode.H = 667; }
+  if (size && !orig){ taNode.W = size.W; taNode.H = size.H; }   // dragged out with the Shape tool
   if (orig){ const o = S.D.off.get(orig.cid) || { w: 0, h: 0 }; taNode.W = orig.bw + (o.w || 0); taNode.H = orig.bh + (o.h || 0); editingCid = orig.cid; }
   taAt = null; taOrig = null;
   ta.value = orig ? orig.text : (label ?? K.label);
@@ -97,7 +101,7 @@ async function finishNode(commit, then){
   S.sel = new Set([cid]); if (!S.lassoMode) setMode(true);
   dirty = true; await new Promise(r => setTimeout(r, 0));
   const el = current(cid);
-  say(`${NODE_KINDS[n.kind].name} “${label.slice(0, 60)}” ${n.orig ? 'edited' : 'added'}. Signed. Alt+arrows add connected nodes, Enter edits.`);
+  say(`${NODE_KINDS[n.kind].name} “${label.slice(0, 60)}” ${n.orig ? 'edited' : 'added'}. Alt+arrows add connected nodes, Enter edits.`);
   if (then === 'child') startChild(el, 'right');
   if (then === 'sibling') startSibling(el);
 }
@@ -138,7 +142,7 @@ function pickKind(k){
       const items = [];
       for (const n of own) if (n.ek !== k){ items.push({ cid: n.cid, before: { K: n.ek }, after: { K: k } }); await commitStyle(n.cid, { K: k }); }
       if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
-      say(`${items.length} node${items.length === 1 ? '' : 's'} changed to ${NODE_KINDS[k].name}. Signed.`);
+      say(`${items.length} node${items.length === 1 ? '' : 's'} changed to ${NODE_KINDS[k].name}.`);
     })();
     S.nodeKind = k; barShown = ''; return;
   }
@@ -176,7 +180,7 @@ async function tidy(n){
   }
   for (const it of items) await commitMove(it.t, it.dx, it.dy);
   if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
-  say(items.length ? `Tidied ${items.length} node${items.length > 1 ? 's' : ''} around “${root.text.slice(0, 40)}”. Signed.` : 'Already tidy.');
+  say(items.length ? `Tidied ${items.length} node${items.length > 1 ? 's' : ''} around “${root.text.slice(0, 40)}”.` : 'Already tidy.');
 }
 
 /* templates */
@@ -217,7 +221,7 @@ async function insertTemplate(kind){
     S.sel = new Set(made.map(m => current(m)?.cid).filter(Boolean)); await groupSelection();
   }
   S.sel = new Set(made.slice(0, 1)); if (!S.lassoMode) setMode(true); dirty = true;
-  toast(`${{ mindmap: 'Mind map', flow: 'Flowchart', mobile: 'Mobile wireframe', web: 'Web wireframe' }[kind]} added · ${made.length} signed nodes`);
+  toast(`${{ mindmap: 'Mind map', flow: 'Flowchart', mobile: 'Mobile wireframe', web: 'Web wireframe' }[kind]} added`);
 }
 
 

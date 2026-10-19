@@ -19,7 +19,7 @@ async function insertImage(file, at){
   const base = (file.name || '').replace(/\.[a-z0-9]+$/i, '');
   const guess = /^[0-9a-f]{16,}$/i.test(base) || /^(image|img|photo|screenshot|pasted|dsc|pxl)[\s_-]*[\d_-]*$/i.test(base) ? '' : base.replace(/[-_]+/g, ' ').trim();
   const alt = await ask('Describe this image', guess,
-    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', bmp);
+    'Screen readers read this out. Leave it empty only if the image is decorative.', bmp);
   if (alt === null) return;
   file = typed;
   const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
@@ -29,7 +29,7 @@ async function insertImage(file, at){
   let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
   if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < MAX_BLOB && k === 1) out = file;   // keep a small original when it's already smaller
   for (let q = 0.7; out && out.size > MAX_BLOB && q > 0.2; q -= 0.15) out = await new Promise(res => c.toBlob(res, 'image/jpeg', q));   // stay under the blob cap
-  if (!out || out.size > MAX_BLOB){ toast('That image is too large to sign and share, even re-encoded.'); return; }
+  if (!out || out.size > MAX_BLOB){ toast('That image is too large to add, even compressed.'); return; }
   const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
   // place it at a comfortable on-screen size, centred on the drop point
   const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));
@@ -40,5 +40,5 @@ async function insertImage(file, at){
   const cid = await publish(raw, { [R]: bytes });
   recordCreate(cid);
   dirty = true;
-  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · draw on it now · select mode (V) to move or resize it`);
+  toast('Image added · drag it to move, pull its corner to resize');
 }

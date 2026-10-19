@@ -38,11 +38,11 @@ async function exportCanvas(filtered){
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
   a.download = `canvas-${canvasId}${filtered && S.filter ? '-sub' : ''}.flux`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(`Exported ${(text.length / 1024).toFixed(1)} KB of signed patterns`);
+  toast(`Exported (${(text.length / 1024).toFixed(1)} KB)`);
 }
 async function importAndReport(text){
   const { added, rejected } = await importText(text);
-  toast(`Imported ${added} new record${added === 1 ? '' : 's'}` + (rejected ? ` · ${rejected} rejected (bad signature or malformed)` : '') + ' · union-merged');
+  toast(`Imported ${added} new item${added === 1 ? '' : 's'}` + (rejected ? ` · ${rejected} rejected (bad signature or malformed)` : '') + ' · union-merged');
 }
 $('file').addEventListener('change', async e => { const f = e.target.files[0]; if (f) await importAndReport(await f.text()); e.target.value = ''; });
 addEventListener('dragover', e => e.preventDefault());

@@ -67,7 +67,7 @@ function paintStructure(){
 function toggleStructure(force){
   ST.on = force ?? !ST.on;
   if (ST.on){ if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); }
-  $('structure').style.display = ST.on ? 'flex' : 'none'; $('stBtn').setAttribute('aria-expanded', String(ST.on));
+  $('structure').style.display = ST.on ? 'flex' : 'none'; 
   paintStructure();
   if (ST.on) ($('stTree').querySelector('[tabindex="0"]') || $('stClose')).focus(); else cv.focus({ preventScroll: true });
   say(ST.on ? 'Outline. Arrow keys move through the canvas, Enter shows an element.' : 'Outline closed.');
@@ -77,7 +77,6 @@ function showOnCanvas(cid){
   S.sel = new Set([cid]); expandSel(); ensureVisible(el); dirty = true; announceSel(); ST.focus = cid;
 }
 $('stClose').onclick = () => toggleStructure(false);
-$('stBtn').onclick = () => toggleStructure();
 $('stTree').addEventListener('click', e => {
   const li = e.target.closest('[data-c]'); if (!li) return;
   if (e.target.closest('.tw') && li.hasAttribute('aria-expanded')){ const c = li.dataset.c; ST.closed.has(c) ? ST.closed.delete(c) : ST.closed.add(c); ST.focus = c; paintStructure(); return; }

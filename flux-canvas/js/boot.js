@@ -6,7 +6,7 @@
    ===================================================================== */
 (async () => {
   resize();
-  if (!crypto?.subtle){ toast('This page needs a secure context (https or file://) for WebCrypto signing.'); return; }
+  if (!crypto?.subtle){ toast('Open this page from https or as a file: the browser blocks the security features it needs on plain http.'); return; }
   S.me = await loadIdentity();
   let claim = null;
   if (freshCanvas){ const o = await ownedCanvasId(); claim = o.nonce; canvasId = o.id; setHash(canvasId); store.set('flux:lastCanvas', canvasId); openChannel(); }

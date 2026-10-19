@@ -31,7 +31,7 @@ async function extractPalette(el, at = null){
   const b = box(el), p = at || { x: b.x, y: b.y + b.h + 20 }, made = [];
   for (const [i, h] of cols.entries()) made.push(await mk('swatch', p.x + i * 118, p.y, '#' + h.toUpperCase(), { color: h }));
   S.hist.push({ kind: 'creates', cids: made }); S.redo = [];
-  say(`Palette: ${cols.map(c => '#' + c).join(', ')}. ${made.length} swatches added${at ? '' : ' under the image'}. Signed.`);
+  say(`Palette: ${cols.map(c => '#' + c).join(', ')}. ${made.length} swatches added${at ? '' : ' under the image'}.`);
   return made;
 }
 // Masonry: keep sizes, fill the shortest column next, in reading order.

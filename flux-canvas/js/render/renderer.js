@@ -135,6 +135,8 @@ function render(){
       if (G.kind === 'circle') ctx.ellipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, b.h / 2, 0, 0, Math.PI * 2); else ctx.rect(b.x, b.y, b.w, b.h);
       if (S.fill){ ctx.save(); ctx.globalAlpha = .16; ctx.fillStyle = colorOf(S.color); ctx.fill(); ctx.restore(); }
       ctx.stroke();
+    } else if (G.kind === 'place' && (G.a.x !== G.b.x || G.a.y !== G.b.y)){   // a shape being dragged out: its outline
+      const b = norm(G.a, G.b); ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z; ctx.setLineDash([6 / z, 4 / z]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore();
     } else if (G.kind === 'line'){
       const sb = G.from && box(G.from), tgt = G.target && box(G.target);
       if (sb) selOutline(grow(sb, 4 / z), accent, z, .7); if (tgt) selOutline(grow(tgt, 4 / z), accent, z);

@@ -25,7 +25,7 @@ function barGroups(){
     if (rs.length) g.add('color');
     if (rs.some(r => r.type === 'DRAW' || r.type === 'SHAPE' || r.type === 'ARROW')) g.add('brush');
     if (rs.some(r => r.type === 'TEXT')) g.add('text');
-    if (rs.some(r => r.type === 'NODE')) g.add('kind');
+    if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky')) g.add('kind');   // a sticky note is a sticky note: colour only
     return g;
   }
   for (const k of (TOOL_GROUPS[t] || '').split(' ')) if (k) g.add(k);
@@ -38,6 +38,8 @@ const KIND_SVG = {
   input: '<rect x="3" y="7" width="14" height="6" rx="1"/><path d="M6 9v2"/>', image: '<rect x="3" y="4" width="14" height="12" rx="1"/><path d="M3 14l4-4 3 3 2-2 5 4"/>',
   swatch: '<rect x="5" y="3" width="10" height="9" rx="1" fill="currentColor"/><path d="M5 15h10"/>', frame: '<rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/>',
 };
+// the Shape tool's kinds, most used first (sticky notes have their own tool)
+const KIND_ORDER = ['rect', 'ellipse', 'diamond', 'topic', 'card', 'frame', 'button', 'input', 'image', 'swatch'];
 const FONT_NAMES = { sans: 'Sans', hand: 'Hand-drawn', mono: 'Monospace' };
 function paintBar(){
   const cols = $('barColors');
@@ -57,7 +59,7 @@ function paintBar(){
   }
   const kinds = $('barKinds');
   if (!kinds.children.length){
-    for (const [k2, K2] of Object.entries(NODE_KINDS)){
+    for (const k2 of KIND_ORDER){ const K2 = NODE_KINDS[k2];
       const b = document.createElement('button'); b.className = 'kd'; b.dataset.k = k2;
       b.innerHTML = KIND_SVG[k2] ? `<svg viewBox="0 0 20 20" class="ic" aria-hidden="true">${KIND_SVG[k2]}</svg>` : `<span class="gl">${K2.icon}</span>`;
       b.setAttribute('role', 'radio'); b.setAttribute('aria-label', K2.name[0].toUpperCase() + K2.name.slice(1));
@@ -87,11 +89,17 @@ function paintBar(){
   const selKinds = selOwn(['NODE']).map(n => n.ek), shownKind = selKinds.length ? selKinds[0] : S.nodeKind;
   for (const b of kinds.children){ const on = b.dataset.k === shownKind; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
   const ink = colorOf(S.color);
-  for (const b of cols.children){ b.style.background = colorOf(b.dataset.c); const on = b.dataset.c === S.color; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
+  // sticky notes show the paper colours they will actually get (ink means the classic yellow)
+  const stickies = currentTool() === 'note' || (S.sel.size > 0 && selOwn(['NODE']).length > 0 && selOwn(['NODE']).every(n => n.ek === 'sticky'));
+  for (const b of cols.children){
+    const c = b.dataset.c; b.style.background = stickies ? (c === 'ink' ? '#ffe066' : mixHex(colorOf(c), '#ffffff', .35)) : colorOf(c);
+    b.setAttribute('aria-label', stickies && c === 'ink' ? 'Yellow' : COLOR_NAMES[c] || c);
+    const on = c === (stickies && selOwn(['NODE'])[0] ? ecol(selOwn(['NODE'])[0]) : S.color); b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1;
+  }
   const tt = textTargets(), t = tt[0], ts = t ? (t._previewFs || t.fs) : S.textSize;
   const lt = lineTargets(), bw = lt.length ? Math.round(brushOf(lt[0])) : S.width;
   const tf = t ? t.f.F : S.font;
-  const key = [gkey, S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
+  const key = [gkey, currentTool(), S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
   if (key === barShown) return; barShown = key;
   const bar = $('bar'), was = bar.hidden;
   bar.hidden = !groups.size;
@@ -132,7 +140,7 @@ function setBrush(w, announce){
       if (to !== from){ items.push({ cid: el.cid, before: { W: from }, after: { W: to } }); await commitStyle(el.cid, { W: to }); }
     }
     dirty = true; barShown = '';
-    if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(`${items.length} line${items.length > 1 ? 's' : ''} restyled to brush ${w}. Signed.`); }
+    if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(`${items.length} line${items.length > 1 ? 's' : ''} set to width ${w}.`); }
   }, 450);
 }
 // Colour: sets the colour for new work and recolours your selected strokes, shapes, arrows and text.
@@ -144,7 +152,7 @@ async function setColor(c){
   const items = [];
   for (const el of els){ const from = ecol(el); if (from !== c){ items.push({ cid: el.cid, before: { C: from }, after: { C: c } }); await commitStyle(el.cid, { C: c }); } }
   if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
-  say(`${items.length} element${items.length === 1 ? '' : 's'} recoloured ${COLOR_NAMES[c] || c}. Signed.`);
+  say(`${items.length} element${items.length === 1 ? '' : 's'} recoloured ${COLOR_NAMES[c] || c}.`);
 }
 // Font: for new text, and an edit of your selected texts (each a new signed TEXT, like resizing)
 async function setFont(f){
@@ -154,7 +162,7 @@ async function setFont(f){
   const keep = [...S.sel].filter(c => !tt.some(t => t.cid === current(c)?.cid)), made = [];
   for (const t of tt){ const cur = current(t.cid); if (!cur) continue; if (cur.f.F === f){ made.push(cur.cid); continue; } const b = box(cur); made.push(await commitText({ x: b.x, y: b.y }, cur.text, cur, { F: f }) || cur.cid); }
   S.sel = new Set([...keep, ...made]); dirty = true; barShown = '';
-  say(`${tt.length} text${tt.length > 1 ? 's' : ''} set in ${FONT_NAMES[f]}. Signed as ${tt.length > 1 ? 'edits' : 'an edit'}.`);
+  say(`${tt.length} text${tt.length > 1 ? 's' : ''} set in ${FONT_NAMES[f]}.`);
 }
 $('fillBtn').onclick = () => { S.fill = !S.fill; barShown = ''; paintBar(); say(S.fill ? 'New shapes are filled' : 'New shapes are outlines'); };
 let tsizeT = 0;
@@ -177,7 +185,7 @@ function setTextSize(v, announce){
       made.push(nc || cur.cid);
     }
     S.sel = new Set([...keep, ...made]); dirty = true; barShown = '';
-    say(`${tt.length} text${tt.length > 1 ? 's' : ''} resized to ${v}. Signed as ${tt.length > 1 ? 'edits' : 'an edit'}.`);
+    say(`${tt.length} text${tt.length > 1 ? 's' : ''} resized to ${v}.`);
   }, 450);
 }
 $('brush').addEventListener('input', e => setBrush(+e.target.value, false));

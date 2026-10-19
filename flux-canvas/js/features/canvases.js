@@ -23,7 +23,7 @@ async function setTitle(title, tpl = S.D.meta?.tpl || ''){
   await publish(await signed('META', [['I', S.me.id], ['R', canvasId], ['M', encTxt(title)], ['K', tpl || 'blank'], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 async function renameCanvas(){
-  const v = await ask('Canvas title', S.D.meta?.title || '', 'Shown in the title bar, the canvas list and exports. Signed like everything else.');
+  const v = await ask('Canvas title', S.D.meta?.title || '', 'Shown in the title bar, the canvas list and exports.');
   if (v && v.trim()){ await setTitle(v); say(`Canvas renamed “${v.trim()}”.`); }
 }
 
@@ -107,7 +107,7 @@ async function newCanvasFrom(tpl){
   if (tpl.build) await tpl.build(viewCenter());
   await new Promise(r => setTimeout(r, 0));
   if (tpl.id !== 'blank') zoomFit();
-  if (tpl.id !== 'blank') setTool('select');
+  if (tpl.id !== 'blank') setTool('select', true);
   dirty = true; toast(`New canvas · ${tpl.name}`);
 }
 async function openExample(x){
@@ -121,8 +121,8 @@ async function openExample(x){
   changed();   // re-derive as you: views painted while examples signed as Ana, Ben or Chen (e.g. votes left) must be yours
   await new Promise(r => setTimeout(r, 0));
   zoomFit(); dirty = true;
-  setTool('select');
-  toast(`Example signed by ${EXAMPLE_NAMES.join(', ')} · explore, vote and comment`);
+  setTool('select', true);
+  toast(`An example made by ${EXAMPLE_NAMES.join(', ')} · explore, vote and comment`);
 }
 $('home').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;

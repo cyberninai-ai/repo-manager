@@ -10,7 +10,7 @@ async function reorder(front){
   const items = [];
   for (const el of own.sort((a, b) => front ? a.ez - b.ez : b.ez - a.ez)){ edge += front ? 1 : -1; items.push({ cid: el.cid, before: { O: el.ez }, after: { O: edge } }); await commitStyle(el.cid, { O: edge }); }
   S.hist.push({ kind: 'style', items }); S.redo = [];
-  say(`${own.length} element${own.length > 1 ? 's' : ''} ${front ? 'brought to front' : 'sent to back'}. Signed.`);
+  say(`${own.length} element${own.length > 1 ? 's' : ''} ${front ? 'brought to front' : 'sent to back'}.`);
 }
 async function toggleLock(){
   const own = [...S.sel].map(c => current(c)).filter(el => el && ELEMENT.has(el.type) && el.author === S.me.id);
@@ -18,7 +18,7 @@ async function toggleLock(){
   const lock = !own.every(el => el.locked), items = [];
   for (const el of own){ items.push({ cid: el.cid, before: { L: el.locked }, after: { L: lock } }); await commitStyle(el.cid, { L: lock }); }
   S.hist.push({ kind: 'style', items }); S.redo = [];
-  say(`${own.length} element${own.length > 1 ? 's' : ''} ${lock ? 'locked: they stay put and can be drawn over' : 'unlocked'}. Signed.`);
+  say(`${own.length} element${own.length > 1 ? 's' : ''} ${lock ? 'locked: they stay put and can be drawn over' : 'unlocked'}.`);
 }
 async function labelArrow(el){
   const v = await ask('Connector label', el.elabel || '', 'Shown on the line. Leave empty to remove it.');
@@ -48,7 +48,7 @@ async function alignSel(mode){
   }
   for (const it of items) await commitMove(it.t, it.dx, it.dy);
   if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
-  say(items.length ? `${items.length} element${items.length > 1 ? 's' : ''} ${mode.startsWith('al') ? 'aligned' : 'distributed'}. Signed.` : 'Already in place.');
+  say(items.length ? `${items.length} element${items.length > 1 ? 's' : ''} ${mode.startsWith('al') ? 'aligned' : 'distributed'}.` : 'Already in place.');
 }
 function startMoveG(w, dup){
   const targets = moveTargets(), base = selBox();

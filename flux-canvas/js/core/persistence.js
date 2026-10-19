@@ -25,7 +25,7 @@ async function flushSave(){
   const cids = [...pendingSave]; pendingSave.clear();
   if (!cids.length) return;
   if (!await dbReady){   // no IndexedDB: the whole canvas as one string, as before
-    if (!store.set('flux:canvas:' + canvasId, lines([...S.records.values()].sort(byZ)).join('\n'))) toast('Local storage is full or blocked; records live in this tab only.');
+    if (!store.set('flux:canvas:' + canvasId, lines([...S.records.values()].sort(byZ)).join('\n'))) toast('This browser won’t let the canvas save; your work lasts only while this tab is open.');
     return;
   }
   try {
@@ -37,7 +37,7 @@ async function flushSave(){
     }
     t.objectStore('canvases').put(canvasSummary());
     await txDone(t);
-  } catch { toast('Storage is full or blocked; new records live in this tab only.'); }
+  } catch { toast('Storage is full or blocked; new work lasts only while this tab is open.'); }
 }
 // Load a canvas: from IndexedDB, else migrate it from localStorage (older versions), else the localStorage fallback.
 function loadCanvas(id){ return bulk(() => loadLines(id)); }

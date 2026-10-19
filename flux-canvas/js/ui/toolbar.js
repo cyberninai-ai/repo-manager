@@ -14,7 +14,7 @@ const TOOLS = {
   ellipse: { name: 'Ellipse', hint: 'Drag to draw an ellipse' },
   line: { name: 'Line', hint: 'Drag from one element to another to connect them · Shift snaps to 45°' },
   note: { name: 'Sticky note', hint: 'Click to place a note, then type · Tab adds a connected note' },
-  node: { name: 'Shapes and cards', hint: 'Pick a shape below, click to place it and type · Tab adds a child' },
+  node: { name: 'Shape', hint: 'Drag to draw a shape, or click and type · pick the kind below' },
   text: { name: 'Text', hint: 'Click where the text goes · Enter to finish' },
   comment: { name: 'Comment', hint: 'Click an element or a spot to start a thread' },
 };
@@ -27,7 +27,7 @@ function currentTool(){
   if (S.shapeTool) return S.shapeTool;
   return S.lassoMode ? 'select' : 'pen';
 }
-function setTool(t){
+function setTool(t, quiet = false){
   if (!TOOLS[t]) return;
   if (taOpen()) finishText(true);
   S.handTool = false; S.shapeTool = null; erasing = false; placing = null;
@@ -38,30 +38,35 @@ function setTool(t){
     case 'eraser': S.lassoMode = false; erasing = true; S.sel.clear(); break;
     case 'rect': case 'ellipse': case 'line': S.lassoMode = false; S.shapeTool = t; S.sel.clear(); break;
     case 'note': S.lassoMode = true; S.nodeKind = 'sticky'; placing = 'node'; break;
-    case 'node': S.lassoMode = true; if (S.nodeKind === 'sticky') S.nodeKind = 'card'; placing = 'node'; break;
+    case 'node': S.lassoMode = true; if (S.nodeKind === 'sticky') S.nodeKind = 'rect'; placing = 'node'; break;
     case 'text': S.lassoMode = true; placing = 'text'; break;
     case 'comment': S.lassoMode = true; placing = 'comment'; break;
   }
   setCursor(); paintTools(); dirty = true;
   say(`${TOOLS[t].name}. ${TOOLS[t].hint}.`);
+  if (!quiet && t !== 'select' && (hintSeen[t] || 0) < 2){ showHint(TOOLS[t].hint); hintSeen[t] = (hintSeen[t] || 0) + 1; try { localStorage.setItem('flux:hints', JSON.stringify(hintSeen)); } catch {} }
 }
 let lastTool = null;
+// a tool's hint shows the first two times you pick it, then never again; never when the app switches tools for you
+const hintSeen = (() => { try { return JSON.parse(localStorage.getItem('flux:hints') || '{}'); } catch { return {}; } })();
 function paintTools(){
   const t = currentTool();
   for (const b of document.querySelectorAll('#tools [data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
-  if (t !== lastTool){ if (lastTool !== null) showHint(TOOLS[t].hint); lastTool = t; barShown = ''; }
+  if (t !== lastTool){
+    lastTool = t; barShown = '';
+  }
   dirty = true;
 }
 let hintT = 0;
 function showHint(text){
   const h = $('hint'); h.textContent = text; h.classList.add('on');
-  clearTimeout(hintT); hintT = setTimeout(() => h.classList.remove('on'), 3800);
+  clearTimeout(hintT); hintT = setTimeout(() => h.classList.remove('on'), 2600);
 }
 $('tools').addEventListener('click', e => { const b = e.target.closest('[data-tool]'); if (b) setTool(b.dataset.tool); });
 // after a shape is drawn with its tool, hand back to Select with the new shape selected
-function afterToolCreate(g, cid){ if (g.viaTool && cid){ setTool('select'); S.sel = new Set([cid]); announceSel(); dirty = true; } }
+function afterToolCreate(g, cid){ if (g.viaTool && cid){ setTool('select', true); S.sel = new Set([cid]); announceSel(); dirty = true; } }
 KEY_HOOKS.push((e, c) => {
-  if (c.onCanvas && e.key === 'Escape' && (S.shapeTool || S.handTool)){ e.preventDefault(); setTool('select'); return true; }
+  if (c.onCanvas && e.key === 'Escape' && (S.shapeTool || S.handTool)){ e.preventDefault(); setTool('select', true); return true; }
   return false;
 });
 
@@ -96,7 +101,7 @@ let menuItems = [], menuAnchor = null;
 function openMenu(anchor, items, at = null){
   const m = $('menu'); menuItems = items; menuAnchor = anchor;
   m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>'
-    : `<button role="menuitem" tabindex="-1" data-i="${i}">${ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
+    : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
   m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
   if (at){   // a context menu opens at the pointer, flipped to stay on screen
     m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, at.x)) + 'px';
@@ -105,7 +110,7 @@ function openMenu(anchor, items, at = null){
     const r = anchor.getBoundingClientRect();
     m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
   }
-  m.querySelector('[role=menuitem]')?.focus();
+  m.querySelector('[role^=menuitem]')?.focus();
 }
 function closeMenu(back = true){
   const m = $('menu'); if (m.hidden) return;
@@ -114,7 +119,7 @@ function closeMenu(back = true){
 $('menu').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b) return; const it = menuItems[+b.dataset.i]; closeMenu(false); it.run(); });
 $('menu').addEventListener('keydown', e => {
   e.stopPropagation();
-  const items = [...$('menu').querySelectorAll('[role=menuitem]')], i = items.indexOf(document.activeElement);
+  const items = [...$('menu').querySelectorAll('[role^=menuitem]')], i = items.indexOf(document.activeElement);
   if (e.key === 'ArrowDown'){ e.preventDefault(); items[(i + 1) % items.length].focus(); }
   else if (e.key === 'ArrowUp'){ e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
   else if (e.key === 'Home'){ e.preventDefault(); items[0].focus(); }
@@ -127,25 +132,30 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
   { label: 'People and permissions…', icon: 'users', run: openPeople },
-  NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Disconnected. Records stay here; other tabs in this browser still sync.'); } },
+  NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Offline. Your work stays here and syncs again when you go live.'); } },
   '-',
-  { label: 'Export canvas (.flux, signed)', icon: 'download', run: () => exportCanvas(true) },
+  { label: 'Download canvas file (.flux)', icon: 'download', run: () => exportCanvas(true) },
   { label: 'Export SVG', icon: 'image', run: exportSVG },
   { label: 'Copy SVG', icon: 'copy', run: () => copy(toSVG(), 'SVG copied') },
+];
+// everything that isn't sharing: views, reports, files, settings
+const moreMenuItems = () => [
+  { label: 'Search and commands', icon: 'search', key: '⌘K', run: openPalette },
+  { label: 'Outline of the canvas', icon: 'list', key: '⇧O', run: () => toggleStructure(true) },
+  { label: 'Present frames', icon: 'present', key: 'F5', run: present },
+  { label: 'History', icon: 'history', key: '⇧H', run: openHistory },
   '-',
   { label: 'Summary as Markdown', icon: 'doc', key: '⇧S', run: showSummary },
   { label: 'Audit report', icon: 'audit', run: () => openReport(`Audit report — ${canvasTitle()}`, auditReport(), 'audit-report.md') },
-  { label: 'Present frames', icon: 'present', key: 'F5', run: present },
-  { label: 'History', icon: 'history', key: '⇧H', run: openHistory },
-  { label: 'Signed records (ledger)', icon: 'ledger', key: '`', run: () => toggleLedger(true) },
+  { label: 'Activity log', icon: 'ledger', key: '`', run: () => toggleLedger(true) },
   '-',
-  { label: 'Import a .flux file', icon: 'upload', run: () => $('file').click() },
+  { label: 'Open a .flux file…', icon: 'upload', run: () => $('file').click() },
   { label: 'Switch theme', icon: 'moon', run: cycleTheme },
   { label: S.grid ? 'Hide dot grid' : 'Show dot grid', icon: 'grid', run: toggleGrid },
   { label: 'Keyboard shortcuts', icon: 'help', key: '?', run: () => toggleHelp(true) },
 ];
 async function askRelay(){
-  const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'A Flux relay forwards signed records between browsers (run one with: node tools/relay.mjs). Everyone on the same canvas id and relay sees changes live; the relay cannot forge anything.');
+  const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'Everyone who opens this canvas through the same relay sees changes live. Start one with: npm run relay. The relay passes work along but can’t change it.');
   if (v){ netConnect(v); toast('Connecting… share the canvas link so others join the same canvas.'); }
 }
 $('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
@@ -153,6 +163,7 @@ $('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
   { label: 'Sync everything now', icon: 'upload', run: () => { sendHello(false); toast('Sync requested.'); } },
   { label: 'Disconnect', icon: 'x', run: () => netClose(true) },
 ]) : closeMenu();
+$('moreBtn').onclick = () => $('menu').hidden ? openMenu($('moreBtn'), moreMenuItems()) : closeMenu();
 $('shareBtn').onclick = () => $('menu').hidden ? openMenu($('shareBtn'), shareItems()) : closeMenu();
 
 function toggleGrid(){ S.grid = !S.grid; try { localStorage.setItem('flux:grid', S.grid ? '1' : '0'); } catch {} dirty = true; say(S.grid ? 'Dot grid on' : 'Dot grid off'); }
@@ -205,6 +216,8 @@ $('empty').addEventListener('click', async e => {
   const t = TEMPLATES.find(x => x.id === b.dataset.q); if (!t) return;
   S.touched = true; $('empty').hidden = true;
   await setTitle(t.name, t.id); await t.build(viewCenter()); S.hist = []; await tick();
-  zoomFit(); setTool('select'); toast(`${t.name} ready`);
+  zoomFit(); setTool('select', true); toast(`${t.name} ready`);
 });
 paintTools();
+// ?tool=pen (or any tool name) opens the canvas with that tool, e.g. for a drawing kiosk
+{ const t = new URLSearchParams(location.search).get('tool'); if (t && TOOLS[t] && t !== 'select'){ S.lassoMode = t !== 'pen'; if (t === 'pen') paintTools(); else setTool(t); } }

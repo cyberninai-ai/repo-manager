@@ -35,7 +35,7 @@ async function compactHistory(){
   await dbDeleteRecords(canvasId, drop);
   if (!DB.ok) save();
   changed(); paintLedger();
-  toast(`Compacted: ${saves} record${saves === 1 ? '' : 's'} fewer. Everything looks the same; step-by-step history of those moves is folded.`);
+  toast(`Tidied up your history (${saves} fewer steps). Nothing on the canvas changed.`);
   return saves;
 }
 PALETTE_HOOKS.push(add => add('canvas', 'Compact my history', compactHistory));

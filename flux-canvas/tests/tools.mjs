@@ -1,5 +1,5 @@
 // Tool dock, contextual style bar, Share menu, tooltips, welcome card: asserted, not just printed
-import { BASE, AXE, OUT, LAUNCH } from './env.mjs';
+import { PLAIN as BASE, AXE, OUT, LAUNCH } from './env.mjs';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'fs';
@@ -18,13 +18,15 @@ let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 
 // 1. welcome card on an empty canvas; it steps aside on the first touch
 ok(await shown('empty'), 'welcome card on an empty canvas');
-ok(JSON.stringify(await pressed()) === '["pen"]', 'Draw is the starting tool');
+ok(JSON.stringify(await pressed()) === '["select"]', 'Select is the starting tool');
+ok(!(await shown('bar')), 'no style bar until a tool needs one');
+await p.click('[data-tool="pen"]'); await W();
 ok(await shown('gColor') && await shown('gBrush') && !(await shown('gText')), 'draw tool: colour and stroke, no text group');
 await drag([200, 200], [380, 260]);
 ok(!(await shown('empty')), 'welcome card hides after the first stroke');
 
 // 2. rectangle tool: draws, then hands back to Select with the new shape selected
-await p.click('[data-tool="rect"]'); await W();
+await p.evaluate(() => setTool('rect')); await W();
 ok(await shown('hint') && (await ev(() => document.getElementById('hint').textContent)).includes('rectangle'), 'tool hint names the tool');
 ok(!(await ev(() => document.getElementById('fillBtn').hidden)), 'fill toggle offered for shapes');
 await p.click('#fillBtn'); ok(await ev(() => S.fill === true), 'fill toggles');
@@ -35,7 +37,7 @@ ok(JSON.stringify(await pressed()) === '["select"]', 'back to Select after drawi
 await p.click('#fillBtn').catch(() => {}); await ev(() => { S.fill = false; });
 
 // 3. ellipse tool
-await p.click('[data-tool="ellipse"]'); await drag([500, 400], [640, 480]);
+await p.evaluate(() => setTool('ellipse')); await drag([500, 400], [640, 480]);
 ok(await ev(() => S.records.get([...S.sel][0])?.k) === 'circle', 'ellipse tool makes a circle shape');
 
 // 4. line tool: element to element is a bound connector, empty space a straight 2-point line
@@ -74,8 +76,8 @@ await p.hover('[data-tool="pen"]'); await W(700);
 const tip = await ev(() => ({ on: !document.getElementById('tip').hidden, txt: document.getElementById('tip').textContent, aria: document.getElementById('tip').getAttribute('aria-hidden') }));
 ok(tip.on && tip.txt === 'DrawP' && tip.aria === 'true', 'tooltip shows name and key');
 
-// 9. Share menu: keyboard operable, Escape returns focus
-await p.focus('#shareBtn'); await p.keyboard.press('Enter'); await W();
+// 9. More menu: keyboard operable, Escape returns focus
+await p.focus('#moreBtn'); await p.keyboard.press('Enter'); await W();
 ok(await ev(() => !document.getElementById('menu').hidden && document.activeElement.getAttribute('role') === 'menuitem'), 'menu opens with focus on the first item');
 await p.keyboard.press('ArrowDown'); await p.keyboard.press('End');
 ok(await ev(() => document.activeElement.textContent.includes('Keyboard shortcuts')), 'End moves to the last item');
@@ -83,7 +85,7 @@ await p.screenshot({ path: OUT + '/tools-menu.png' });
 await p.addScriptTag({ content: axe });
 const v = await ev(async () => (await axe.run(document, { resultTypes: ['violations'] })).violations.map(v => v.id + ': ' + v.nodes.slice(0, 2).map(n => n.target.join(' ')).join(' | ')));
 await p.keyboard.press('Escape'); await W();
-ok(await ev(() => document.getElementById('menu').hidden && document.activeElement.id === 'shareBtn'), 'Escape closes the menu and returns focus');
+ok(await ev(() => document.getElementById('menu').hidden && document.activeElement.id === 'moreBtn'), 'Escape closes the menu and returns focus');
 
 // 10. dot grid toggles from the palette, and persists
 await ev(() => commands().find(c => /dot grid/.test(c.t)).run());

@@ -24,7 +24,7 @@ await p.evaluate(async e=>{
   await commitComment({x:-450, y:250, text:'Overall looks good'});
 }, els);
 await W(400);
-console.log('previews', await p.evaluate(()=>[...document.querySelectorAll('#previews .pv')].map(e=>e.textContent.replace(/\s+/g,' ').trim().slice(0,70))));
+console.log('previews', await p.evaluate(()=>[...document.querySelectorAll('#previews .pv')].map(e=>e.textContent.replace(/\s+/g,' ').replace(/\d{1,2}\/\d{1,2}\/\d{2,4},? \d{1,2}:\d{2}( ?[AP]M)?/,'<date>').trim().slice(0,70))));
 await p.screenshot({path:OUT+'/pv1.png'});
 // hover a pin -> big card with latest reply
 const pin = await p.evaluate(e=>{ const t=[...S.D.threads.values()].find(t=>t.root.on===e.IMAGE); const q=pinPos(t.root); return toScreen(q.x,q.y) }, els);

@@ -40,6 +40,7 @@
   <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19.3" r=".9" fill="currentColor"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -149,12 +150,9 @@
   <button class="ibtn" data-tool="pen" aria-label="Draw" data-key="P"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg></button>
   <button class="ibtn" data-tool="eraser" id="eraseBtn" aria-label="Eraser" data-key="E"><svg class="ic" aria-hidden="true"><use href="#i-eraser"/></svg></button>
   <span class="tsep" aria-hidden="true"></span>
-  <button class="ibtn" data-tool="rect" aria-label="Rectangle" data-key="⇧ drag"><svg class="ic" aria-hidden="true"><use href="#i-square"/></svg></button>
-  <button class="ibtn" data-tool="ellipse" aria-label="Ellipse" data-key="⌥ drag"><svg class="ic" aria-hidden="true"><use href="#i-circle"/></svg></button>
-  <button class="ibtn" data-tool="line" aria-label="Line and connector"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
-  <span class="tsep" aria-hidden="true"></span>
   <button class="ibtn" data-tool="note" aria-label="Sticky note" data-key="double-click"><svg class="ic" aria-hidden="true"><use href="#i-sticky"/></svg></button>
-  <button class="ibtn" data-tool="node" id="nodeBtn" aria-label="Shapes and cards" data-key="N"><svg class="ic" aria-hidden="true"><use href="#i-shapes"/></svg></button>
+  <button class="ibtn" data-tool="node" id="nodeBtn" aria-label="Shape" data-key="N"><svg class="ic" aria-hidden="true"><use href="#i-shapes"/></svg></button>
+  <button class="ibtn" data-tool="line" aria-label="Connector line"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
   <button class="ibtn" data-tool="text" id="textBtn" aria-label="Text" data-key="T"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg></button>
   <button class="ibtn" id="addImg" aria-label="Image" data-key="I"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></button>
   <span class="tsep" aria-hidden="true"></span>
@@ -165,9 +163,7 @@
   <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
-  <button class="ibtn" id="stBtn" aria-label="Outline" data-key="⇧O" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
-  <button class="ibtn" id="cmdBtn" aria-label="Search and commands" data-key="⌘K"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
-  <button class="ibtn" id="auth" data-tip="Signatures and ledger"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><i class="sdot" aria-hidden="true"></i><span id="authTxt" class="sr">locked</span></button>
+  <button class="ibtn" id="moreBtn" aria-label="More: outline, present, history, reports, settings" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
   </div>
   <button class="share" id="shareBtn" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
 </div>
@@ -224,7 +220,7 @@
 <aside class="ledger au" id="audit" aria-label="Audit">
   <header>
     <h2><span>Audit</span><button class="ibtn sm" id="auditClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
-    <div class="stats">Walk the flow step by step. Each verdict is signed; a sign-off fences them all.</div>
+    <div class="stats">Walk the flow step by step: pass, fail or needs info. Sign off when you are done.</div>
   </header>
   <div class="list" id="auditBody"></div>
 </aside>
@@ -242,9 +238,9 @@
   </header>
   <ul class="list" id="stTree" role="tree" aria-label="Canvas outline"></ul>
 </aside>
-<aside class="ledger" id="ledger" aria-label="Ledger of signed records">
+<aside class="ledger" id="ledger" aria-label="Activity">
   <header>
-    <h2><span>Ledger</span><button class="ibtn sm" id="ledgerClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
+    <h2><span>Activity</span><button class="ibtn sm" id="ledgerClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
     <div class="stats" id="ledgerStats"></div>
   </header>
   <div class="list" id="ledgerList"></div>
@@ -253,7 +249,7 @@
 <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" tabindex="-1">
   <button class="ibtn sm close" id="helpClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
   <h1 id="helpT">Keyboard shortcuts</h1>
-  <p>Every stroke is a signed pattern. The canvas is the union of its records. Nothing here is a file until you export it.</p>
+  <p>Everything you add is saved as you go, and each person’s work is provably theirs.</p>
   <table>
     <tr><td>Pen down + move</td><td>Freehand stroke</td></tr>
     <tr><td>Shift + drag</td><td>Rectangle</td></tr>
@@ -270,17 +266,17 @@
     <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode; Ctrl/⌘-drag inside the selection moves it</td></tr>
     <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
     <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
-    <tr><td>Delete</td><td>Revoke selection (<span class="kbd">-N-1</span>, only your own)</td></tr>
+    <tr><td>Delete</td><td>Delete the selection (only your own work; ⌘Z brings it back)</td></tr>
     <tr><td>⌘G / ⇧⌘G</td><td>Group / ungroup</td></tr>
-    <tr><td>⌘V a pattern</td><td>Import signed records from the clipboard</td></tr>
-    <tr><td>` (backtick)</td><td>Ledger</td></tr>
+    <tr><td>⌘V a copied record</td><td>Bring in work copied from another canvas</td></tr>
+    <tr><td>` (backtick)</td><td>Activity: every change, who made it and when</td></tr>
     <tr><td>⌘K or /</td><td>Command palette</td></tr>
   </table>
   <h2>Keyboard only</h2>
   <table>
     <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
     <tr><td>Arrow keys (Shift = ×10)</td><td>Move the selection, or pan when nothing is selected</td></tr>
-    <tr><td>Delete / Backspace</td><td>Revoke the selection</td></tr>
+    <tr><td>Delete / Backspace</td><td>Delete the selection</td></tr>
     <tr><td>+ / −</td><td>Resize a selected image, otherwise zoom</td></tr>
     <tr><td>R · O · T · I</td><td>Insert rectangle · circle · text · image at the centre</td></tr>
     <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
@@ -292,7 +288,7 @@
     <tr><td>{ · }</td><td>Text smaller · bigger (10–400): resizes your selected text, otherwise new text</td></tr>
     <tr><td>Colour swatch</td><td>Colour for new work; also recolours your selected strokes, shapes, arrows and text</td></tr>
     <tr><td>⌘C · ⌘X · ⌘V · ⌘D</td><td>Copy · cut · paste (at the pointer) · duplicate. Alt-drag a selection to duplicate it</td></tr>
-    <tr><td>E</td><td>Eraser: wipe across your own elements (each is revoked, undo brings it back)</td></tr>
+    <tr><td>E</td><td>Eraser: wipe across your own elements (undo brings them back)</td></tr>
     <tr><td>⌘⇧↑ · ⌘⇧↓ · ⌘⇧L</td><td>Bring to front · send to back · lock or unlock (locked elements can be drawn over but not moved)</td></tr>
     <tr><td>Dragging</td><td>Snaps to the edges and centres of nearby elements; press ⌘/Ctrl during the drag to place freely</td></tr>
     <tr><td>Paste an indented list</td><td>Becomes a connected mind map (also ⌘K → Mind map from outline)</td></tr>
@@ -309,16 +305,16 @@
     <tr><td>Share → People and permissions</td><td>On a canvas you own: who may draw, comment, move others' work and audit</td></tr>
     <tr><td>Share → Go live</td><td>Sync with other browsers through a relay (<span class="kbd">npm run relay</span>)</td></tr>
   </table>
-  <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span>; other browsers through a relay (Share → Go live). Use “New identity for this tab” to draw as a second author.</p>
+  <p style="margin:12px 0 0">Other people’s cursors show while they’re here. Tabs in this browser stay in sync on their own; to work with people on other computers, use Share → Go live.</p>
 </div>
 
 <div id="toast" aria-hidden="true"></div>
 <div id="tip" role="tooltip" aria-hidden="true" hidden></div>
 <div id="home" role="dialog" aria-modal="true" aria-labelledby="homeT" hidden>
   <div class="hm">
-    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">A collaborative canvas where every note, vote and decision is signed.</span><button class="ibtn sm" id="homeClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
+    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">Think together: brainstorm, collect feedback, tell stories, decide.</span><button class="ibtn sm" id="homeClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
     <section aria-labelledby="homeS1"><h3 id="homeS1">Start something</h3><div class="cards" id="homeTpl"></div></section>
-    <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. They are signed by three example authors (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
+    <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. Made by three example people (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
     <section aria-labelledby="homeS3"><h3 id="homeS3">Your canvases <span class="sub">in this browser</span></h3><ul class="clist" id="homeList"></ul></section>
   </div>
 </div>

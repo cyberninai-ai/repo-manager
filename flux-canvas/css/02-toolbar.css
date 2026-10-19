@@ -53,11 +53,11 @@
 
 /* menu */
 #menu{position:fixed;z-index:35;min-width:248px;padding:6px;border-radius:12px;box-shadow:var(--shadow-lg)}
-#menu [role=menuitem]{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:7px;background:transparent;cursor:pointer;text-align:left;font-size:13px}
-#menu [role=menuitem]:hover,#menu [role=menuitem]:focus{background:var(--hover);outline:none}
-#menu [role=menuitem]:focus-visible{box-shadow:inset 0 0 0 2px var(--cyan)}
-#menu [role=menuitem] .ic{width:16px;height:16px;color:var(--muted)}
-#menu [role=menuitem] span{flex:1}
+#menu [role^=menuitem]{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:7px;background:transparent;cursor:pointer;text-align:left;font-size:13px}
+#menu [role^=menuitem]:hover,#menu [role^=menuitem]:focus{background:var(--hover);outline:none}
+#menu [role^=menuitem]:focus-visible{box-shadow:inset 0 0 0 2px var(--cyan)}
+#menu [role^=menuitem] .ic{width:16px;height:16px;color:var(--muted)}
+#menu [role^=menuitem] span{flex:1}
 #menu kbd{margin-left:auto}
 #menu .msep{height:1px;background:var(--line2);margin:5px 4px}
 /* live sync status */
@@ -68,3 +68,5 @@
 .chip.net[data-state="error"]{color:var(--red)}
 @keyframes pulse{50%{opacity:.3}}
 #authors button.more{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line);font-size:11px}
+#menu .msw{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
+#menu .mchk{width:16px;height:16px;color:var(--cyan)}

@@ -4,11 +4,11 @@ nodes [{"k":"topic","t":"Product launch","p":null,"w":146,"h":38},{"k":"topic","
 mode select | sel topic “Engineering and a much longer label that should wrap onto more lines”, connected to “Product launch” by you
 after esc nodes 3
 plus click child of Engineering and a much longer label that should wrap onto more lines -> [{"k":"topic","t":"Docs","p":"Engineering and a much longer label that should wrap onto more lines","w":73,"h":38}]
-arrows 1 | Connected “Docs” to topic “Marketing”, connected to “Product launch” by you. Signed.
+arrows 1 | Connected “Docs” to topic “Marketing”, connected to “Product launch” by you.
 dropped [{"k":"topic","t":"Dropped","p":"Docs","w":99,"h":38}]
 edit {"t":"Marketing & growth team","w":219,"arrowsOk":1,"kids":0} grew 109
 subtree moved [["Product la",-40],["Engineerin",-40],["Docs",-40],["Dropped",-40],["Marketing ",-40]]
-tidy: Tidied 4 nodes around “Product launch”. Signed.
+tidy: Tidied 4 nodes around “Product launch”.
 kind change rect
 resize 80 40 | shrink floor 73 38 auto [73,38]
 template nodes 34 groups 2

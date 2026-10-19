@@ -84,7 +84,7 @@ function paintAudit(){
     <div class="au-step"><div class="k">${esc(KIND(el))}</div><h3>${esc(el.text || describe(el))}</h3>
       ${nexts.length ? `<div class="k">next: ${nexts.map(esc).join(' · ')}</div>` : '<div class="k">end of this branch</div>'}</div>
     <div class="au-v" role="group" aria-label="Your verdict">${Object.entries(VERDICTS).map(([k, V], n) => `<button class="btn v-${k}" data-v="${k}" aria-pressed="${mine?.verdict === k}">${V.icon} ${V.name} <kbd>${n + 1}</kbd></button>`).join('')}</div>
-    <label for="auNote">Note (optional, signed with your verdict)</label>
+    <label for="auNote">Note (optional)</label>
     <textarea id="auNote" placeholder="What did you check? What is missing?">${esc(keep)}</textarea>
     ${m.size ? `<ul class="au-others">${[...m.values()].map(r => `<li><b class="v-${r.verdict}">${VERDICTS[r.verdict].icon} ${VERDICTS[r.verdict].name}</b> · ${esc(who(r.author))}${r.note ? ` — ${esc(r.note)}` : ''}</li>`).join('')}</ul>` : '<p class="k">No verdicts on this step yet.</p>'}
     <div class="row2"><button class="btn" data-a="prev">‹ previous</button><button class="btn" data-a="next">next ›</button>
@@ -96,7 +96,7 @@ async function giveVerdict(v){
   const el = S.records.get(walk.steps[walk.i]), note = $('auNote')?.value.trim() || '';
   const cid = await publish(await signed('AUDIT', [['I', S.me.id], ['R', el.cid], ['V', v], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
   if (cid){ S.hist.push({ kind: 'fn', undo: () => setNeg(cid, true), redo: () => setNeg(cid, false) }); S.redo = []; }
-  say(`${VERDICTS[v].name} on “${(el.text || '').slice(0, 50)}”. Signed.`);
+  say(`${VERDICTS[v].name} on “${(el.text || '').slice(0, 50)}”.`);
   await tick();
   if (walk.i < walk.steps.length - 1) showStep(walk.i + 1);
   else { paintAudit(); say('That was the last step. Open the report or sign off.'); }
@@ -130,7 +130,7 @@ async function signOff(){
   if (v === null) return;
   const cid = await publish(await signed('SIGNOFF', [['I', S.me.id], ['R', canvasId], ['M', encTxt(v.trim() || summary)], ['P', mine.map(r => r.raw)], ['Z', ++S.lamport], ['T', Date.now()]]));
   if (cid){ S.hist.push({ kind: 'fn', undo: () => setNeg(cid, true), redo: () => setNeg(cid, false) }); S.redo = []; }
-  say(`Signed off ${mine.length} verdicts. One signature covers them all.`);
+  say(`Signed off ${mine.length} verdicts.`);
 }
 $('audit').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -158,7 +158,7 @@ function openHistory(){
   $('history').hidden = false; document.body.classList.add('history');
   const r = $('histRange'); r.max = histRecs.length; r.value = histRecs.length; setHist(histRecs.length);
   setTimeout(() => r.focus(), 0);
-  say('History. Move the slider to replay the canvas record by record. Read-only until you go back to now.');
+  say('History. Move the slider to replay the canvas step by step. Nothing can change until you go back to now.');
 }
 function setHist(i){
   i = Math.max(0, Math.min(histRecs.length, i));

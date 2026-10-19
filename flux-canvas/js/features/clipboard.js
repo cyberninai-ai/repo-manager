@@ -21,11 +21,11 @@ async function pasteClip(){
   const p = lastPointer, vw = innerWidth / S.view.zoom, vh = innerHeight / S.view.zoom;
   if (p && u && p.x > S.view.x && p.y > S.view.y && p.x < S.view.x + vw && p.y < S.view.y + vh){ dx = Math.round(p.x - (u.x + u.w / 2)); dy = Math.round(p.y - (u.y + u.h / 2)); }
   const made = await duplicateEls(rs, dx, dy);
-  if (made.length){ S.sel = new Set(made); dirty = true; say(`Pasted ${made.length} element${made.length > 1 ? 's' : ''}. Signed.`); }
+  if (made.length){ S.sel = new Set(made); dirty = true; say(`Pasted ${made.length} element${made.length > 1 ? 's' : ''}.`); }
 }
 async function duplicateSelection(){
   const made = await duplicateEls([...S.sel].map(c => S.records.get(c)), 24, 24);
-  if (made.length){ S.sel = new Set(made); dirty = true; say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}. Signed.`); }
+  if (made.length){ S.sel = new Set(made); dirty = true; say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}.`); }
 }
 async function duplicateEls(list, dx, dy){
   const els = [...new Set(list.map(el => el && current(el.cid)).filter(el => el && ELEMENT.has(el.type) && !S.D.hidden.has(el.cid)))]

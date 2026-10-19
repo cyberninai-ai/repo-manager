@@ -21,7 +21,7 @@ try { localStorage.setItem('flux:lastCanvas', canvasId); } catch {}
 const S = {
   me: null, records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0,
   view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 },
-  color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: false,
+  color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: true,
   sel: new Set(), filter: null, showHidden: false, ledger: false, rejected: 0, why: {}, parked: new Map(),
   hist: [], redo: [], ghosts: [], P: null, D: { els: [], hidden: new Set(), denied: new Set(), off: new Map(), groupOf: new Map(), groups: [], next: new Map(), superseded: new Set(), threads: new Map(), kids: new Map() },
 };

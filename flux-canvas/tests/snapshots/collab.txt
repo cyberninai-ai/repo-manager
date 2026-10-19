@@ -15,7 +15,7 @@ example brand {"title":"Brand refresh — moodboard","records":26,"ok":26,"bad":
 example expense {"title":"Expense approval — audited flow","records":20,"ok":20,"bad":0,"rej":0,"authors":4,"votes":0,"audits":6,"signoffs":1,"threads":1,"images":0,"swatches":0}
 canvas list Expense approval — audited flow | Brand refresh — moodboard | Onboarding story — Maya’s first week | Sprint 42 retro — feedback board
 audit walk {"open":"flex","steps":["Submit expense","Attach receipt","Over $1,000?","Manager approves","Finance approves","Paid out"]}
-my verdicts 2 | fail on “Attach receipt”. Signed.
+my verdicts 2 | fail on “Attach receipt”.
 report has table and signoff true
 signoff fences verdicts true
 history 7 → 1 | refused while viewing: true

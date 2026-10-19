@@ -93,11 +93,11 @@ async function postFrom(k){
   if (k === 'new'){
     const d = draft; draft = null;
     const cid = await commitComment({ on: d.on, x: d.x, y: d.y, text });
-    if (cid){ activeThread = cid; say(`Comment posted on ${d.on ? targetName(d) : 'the canvas'}. Signed.`); }
+    if (cid){ activeThread = cid; say(`Comment posted on ${d.on ? targetName(d) : 'the canvas'}.`); }
   } else {
     const t = S.D.threads.get(k);
     const cid = await commitComment({ on: t.root.on, x: t.root.x, y: t.root.y, text, re: k });
-    if (cid) say('Reply posted. Signed.');
+    if (cid) say('Reply posted.');
     activeThread = k;
   }
   paintComments(); dirty = true;
@@ -124,7 +124,7 @@ $('cmList').addEventListener('click', async e => {
     return;
   }
   if (a === 'show'){ openThread(id); const t = S.D.threads.get(id); if (t?.root.on){ const el = current(t.root.on); if (el && visible(el)){ S.sel = new Set([el.cid]); dirty = true; } } }
-  if (a === 'del'){ if (await setNeg(b.dataset.c, true)) say('Your comment was revoked. It stays in the ledger as a signed record.'); }
+  if (a === 'del'){ if (await setNeg(b.dataset.c, true)) say('Comment deleted.'); }
 });
 $('cmShowDone').addEventListener('change', e => { S.cmShowDone = e.target.checked; paintComments(); dirty = true; });
 $('cmPrev').addEventListener('change', e => { S.cmPrev = e.target.checked; try { localStorage.setItem('flux:cmPrev', S.cmPrev ? '1' : '0'); } catch {} dirty = true; });

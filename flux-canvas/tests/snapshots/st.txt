@@ -1,14 +1,14 @@
 before [["DRAW",4],["DRAW",4],["SHAPE",2]]
 bar label: 3 selected lines
 live preview [24,24,12]
-after settle {"w":[["DRAW",24],["DRAW",24],["SHAPE",12]],"styles":3} | 3 lines restyled to brush 24. Signed.
+after settle {"w":[["DRAW",24],["DRAW",24],["SHAPE",12]],"styles":3} | 3 lines set to width 24.
 ] -> [28,28,14]
-recolour -> ["blue","blue","blue"] | 3 elements recoloured Blue. Signed.
+recolour -> ["blue","blue","blue"] | 3 elements recoloured Blue.
 undo colour -> ["ink","ink","ink"]
 undo ] -> [24,24,12]
 new stroke width 30 old unchanged [24,24,12]
 text label 2 selected texts
-texts [["Huge",300],["Also",300]] sel 2 | 2 texts resized to 300. Signed as edits.
+texts [["Huge",300],["Also",300]] sel 2 | 2 texts resized to 300.
 tab2 toast: 4 lines by other authors left as they are. Only their authors can restyle them. | widths [24,24,30]
 forged style ignored on tab1 [ 24, 24, 30 ]
 reload {"w":[["DRAW",24],["DRAW",24],["SHAPE",12],["DRAW",30],["TEXT",null],["TEXT",null],["TEXT",null],["TEXT",null]],"rej":0}

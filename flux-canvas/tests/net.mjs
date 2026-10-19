@@ -19,7 +19,7 @@ const errs = [];
 const open = async (hash = 'netcanvas001', p) => { // separate contexts: no shared BroadcastChannel or IndexedDB
   const pg = p || await (await b.newContext({ viewport: { width: 1000, height: 700 } })).newPage();
   pg.on('pageerror', e => errs.push(e.message));
-  await pg.goto(`http://127.0.0.1:${port}/#${hash}`); await pg.waitForTimeout(1200); return pg;
+  await pg.goto(`http://127.0.0.1:${port}/?tool=pen#${hash}`); await pg.waitForTimeout(1200); return pg;
 };
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 const texts = pg => pg.evaluate(() => S.D.els.filter(e => e.type === 'TEXT' && visible(e)).map(e => e.text).sort());

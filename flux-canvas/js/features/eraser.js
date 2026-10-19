@@ -5,7 +5,7 @@
 function setErasing(on){
   erasing = on; if (on){ setPlacing(null); S.sel.clear(); S.shapeTool = null; S.handTool = false; }
   setCursor(); dirty = true; paintTools();
-  say(on ? 'Eraser: drag across your own elements to revoke them. Escape or P returns to the pen.' : 'Eraser off.');
+  say(on ? 'Eraser: drag across your own elements to erase them. Escape returns to Select.' : 'Eraser off.');
 }
 function eraseAt(p){
   const el = hitTest(p, 10); if (!el || G.hit.has(el.cid)) return;

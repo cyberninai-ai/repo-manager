@@ -49,8 +49,8 @@ function commands(){
   add('edit', 'Revoke selection (-N-1)', revokeSelection, { k: 'Del' });
   add('edit', 'Group selection', groupSelection, { k: '⌘G' });
   add('edit', 'Ungroup selection', ungroupSelection, { k: '⇧⌘G' });
-  add('edit', 'Revoke everything of mine', async () => { const mine = S.D.els.filter(e => e.author === S.me.id && !S.D.hidden.has(e.cid)); for (const e of mine) await setNeg(e.cid, true); if (mine.length) S.hist.push({ kind: 'revoke', cids: mine.map(e => e.cid) }); toast(`${mine.length} of your records revoked; nobody else's were touched.`); });
-  add('view', 'Show revoked records (ghosted)', () => { S.showHidden = !S.showHidden; derive(); }, { on: S.showHidden });
+  add('edit', 'Revoke everything of mine', async () => { const mine = S.D.els.filter(e => e.author === S.me.id && !S.D.hidden.has(e.cid)); for (const e of mine) await setNeg(e.cid, true); if (mine.length) S.hist.push({ kind: 'revoke', cids: mine.map(e => e.cid) }); toast(`Cleared ${mine.length} of your elements; other people's work is untouched.`); });
+  add('view', 'Show deleted elements (faded)', () => { S.showHidden = !S.showHidden; derive(); }, { on: S.showHidden });
   add('view', 'Show only my elements', () => { S.filter = new Set([S.me.id]); paintAuthors(); });
   add('view', 'Show all authors', () => { S.filter = null; paintAuthors(); }, { on: !S.filter });
   add('view', 'Reset view', () => { S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 }; });
@@ -108,5 +108,4 @@ $('askNo').onclick = () => closeAsk(null);
 $('ask').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeAsk(null); });
 $('ask').addEventListener('pointerdown', e => { if (e.target.id === 'ask') closeAsk(null); });
 $('addImg').onclick = () => $('imgFile').click();
-$('cmdBtn').onclick = () => openPalette();
 

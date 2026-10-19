@@ -37,7 +37,7 @@ async function mindmapFromOutline(t){
   await new Promise(r => setTimeout(r, 0));
   await tidy(S.records.get(root)); S.hist.pop();   // layout belongs to the creation
   S.sel = new Set([root]); if (!S.lassoMode) setMode(true); dirty = true;
-  toast(`Mind map from outline · ${made.length} signed nodes`);
+  toast(`Mind map from your list · ${made.length} ideas`);
 }
 async function mindmapFromOutlinePrompt(){
   const v = await ask('Mind map from outline', 'Launch plan\n  Goals\n    Ship v1\n    Learn fast\n  Audience\n  Risks\n    Timeline\n  Next steps', 'One idea per line; indent with spaces or tabs to nest. Bullets (-, *, 1.) are fine.', null, true);

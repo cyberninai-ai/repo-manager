@@ -1,5 +1,5 @@
 previews [
-  'you<date> Should this wall move 1m to the left? It would f',
+  'you<date> Should this wall move 1m to the left? It would free up the h',
   'you<date> Storage unit, check the depth',
   'you<date> Overall looks good'
 ]

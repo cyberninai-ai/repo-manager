@@ -113,7 +113,7 @@ async function moveItems(items, msg){
   items = items.filter(i => i.dx || i.dy);
   for (const it of items) await commitMove(it.t, it.dx, it.dy);
   if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
-  say(items.length ? `${msg}. Signed.` : 'Already in place.');
+  say(items.length ? `${msg}.` : 'Already in place.');
 }
 const arrangeable = rs => rs.map(e => e && current(e.cid)).filter(e => e && e.type !== 'ARROW' && !e.locked && !(e.type === 'NODE' && e.ek === 'frame') && visible(e));
 async function arrangeGrid(rs){
@@ -136,7 +136,7 @@ async function clusterSel(rs){
   const W = Math.max(...bs.map(b => b.x + b.w)) + 28 - x, H = Math.max(...bs.map(b => b.y + b.h)) + 28 - y;
   const f = await commitNode({ kind: 'frame', x, y, W, H, label: name.trim() || 'Cluster' });
   await tick(); S.sel = new Set([f, ...els.map(e => e.cid)]); await groupSelection(); S.sel = new Set([f]); dirty = true;
-  say(`Clustered ${els.length} notes into “${name.trim() || 'Cluster'}”. Signed.`);
+  say(`Clustered ${els.length} notes into “${name.trim() || 'Cluster'}”.`);
 }
 
 /* toolbar, palette, keys */
@@ -144,9 +144,9 @@ let reactRow = false;
 TOOLBAR_HOOKS.push((rs, one, B) => {
   const els = rs.filter(r => r.type !== 'ARROW'); if (!els.length) return '';
   const allVoted = els.every(e => reacted(e.cid, 'vote'));
-  let h = B('vote', 'vote', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}"`)
-    + B('react', 'smile', 'React', `aria-pressed="${reactRow}"`);
-  if (reactRow) h += Object.entries(REACTIONS).filter(([k]) => k !== 'vote').map(([k, r]) => B('re:' + k, r.icon, r.name[0].toUpperCase() + r.name.slice(1), `aria-pressed="${els.every(e => reacted(e.cid, k))}"`)).join('');
+  let h = B('vote', 'vote', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}" data-primary`)
+    + B('react', 'smile', 'React', `aria-pressed="${reactRow}" data-primary`);
+  if (reactRow) h += Object.entries(REACTIONS).filter(([k]) => k !== 'vote').map(([k, r]) => B('re:' + k, r.icon, r.name[0].toUpperCase() + r.name.slice(1), `aria-pressed="${els.every(e => reacted(e.cid, k))}" data-primary`)).join('');
   if (els.length >= 2) h += '<span class="vs" aria-hidden="true"></span>' + B('grid', 'grid', 'Arrange in a grid') + B('sortv', 'sort', 'Sort by votes') + B('cluster', 'frame', 'Cluster into a frame');
   return h;
 });
@@ -178,8 +178,8 @@ $('votes').onclick = async () => {
 /* template and example */
 TEMPLATES.push({ id: 'brainstorm', name: 'Brainstorm', icon: '✸', blurb: 'A question, sticky notes, dot voting and a timer.', build: async c => {
   const f = await mk('frame', c.x - 480, c.y - 300, 'Brainstorm', { W: 960, H: 600 });
-  const q = await mk('card', c.x - 460, c.y - 250, 'How might we …?  (double-click to edit the question)', { W: 420, color: 'violet' });
-  const tip = await mk('card', c.x + 20, c.y - 250, 'Double-click empty space for a note · D votes · ⌘K → Start timer', { W: 420 });
+  const q = await mk('card', c.x - 460, c.y - 250, 'How might we …?', { W: 420, color: 'violet' });
+  const tip = await mk('card', c.x + 20, c.y - 250, 'Double-click anywhere to add an idea. Select an idea and press D to vote for it.', { W: 420 });
   const ns = [];
   for (const [i, col] of ['orange', 'blue', 'green'].entries()) ns.push(await mk('sticky', c.x - 440 + i * 190, c.y - 120, 'Your idea', { color: col }));
   await groupAll([f, q, tip, ...ns]);

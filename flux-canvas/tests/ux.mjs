@@ -24,9 +24,9 @@ await p.evaluate(i=>{ S.sel=new Set([i.a,i.b,i.c]); dirty=true }, ids); await W(
 console.log('toolbar buttons', await p.evaluate(()=>[...document.querySelectorAll('#insp .tb button')].map(b=>b.getAttribute('aria-label').split(' (')[0]).join(' | ')));
 console.log('toolbar above selection', await p.evaluate(()=>{ const t=document.getElementById('insp').getBoundingClientRect(); const sb=selBox(); return t.bottom <= toScreen(sb.x,sb.y).y }));
 // 2. align top + distribute
-await p.click('#insp button[data-a="al-t"]'); await W(400);
+await p.click('#insp button[data-a="align"]'); await W(); await p.click('#menu >> text=Align top'); await W(400);
 console.log('align top ys', await p.evaluate(i=>[i.a,i.b,i.c].map(c=>Math.round(box(current(c)).y)), ids));
-await p.click('#insp button[data-a="dist-h"]'); await W(400);
+await p.click('#insp button[data-a="align"]'); await W(); await p.click('#menu >> text=Distribute horizontally'); await W(400);
 console.log('distribute gaps', await p.evaluate(i=>{ const bs=[i.a,i.b,i.c].map(c=>box(current(c))).sort((x,y)=>x.x-y.x); return [Math.round(bs[1].x-(bs[0].x+bs[0].w)), Math.round(bs[2].x-(bs[1].x+bs[1].w))] }, ids));
 // 3. copy/paste: copy Alpha+Kid+arrow+Beta; paste at pointer
 await p.evaluate(i=>{ S.sel=new Set([i.a,i.k,i.b,i.ar]); dirty=true }, ids);

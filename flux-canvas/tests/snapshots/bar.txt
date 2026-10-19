@@ -4,7 +4,7 @@ colour -> red | Colour Red
 new text size <n>
 bar target label: selected text | slider 60
 live preview size <n>
-after settle {"texts":[["Big title",90]],"edits":2} | 1 text resized to 90. Signed as an edit.
+after settle {"texts":[["Big title",90]],"edits":2} | 1 text resized to 90.
 } -> [ 101 ]
 undo -> [ 90 ]
 tab2 on my text -> sizes [ 90 ] tgt label: ""

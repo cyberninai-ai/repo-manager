@@ -15,7 +15,7 @@ function peopleRows(){
 function paintPeople(){
   const { P, rows } = peopleRows(), mine = P.owner && P.owner === S.me?.id;
   $('peopleSub').textContent = !P.owner ? 'This canvas has no owner, so everyone may do everything. It was made before permissions or opened by id. Make an owned copy to choose who can do what.'
-    : mine ? 'You own this canvas. Each change is a signed GRANT record; it applies to everything that person has signed here, earlier work included.'
+    : mine ? 'You own this canvas. Choose what each person may do. Changes apply to everything they have added here, earlier work included.'
     : `Owned by ${P.owner === S.me?.id ? 'you' : NAMES.get(P.owner) || short(P.owner)}. Only the owner can change permissions.`;
   const head = `<tr><th scope="col">Person</th>${PERMS.map(p => `<th scope="col">${PERM_NAMES[p]}</th>`).join('')}</tr>`;
   $('peopleTable').innerHTML = head + rows.map(r => {
@@ -34,7 +34,7 @@ $('people').addEventListener('change', async e => {
   const perms = [...$('people').querySelectorAll(`input[data-who="${CSS.escape(who)}"]`)].filter(i => i.checked).map(i => i.dataset.p);
   try { await grant(who, perms); } catch { return; }
   await tick(); paintPeople(); $('people').querySelector(`input[data-who="${CSS.escape(who)}"][data-p="${e.target.dataset.p}"]`)?.focus();
-  say(`${who === 'all' ? 'Everyone else' : NAMES.get(who) || short(who)}: ${perms.length ? perms.map(p => PERM_NAMES[p]).join(', ') : 'view only'}. Signed.`);
+  say(`${who === 'all' ? 'Everyone else' : NAMES.get(who) || short(who)}: ${perms.length ? perms.map(p => PERM_NAMES[p]).join(', ') : 'view only'}.`);
 });
 $('people').addEventListener('click', async e => {
   if (e.target.id !== 'peopleCopy') return;

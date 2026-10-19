@@ -6,16 +6,16 @@ function describe(el){
   if (!el) return '';
   const who = el.author === S.me?.id ? 'you' : 'author ' + short(el.author);
   const what = el.type === 'NODE' ? `${KIND(el)} “${el.text.slice(0, 80)}”${el.parent && current(el.parent)?.text ? `, connected to “${current(el.parent).text.slice(0, 40)}”` : ''}` : el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
-  return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', revoked' : ''}`;
+  return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', deleted' : ''}`;
 }
 function announceSel(){
   if (!S.sel.size){ say('Selection cleared'); return; }
-  if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete revokes.');
-  else say(`${S.sel.size} elements selected. Arrow keys move, Delete revokes yours.`);
+  if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete removes.');
+  else say(`${S.sel.size} elements selected. Arrow keys move, Delete removes yours.`);
 }
 let authShown = '';
 function paintAuth(){
-  if (!S.me) return;
+  if (!S.me || !$('auth')) return;   // the signing pill now lives in the activity log only
   const open = Date.now() < auth.until;
   const left = Math.ceil((auth.until - Date.now()) / 1000);
   const txt = `<b>${short(S.me.id)}</b><span class="m"> · ${open ? `unlocked ${left}s` : 'locked'} · ${S.records.size} rec</span>`;
@@ -23,7 +23,6 @@ function paintAuth(){
 }
 function paintAuthTick(){ paintAuth(); }
 FRAME_HOOKS.push(paintAuthTick);
-$('auth').onclick = () => toggleLedger();
 function paintSummary(){
   const c = {}; let n = 0;
   for (const el of S.D.els) if (visible(el) && !S.D.hidden.has(el.cid)){ n++; const k = KIND(el); c[k] = (c[k] || 0) + 1; }
@@ -69,21 +68,19 @@ function paintInspector(){
   const sb = selBox(); if (!sb){ el.style.display = 'none'; return; }
   const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean), one = rs.length === 1 ? rs[0] : null;
   const mine = rs.filter(r => r.author === S.me.id), anyLocked = rs.some(r => r.locked), allLocked = rs.every(r => r.locked);
-  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" ${extra}>${face(icon)}</button>`;   // tooltips come from ui/tooltip
+  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" ${extra}>${face(icon)}</button>`;   // tooltips come from ui/toolbar
   const V = '<span class="vs" aria-hidden="true"></span>';
+  // Only what people reach for every time sits on the toolbar; everything else is one click away under More, with words.
   let tb = '';
-  if (one && (one.type === 'TEXT' || one.type === 'NODE') && one.author === S.me.id) tb += B('edit', 'edit', 'Edit (Enter)');
+  if (one && (one.type === 'TEXT' || one.type === 'NODE') && one.author === S.me.id) tb += B('edit', 'edit', 'Edit text (Enter)');
   if (one && one.type === 'ARROW' && one.author === S.me.id) tb += B('label', 'tag', 'Label this connector');
-  if (rs.length === 2 && rs.every(r => r.type !== 'ARROW')) tb += B('connect', 'link', 'Connect first to second (C)');
-  tb += B('comment', 'comment', 'Comment (M)') + B('dup', 'copy', 'Duplicate (⌘D)') + V;
-  if (rs.length >= 2) tb += B('al-l', 'al-l', 'Align left') + B('al-c', 'al-c', 'Align centres') + B('al-r', 'al-r', 'Align right') + B('al-t', 'al-t', 'Align top') + B('al-m', 'al-m', 'Align middles') + B('al-b', 'al-b', 'Align bottom') + V;
-  if (rs.length >= 3) tb += B('dist-h', 'dist-h', 'Distribute horizontally') + B('dist-v', 'dist-v', 'Distribute vertically') + V;
-  if (mine.length) tb += B('front', 'front', 'Bring to front (⌘⇧↑)') + B('back', 'back', 'Send to back (⌘⇧↓)') + B('lock', allLocked ? 'unlock' : 'lock', allLocked ? 'Unlock (⌘⇧L)' : 'Lock (⌘⇧L)', `aria-pressed="${allLocked}"`);
-  if (rs.length >= 2) tb += B('group', 'group', 'Group (⌘G)');
-  if (rs.some(r => S.D.groupOf.has(r.cid))) tb += B('ungroup', 'ungroup', 'Ungroup (⌘⇧G)');
-  for (const h of TOOLBAR_HOOKS){ try { tb += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }   // feature buttons (core/hooks)
-  tb += B('info', 'info', 'Details and signature', `aria-pressed="${inspInfo}"`);
-  if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? 'undo' : 'trash', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Revoke (Delete)', 'class="danger"');
+  if (rs.length === 2 && rs.every(r => r.type !== 'ARROW')) tb += B('connect', 'link', 'Connect them (C)');
+  tb += B('comment', 'comment', 'Comment (M)');
+  for (const h of TOOLBAR_HOOKS){ try { tb += primaryOnly(h(rs, one, B) || ''); } catch (err){ console.warn(err); } }   // feature buttons marked data-primary
+  if (rs.length >= 2) tb += B('align', 'al-l', 'Align and distribute', 'aria-haspopup="menu"');
+  tb += B('dup', 'copy', 'Duplicate (⌘D)');
+  if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? 'undo' : 'trash', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Delete (⌫)', 'class="danger"');
+  tb += V + B('more', 'more', 'More actions', 'aria-haspopup="menu"');
   let html = `<div class="tb" role="toolbar" aria-label="Selection actions">${tb}</div>`;
   if (inspInfo) html += `<div class="info">${inspDetails()}</div>`;
   void anyLocked;
@@ -97,6 +94,31 @@ function paintInspector(){
   const x = Math.min(Math.max(8, top.x - el.offsetWidth / 2), innerWidth - el.offsetWidth - 8);
   el.style.left = x + 'px'; el.style.top = Math.max(8, y) + 'px';
 }
+// feature hook HTML: keep the buttons marked data-primary for the toolbar; the rest go to the More menu
+function primaryOnly(html){
+  const t = document.createElement('template'); t.innerHTML = html;
+  return [...t.content.querySelectorAll('button')].filter(b => b.hasAttribute('data-primary')).map(b => b.outerHTML).join('');
+}
+function moreItems(rs, one){
+  const mine = rs.filter(r => r.author === S.me.id), allLocked = rs.every(r => r.locked), items = [];
+  const t = document.createElement('template');
+  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" data-icon="${icon}" ${extra}>${face(icon)}</button>`;
+  for (const h of TOOLBAR_HOOKS){ try { t.innerHTML += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }
+  for (const b of t.content.querySelectorAll('button:not([data-primary])')){
+    const a = b.dataset.a, label = (b.getAttribute('aria-label') || b.textContent).replace(/\s*\(.*\)$/, '');
+    items.push({ label: label[0].toUpperCase() + label.slice(1), icon: b.dataset.icon || b.querySelector('use')?.getAttribute('href')?.slice(3) || 'blank', on: b.getAttribute('aria-pressed') === 'true', run: () => TOOLBAR_ACTIONS[a]?.(rs, b) });
+  }
+  if (items.length) items.push('-');
+  if (mine.length) items.push({ label: 'Bring to front', icon: 'front', key: '⌘⇧↑', run: () => reorder(true) }, { label: 'Send to back', icon: 'back', key: '⌘⇧↓', run: () => reorder(false) },
+    { label: allLocked ? 'Unlock' : 'Lock in place', icon: allLocked ? 'unlock' : 'lock', key: '⌘⇧L', run: toggleLock });
+  if (rs.length >= 2) items.push({ label: 'Group', icon: 'group', key: '⌘G', run: groupSelection });
+  if (rs.some(r => S.D.groupOf.has(r.cid))) items.push({ label: 'Ungroup', icon: 'ungroup', key: '⌘⇧G', run: ungroupSelection });
+  items.push({ label: 'Copy', icon: 'copy', key: '⌘C', run: copySelection });
+  items.push('-', { label: inspInfo ? 'Hide details' : 'Details: who made it, when', icon: 'info', run: () => { inspInfo = !inspInfo; inspShown = ''; dirty = true; } });
+  return items;
+}
+const ALIGN_ITEMS = [['al-l', 'Align left'], ['al-c', 'Align centres'], ['al-r', 'Align right'], ['al-t', 'Align top'], ['al-m', 'Align middles'], ['al-b', 'Align bottom']];
+let inspShown = '';
 function inspDetails(){
   let html;
   if (S.sel.size === 1){
@@ -105,14 +127,14 @@ function inspDetails(){
     const kind = KIND(r);
     const pts = r.type === 'DRAW' ? strokeGeom(r.f.R)?.pts.length : null;
     html = `<div class="who"><span class="dot" style="background:${authorColor(r.author)}"></span><b>${esc(kind)}</b>
-      by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ signed</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">revoked</span>' : ''}</div>
+      by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ verified</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">deleted</span>' : ''}</div>
       <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}${r.type === 'IMAGE' ? `<br>alt: ${r.alt ? '“' + esc(r.alt) + '”' : '<span class="bad">none</span>'}` : ''}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · move: select mode (V) and drag, or arrow keys · resize: corner handle or +/−' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
-      <div class="acts"><button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button></div>`;
+      <div class="acts"><button class="btn" data-a="solo">Show only their work</button><button class="btn" data-a="copy">Copy signed record</button></div>`;
   } else {
     const rs = [...S.sel].map(c => S.records.get(c)), authors = new Set(rs.map(r => r.author)), mine = rs.filter(r => r.author === S.me.id).length;
     html = `<div class="who"><b>${rs.length} elements</b> · ${authors.size} author${authors.size > 1 ? 's' : ''}</div>
-      <div class="meta">${mine} yours · drag to move · Alt-drag duplicates · Delete revokes yours</div>
-      <div class="acts"><button class="btn" data-a="copy">copy patterns</button></div>`;
+      <div class="meta">${mine} yours · drag to move · Alt-drag duplicates · Delete removes yours</div>
+      <div class="acts"><button class="btn" data-a="copy">Copy signed records</button></div>`;
   }
   return html;
 }
@@ -120,7 +142,7 @@ $('insp').addEventListener('pointerdown', e => e.stopPropagation());
 $('insp').addEventListener('click', async e => {
   const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
   const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean);
-  if (a === 'copy') copy(rs.map(r => r.raw).join('\n'), `${rs.length} signed pattern${rs.length > 1 ? 's' : ''} copied`);
+  if (a === 'copy') copy(rs.map(r => r.raw).join('\n'), `${rs.length} signed record${rs.length > 1 ? 's' : ''} copied`);
   if (a === 'solo'){ S.filter = new Set([rs[0].author]); S.sel.clear(); paintAuthors(); }
   if (a === 'comment') commentOnSelection();
   if (a === 'edit') editAny(rs[0]);
@@ -129,6 +151,9 @@ $('insp').addEventListener('click', async e => {
   if (a === 'group') await groupSelection();
   if (a === 'ungroup') await ungroupSelection();
   if (a === 'info'){ inspInfo = !inspInfo; }
+  if (a === 'more'){ openMenu(e.target.closest('[data-a]'), moreItems(rs, rs.length === 1 ? rs[0] : null)); return; }
+  if (a === 'align'){ openMenu(e.target.closest('[data-a]'), [...ALIGN_ITEMS.map(([k, l]) => ({ label: l, icon: k, run: () => alignSel(k) })),
+    ...(rs.length >= 3 ? ['-', { label: 'Distribute horizontally', icon: 'dist-h', run: () => alignSel('dist-h') }, { label: 'Distribute vertically', icon: 'dist-v', run: () => alignSel('dist-v') }] : [])]); return; }
   if (a === 'dup') await duplicateSelection();
   if (a === 'connect') await connectSel();
   if (a === 'front' || a === 'back') await reorder(a === 'front');

@@ -47,7 +47,7 @@ KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.key === 'S
 const COLUMNS = [['What went well', 'green'], ['What to improve', 'orange'], ['Questions', 'blue'], ['Ideas', 'violet']];
 async function feedbackBoard(c, fill = null){
   const ids = [];
-  await mk('card', c.x - 650, c.y - 400, 'Add a note in any column (double-click), vote with D, then ⌘K → Summary.', { W: 640 });
+  await mk('card', c.x - 650, c.y - 400, 'Double-click inside a column to add a note. Press D on a note to vote.', { W: 640 });
   for (const [i, [title, col]] of COLUMNS.entries()){
     const x = c.x - 650 + i * 330, f = await mk('frame', x, c.y - 330, title, { W: 310, H: 640, color: col });
     ids.push(f);

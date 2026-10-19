@@ -96,7 +96,7 @@ function cycleSel(dir){
   const i = cur < 0 ? (dir > 0 ? 0 : els.length - 1) : cur + dir;
   if (i < 0 || i >= els.length){ S.sel.clear(); dirty = true; return false; }
   S.sel = new Set([els[i].cid]); ensureVisible(els[i]); dirty = true;
-  say(`${describe(els[i])}, ${i + 1} of ${els.length}. Arrow keys move, Delete revokes.`);
+  say(`${describe(els[i])}, ${i + 1} of ${els.length}. Arrow keys move, Delete removes.`);
   return true;
 }
 // Arrow-key moves preview live and settle into one signed MOVE per target after a short pause.
@@ -118,7 +118,7 @@ function commitKb(){
   const n = g.targets.size, parts = [];
   if (g.dx) parts.push(`${Math.abs(g.dx)} ${g.dx < 0 ? 'left' : 'right'}`);
   if (g.dy) parts.push(`${Math.abs(g.dy)} ${g.dy < 0 ? 'up' : 'down'}`);
-  say(`Moved ${g.pin ? 'the comment pin' : `${n} element${n > 1 ? 's' : ''}`} ${parts.join(' and ')}. Signed.`);
+  say(`Moved ${g.pin ? 'the comment pin' : `${n} element${n > 1 ? 's' : ''}`} ${parts.join(' and ')}.`);
 }
 async function kbResize(f){
   const h = resizeHandle(); if (!h) return false;
@@ -140,11 +140,11 @@ async function kbInsert(kind){
   const c = viewCenter(); let cid;
   if (kind === 'rect') cid = await commitShape('rect', { x: c.x - 80, y: c.y - 50 }, { x: c.x + 80, y: c.y + 50 });
   if (kind === 'circle') cid = await commitShape('circle', { x: c.x - 60, y: c.y - 60 }, { x: c.x + 60, y: c.y + 60 });
-  if (cid){ S.sel = new Set([cid]); dirty = true; say(`${kind === 'rect' ? 'Rectangle' : 'Circle'} signed and selected. Arrow keys move it.`); }
+  if (cid){ S.sel = new Set([cid]); dirty = true; say(`${kind === 'rect' ? 'Rectangle' : 'Circle'} added and selected. Arrow keys move it.`); }
 }
 async function connectSel(){
   const els = [...S.sel].map(c => S.records.get(c)).filter(el => el && el.type !== 'ARROW');
   if (els.length !== 2){ toast('Select exactly two elements to connect (first → second).'); return; }
   const cid = await commitArrow(els[0], els[1]);
-  if (cid) say(`Arrow signed from ${describe(els[0])} to ${describe(els[1])}.`);
+  if (cid) say(`Connected ${describe(els[0])} to ${describe(els[1])}.`);
 }

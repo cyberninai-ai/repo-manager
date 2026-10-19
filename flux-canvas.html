@@ -135,11 +135,11 @@ kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5
 
 /* menu */
 #menu{position:fixed;z-index:35;min-width:248px;padding:6px;border-radius:12px;box-shadow:var(--shadow-lg)}
-#menu [role=menuitem]{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:7px;background:transparent;cursor:pointer;text-align:left;font-size:13px}
-#menu [role=menuitem]:hover,#menu [role=menuitem]:focus{background:var(--hover);outline:none}
-#menu [role=menuitem]:focus-visible{box-shadow:inset 0 0 0 2px var(--cyan)}
-#menu [role=menuitem] .ic{width:16px;height:16px;color:var(--muted)}
-#menu [role=menuitem] span{flex:1}
+#menu [role^=menuitem]{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:7px;background:transparent;cursor:pointer;text-align:left;font-size:13px}
+#menu [role^=menuitem]:hover,#menu [role^=menuitem]:focus{background:var(--hover);outline:none}
+#menu [role^=menuitem]:focus-visible{box-shadow:inset 0 0 0 2px var(--cyan)}
+#menu [role^=menuitem] .ic{width:16px;height:16px;color:var(--muted)}
+#menu [role^=menuitem] span{flex:1}
 #menu kbd{margin-left:auto}
 #menu .msep{height:1px;background:var(--line2);margin:5px 4px}
 /* live sync status */
@@ -150,6 +150,8 @@ kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5
 .chip.net[data-state="error"]{color:var(--red)}
 @keyframes pulse{50%{opacity:.3}}
 #authors button.more{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line);font-size:11px}
+#menu .msw{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
+#menu .mchk{width:16px;height:16px;color:var(--cyan)}
 #bar{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:4px;
   width:max-content;max-width:calc(100% - 24px);padding:5px 6px;border-radius:var(--r-lg);flex-wrap:wrap;justify-content:center}
 #bar .grp{display:flex;align-items:center;gap:6px;padding:0 8px;height:36px}
@@ -498,6 +500,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19.3" r=".9" fill="currentColor"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -607,12 +610,9 @@ body.history #tools{opacity:.45;pointer-events:none}
   <button class="ibtn" data-tool="pen" aria-label="Draw" data-key="P"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg></button>
   <button class="ibtn" data-tool="eraser" id="eraseBtn" aria-label="Eraser" data-key="E"><svg class="ic" aria-hidden="true"><use href="#i-eraser"/></svg></button>
   <span class="tsep" aria-hidden="true"></span>
-  <button class="ibtn" data-tool="rect" aria-label="Rectangle" data-key="⇧ drag"><svg class="ic" aria-hidden="true"><use href="#i-square"/></svg></button>
-  <button class="ibtn" data-tool="ellipse" aria-label="Ellipse" data-key="⌥ drag"><svg class="ic" aria-hidden="true"><use href="#i-circle"/></svg></button>
-  <button class="ibtn" data-tool="line" aria-label="Line and connector"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
-  <span class="tsep" aria-hidden="true"></span>
   <button class="ibtn" data-tool="note" aria-label="Sticky note" data-key="double-click"><svg class="ic" aria-hidden="true"><use href="#i-sticky"/></svg></button>
-  <button class="ibtn" data-tool="node" id="nodeBtn" aria-label="Shapes and cards" data-key="N"><svg class="ic" aria-hidden="true"><use href="#i-shapes"/></svg></button>
+  <button class="ibtn" data-tool="node" id="nodeBtn" aria-label="Shape" data-key="N"><svg class="ic" aria-hidden="true"><use href="#i-shapes"/></svg></button>
+  <button class="ibtn" data-tool="line" aria-label="Connector line"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
   <button class="ibtn" data-tool="text" id="textBtn" aria-label="Text" data-key="T"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg></button>
   <button class="ibtn" id="addImg" aria-label="Image" data-key="I"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></button>
   <span class="tsep" aria-hidden="true"></span>
@@ -623,9 +623,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <div id="authors" role="group" aria-label="People on this canvas"></div>
   <div class="grp">
   <button class="ibtn cnt" id="cmtList" aria-expanded="false" data-tip="Comments"><svg class="ic" aria-hidden="true"><use href="#i-comments"/></svg><span class="sr">Comments</span> <span class="n" id="cmtN"></span></button>
-  <button class="ibtn" id="stBtn" aria-label="Outline" data-key="⇧O" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
-  <button class="ibtn" id="cmdBtn" aria-label="Search and commands" data-key="⌘K"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
-  <button class="ibtn" id="auth" data-tip="Signatures and ledger"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><i class="sdot" aria-hidden="true"></i><span id="authTxt" class="sr">locked</span></button>
+  <button class="ibtn" id="moreBtn" aria-label="More: outline, present, history, reports, settings" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
   </div>
   <button class="share" id="shareBtn" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
 </div>
@@ -682,7 +680,7 @@ body.history #tools{opacity:.45;pointer-events:none}
 <aside class="ledger au" id="audit" aria-label="Audit">
   <header>
     <h2><span>Audit</span><button class="ibtn sm" id="auditClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
-    <div class="stats">Walk the flow step by step. Each verdict is signed; a sign-off fences them all.</div>
+    <div class="stats">Walk the flow step by step: pass, fail or needs info. Sign off when you are done.</div>
   </header>
   <div class="list" id="auditBody"></div>
 </aside>
@@ -700,9 +698,9 @@ body.history #tools{opacity:.45;pointer-events:none}
   </header>
   <ul class="list" id="stTree" role="tree" aria-label="Canvas outline"></ul>
 </aside>
-<aside class="ledger" id="ledger" aria-label="Ledger of signed records">
+<aside class="ledger" id="ledger" aria-label="Activity">
   <header>
-    <h2><span>Ledger</span><button class="ibtn sm" id="ledgerClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
+    <h2><span>Activity</span><button class="ibtn sm" id="ledgerClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></h2>
     <div class="stats" id="ledgerStats"></div>
   </header>
   <div class="list" id="ledgerList"></div>
@@ -711,7 +709,7 @@ body.history #tools{opacity:.45;pointer-events:none}
 <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" tabindex="-1">
   <button class="ibtn sm close" id="helpClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
   <h1 id="helpT">Keyboard shortcuts</h1>
-  <p>Every stroke is a signed pattern. The canvas is the union of its records. Nothing here is a file until you export it.</p>
+  <p>Everything you add is saved as you go, and each person’s work is provably theirs.</p>
   <table>
     <tr><td>Pen down + move</td><td>Freehand stroke</td></tr>
     <tr><td>Shift + drag</td><td>Rectangle</td></tr>
@@ -728,17 +726,17 @@ body.history #tools{opacity:.45;pointer-events:none}
     <tr><td>Ctrl/⌘ + drag</td><td>Lasso from pen mode; Ctrl/⌘-drag inside the selection moves it</td></tr>
     <tr><td>Space + drag · wheel · pinch</td><td>Pan · ctrl+wheel or pinch to zoom</td></tr>
     <tr><td>⌘Z / ⇧⌘Z</td><td>Undo / redo — your own records only</td></tr>
-    <tr><td>Delete</td><td>Revoke selection (<span class="kbd">-N-1</span>, only your own)</td></tr>
+    <tr><td>Delete</td><td>Delete the selection (only your own work; ⌘Z brings it back)</td></tr>
     <tr><td>⌘G / ⇧⌘G</td><td>Group / ungroup</td></tr>
-    <tr><td>⌘V a pattern</td><td>Import signed records from the clipboard</td></tr>
-    <tr><td>` (backtick)</td><td>Ledger</td></tr>
+    <tr><td>⌘V a copied record</td><td>Bring in work copied from another canvas</td></tr>
+    <tr><td>` (backtick)</td><td>Activity: every change, who made it and when</td></tr>
     <tr><td>⌘K or /</td><td>Command palette</td></tr>
   </table>
   <h2>Keyboard only</h2>
   <table>
     <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
     <tr><td>Arrow keys (Shift = ×10)</td><td>Move the selection, or pan when nothing is selected</td></tr>
-    <tr><td>Delete / Backspace</td><td>Revoke the selection</td></tr>
+    <tr><td>Delete / Backspace</td><td>Delete the selection</td></tr>
     <tr><td>+ / −</td><td>Resize a selected image, otherwise zoom</td></tr>
     <tr><td>R · O · T · I</td><td>Insert rectangle · circle · text · image at the centre</td></tr>
     <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
@@ -750,7 +748,7 @@ body.history #tools{opacity:.45;pointer-events:none}
     <tr><td>{ · }</td><td>Text smaller · bigger (10–400): resizes your selected text, otherwise new text</td></tr>
     <tr><td>Colour swatch</td><td>Colour for new work; also recolours your selected strokes, shapes, arrows and text</td></tr>
     <tr><td>⌘C · ⌘X · ⌘V · ⌘D</td><td>Copy · cut · paste (at the pointer) · duplicate. Alt-drag a selection to duplicate it</td></tr>
-    <tr><td>E</td><td>Eraser: wipe across your own elements (each is revoked, undo brings it back)</td></tr>
+    <tr><td>E</td><td>Eraser: wipe across your own elements (undo brings them back)</td></tr>
     <tr><td>⌘⇧↑ · ⌘⇧↓ · ⌘⇧L</td><td>Bring to front · send to back · lock or unlock (locked elements can be drawn over but not moved)</td></tr>
     <tr><td>Dragging</td><td>Snaps to the edges and centres of nearby elements; press ⌘/Ctrl during the drag to place freely</td></tr>
     <tr><td>Paste an indented list</td><td>Becomes a connected mind map (also ⌘K → Mind map from outline)</td></tr>
@@ -767,16 +765,16 @@ body.history #tools{opacity:.45;pointer-events:none}
     <tr><td>Share → People and permissions</td><td>On a canvas you own: who may draw, comment, move others' work and audit</td></tr>
     <tr><td>Share → Go live</td><td>Sync with other browsers through a relay (<span class="kbd">npm run relay</span>)</td></tr>
   </table>
-  <p style="margin:12px 0 0">Other people's cursors show live while they're here; cursors are ephemeral and unsigned, everything they draw is signed. Sync: other tabs on this canvas receive records live over a local <span class="kbd">BroadcastChannel</span>; other browsers through a relay (Share → Go live). Use “New identity for this tab” to draw as a second author.</p>
+  <p style="margin:12px 0 0">Other people’s cursors show while they’re here. Tabs in this browser stay in sync on their own; to work with people on other computers, use Share → Go live.</p>
 </div>
 
 <div id="toast" aria-hidden="true"></div>
 <div id="tip" role="tooltip" aria-hidden="true" hidden></div>
 <div id="home" role="dialog" aria-modal="true" aria-labelledby="homeT" hidden>
   <div class="hm">
-    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">A collaborative canvas where every note, vote and decision is signed.</span><button class="ibtn sm" id="homeClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
+    <header><h2 id="homeT">Flux Canvas</h2><span class="sub">Think together: brainstorm, collect feedback, tell stories, decide.</span><button class="ibtn sm" id="homeClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
     <section aria-labelledby="homeS1"><h3 id="homeS1">Start something</h3><div class="cards" id="homeTpl"></div></section>
-    <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. They are signed by three example authors (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
+    <section aria-labelledby="homeS2"><h3 id="homeS2">Examples</h3><p class="sub">Worked use cases to open, explore and remix. Made by three example people (Ana, Ben, Chen), so you can see who contributed what.</p><div class="cards" id="homeEx"></div></section>
     <section aria-labelledby="homeS3"><h3 id="homeS3">Your canvases <span class="sub">in this browser</span></h3><ul class="clist" id="homeList"></ul></section>
   </div>
 </div>
@@ -1112,7 +1110,7 @@ try { localStorage.setItem('flux:lastCanvas', canvasId); } catch {}
 const S = {
   me: null, records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0,
   view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 },
-  color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: false,
+  color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: true,
   sel: new Set(), filter: null, showHidden: false, ledger: false, rejected: 0, why: {}, parked: new Map(),
   hist: [], redo: [], ghosts: [], P: null, D: { els: [], hidden: new Set(), denied: new Set(), off: new Map(), groupOf: new Map(), groups: [], next: new Map(), superseded: new Set(), threads: new Map(), kids: new Map() },
 };
@@ -1431,7 +1429,7 @@ async function flushSave(){
   const cids = [...pendingSave]; pendingSave.clear();
   if (!cids.length) return;
   if (!await dbReady){   // no IndexedDB: the whole canvas as one string, as before
-    if (!store.set('flux:canvas:' + canvasId, lines([...S.records.values()].sort(byZ)).join('\n'))) toast('Local storage is full or blocked; records live in this tab only.');
+    if (!store.set('flux:canvas:' + canvasId, lines([...S.records.values()].sort(byZ)).join('\n'))) toast('This browser won’t let the canvas save; your work lasts only while this tab is open.');
     return;
   }
   try {
@@ -1443,7 +1441,7 @@ async function flushSave(){
     }
     t.objectStore('canvases').put(canvasSummary());
     await txDone(t);
-  } catch { toast('Storage is full or blocked; new records live in this tab only.'); }
+  } catch { toast('Storage is full or blocked; new work lasts only while this tab is open.'); }
 }
 // Load a canvas: from IndexedDB, else migrate it from localStorage (older versions), else the localStorage fallback.
 function loadCanvas(id){ return bulk(() => loadLines(id)); }
@@ -2039,6 +2037,8 @@ function render(){
       if (G.kind === 'circle') ctx.ellipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, b.h / 2, 0, 0, Math.PI * 2); else ctx.rect(b.x, b.y, b.w, b.h);
       if (S.fill){ ctx.save(); ctx.globalAlpha = .16; ctx.fillStyle = colorOf(S.color); ctx.fill(); ctx.restore(); }
       ctx.stroke();
+    } else if (G.kind === 'place' && (G.a.x !== G.b.x || G.a.y !== G.b.y)){   // a shape being dragged out: its outline
+      const b = norm(G.a, G.b); ctx.save(); ctx.strokeStyle = accent; ctx.lineWidth = 1.5 / z; ctx.setLineDash([6 / z, 4 / z]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore();
     } else if (G.kind === 'line'){
       const sb = G.from && box(G.from), tgt = G.target && box(G.target);
       if (sb) selOutline(grow(sb, 4 / z), accent, z, .7); if (tgt) selOutline(grow(tgt, 4 / z), accent, z);
@@ -2109,7 +2109,7 @@ async function commitText(w, text, orig = null, style = null){
   const raw = await signed('TEXT', [['I', S.me.id], ['X', encInt(Math.round(w.x))], ['Y', encInt(Math.round(w.y))], ['M', encTxt(text)],
     ['F', st.F], ['S', st.S], ['C', st.C], ...(orig ? [['E', orig.cid]] : []), ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid);
-  if (orig && cid){ S.sel = new Set([cid]); dirty = true; say('Text edited and signed. The earlier version stays in the ledger.'); }
+  if (orig && cid){ S.sel = new Set([cid]); dirty = true; say('Text updated.'); }
   return cid;
 }
 async function commitComment({ on = null, x, y, text, re = null }){
@@ -2182,7 +2182,7 @@ async function revokeSelection(){
   for (const c of mine) await setNeg(c, true);
   if (mine.length){ S.hist.push({ kind: 'revoke', cids: mine }); S.redo = []; }
   S.sel.clear(); dirty = true;
-  toast(`${mine.length} revoked with -N-1` + (others ? ` · ${others} belong to other authors, only they can revoke them` : ''));
+  toast(`Deleted ${mine.length}` + (others ? ` · ${others} made by others stay (only they can delete them)` : '') + ' · ⌘Z undoes');
 }
 async function groupSelection(){
   const kids = [...S.sel].map(c => S.records.get(c)).filter(r => r && r.type !== 'ARROW' && !S.D.hidden.has(r.cid));
@@ -2193,7 +2193,7 @@ async function groupSelection(){
   const K = kids.map(k => k.cid).join('_'), R = await cidOf(te.encode(K));
   const raw = await signed('GROUP', [['I', S.me.id], ['R', R], ['K', K], ['Z', ++S.lamport], ['T', Date.now()]]);   // members by CID, not copies (audit D2)
   recordCreate(await publish(raw));
-  toast(`Grouped ${kids.length} elements into one signed record.`);
+  toast(`Grouped ${kids.length} elements.`);
 }
 async function ungroupSelection(){
   const gs = new Set([...S.sel].map(c => S.D.groupOf.get(c)).filter(Boolean));
@@ -2301,7 +2301,7 @@ function cycleSel(dir){
   const i = cur < 0 ? (dir > 0 ? 0 : els.length - 1) : cur + dir;
   if (i < 0 || i >= els.length){ S.sel.clear(); dirty = true; return false; }
   S.sel = new Set([els[i].cid]); ensureVisible(els[i]); dirty = true;
-  say(`${describe(els[i])}, ${i + 1} of ${els.length}. Arrow keys move, Delete revokes.`);
+  say(`${describe(els[i])}, ${i + 1} of ${els.length}. Arrow keys move, Delete removes.`);
   return true;
 }
 // Arrow-key moves preview live and settle into one signed MOVE per target after a short pause.
@@ -2323,7 +2323,7 @@ function commitKb(){
   const n = g.targets.size, parts = [];
   if (g.dx) parts.push(`${Math.abs(g.dx)} ${g.dx < 0 ? 'left' : 'right'}`);
   if (g.dy) parts.push(`${Math.abs(g.dy)} ${g.dy < 0 ? 'up' : 'down'}`);
-  say(`Moved ${g.pin ? 'the comment pin' : `${n} element${n > 1 ? 's' : ''}`} ${parts.join(' and ')}. Signed.`);
+  say(`Moved ${g.pin ? 'the comment pin' : `${n} element${n > 1 ? 's' : ''}`} ${parts.join(' and ')}.`);
 }
 async function kbResize(f){
   const h = resizeHandle(); if (!h) return false;
@@ -2345,13 +2345,13 @@ async function kbInsert(kind){
   const c = viewCenter(); let cid;
   if (kind === 'rect') cid = await commitShape('rect', { x: c.x - 80, y: c.y - 50 }, { x: c.x + 80, y: c.y + 50 });
   if (kind === 'circle') cid = await commitShape('circle', { x: c.x - 60, y: c.y - 60 }, { x: c.x + 60, y: c.y + 60 });
-  if (cid){ S.sel = new Set([cid]); dirty = true; say(`${kind === 'rect' ? 'Rectangle' : 'Circle'} signed and selected. Arrow keys move it.`); }
+  if (cid){ S.sel = new Set([cid]); dirty = true; say(`${kind === 'rect' ? 'Rectangle' : 'Circle'} added and selected. Arrow keys move it.`); }
 }
 async function connectSel(){
   const els = [...S.sel].map(c => S.records.get(c)).filter(el => el && el.type !== 'ARROW');
   if (els.length !== 2){ toast('Select exactly two elements to connect (first → second).'); return; }
   const cid = await commitArrow(els[0], els[1]);
-  if (cid) say(`Arrow signed from ${describe(els[0])} to ${describe(els[1])}.`);
+  if (cid) say(`Connected ${describe(els[0])} to ${describe(els[1])}.`);
 }
 // Accessible stand-in for prompt(): also works in sandboxed frames.
 let askRes = null, askFocus = null;
@@ -2502,7 +2502,7 @@ cv.addEventListener('pointerdown', e => {
     for (const h of POINTER_HOOKS) if (h(e, w)){ G = { kind: 'none' }; dirty = true; return; }   // feature hit targets (core/hooks)
     if (placing === 'text'){ G = { kind: 'none' }; const t = hitTest(w); if (!(t && t.type === 'TEXT' && editText(t))) openText(w); return; }
     if (erasing){ G = { kind: 'erase', pts: [w], hit: new Set(), others: 0 }; eraseAt(w); dirty = true; return; }
-    if (placing === 'node'){ G = { kind: 'none' }; setPlacing(null); startNode({ kind: S.nodeKind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return; }
+    if (placing === 'node'){ G = { kind: 'place', a: w, b: w, sx: e.clientX, sy: e.clientY }; dirty = true; return; }   // click to place, or drag to size
     const gh = growAt(w);
     if (gh){ G = { kind: 'grow', from: gh.el, dir: gh.dir, start: w, cur: w, moved: false, sx: e.clientX, sy: e.clientY }; dirty = true; return; }
     if (placing === 'comment'){ G = { kind: 'none' }; startComment(w, hitTest(w)); setPlacing(null); return; }
@@ -2554,6 +2554,7 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   lastPointer = toWorld(e.clientX, e.clientY); sendPresence();
+  if (S.sel.size === 1) dirty = true;   // + handles follow the pointer's distance
   if (!G){
     const h = taOpen() || S.lassoMode ? null : edgeHit(e.clientX, e.clientY);
     const hg = !!growAt(toWorld(e.clientX, e.clientY)); if (hg !== hoverGrow){ hoverGrow = hg; setCursor(); }
@@ -2592,7 +2593,7 @@ cv.addEventListener('pointermove', e => {
       const dw = Math.max(w.x - G.start.x, (w.y - G.start.y) * G.aspect, 16 - base);
       G.dw = Math.round(dw); G.dh = Math.round(dw / G.aspect); break;
     }
-    case 'rect': case 'circle': G.b = w; break;
+    case 'rect': case 'circle': case 'place': G.b = w; break;
     case 'line': {   // Shift snaps to 45°
       G.b = e.shiftKey ? snap45(G.a, w) : w;
       G.target = G.from ? elementAt(w, G.from) : null;
@@ -2623,6 +2624,12 @@ function endPointer(e, cancelled){
   if (cancelled) return;
   const w = toWorld(e.clientX, e.clientY);
   switch (g.kind){
+    case 'place': {
+      const kind = S.nodeKind; setPlacing(null);
+      if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 8){ const n = norm(g.a, g.b); startNode({ kind, anchor: { x: n.x, y: n.y, ax: 0, ay: 0 }, size: { W: Math.round(n.w), H: Math.round(n.h) } }); }
+      else startNode({ kind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } });
+      return;
+    }
     case 'pan':   // a right-click that didn't drag opens the context menu
       if (g.button === 2 && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < 5) canvasMenu({ x: e.clientX, y: e.clientY }, g.at);
       return;
@@ -2650,7 +2657,7 @@ function endPointer(e, cancelled){
     case 'circle': commitShape('circle', g.a, g.b).then(c => afterToolCreate(g, c)); return;
     case 'line': {
       const to = elementAt(w, g.from);
-      if (g.from && to){ commitArrow(g.from, to).then(c => { afterToolCreate(g, c); if (c) say(`Connected ${describe(g.from)} to ${describe(to)}. Signed.`); }); return; }
+      if (g.from && to){ commitArrow(g.from, to).then(c => { afterToolCreate(g, c); if (c) say(`Connected ${describe(g.from)} to ${describe(to)}.`); }); return; }
       if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) * S.view.zoom < 4) return;
       commitStroke([{ x: g.a.x, y: g.a.y, t: 0 }, { x: g.b.x, y: g.b.y, t: 1 }], Date.now()); return;
     }
@@ -2665,7 +2672,7 @@ function endPointer(e, cancelled){
     case 'grow': {
       if (!g.moved){ startChild(g.from, g.dir); return; }
       const t = g.target && current(g.target.cid);
-      if (t){ commitArrow(g.from, t).then(c => c && say(`Connected “${g.from.text.slice(0, 40)}” to ${describe(t)}. Signed.`)); return; }
+      if (t){ commitArrow(g.from, t).then(c => c && say(`Connected “${g.from.text.slice(0, 40)}” to ${describe(t)}.`)); return; }
       startNode({ kind: g.from.ek, parent: g.from.cid, color: ecol(g.from), anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } });
       return;
     }
@@ -2673,7 +2680,7 @@ function endPointer(e, cancelled){
       if (!g.moved){ if (g.id === 'draft') toggleComments(true); else openThread(g.id); return; }
       if (g.id === 'draft' || (!g.dx && !g.dy)) return;
       (async () => { await commitMove(g.id, g.dx, g.dy); S.hist.push({ kind: 'move', targets: [g.id], dx: g.dx, dy: g.dy }); S.redo = []; })();
-      say('Comment pin moved. Signed.');
+      say('Comment pin moved.');
       return;
     }
     case 'resize': {
@@ -2689,18 +2696,18 @@ function endPointer(e, cancelled){
       return;
     }
     case 'erase': {
-      if (!g.hit.size){ if (g.others) toast(`Only your own elements erase; ${g.others} by other authors stayed.`); return; }
+      if (!g.hit.size){ if (g.others) toast(`You can only erase your own work; ${g.others} made by others stayed.`); return; }
       (async () => {
         const cids = [...g.hit]; for (const c of cids) await setNeg(c, true);
         S.hist.push({ kind: 'revoke', cids }); S.redo = [];
-        say(`Erased ${cids.length} element${cids.length > 1 ? 's' : ''}. Each is a signed revoke; undo brings them back.`);
-        if (g.others) toast(`Erased ${cids.length}. ${g.others} by other authors stayed.`);
+        say(`Erased ${cids.length} element${cids.length > 1 ? 's' : ''}. Undo brings them back.`);
+        if (g.others) toast(`Erased ${cids.length}. ${g.others} made by others stayed.`);
       })();
       return;
     }
     case 'move': {
       if (!g.dx && !g.dy) return;
-      if (g.dup){ (async () => { const made = await duplicateEls([...S.sel].map(c => S.records.get(c)), g.dx, g.dy); if (made.length){ S.sel = new Set(made); say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}. Signed.`); } })(); return; }
+      if (g.dup){ (async () => { const made = await duplicateEls([...S.sel].map(c => S.records.get(c)), g.dx, g.dy); if (made.length){ S.sel = new Set(made); say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}.`); } })(); return; }
       (async () => {
         for (const t of g.targets) await commitMove(t, g.dx, g.dy);
         S.hist.push({ kind: 'move', targets: [...g.targets], dx: g.dx, dy: g.dy }); S.redo = [];
@@ -2769,16 +2776,16 @@ function describe(el){
   if (!el) return '';
   const who = el.author === S.me?.id ? 'you' : 'author ' + short(el.author);
   const what = el.type === 'NODE' ? `${KIND(el)} “${el.text.slice(0, 80)}”${el.parent && current(el.parent)?.text ? `, connected to “${current(el.parent).text.slice(0, 40)}”` : ''}` : el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
-  return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', revoked' : ''}`;
+  return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', deleted' : ''}`;
 }
 function announceSel(){
   if (!S.sel.size){ say('Selection cleared'); return; }
-  if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete revokes.');
-  else say(`${S.sel.size} elements selected. Arrow keys move, Delete revokes yours.`);
+  if (S.sel.size === 1) say('Selected ' + describe(S.records.get([...S.sel][0])) + '. Arrow keys move, Delete removes.');
+  else say(`${S.sel.size} elements selected. Arrow keys move, Delete removes yours.`);
 }
 let authShown = '';
 function paintAuth(){
-  if (!S.me) return;
+  if (!S.me || !$('auth')) return;   // the signing pill now lives in the activity log only
   const open = Date.now() < auth.until;
   const left = Math.ceil((auth.until - Date.now()) / 1000);
   const txt = `<b>${short(S.me.id)}</b><span class="m"> · ${open ? `unlocked ${left}s` : 'locked'} · ${S.records.size} rec</span>`;
@@ -2786,7 +2793,6 @@ function paintAuth(){
 }
 function paintAuthTick(){ paintAuth(); }
 FRAME_HOOKS.push(paintAuthTick);
-$('auth').onclick = () => toggleLedger();
 function paintSummary(){
   const c = {}; let n = 0;
   for (const el of S.D.els) if (visible(el) && !S.D.hidden.has(el.cid)){ n++; const k = KIND(el); c[k] = (c[k] || 0) + 1; }
@@ -2832,21 +2838,19 @@ function paintInspector(){
   const sb = selBox(); if (!sb){ el.style.display = 'none'; return; }
   const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean), one = rs.length === 1 ? rs[0] : null;
   const mine = rs.filter(r => r.author === S.me.id), anyLocked = rs.some(r => r.locked), allLocked = rs.every(r => r.locked);
-  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" ${extra}>${face(icon)}</button>`;   // tooltips come from ui/tooltip
+  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" ${extra}>${face(icon)}</button>`;   // tooltips come from ui/toolbar
   const V = '<span class="vs" aria-hidden="true"></span>';
+  // Only what people reach for every time sits on the toolbar; everything else is one click away under More, with words.
   let tb = '';
-  if (one && (one.type === 'TEXT' || one.type === 'NODE') && one.author === S.me.id) tb += B('edit', 'edit', 'Edit (Enter)');
+  if (one && (one.type === 'TEXT' || one.type === 'NODE') && one.author === S.me.id) tb += B('edit', 'edit', 'Edit text (Enter)');
   if (one && one.type === 'ARROW' && one.author === S.me.id) tb += B('label', 'tag', 'Label this connector');
-  if (rs.length === 2 && rs.every(r => r.type !== 'ARROW')) tb += B('connect', 'link', 'Connect first to second (C)');
-  tb += B('comment', 'comment', 'Comment (M)') + B('dup', 'copy', 'Duplicate (⌘D)') + V;
-  if (rs.length >= 2) tb += B('al-l', 'al-l', 'Align left') + B('al-c', 'al-c', 'Align centres') + B('al-r', 'al-r', 'Align right') + B('al-t', 'al-t', 'Align top') + B('al-m', 'al-m', 'Align middles') + B('al-b', 'al-b', 'Align bottom') + V;
-  if (rs.length >= 3) tb += B('dist-h', 'dist-h', 'Distribute horizontally') + B('dist-v', 'dist-v', 'Distribute vertically') + V;
-  if (mine.length) tb += B('front', 'front', 'Bring to front (⌘⇧↑)') + B('back', 'back', 'Send to back (⌘⇧↓)') + B('lock', allLocked ? 'unlock' : 'lock', allLocked ? 'Unlock (⌘⇧L)' : 'Lock (⌘⇧L)', `aria-pressed="${allLocked}"`);
-  if (rs.length >= 2) tb += B('group', 'group', 'Group (⌘G)');
-  if (rs.some(r => S.D.groupOf.has(r.cid))) tb += B('ungroup', 'ungroup', 'Ungroup (⌘⇧G)');
-  for (const h of TOOLBAR_HOOKS){ try { tb += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }   // feature buttons (core/hooks)
-  tb += B('info', 'info', 'Details and signature', `aria-pressed="${inspInfo}"`);
-  if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? 'undo' : 'trash', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Revoke (Delete)', 'class="danger"');
+  if (rs.length === 2 && rs.every(r => r.type !== 'ARROW')) tb += B('connect', 'link', 'Connect them (C)');
+  tb += B('comment', 'comment', 'Comment (M)');
+  for (const h of TOOLBAR_HOOKS){ try { tb += primaryOnly(h(rs, one, B) || ''); } catch (err){ console.warn(err); } }   // feature buttons marked data-primary
+  if (rs.length >= 2) tb += B('align', 'al-l', 'Align and distribute', 'aria-haspopup="menu"');
+  tb += B('dup', 'copy', 'Duplicate (⌘D)');
+  if (mine.length) tb += B(one && S.D.hidden.has(one.cid) ? 'restore' : 'revoke', one && S.D.hidden.has(one.cid) ? 'undo' : 'trash', one && S.D.hidden.has(one.cid) ? 'Restore' : 'Delete (⌫)', 'class="danger"');
+  tb += V + B('more', 'more', 'More actions', 'aria-haspopup="menu"');
   let html = `<div class="tb" role="toolbar" aria-label="Selection actions">${tb}</div>`;
   if (inspInfo) html += `<div class="info">${inspDetails()}</div>`;
   void anyLocked;
@@ -2860,6 +2864,31 @@ function paintInspector(){
   const x = Math.min(Math.max(8, top.x - el.offsetWidth / 2), innerWidth - el.offsetWidth - 8);
   el.style.left = x + 'px'; el.style.top = Math.max(8, y) + 'px';
 }
+// feature hook HTML: keep the buttons marked data-primary for the toolbar; the rest go to the More menu
+function primaryOnly(html){
+  const t = document.createElement('template'); t.innerHTML = html;
+  return [...t.content.querySelectorAll('button')].filter(b => b.hasAttribute('data-primary')).map(b => b.outerHTML).join('');
+}
+function moreItems(rs, one){
+  const mine = rs.filter(r => r.author === S.me.id), allLocked = rs.every(r => r.locked), items = [];
+  const t = document.createElement('template');
+  const B = (a, icon, label, extra = '') => `<button data-a="${a}" aria-label="${label}" data-icon="${icon}" ${extra}>${face(icon)}</button>`;
+  for (const h of TOOLBAR_HOOKS){ try { t.innerHTML += h(rs, one, B) || ''; } catch (err){ console.warn(err); } }
+  for (const b of t.content.querySelectorAll('button:not([data-primary])')){
+    const a = b.dataset.a, label = (b.getAttribute('aria-label') || b.textContent).replace(/\s*\(.*\)$/, '');
+    items.push({ label: label[0].toUpperCase() + label.slice(1), icon: b.dataset.icon || b.querySelector('use')?.getAttribute('href')?.slice(3) || 'blank', on: b.getAttribute('aria-pressed') === 'true', run: () => TOOLBAR_ACTIONS[a]?.(rs, b) });
+  }
+  if (items.length) items.push('-');
+  if (mine.length) items.push({ label: 'Bring to front', icon: 'front', key: '⌘⇧↑', run: () => reorder(true) }, { label: 'Send to back', icon: 'back', key: '⌘⇧↓', run: () => reorder(false) },
+    { label: allLocked ? 'Unlock' : 'Lock in place', icon: allLocked ? 'unlock' : 'lock', key: '⌘⇧L', run: toggleLock });
+  if (rs.length >= 2) items.push({ label: 'Group', icon: 'group', key: '⌘G', run: groupSelection });
+  if (rs.some(r => S.D.groupOf.has(r.cid))) items.push({ label: 'Ungroup', icon: 'ungroup', key: '⌘⇧G', run: ungroupSelection });
+  items.push({ label: 'Copy', icon: 'copy', key: '⌘C', run: copySelection });
+  items.push('-', { label: inspInfo ? 'Hide details' : 'Details: who made it, when', icon: 'info', run: () => { inspInfo = !inspInfo; inspShown = ''; dirty = true; } });
+  return items;
+}
+const ALIGN_ITEMS = [['al-l', 'Align left'], ['al-c', 'Align centres'], ['al-r', 'Align right'], ['al-t', 'Align top'], ['al-m', 'Align middles'], ['al-b', 'Align bottom']];
+let inspShown = '';
 function inspDetails(){
   let html;
   if (S.sel.size === 1){
@@ -2868,14 +2897,14 @@ function inspDetails(){
     const kind = KIND(r);
     const pts = r.type === 'DRAW' ? strokeGeom(r.f.R)?.pts.length : null;
     html = `<div class="who"><span class="dot" style="background:${authorColor(r.author)}"></span><b>${esc(kind)}</b>
-      by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ signed</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">revoked</span>' : ''}</div>
+      by ${r.author === S.me.id ? 'you' : esc(short(r.author))} <span class="ok">✓ verified</span>${S.D.hidden.has(r.cid) ? ' <span class="bad">deleted</span>' : ''}</div>
       <div class="meta">z ${r.z} · ${new Date(r.t).toLocaleString()}${r.type === 'IMAGE' ? `<br>alt: ${r.alt ? '“' + esc(r.alt) + '”' : '<span class="bad">none</span>'}` : ''}<br>${recBytes(r)} B${r.type === 'IMAGE' ? ' · move: select mode (V) and drag, or arrow keys · resize: corner handle or +/−' : ''}${pts ? ` · ${pts} pts → ${S.blobs.get(r.f.R).length} B blob` : ''}${g ? ' · grouped' : ''}<br>${esc(r.cid.slice(0, 22))}…</div>
-      <div class="acts"><button class="btn" data-a="copy">copy pattern</button><button class="btn" data-a="solo">only this author</button></div>`;
+      <div class="acts"><button class="btn" data-a="solo">Show only their work</button><button class="btn" data-a="copy">Copy signed record</button></div>`;
   } else {
     const rs = [...S.sel].map(c => S.records.get(c)), authors = new Set(rs.map(r => r.author)), mine = rs.filter(r => r.author === S.me.id).length;
     html = `<div class="who"><b>${rs.length} elements</b> · ${authors.size} author${authors.size > 1 ? 's' : ''}</div>
-      <div class="meta">${mine} yours · drag to move · Alt-drag duplicates · Delete revokes yours</div>
-      <div class="acts"><button class="btn" data-a="copy">copy patterns</button></div>`;
+      <div class="meta">${mine} yours · drag to move · Alt-drag duplicates · Delete removes yours</div>
+      <div class="acts"><button class="btn" data-a="copy">Copy signed records</button></div>`;
   }
   return html;
 }
@@ -2883,7 +2912,7 @@ $('insp').addEventListener('pointerdown', e => e.stopPropagation());
 $('insp').addEventListener('click', async e => {
   const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
   const rs = [...S.sel].map(c => S.records.get(c)).filter(Boolean);
-  if (a === 'copy') copy(rs.map(r => r.raw).join('\n'), `${rs.length} signed pattern${rs.length > 1 ? 's' : ''} copied`);
+  if (a === 'copy') copy(rs.map(r => r.raw).join('\n'), `${rs.length} signed record${rs.length > 1 ? 's' : ''} copied`);
   if (a === 'solo'){ S.filter = new Set([rs[0].author]); S.sel.clear(); paintAuthors(); }
   if (a === 'comment') commentOnSelection();
   if (a === 'edit') editAny(rs[0]);
@@ -2892,6 +2921,9 @@ $('insp').addEventListener('click', async e => {
   if (a === 'group') await groupSelection();
   if (a === 'ungroup') await ungroupSelection();
   if (a === 'info'){ inspInfo = !inspInfo; }
+  if (a === 'more'){ openMenu(e.target.closest('[data-a]'), moreItems(rs, rs.length === 1 ? rs[0] : null)); return; }
+  if (a === 'align'){ openMenu(e.target.closest('[data-a]'), [...ALIGN_ITEMS.map(([k, l]) => ({ label: l, icon: k, run: () => alignSel(k) })),
+    ...(rs.length >= 3 ? ['-', { label: 'Distribute horizontally', icon: 'dist-h', run: () => alignSel('dist-h') }, { label: 'Distribute vertically', icon: 'dist-v', run: () => alignSel('dist-v') }] : [])]); return; }
   if (a === 'dup') await duplicateSelection();
   if (a === 'connect') await connectSel();
   if (a === 'front' || a === 'back') await reorder(a === 'front');
@@ -2923,7 +2955,7 @@ async function insertImage(file, at){
   const base = (file.name || '').replace(/\.[a-z0-9]+$/i, '');
   const guess = /^[0-9a-f]{16,}$/i.test(base) || /^(image|img|photo|screenshot|pasted|dsc|pxl)[\s_-]*[\d_-]*$/i.test(base) ? '' : base.replace(/[-_]+/g, ' ').trim();
   const alt = await ask('Describe this image', guess,
-    'Alt text is signed into the record so screen readers can describe it. Leave it empty only if the image is decorative.', bmp);
+    'Screen readers read this out. Leave it empty only if the image is decorative.', bmp);
   if (alt === null) return;
   file = typed;
   const k = Math.min(1, IMG_MAX / Math.max(bmp.width, bmp.height));
@@ -2933,7 +2965,7 @@ async function insertImage(file, at){
   let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
   if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < MAX_BLOB && k === 1) out = file;   // keep a small original when it's already smaller
   for (let q = 0.7; out && out.size > MAX_BLOB && q > 0.2; q -= 0.15) out = await new Promise(res => c.toBlob(res, 'image/jpeg', q));   // stay under the blob cap
-  if (!out || out.size > MAX_BLOB){ toast('That image is too large to sign and share, even re-encoded.'); return; }
+  if (!out || out.size > MAX_BLOB){ toast('That image is too large to add, even compressed.'); return; }
   const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
   // place it at a comfortable on-screen size, centred on the drop point
   const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));
@@ -2944,7 +2976,7 @@ async function insertImage(file, at){
   const cid = await publish(raw, { [R]: bytes });
   recordCreate(cid);
   dirty = true;
-  toast(`Image signed · ${(bytes.length / 1024).toFixed(0)} KB blob · draw on it now · select mode (V) to move or resize it`);
+  toast('Image added · drag it to move, pull its corner to resize');
 }
 /* ---------- copy, paste, duplicate ---------- */
 // Copies are new records signed by you: same content, effective style and position baked in, links inside the copy re-pointed.
@@ -2966,11 +2998,11 @@ async function pasteClip(){
   const p = lastPointer, vw = innerWidth / S.view.zoom, vh = innerHeight / S.view.zoom;
   if (p && u && p.x > S.view.x && p.y > S.view.y && p.x < S.view.x + vw && p.y < S.view.y + vh){ dx = Math.round(p.x - (u.x + u.w / 2)); dy = Math.round(p.y - (u.y + u.h / 2)); }
   const made = await duplicateEls(rs, dx, dy);
-  if (made.length){ S.sel = new Set(made); dirty = true; say(`Pasted ${made.length} element${made.length > 1 ? 's' : ''}. Signed.`); }
+  if (made.length){ S.sel = new Set(made); dirty = true; say(`Pasted ${made.length} element${made.length > 1 ? 's' : ''}.`); }
 }
 async function duplicateSelection(){
   const made = await duplicateEls([...S.sel].map(c => S.records.get(c)), 24, 24);
-  if (made.length){ S.sel = new Set(made); dirty = true; say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}. Signed.`); }
+  if (made.length){ S.sel = new Set(made); dirty = true; say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}.`); }
 }
 async function duplicateEls(list, dx, dy){
   const els = [...new Set(list.map(el => el && current(el.cid)).filter(el => el && ELEMENT.has(el.type) && !S.D.hidden.has(el.cid)))]
@@ -3014,7 +3046,7 @@ async function reorder(front){
   const items = [];
   for (const el of own.sort((a, b) => front ? a.ez - b.ez : b.ez - a.ez)){ edge += front ? 1 : -1; items.push({ cid: el.cid, before: { O: el.ez }, after: { O: edge } }); await commitStyle(el.cid, { O: edge }); }
   S.hist.push({ kind: 'style', items }); S.redo = [];
-  say(`${own.length} element${own.length > 1 ? 's' : ''} ${front ? 'brought to front' : 'sent to back'}. Signed.`);
+  say(`${own.length} element${own.length > 1 ? 's' : ''} ${front ? 'brought to front' : 'sent to back'}.`);
 }
 async function toggleLock(){
   const own = [...S.sel].map(c => current(c)).filter(el => el && ELEMENT.has(el.type) && el.author === S.me.id);
@@ -3022,7 +3054,7 @@ async function toggleLock(){
   const lock = !own.every(el => el.locked), items = [];
   for (const el of own){ items.push({ cid: el.cid, before: { L: el.locked }, after: { L: lock } }); await commitStyle(el.cid, { L: lock }); }
   S.hist.push({ kind: 'style', items }); S.redo = [];
-  say(`${own.length} element${own.length > 1 ? 's' : ''} ${lock ? 'locked: they stay put and can be drawn over' : 'unlocked'}. Signed.`);
+  say(`${own.length} element${own.length > 1 ? 's' : ''} ${lock ? 'locked: they stay put and can be drawn over' : 'unlocked'}.`);
 }
 async function labelArrow(el){
   const v = await ask('Connector label', el.elabel || '', 'Shown on the line. Leave empty to remove it.');
@@ -3052,7 +3084,7 @@ async function alignSel(mode){
   }
   for (const it of items) await commitMove(it.t, it.dx, it.dy);
   if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
-  say(items.length ? `${items.length} element${items.length > 1 ? 's' : ''} ${mode.startsWith('al') ? 'aligned' : 'distributed'}. Signed.` : 'Already in place.');
+  say(items.length ? `${items.length} element${items.length > 1 ? 's' : ''} ${mode.startsWith('al') ? 'aligned' : 'distributed'}.` : 'Already in place.');
 }
 function startMoveG(w, dup){
   const targets = moveTargets(), base = selBox();
@@ -3080,7 +3112,7 @@ function snapMove(free){
 function setErasing(on){
   erasing = on; if (on){ setPlacing(null); S.sel.clear(); S.shapeTool = null; S.handTool = false; }
   setCursor(); dirty = true; paintTools();
-  say(on ? 'Eraser: drag across your own elements to revoke them. Escape or P returns to the pen.' : 'Eraser off.');
+  say(on ? 'Eraser: drag across your own elements to erase them. Escape returns to Select.' : 'Eraser off.');
 }
 function eraseAt(p){
   const el = hitTest(p, 10); if (!el || G.hit.has(el.cid)) return;
@@ -3165,7 +3197,7 @@ async function mindmapFromOutline(t){
   await new Promise(r => setTimeout(r, 0));
   await tidy(S.records.get(root)); S.hist.pop();   // layout belongs to the creation
   S.sel = new Set([root]); if (!S.lassoMode) setMode(true); dirty = true;
-  toast(`Mind map from outline · ${made.length} signed nodes`);
+  toast(`Mind map from your list · ${made.length} ideas`);
 }
 async function mindmapFromOutlinePrompt(){
   const v = await ask('Mind map from outline', 'Launch plan\n  Goals\n    Ship v1\n    Learn fast\n  Audience\n  Risks\n    Timeline\n  Next steps', 'One idea per line; indent with spaces or tabs to nest. Bullets (-, *, 1.) are fine.', null, true);
@@ -3226,6 +3258,9 @@ function drawGrowHandles(accent){
     if (t) dashedBox(grow(t, 4 / z), accent, z);
     return;
   }
+  // the + handles appear when the pointer comes near the selected node, so a plain selection stays clean
+  const n = soleNode(), near = n && lastPointer && inside(lastPointer, grow(box(n), 44 / z));
+  if (!near) return;
   for (const h of growHandles()){
     ctx.save(); ctx.beginPath(); ctx.arc(h.x, h.y, 8 / z, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill();
     ctx.strokeStyle = TH.paper; ctx.lineWidth = 2 / z; ctx.stroke();
@@ -3253,13 +3288,14 @@ function placeNear(pb, dir, w, h, skip){
   }
   return { x, y, w, h };
 }
-function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, orig = null, label = null }){
+function startNode({ kind = S.nodeKind, parent = null, color = null, anchor, orig = null, label = null, size = null }){
   if (taOpen()) finishText(true);
   setPlacing(null);
   kind = NODE_KINDS[kind] ? kind : 'card';
   const K = NODE_KINDS[kind];
   taNode = { kind, parent, color: color || (S.color === 'ink' ? 'ink' : S.color), anchor, orig, W: 0, H: 0 };
   if (kind === 'frame' && !orig){ taNode.W = 375; taNode.H = 667; }
+  if (size && !orig){ taNode.W = size.W; taNode.H = size.H; }   // dragged out with the Shape tool
   if (orig){ const o = S.D.off.get(orig.cid) || { w: 0, h: 0 }; taNode.W = orig.bw + (o.w || 0); taNode.H = orig.bh + (o.h || 0); editingCid = orig.cid; }
   taAt = null; taOrig = null;
   ta.value = orig ? orig.text : (label ?? K.label);
@@ -3304,7 +3340,7 @@ async function finishNode(commit, then){
   S.sel = new Set([cid]); if (!S.lassoMode) setMode(true);
   dirty = true; await new Promise(r => setTimeout(r, 0));
   const el = current(cid);
-  say(`${NODE_KINDS[n.kind].name} “${label.slice(0, 60)}” ${n.orig ? 'edited' : 'added'}. Signed. Alt+arrows add connected nodes, Enter edits.`);
+  say(`${NODE_KINDS[n.kind].name} “${label.slice(0, 60)}” ${n.orig ? 'edited' : 'added'}. Alt+arrows add connected nodes, Enter edits.`);
   if (then === 'child') startChild(el, 'right');
   if (then === 'sibling') startSibling(el);
 }
@@ -3345,7 +3381,7 @@ function pickKind(k){
       const items = [];
       for (const n of own) if (n.ek !== k){ items.push({ cid: n.cid, before: { K: n.ek }, after: { K: k } }); await commitStyle(n.cid, { K: k }); }
       if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
-      say(`${items.length} node${items.length === 1 ? '' : 's'} changed to ${NODE_KINDS[k].name}. Signed.`);
+      say(`${items.length} node${items.length === 1 ? '' : 's'} changed to ${NODE_KINDS[k].name}.`);
     })();
     S.nodeKind = k; barShown = ''; return;
   }
@@ -3383,7 +3419,7 @@ async function tidy(n){
   }
   for (const it of items) await commitMove(it.t, it.dx, it.dy);
   if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
-  say(items.length ? `Tidied ${items.length} node${items.length > 1 ? 's' : ''} around “${root.text.slice(0, 40)}”. Signed.` : 'Already tidy.');
+  say(items.length ? `Tidied ${items.length} node${items.length > 1 ? 's' : ''} around “${root.text.slice(0, 40)}”.` : 'Already tidy.');
 }
 
 /* templates */
@@ -3424,7 +3460,7 @@ async function insertTemplate(kind){
     S.sel = new Set(made.map(m => current(m)?.cid).filter(Boolean)); await groupSelection();
   }
   S.sel = new Set(made.slice(0, 1)); if (!S.lassoMode) setMode(true); dirty = true;
-  toast(`${{ mindmap: 'Mind map', flow: 'Flowchart', mobile: 'Mobile wireframe', web: 'Web wireframe' }[kind]} added · ${made.length} signed nodes`);
+  toast(`${{ mindmap: 'Mind map', flow: 'Flowchart', mobile: 'Mobile wireframe', web: 'Web wireframe' }[kind]} added`);
 }
 
 
@@ -3535,7 +3571,7 @@ function barGroups(){
     if (rs.length) g.add('color');
     if (rs.some(r => r.type === 'DRAW' || r.type === 'SHAPE' || r.type === 'ARROW')) g.add('brush');
     if (rs.some(r => r.type === 'TEXT')) g.add('text');
-    if (rs.some(r => r.type === 'NODE')) g.add('kind');
+    if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky')) g.add('kind');   // a sticky note is a sticky note: colour only
     return g;
   }
   for (const k of (TOOL_GROUPS[t] || '').split(' ')) if (k) g.add(k);
@@ -3548,6 +3584,8 @@ const KIND_SVG = {
   input: '<rect x="3" y="7" width="14" height="6" rx="1"/><path d="M6 9v2"/>', image: '<rect x="3" y="4" width="14" height="12" rx="1"/><path d="M3 14l4-4 3 3 2-2 5 4"/>',
   swatch: '<rect x="5" y="3" width="10" height="9" rx="1" fill="currentColor"/><path d="M5 15h10"/>', frame: '<rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/>',
 };
+// the Shape tool's kinds, most used first (sticky notes have their own tool)
+const KIND_ORDER = ['rect', 'ellipse', 'diamond', 'topic', 'card', 'frame', 'button', 'input', 'image', 'swatch'];
 const FONT_NAMES = { sans: 'Sans', hand: 'Hand-drawn', mono: 'Monospace' };
 function paintBar(){
   const cols = $('barColors');
@@ -3567,7 +3605,7 @@ function paintBar(){
   }
   const kinds = $('barKinds');
   if (!kinds.children.length){
-    for (const [k2, K2] of Object.entries(NODE_KINDS)){
+    for (const k2 of KIND_ORDER){ const K2 = NODE_KINDS[k2];
       const b = document.createElement('button'); b.className = 'kd'; b.dataset.k = k2;
       b.innerHTML = KIND_SVG[k2] ? `<svg viewBox="0 0 20 20" class="ic" aria-hidden="true">${KIND_SVG[k2]}</svg>` : `<span class="gl">${K2.icon}</span>`;
       b.setAttribute('role', 'radio'); b.setAttribute('aria-label', K2.name[0].toUpperCase() + K2.name.slice(1));
@@ -3597,11 +3635,17 @@ function paintBar(){
   const selKinds = selOwn(['NODE']).map(n => n.ek), shownKind = selKinds.length ? selKinds[0] : S.nodeKind;
   for (const b of kinds.children){ const on = b.dataset.k === shownKind; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
   const ink = colorOf(S.color);
-  for (const b of cols.children){ b.style.background = colorOf(b.dataset.c); const on = b.dataset.c === S.color; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
+  // sticky notes show the paper colours they will actually get (ink means the classic yellow)
+  const stickies = currentTool() === 'note' || (S.sel.size > 0 && selOwn(['NODE']).length > 0 && selOwn(['NODE']).every(n => n.ek === 'sticky'));
+  for (const b of cols.children){
+    const c = b.dataset.c; b.style.background = stickies ? (c === 'ink' ? '#ffe066' : mixHex(colorOf(c), '#ffffff', .35)) : colorOf(c);
+    b.setAttribute('aria-label', stickies && c === 'ink' ? 'Yellow' : COLOR_NAMES[c] || c);
+    const on = c === (stickies && selOwn(['NODE'])[0] ? ecol(selOwn(['NODE'])[0]) : S.color); b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1;
+  }
   const tt = textTargets(), t = tt[0], ts = t ? (t._previewFs || t.fs) : S.textSize;
   const lt = lineTargets(), bw = lt.length ? Math.round(brushOf(lt[0])) : S.width;
   const tf = t ? t.f.F : S.font;
-  const key = [gkey, S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
+  const key = [gkey, currentTool(), S.color, S.width, S.fill, tf, ts, tt.map(x => x.cid).join(), lt.map(x => x.cid + lw(x)).join(), ink].join('|');
   if (key === barShown) return; barShown = key;
   const bar = $('bar'), was = bar.hidden;
   bar.hidden = !groups.size;
@@ -3642,7 +3686,7 @@ function setBrush(w, announce){
       if (to !== from){ items.push({ cid: el.cid, before: { W: from }, after: { W: to } }); await commitStyle(el.cid, { W: to }); }
     }
     dirty = true; barShown = '';
-    if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(`${items.length} line${items.length > 1 ? 's' : ''} restyled to brush ${w}. Signed.`); }
+    if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(`${items.length} line${items.length > 1 ? 's' : ''} set to width ${w}.`); }
   }, 450);
 }
 // Colour: sets the colour for new work and recolours your selected strokes, shapes, arrows and text.
@@ -3654,7 +3698,7 @@ async function setColor(c){
   const items = [];
   for (const el of els){ const from = ecol(el); if (from !== c){ items.push({ cid: el.cid, before: { C: from }, after: { C: c } }); await commitStyle(el.cid, { C: c }); } }
   if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; }
-  say(`${items.length} element${items.length === 1 ? '' : 's'} recoloured ${COLOR_NAMES[c] || c}. Signed.`);
+  say(`${items.length} element${items.length === 1 ? '' : 's'} recoloured ${COLOR_NAMES[c] || c}.`);
 }
 // Font: for new text, and an edit of your selected texts (each a new signed TEXT, like resizing)
 async function setFont(f){
@@ -3664,7 +3708,7 @@ async function setFont(f){
   const keep = [...S.sel].filter(c => !tt.some(t => t.cid === current(c)?.cid)), made = [];
   for (const t of tt){ const cur = current(t.cid); if (!cur) continue; if (cur.f.F === f){ made.push(cur.cid); continue; } const b = box(cur); made.push(await commitText({ x: b.x, y: b.y }, cur.text, cur, { F: f }) || cur.cid); }
   S.sel = new Set([...keep, ...made]); dirty = true; barShown = '';
-  say(`${tt.length} text${tt.length > 1 ? 's' : ''} set in ${FONT_NAMES[f]}. Signed as ${tt.length > 1 ? 'edits' : 'an edit'}.`);
+  say(`${tt.length} text${tt.length > 1 ? 's' : ''} set in ${FONT_NAMES[f]}.`);
 }
 $('fillBtn').onclick = () => { S.fill = !S.fill; barShown = ''; paintBar(); say(S.fill ? 'New shapes are filled' : 'New shapes are outlines'); };
 let tsizeT = 0;
@@ -3687,7 +3731,7 @@ function setTextSize(v, announce){
       made.push(nc || cur.cid);
     }
     S.sel = new Set([...keep, ...made]); dirty = true; barShown = '';
-    say(`${tt.length} text${tt.length > 1 ? 's' : ''} resized to ${v}. Signed as ${tt.length > 1 ? 'edits' : 'an edit'}.`);
+    say(`${tt.length} text${tt.length > 1 ? 's' : ''} resized to ${v}.`);
   }, 450);
 }
 $('brush').addEventListener('input', e => setBrush(+e.target.value, false));
@@ -3803,11 +3847,11 @@ async function postFrom(k){
   if (k === 'new'){
     const d = draft; draft = null;
     const cid = await commitComment({ on: d.on, x: d.x, y: d.y, text });
-    if (cid){ activeThread = cid; say(`Comment posted on ${d.on ? targetName(d) : 'the canvas'}. Signed.`); }
+    if (cid){ activeThread = cid; say(`Comment posted on ${d.on ? targetName(d) : 'the canvas'}.`); }
   } else {
     const t = S.D.threads.get(k);
     const cid = await commitComment({ on: t.root.on, x: t.root.x, y: t.root.y, text, re: k });
-    if (cid) say('Reply posted. Signed.');
+    if (cid) say('Reply posted.');
     activeThread = k;
   }
   paintComments(); dirty = true;
@@ -3834,7 +3878,7 @@ $('cmList').addEventListener('click', async e => {
     return;
   }
   if (a === 'show'){ openThread(id); const t = S.D.threads.get(id); if (t?.root.on){ const el = current(t.root.on); if (el && visible(el)){ S.sel = new Set([el.cid]); dirty = true; } } }
-  if (a === 'del'){ if (await setNeg(b.dataset.c, true)) say('Your comment was revoked. It stays in the ledger as a signed record.'); }
+  if (a === 'del'){ if (await setNeg(b.dataset.c, true)) say('Comment deleted.'); }
 });
 $('cmShowDone').addEventListener('change', e => { S.cmShowDone = e.target.checked; paintComments(); dirty = true; });
 $('cmPrev').addEventListener('change', e => { S.cmPrev = e.target.checked; try { localStorage.setItem('flux:cmPrev', S.cmPrev ? '1' : '0'); } catch {} dirty = true; });
@@ -3928,8 +3972,8 @@ function commands(){
   add('edit', 'Revoke selection (-N-1)', revokeSelection, { k: 'Del' });
   add('edit', 'Group selection', groupSelection, { k: '⌘G' });
   add('edit', 'Ungroup selection', ungroupSelection, { k: '⇧⌘G' });
-  add('edit', 'Revoke everything of mine', async () => { const mine = S.D.els.filter(e => e.author === S.me.id && !S.D.hidden.has(e.cid)); for (const e of mine) await setNeg(e.cid, true); if (mine.length) S.hist.push({ kind: 'revoke', cids: mine.map(e => e.cid) }); toast(`${mine.length} of your records revoked; nobody else's were touched.`); });
-  add('view', 'Show revoked records (ghosted)', () => { S.showHidden = !S.showHidden; derive(); }, { on: S.showHidden });
+  add('edit', 'Revoke everything of mine', async () => { const mine = S.D.els.filter(e => e.author === S.me.id && !S.D.hidden.has(e.cid)); for (const e of mine) await setNeg(e.cid, true); if (mine.length) S.hist.push({ kind: 'revoke', cids: mine.map(e => e.cid) }); toast(`Cleared ${mine.length} of your elements; other people's work is untouched.`); });
+  add('view', 'Show deleted elements (faded)', () => { S.showHidden = !S.showHidden; derive(); }, { on: S.showHidden });
   add('view', 'Show only my elements', () => { S.filter = new Set([S.me.id]); paintAuthors(); });
   add('view', 'Show all authors', () => { S.filter = null; paintAuthors(); }, { on: !S.filter });
   add('view', 'Reset view', () => { S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 }; });
@@ -3987,7 +4031,6 @@ $('askNo').onclick = () => closeAsk(null);
 $('ask').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closeAsk(null); });
 $('ask').addEventListener('pointerdown', e => { if (e.target.id === 'ask') closeAsk(null); });
 $('addImg').onclick = () => $('imgFile').click();
-$('cmdBtn').onclick = () => openPalette();
 
 /* actions */
 function selectAll(){ S.sel = new Set(S.D.els.filter(visible).map(e => e.cid)); dirty = true; }
@@ -4026,11 +4069,11 @@ async function exportCanvas(filtered){
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
   a.download = `canvas-${canvasId}${filtered && S.filter ? '-sub' : ''}.flux`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(`Exported ${(text.length / 1024).toFixed(1)} KB of signed patterns`);
+  toast(`Exported (${(text.length / 1024).toFixed(1)} KB)`);
 }
 async function importAndReport(text){
   const { added, rejected } = await importText(text);
-  toast(`Imported ${added} new record${added === 1 ? '' : 's'}` + (rejected ? ` · ${rejected} rejected (bad signature or malformed)` : '') + ' · union-merged');
+  toast(`Imported ${added} new item${added === 1 ? '' : 's'}` + (rejected ? ` · ${rejected} rejected (bad signature or malformed)` : '') + ' · union-merged');
 }
 $('file').addEventListener('change', async e => { const f = e.target.files[0]; if (f) await importAndReport(await f.text()); e.target.value = ''; });
 addEventListener('dragover', e => e.preventDefault());
@@ -4155,7 +4198,7 @@ async function setTitle(title, tpl = S.D.meta?.tpl || ''){
   await publish(await signed('META', [['I', S.me.id], ['R', canvasId], ['M', encTxt(title)], ['K', tpl || 'blank'], ['Z', ++S.lamport], ['T', Date.now()]]));
 }
 async function renameCanvas(){
-  const v = await ask('Canvas title', S.D.meta?.title || '', 'Shown in the title bar, the canvas list and exports. Signed like everything else.');
+  const v = await ask('Canvas title', S.D.meta?.title || '', 'Shown in the title bar, the canvas list and exports.');
   if (v && v.trim()){ await setTitle(v); say(`Canvas renamed “${v.trim()}”.`); }
 }
 
@@ -4239,7 +4282,7 @@ async function newCanvasFrom(tpl){
   if (tpl.build) await tpl.build(viewCenter());
   await new Promise(r => setTimeout(r, 0));
   if (tpl.id !== 'blank') zoomFit();
-  if (tpl.id !== 'blank') setTool('select');
+  if (tpl.id !== 'blank') setTool('select', true);
   dirty = true; toast(`New canvas · ${tpl.name}`);
 }
 async function openExample(x){
@@ -4253,8 +4296,8 @@ async function openExample(x){
   changed();   // re-derive as you: views painted while examples signed as Ana, Ben or Chen (e.g. votes left) must be yours
   await new Promise(r => setTimeout(r, 0));
   zoomFit(); dirty = true;
-  setTool('select');
-  toast(`Example signed by ${EXAMPLE_NAMES.join(', ')} · explore, vote and comment`);
+  setTool('select', true);
+  toast(`An example made by ${EXAMPLE_NAMES.join(', ')} · explore, vote and comment`);
 }
 $('home').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -4304,10 +4347,10 @@ const ownArrows = rs => rs.filter(r => r.type === 'ARROW' && r.author === S.me.i
 TOOLBAR_HOOKS.push((rs, one, B) => {
   const arrows = ownArrows(rs); if (!arrows.length) return '';
   const a = arrows[0];
-  let h = B('rel', 'relation', 'Relation: what this connection means', `aria-pressed="${relRow}"`)
+  let h = B('rel', 'relation', 'What this connection means', `aria-pressed="${relRow}" data-primary`)
     + B('shape', a.eshape || 'curve', `Line shape: ${a.eshape || 'curve'} (click to change)`)
     + B('dash', a.edash && a.edash !== 'solid' ? 'dash' : 'straight', `Line style: ${a.edash || 'solid'} (click to change)`);
-  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => `<button class="word rel-${r.C}" data-a="rel:${r.id}" aria-pressed="${a.elabel === r.label}">${r.label}</button>`).join('');
+  if (relRow) h += '<span class="vs" aria-hidden="true"></span>' + RELATIONS.map(r => `<button class="word rel-${r.C}" data-a="rel:${r.id}" aria-pressed="${a.elabel === r.label}" data-primary>${r.label}</button>`).join('');
   return h;
 });
 async function styleArrows(rs, change, msg){
@@ -4320,12 +4363,12 @@ async function styleArrows(rs, change, msg){
   if (items.length){ S.hist.push({ kind: 'style', items }); S.redo = []; say(msg); }
 }
 TOOLBAR_ACTIONS.rel = () => { relRow = !relRow; };
-TOOLBAR_ACTIONS.shape = rs => styleArrows(rs, a => ({ Y: SHAPES[(SHAPES.indexOf(a.eshape || 'curve') + 1) % 3] }), 'Line shape changed. Signed.');
-TOOLBAR_ACTIONS.dash = rs => styleArrows(rs, a => ({ D: DASHES[(DASHES.indexOf(a.edash || 'solid') + 1) % 3] }), 'Line style changed. Signed.');
-for (const r of RELATIONS) TOOLBAR_ACTIONS['rel:' + r.id] = rs => { relRow = false; return styleArrows(rs, () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”. Signed.`); };
+TOOLBAR_ACTIONS.shape = rs => styleArrows(rs, a => ({ Y: SHAPES[(SHAPES.indexOf(a.eshape || 'curve') + 1) % 3] }), 'Line shape changed.');
+TOOLBAR_ACTIONS.dash = rs => styleArrows(rs, a => ({ D: DASHES[(DASHES.indexOf(a.edash || 'solid') + 1) % 3] }), 'Line style changed.');
+for (const r of RELATIONS) TOOLBAR_ACTIONS['rel:' + r.id] = rs => { relRow = false; return styleArrows(rs, () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”.`); };
 
 PALETTE_HOOKS.push(add => {
-  for (const r of RELATIONS) add('connect', `Relation · ${r.label}`, () => styleArrows([...S.sel].map(c => S.records.get(c)).filter(Boolean), () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”. Signed.`));
+  for (const r of RELATIONS) add('connect', `Relation · ${r.label}`, () => styleArrows([...S.sel].map(c => S.records.get(c)).filter(Boolean), () => ({ M: r.label, C: r.C, D: r.D }), `Marked “${r.label}”.`));
 });
 // grid, sort by votes, cluster into a titled frame. Brainstorm template and example.
 // @uses hooks, builders, commands, diagrams
@@ -4440,7 +4483,7 @@ async function moveItems(items, msg){
   items = items.filter(i => i.dx || i.dy);
   for (const it of items) await commitMove(it.t, it.dx, it.dy);
   if (items.length){ S.hist.push({ kind: 'moves', items }); S.redo = []; }
-  say(items.length ? `${msg}. Signed.` : 'Already in place.');
+  say(items.length ? `${msg}.` : 'Already in place.');
 }
 const arrangeable = rs => rs.map(e => e && current(e.cid)).filter(e => e && e.type !== 'ARROW' && !e.locked && !(e.type === 'NODE' && e.ek === 'frame') && visible(e));
 async function arrangeGrid(rs){
@@ -4463,7 +4506,7 @@ async function clusterSel(rs){
   const W = Math.max(...bs.map(b => b.x + b.w)) + 28 - x, H = Math.max(...bs.map(b => b.y + b.h)) + 28 - y;
   const f = await commitNode({ kind: 'frame', x, y, W, H, label: name.trim() || 'Cluster' });
   await tick(); S.sel = new Set([f, ...els.map(e => e.cid)]); await groupSelection(); S.sel = new Set([f]); dirty = true;
-  say(`Clustered ${els.length} notes into “${name.trim() || 'Cluster'}”. Signed.`);
+  say(`Clustered ${els.length} notes into “${name.trim() || 'Cluster'}”.`);
 }
 
 /* toolbar, palette, keys */
@@ -4471,9 +4514,9 @@ let reactRow = false;
 TOOLBAR_HOOKS.push((rs, one, B) => {
   const els = rs.filter(r => r.type !== 'ARROW'); if (!els.length) return '';
   const allVoted = els.every(e => reacted(e.cid, 'vote'));
-  let h = B('vote', 'vote', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}"`)
-    + B('react', 'smile', 'React', `aria-pressed="${reactRow}"`);
-  if (reactRow) h += Object.entries(REACTIONS).filter(([k]) => k !== 'vote').map(([k, r]) => B('re:' + k, r.icon, r.name[0].toUpperCase() + r.name.slice(1), `aria-pressed="${els.every(e => reacted(e.cid, k))}"`)).join('');
+  let h = B('vote', 'vote', `Dot vote (D)${S.voteBudget ? ` · ${Math.max(0, S.voteBudget - myVotes())} left` : ''}`, `aria-pressed="${allVoted}" data-primary`)
+    + B('react', 'smile', 'React', `aria-pressed="${reactRow}" data-primary`);
+  if (reactRow) h += Object.entries(REACTIONS).filter(([k]) => k !== 'vote').map(([k, r]) => B('re:' + k, r.icon, r.name[0].toUpperCase() + r.name.slice(1), `aria-pressed="${els.every(e => reacted(e.cid, k))}" data-primary`)).join('');
   if (els.length >= 2) h += '<span class="vs" aria-hidden="true"></span>' + B('grid', 'grid', 'Arrange in a grid') + B('sortv', 'sort', 'Sort by votes') + B('cluster', 'frame', 'Cluster into a frame');
   return h;
 });
@@ -4505,8 +4548,8 @@ $('votes').onclick = async () => {
 /* template and example */
 TEMPLATES.push({ id: 'brainstorm', name: 'Brainstorm', icon: '✸', blurb: 'A question, sticky notes, dot voting and a timer.', build: async c => {
   const f = await mk('frame', c.x - 480, c.y - 300, 'Brainstorm', { W: 960, H: 600 });
-  const q = await mk('card', c.x - 460, c.y - 250, 'How might we …?  (double-click to edit the question)', { W: 420, color: 'violet' });
-  const tip = await mk('card', c.x + 20, c.y - 250, 'Double-click empty space for a note · D votes · ⌘K → Start timer', { W: 420 });
+  const q = await mk('card', c.x - 460, c.y - 250, 'How might we …?', { W: 420, color: 'violet' });
+  const tip = await mk('card', c.x + 20, c.y - 250, 'Double-click anywhere to add an idea. Select an idea and press D to vote for it.', { W: 420 });
   const ns = [];
   for (const [i, col] of ['orange', 'blue', 'green'].entries()) ns.push(await mk('sticky', c.x - 440 + i * 190, c.y - 120, 'Your idea', { color: col }));
   await groupAll([f, q, tip, ...ns]);
@@ -4579,7 +4622,7 @@ KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && e.key === 'S
 const COLUMNS = [['What went well', 'green'], ['What to improve', 'orange'], ['Questions', 'blue'], ['Ideas', 'violet']];
 async function feedbackBoard(c, fill = null){
   const ids = [];
-  await mk('card', c.x - 650, c.y - 400, 'Add a note in any column (double-click), vote with D, then ⌘K → Summary.', { W: 640 });
+  await mk('card', c.x - 650, c.y - 400, 'Double-click inside a column to add a note. Press D on a note to vote.', { W: 640 });
   for (const [i, [title, col]] of COLUMNS.entries()){
     const x = c.x - 650 + i * 330, f = await mk('frame', x, c.y - 330, title, { W: 310, H: 640, color: col });
     ids.push(f);
@@ -4750,7 +4793,7 @@ async function extractPalette(el, at = null){
   const b = box(el), p = at || { x: b.x, y: b.y + b.h + 20 }, made = [];
   for (const [i, h] of cols.entries()) made.push(await mk('swatch', p.x + i * 118, p.y, '#' + h.toUpperCase(), { color: h }));
   S.hist.push({ kind: 'creates', cids: made }); S.redo = [];
-  say(`Palette: ${cols.map(c => '#' + c).join(', ')}. ${made.length} swatches added${at ? '' : ' under the image'}. Signed.`);
+  say(`Palette: ${cols.map(c => '#' + c).join(', ')}. ${made.length} swatches added${at ? '' : ' under the image'}.`);
   return made;
 }
 // Masonry: keep sizes, fill the shortest column next, in reading order.
@@ -4894,7 +4937,7 @@ function paintAudit(){
     <div class="au-step"><div class="k">${esc(KIND(el))}</div><h3>${esc(el.text || describe(el))}</h3>
       ${nexts.length ? `<div class="k">next: ${nexts.map(esc).join(' · ')}</div>` : '<div class="k">end of this branch</div>'}</div>
     <div class="au-v" role="group" aria-label="Your verdict">${Object.entries(VERDICTS).map(([k, V], n) => `<button class="btn v-${k}" data-v="${k}" aria-pressed="${mine?.verdict === k}">${V.icon} ${V.name} <kbd>${n + 1}</kbd></button>`).join('')}</div>
-    <label for="auNote">Note (optional, signed with your verdict)</label>
+    <label for="auNote">Note (optional)</label>
     <textarea id="auNote" placeholder="What did you check? What is missing?">${esc(keep)}</textarea>
     ${m.size ? `<ul class="au-others">${[...m.values()].map(r => `<li><b class="v-${r.verdict}">${VERDICTS[r.verdict].icon} ${VERDICTS[r.verdict].name}</b> · ${esc(who(r.author))}${r.note ? ` — ${esc(r.note)}` : ''}</li>`).join('')}</ul>` : '<p class="k">No verdicts on this step yet.</p>'}
     <div class="row2"><button class="btn" data-a="prev">‹ previous</button><button class="btn" data-a="next">next ›</button>
@@ -4906,7 +4949,7 @@ async function giveVerdict(v){
   const el = S.records.get(walk.steps[walk.i]), note = $('auNote')?.value.trim() || '';
   const cid = await publish(await signed('AUDIT', [['I', S.me.id], ['R', el.cid], ['V', v], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
   if (cid){ S.hist.push({ kind: 'fn', undo: () => setNeg(cid, true), redo: () => setNeg(cid, false) }); S.redo = []; }
-  say(`${VERDICTS[v].name} on “${(el.text || '').slice(0, 50)}”. Signed.`);
+  say(`${VERDICTS[v].name} on “${(el.text || '').slice(0, 50)}”.`);
   await tick();
   if (walk.i < walk.steps.length - 1) showStep(walk.i + 1);
   else { paintAudit(); say('That was the last step. Open the report or sign off.'); }
@@ -4940,7 +4983,7 @@ async function signOff(){
   if (v === null) return;
   const cid = await publish(await signed('SIGNOFF', [['I', S.me.id], ['R', canvasId], ['M', encTxt(v.trim() || summary)], ['P', mine.map(r => r.raw)], ['Z', ++S.lamport], ['T', Date.now()]]));
   if (cid){ S.hist.push({ kind: 'fn', undo: () => setNeg(cid, true), redo: () => setNeg(cid, false) }); S.redo = []; }
-  say(`Signed off ${mine.length} verdicts. One signature covers them all.`);
+  say(`Signed off ${mine.length} verdicts.`);
 }
 $('audit').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -4968,7 +5011,7 @@ function openHistory(){
   $('history').hidden = false; document.body.classList.add('history');
   const r = $('histRange'); r.max = histRecs.length; r.value = histRecs.length; setHist(histRecs.length);
   setTimeout(() => r.focus(), 0);
-  say('History. Move the slider to replay the canvas record by record. Read-only until you go back to now.');
+  say('History. Move the slider to replay the canvas step by step. Nothing can change until you go back to now.');
 }
 function setHist(i){
   i = Math.max(0, Math.min(histRecs.length, i));
@@ -5053,7 +5096,7 @@ function peopleRows(){
 function paintPeople(){
   const { P, rows } = peopleRows(), mine = P.owner && P.owner === S.me?.id;
   $('peopleSub').textContent = !P.owner ? 'This canvas has no owner, so everyone may do everything. It was made before permissions or opened by id. Make an owned copy to choose who can do what.'
-    : mine ? 'You own this canvas. Each change is a signed GRANT record; it applies to everything that person has signed here, earlier work included.'
+    : mine ? 'You own this canvas. Choose what each person may do. Changes apply to everything they have added here, earlier work included.'
     : `Owned by ${P.owner === S.me?.id ? 'you' : NAMES.get(P.owner) || short(P.owner)}. Only the owner can change permissions.`;
   const head = `<tr><th scope="col">Person</th>${PERMS.map(p => `<th scope="col">${PERM_NAMES[p]}</th>`).join('')}</tr>`;
   $('peopleTable').innerHTML = head + rows.map(r => {
@@ -5072,7 +5115,7 @@ $('people').addEventListener('change', async e => {
   const perms = [...$('people').querySelectorAll(`input[data-who="${CSS.escape(who)}"]`)].filter(i => i.checked).map(i => i.dataset.p);
   try { await grant(who, perms); } catch { return; }
   await tick(); paintPeople(); $('people').querySelector(`input[data-who="${CSS.escape(who)}"][data-p="${e.target.dataset.p}"]`)?.focus();
-  say(`${who === 'all' ? 'Everyone else' : NAMES.get(who) || short(who)}: ${perms.length ? perms.map(p => PERM_NAMES[p]).join(', ') : 'view only'}. Signed.`);
+  say(`${who === 'all' ? 'Everyone else' : NAMES.get(who) || short(who)}: ${perms.length ? perms.map(p => PERM_NAMES[p]).join(', ') : 'view only'}.`);
 });
 $('people').addEventListener('click', async e => {
   if (e.target.id !== 'peopleCopy') return;
@@ -5118,7 +5161,7 @@ async function compactHistory(){
   await dbDeleteRecords(canvasId, drop);
   if (!DB.ok) save();
   changed(); paintLedger();
-  toast(`Compacted: ${saves} record${saves === 1 ? '' : 's'} fewer. Everything looks the same; step-by-step history of those moves is folded.`);
+  toast(`Tidied up your history (${saves} fewer steps). Nothing on the canvas changed.`);
   return saves;
 }
 PALETTE_HOOKS.push(add => add('canvas', 'Compact my history', compactHistory));
@@ -5212,7 +5255,7 @@ function paintStructure(){
 function toggleStructure(force){
   ST.on = force ?? !ST.on;
   if (ST.on){ if (S.ledger) toggleLedger(false); if ($('comments').style.display === 'flex') toggleComments(false); }
-  $('structure').style.display = ST.on ? 'flex' : 'none'; $('stBtn').setAttribute('aria-expanded', String(ST.on));
+  $('structure').style.display = ST.on ? 'flex' : 'none'; 
   paintStructure();
   if (ST.on) ($('stTree').querySelector('[tabindex="0"]') || $('stClose')).focus(); else cv.focus({ preventScroll: true });
   say(ST.on ? 'Outline. Arrow keys move through the canvas, Enter shows an element.' : 'Outline closed.');
@@ -5222,7 +5265,6 @@ function showOnCanvas(cid){
   S.sel = new Set([cid]); expandSel(); ensureVisible(el); dirty = true; announceSel(); ST.focus = cid;
 }
 $('stClose').onclick = () => toggleStructure(false);
-$('stBtn').onclick = () => toggleStructure();
 $('stTree').addEventListener('click', e => {
   const li = e.target.closest('[data-c]'); if (!li) return;
   if (e.target.closest('.tw') && li.hasAttribute('aria-expanded')){ const c = li.dataset.c; ST.closed.has(c) ? ST.closed.delete(c) : ST.closed.add(c); ST.focus = c; paintStructure(); return; }
@@ -5261,7 +5303,7 @@ const TOOLS = {
   ellipse: { name: 'Ellipse', hint: 'Drag to draw an ellipse' },
   line: { name: 'Line', hint: 'Drag from one element to another to connect them · Shift snaps to 45°' },
   note: { name: 'Sticky note', hint: 'Click to place a note, then type · Tab adds a connected note' },
-  node: { name: 'Shapes and cards', hint: 'Pick a shape below, click to place it and type · Tab adds a child' },
+  node: { name: 'Shape', hint: 'Drag to draw a shape, or click and type · pick the kind below' },
   text: { name: 'Text', hint: 'Click where the text goes · Enter to finish' },
   comment: { name: 'Comment', hint: 'Click an element or a spot to start a thread' },
 };
@@ -5274,7 +5316,7 @@ function currentTool(){
   if (S.shapeTool) return S.shapeTool;
   return S.lassoMode ? 'select' : 'pen';
 }
-function setTool(t){
+function setTool(t, quiet = false){
   if (!TOOLS[t]) return;
   if (taOpen()) finishText(true);
   S.handTool = false; S.shapeTool = null; erasing = false; placing = null;
@@ -5285,30 +5327,35 @@ function setTool(t){
     case 'eraser': S.lassoMode = false; erasing = true; S.sel.clear(); break;
     case 'rect': case 'ellipse': case 'line': S.lassoMode = false; S.shapeTool = t; S.sel.clear(); break;
     case 'note': S.lassoMode = true; S.nodeKind = 'sticky'; placing = 'node'; break;
-    case 'node': S.lassoMode = true; if (S.nodeKind === 'sticky') S.nodeKind = 'card'; placing = 'node'; break;
+    case 'node': S.lassoMode = true; if (S.nodeKind === 'sticky') S.nodeKind = 'rect'; placing = 'node'; break;
     case 'text': S.lassoMode = true; placing = 'text'; break;
     case 'comment': S.lassoMode = true; placing = 'comment'; break;
   }
   setCursor(); paintTools(); dirty = true;
   say(`${TOOLS[t].name}. ${TOOLS[t].hint}.`);
+  if (!quiet && t !== 'select' && (hintSeen[t] || 0) < 2){ showHint(TOOLS[t].hint); hintSeen[t] = (hintSeen[t] || 0) + 1; try { localStorage.setItem('flux:hints', JSON.stringify(hintSeen)); } catch {} }
 }
 let lastTool = null;
+// a tool's hint shows the first two times you pick it, then never again; never when the app switches tools for you
+const hintSeen = (() => { try { return JSON.parse(localStorage.getItem('flux:hints') || '{}'); } catch { return {}; } })();
 function paintTools(){
   const t = currentTool();
   for (const b of document.querySelectorAll('#tools [data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
-  if (t !== lastTool){ if (lastTool !== null) showHint(TOOLS[t].hint); lastTool = t; barShown = ''; }
+  if (t !== lastTool){
+    lastTool = t; barShown = '';
+  }
   dirty = true;
 }
 let hintT = 0;
 function showHint(text){
   const h = $('hint'); h.textContent = text; h.classList.add('on');
-  clearTimeout(hintT); hintT = setTimeout(() => h.classList.remove('on'), 3800);
+  clearTimeout(hintT); hintT = setTimeout(() => h.classList.remove('on'), 2600);
 }
 $('tools').addEventListener('click', e => { const b = e.target.closest('[data-tool]'); if (b) setTool(b.dataset.tool); });
 // after a shape is drawn with its tool, hand back to Select with the new shape selected
-function afterToolCreate(g, cid){ if (g.viaTool && cid){ setTool('select'); S.sel = new Set([cid]); announceSel(); dirty = true; } }
+function afterToolCreate(g, cid){ if (g.viaTool && cid){ setTool('select', true); S.sel = new Set([cid]); announceSel(); dirty = true; } }
 KEY_HOOKS.push((e, c) => {
-  if (c.onCanvas && e.key === 'Escape' && (S.shapeTool || S.handTool)){ e.preventDefault(); setTool('select'); return true; }
+  if (c.onCanvas && e.key === 'Escape' && (S.shapeTool || S.handTool)){ e.preventDefault(); setTool('select', true); return true; }
   return false;
 });
 
@@ -5343,7 +5390,7 @@ let menuItems = [], menuAnchor = null;
 function openMenu(anchor, items, at = null){
   const m = $('menu'); menuItems = items; menuAnchor = anchor;
   m.innerHTML = items.map((it, i) => it === '-' ? '<div class="msep" role="separator"></div>'
-    : `<button role="menuitem" tabindex="-1" data-i="${i}">${ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
+    : `<button role="${it.on !== undefined ? 'menuitemcheckbox' : 'menuitem'}" tabindex="-1" data-i="${i}"${it.on !== undefined ? ` aria-checked="${!!it.on}"` : ''}>${it.sw ? `<i class="msw" style="background:${it.sw}"></i>` : ic(it.icon || 'blank')}<span>${esc(it.label)}</span>${it.on ? ic('check', 'mchk') : ''}${it.key ? `<kbd>${esc(it.key)}</kbd>` : ''}</button>`).join('');
   m.hidden = false; if (!at) anchor.setAttribute('aria-expanded', 'true');
   if (at){   // a context menu opens at the pointer, flipped to stay on screen
     m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, at.x)) + 'px';
@@ -5352,7 +5399,7 @@ function openMenu(anchor, items, at = null){
     const r = anchor.getBoundingClientRect();
     m.style.top = (r.bottom + 6) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
   }
-  m.querySelector('[role=menuitem]')?.focus();
+  m.querySelector('[role^=menuitem]')?.focus();
 }
 function closeMenu(back = true){
   const m = $('menu'); if (m.hidden) return;
@@ -5361,7 +5408,7 @@ function closeMenu(back = true){
 $('menu').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b) return; const it = menuItems[+b.dataset.i]; closeMenu(false); it.run(); });
 $('menu').addEventListener('keydown', e => {
   e.stopPropagation();
-  const items = [...$('menu').querySelectorAll('[role=menuitem]')], i = items.indexOf(document.activeElement);
+  const items = [...$('menu').querySelectorAll('[role^=menuitem]')], i = items.indexOf(document.activeElement);
   if (e.key === 'ArrowDown'){ e.preventDefault(); items[(i + 1) % items.length].focus(); }
   else if (e.key === 'ArrowUp'){ e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
   else if (e.key === 'Home'){ e.preventDefault(); items[0].focus(); }
@@ -5374,25 +5421,30 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
   { label: 'People and permissions…', icon: 'users', run: openPeople },
-  NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Disconnected. Records stay here; other tabs in this browser still sync.'); } },
+  NET.state === 'off' ? { label: 'Go live over a relay…', icon: 'wifi', run: askRelay } : { label: 'Disconnect from the relay', icon: 'wifi', run: () => { netClose(true); toast('Offline. Your work stays here and syncs again when you go live.'); } },
   '-',
-  { label: 'Export canvas (.flux, signed)', icon: 'download', run: () => exportCanvas(true) },
+  { label: 'Download canvas file (.flux)', icon: 'download', run: () => exportCanvas(true) },
   { label: 'Export SVG', icon: 'image', run: exportSVG },
   { label: 'Copy SVG', icon: 'copy', run: () => copy(toSVG(), 'SVG copied') },
+];
+// everything that isn't sharing: views, reports, files, settings
+const moreMenuItems = () => [
+  { label: 'Search and commands', icon: 'search', key: '⌘K', run: openPalette },
+  { label: 'Outline of the canvas', icon: 'list', key: '⇧O', run: () => toggleStructure(true) },
+  { label: 'Present frames', icon: 'present', key: 'F5', run: present },
+  { label: 'History', icon: 'history', key: '⇧H', run: openHistory },
   '-',
   { label: 'Summary as Markdown', icon: 'doc', key: '⇧S', run: showSummary },
   { label: 'Audit report', icon: 'audit', run: () => openReport(`Audit report — ${canvasTitle()}`, auditReport(), 'audit-report.md') },
-  { label: 'Present frames', icon: 'present', key: 'F5', run: present },
-  { label: 'History', icon: 'history', key: '⇧H', run: openHistory },
-  { label: 'Signed records (ledger)', icon: 'ledger', key: '`', run: () => toggleLedger(true) },
+  { label: 'Activity log', icon: 'ledger', key: '`', run: () => toggleLedger(true) },
   '-',
-  { label: 'Import a .flux file', icon: 'upload', run: () => $('file').click() },
+  { label: 'Open a .flux file…', icon: 'upload', run: () => $('file').click() },
   { label: 'Switch theme', icon: 'moon', run: cycleTheme },
   { label: S.grid ? 'Hide dot grid' : 'Show dot grid', icon: 'grid', run: toggleGrid },
   { label: 'Keyboard shortcuts', icon: 'help', key: '?', run: () => toggleHelp(true) },
 ];
 async function askRelay(){
-  const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'A Flux relay forwards signed records between browsers (run one with: node tools/relay.mjs). Everyone on the same canvas id and relay sees changes live; the relay cannot forge anything.');
+  const v = await ask('Relay address', relayDefault() || 'ws://localhost:8787', 'Everyone who opens this canvas through the same relay sees changes live. Start one with: npm run relay. The relay passes work along but can’t change it.');
   if (v){ netConnect(v); toast('Connecting… share the canvas link so others join the same canvas.'); }
 }
 $('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
@@ -5400,6 +5452,7 @@ $('netChip').onclick = () => $('menu').hidden ? openMenu($('netChip'), [
   { label: 'Sync everything now', icon: 'upload', run: () => { sendHello(false); toast('Sync requested.'); } },
   { label: 'Disconnect', icon: 'x', run: () => netClose(true) },
 ]) : closeMenu();
+$('moreBtn').onclick = () => $('menu').hidden ? openMenu($('moreBtn'), moreMenuItems()) : closeMenu();
 $('shareBtn').onclick = () => $('menu').hidden ? openMenu($('shareBtn'), shareItems()) : closeMenu();
 
 function toggleGrid(){ S.grid = !S.grid; try { localStorage.setItem('flux:grid', S.grid ? '1' : '0'); } catch {} dirty = true; say(S.grid ? 'Dot grid on' : 'Dot grid off'); }
@@ -5452,9 +5505,11 @@ $('empty').addEventListener('click', async e => {
   const t = TEMPLATES.find(x => x.id === b.dataset.q); if (!t) return;
   S.touched = true; $('empty').hidden = true;
   await setTitle(t.name, t.id); await t.build(viewCenter()); S.hist = []; await tick();
-  zoomFit(); setTool('select'); toast(`${t.name} ready`);
+  zoomFit(); setTool('select', true); toast(`${t.name} ready`);
 });
 paintTools();
+// ?tool=pen (or any tool name) opens the canvas with that tool, e.g. for a drawing kiosk
+{ const t = new URLSearchParams(location.search).get('tool'); if (t && TOOLS[t] && t !== 'select'){ S.lassoMode = t !== 'pen'; if (t === 'pen') paintTools(); else setTool(t); } }
 /* keyboard */
 addEventListener('keydown', e => {
   if (e.target === ta || e.target === $('palIn') || e.target.closest?.('#ask')) return;
@@ -5550,7 +5605,7 @@ async function switchCanvas(id){
    ===================================================================== */
 (async () => {
   resize();
-  if (!crypto?.subtle){ toast('This page needs a secure context (https or file://) for WebCrypto signing.'); return; }
+  if (!crypto?.subtle){ toast('Open this page from https or as a file: the browser blocks the security features it needs on plain http.'); return; }
   S.me = await loadIdentity();
   let claim = null;
   if (freshCanvas){ const o = await ownedCanvasId(); claim = o.nonce; canvasId = o.id; setHash(canvasId); store.set('flux:lastCanvas', canvasId); openChannel(); }

@@ -1,9 +1,9 @@
-drag anchored pin -120 60 | panel opened? none | Comment pin moved. Signed.
+drag anchored pin -120 60 | panel opened? none | Comment pin moved.
 follows rect after drag 50 50
 click opens { panel: 'flex', active: true }
 drag free pin 80 -40
 undo -> 0 0
 focus after move pin: c | Arrow keys move the pin · Enter or Esc when done
-keyboard pin move -30 -1 | Moved the comment pin 30 left and 1 up. Signed.
+keyboard pin move -30 -1 | Moved the comment pin 30 left and 1 up.
 after Enter focus: reply box pinMove null
 tab2 pin {"x":120,"y":149} tab1 {"x":120,"y":149}

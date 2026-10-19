@@ -28,7 +28,7 @@ cv.addEventListener('pointerdown', e => {
     for (const h of POINTER_HOOKS) if (h(e, w)){ G = { kind: 'none' }; dirty = true; return; }   // feature hit targets (core/hooks)
     if (placing === 'text'){ G = { kind: 'none' }; const t = hitTest(w); if (!(t && t.type === 'TEXT' && editText(t))) openText(w); return; }
     if (erasing){ G = { kind: 'erase', pts: [w], hit: new Set(), others: 0 }; eraseAt(w); dirty = true; return; }
-    if (placing === 'node'){ G = { kind: 'none' }; setPlacing(null); startNode({ kind: S.nodeKind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } }); return; }
+    if (placing === 'node'){ G = { kind: 'place', a: w, b: w, sx: e.clientX, sy: e.clientY }; dirty = true; return; }   // click to place, or drag to size
     const gh = growAt(w);
     if (gh){ G = { kind: 'grow', from: gh.el, dir: gh.dir, start: w, cur: w, moved: false, sx: e.clientX, sy: e.clientY }; dirty = true; return; }
     if (placing === 'comment'){ G = { kind: 'none' }; startComment(w, hitTest(w)); setPlacing(null); return; }
@@ -80,6 +80,7 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   lastPointer = toWorld(e.clientX, e.clientY); sendPresence();
+  if (S.sel.size === 1) dirty = true;   // + handles follow the pointer's distance
   if (!G){
     const h = taOpen() || S.lassoMode ? null : edgeHit(e.clientX, e.clientY);
     const hg = !!growAt(toWorld(e.clientX, e.clientY)); if (hg !== hoverGrow){ hoverGrow = hg; setCursor(); }
@@ -118,7 +119,7 @@ cv.addEventListener('pointermove', e => {
       const dw = Math.max(w.x - G.start.x, (w.y - G.start.y) * G.aspect, 16 - base);
       G.dw = Math.round(dw); G.dh = Math.round(dw / G.aspect); break;
     }
-    case 'rect': case 'circle': G.b = w; break;
+    case 'rect': case 'circle': case 'place': G.b = w; break;
     case 'line': {   // Shift snaps to 45°
       G.b = e.shiftKey ? snap45(G.a, w) : w;
       G.target = G.from ? elementAt(w, G.from) : null;
@@ -149,6 +150,12 @@ function endPointer(e, cancelled){
   if (cancelled) return;
   const w = toWorld(e.clientX, e.clientY);
   switch (g.kind){
+    case 'place': {
+      const kind = S.nodeKind; setPlacing(null);
+      if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 8){ const n = norm(g.a, g.b); startNode({ kind, anchor: { x: n.x, y: n.y, ax: 0, ay: 0 }, size: { W: Math.round(n.w), H: Math.round(n.h) } }); }
+      else startNode({ kind, anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } });
+      return;
+    }
     case 'pan':   // a right-click that didn't drag opens the context menu
       if (g.button === 2 && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < 5) canvasMenu({ x: e.clientX, y: e.clientY }, g.at);
       return;
@@ -176,7 +183,7 @@ function endPointer(e, cancelled){
     case 'circle': commitShape('circle', g.a, g.b).then(c => afterToolCreate(g, c)); return;
     case 'line': {
       const to = elementAt(w, g.from);
-      if (g.from && to){ commitArrow(g.from, to).then(c => { afterToolCreate(g, c); if (c) say(`Connected ${describe(g.from)} to ${describe(to)}. Signed.`); }); return; }
+      if (g.from && to){ commitArrow(g.from, to).then(c => { afterToolCreate(g, c); if (c) say(`Connected ${describe(g.from)} to ${describe(to)}.`); }); return; }
       if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) * S.view.zoom < 4) return;
       commitStroke([{ x: g.a.x, y: g.a.y, t: 0 }, { x: g.b.x, y: g.b.y, t: 1 }], Date.now()); return;
     }
@@ -191,7 +198,7 @@ function endPointer(e, cancelled){
     case 'grow': {
       if (!g.moved){ startChild(g.from, g.dir); return; }
       const t = g.target && current(g.target.cid);
-      if (t){ commitArrow(g.from, t).then(c => c && say(`Connected “${g.from.text.slice(0, 40)}” to ${describe(t)}. Signed.`)); return; }
+      if (t){ commitArrow(g.from, t).then(c => c && say(`Connected “${g.from.text.slice(0, 40)}” to ${describe(t)}.`)); return; }
       startNode({ kind: g.from.ek, parent: g.from.cid, color: ecol(g.from), anchor: { x: w.x, y: w.y, ax: .5, ay: .5 } });
       return;
     }
@@ -199,7 +206,7 @@ function endPointer(e, cancelled){
       if (!g.moved){ if (g.id === 'draft') toggleComments(true); else openThread(g.id); return; }
       if (g.id === 'draft' || (!g.dx && !g.dy)) return;
       (async () => { await commitMove(g.id, g.dx, g.dy); S.hist.push({ kind: 'move', targets: [g.id], dx: g.dx, dy: g.dy }); S.redo = []; })();
-      say('Comment pin moved. Signed.');
+      say('Comment pin moved.');
       return;
     }
     case 'resize': {
@@ -215,18 +222,18 @@ function endPointer(e, cancelled){
       return;
     }
     case 'erase': {
-      if (!g.hit.size){ if (g.others) toast(`Only your own elements erase; ${g.others} by other authors stayed.`); return; }
+      if (!g.hit.size){ if (g.others) toast(`You can only erase your own work; ${g.others} made by others stayed.`); return; }
       (async () => {
         const cids = [...g.hit]; for (const c of cids) await setNeg(c, true);
         S.hist.push({ kind: 'revoke', cids }); S.redo = [];
-        say(`Erased ${cids.length} element${cids.length > 1 ? 's' : ''}. Each is a signed revoke; undo brings them back.`);
-        if (g.others) toast(`Erased ${cids.length}. ${g.others} by other authors stayed.`);
+        say(`Erased ${cids.length} element${cids.length > 1 ? 's' : ''}. Undo brings them back.`);
+        if (g.others) toast(`Erased ${cids.length}. ${g.others} made by others stayed.`);
       })();
       return;
     }
     case 'move': {
       if (!g.dx && !g.dy) return;
-      if (g.dup){ (async () => { const made = await duplicateEls([...S.sel].map(c => S.records.get(c)), g.dx, g.dy); if (made.length){ S.sel = new Set(made); say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}. Signed.`); } })(); return; }
+      if (g.dup){ (async () => { const made = await duplicateEls([...S.sel].map(c => S.records.get(c)), g.dx, g.dy); if (made.length){ S.sel = new Set(made); say(`Duplicated ${made.length} element${made.length > 1 ? 's' : ''}.`); } })(); return; }
       (async () => {
         for (const t of g.targets) await commitMove(t, g.dx, g.dy);
         S.hist.push({ kind: 'move', targets: [...g.targets], dx: g.dx, dy: g.dy }); S.redo = [];

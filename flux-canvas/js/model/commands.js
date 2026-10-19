@@ -34,7 +34,7 @@ async function commitText(w, text, orig = null, style = null){
   const raw = await signed('TEXT', [['I', S.me.id], ['X', encInt(Math.round(w.x))], ['Y', encInt(Math.round(w.y))], ['M', encTxt(text)],
     ['F', st.F], ['S', st.S], ['C', st.C], ...(orig ? [['E', orig.cid]] : []), ['Z', ++S.lamport], ['T', Date.now()]]);
   const cid = await publish(raw); recordCreate(cid);
-  if (orig && cid){ S.sel = new Set([cid]); dirty = true; say('Text edited and signed. The earlier version stays in the ledger.'); }
+  if (orig && cid){ S.sel = new Set([cid]); dirty = true; say('Text updated.'); }
   return cid;
 }
 async function commitComment({ on = null, x, y, text, re = null }){
@@ -107,7 +107,7 @@ async function revokeSelection(){
   for (const c of mine) await setNeg(c, true);
   if (mine.length){ S.hist.push({ kind: 'revoke', cids: mine }); S.redo = []; }
   S.sel.clear(); dirty = true;
-  toast(`${mine.length} revoked with -N-1` + (others ? ` · ${others} belong to other authors, only they can revoke them` : ''));
+  toast(`Deleted ${mine.length}` + (others ? ` · ${others} made by others stay (only they can delete them)` : '') + ' · ⌘Z undoes');
 }
 async function groupSelection(){
   const kids = [...S.sel].map(c => S.records.get(c)).filter(r => r && r.type !== 'ARROW' && !S.D.hidden.has(r.cid));
@@ -118,7 +118,7 @@ async function groupSelection(){
   const K = kids.map(k => k.cid).join('_'), R = await cidOf(te.encode(K));
   const raw = await signed('GROUP', [['I', S.me.id], ['R', R], ['K', K], ['Z', ++S.lamport], ['T', Date.now()]]);   // members by CID, not copies (audit D2)
   recordCreate(await publish(raw));
-  toast(`Grouped ${kids.length} elements into one signed record.`);
+  toast(`Grouped ${kids.length} elements.`);
 }
 async function ungroupSelection(){
   const gs = new Set([...S.sel].map(c => S.D.groupOf.get(c)).filter(Boolean));

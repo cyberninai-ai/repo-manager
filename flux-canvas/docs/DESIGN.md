@@ -5,7 +5,7 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 ## Layout
 
 ```
-┌ ☰ Title  [5 votes left] ┐   ┌ ▸ ✋ │ ✎ ⌫ │ ▢ ◯ ↗ │ ▨ ⧉ T 🖼 │ 💬 ┐   (AN)(BE) ┌ 💬 🔍 🛡 ┐ [Share]
+┌ ☰ Title  [5 votes left] ┐   ┌ ▸ ✋ │ ✎ ⌫ │ ▨ ⧉ ↗ T 🖼 │ 💬 ┐   (AN)(BE) ┌ 💬 ⋯ ┐ [Share]
                                 └── tool hint, for a few seconds ──┘
                                                                      ┌ side panel ┐  comments,
                          the canvas (dot grid)                       │            │  ledger,
@@ -15,12 +15,12 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 ```
 
 - **Top left:** canvas menu and title. Vote and timer chips appear only while they're in use.
-- **Top centre: the tool dock.** Select (V), Hand (Space), Draw (P), Eraser (E); Rectangle, Ellipse, Line; Sticky note, Shapes and cards (N), Text (T), Image (I); Comment (M).
+- **Top centre: the tool dock** has nine tools. Select (V, the default), Hand (Space); Draw (P), Eraser (E); Sticky note, Shape (N: drag to size or click and type, kind below), Connector line, Text (T), Image (I); Comment (M).
 - **Top right:**
   - **Live chip:** appears while connected to a relay. It shows "Live · 3", or "Reconnecting…" with a pulsing dot.
   - **People on the canvas:** up to four avatars with initials; yours has an accent ring. Click one to see only their work. With more than four people, a "+N" opens People and permissions.
-  - **Icon buttons:** comments, outline (⇧O), search and commands (⌘K), signatures.
-  - **Share:** people and permissions, going live over a relay, export, summary, audit report, present, history, ledger, import, theme, grid and shortcuts.
+  - **Comments** (with the open count) and **More** (⋯): search and commands, outline, present, history, summary, audit report, activity log, open a file, theme, grid and shortcuts.
+  - **Share:** copy link, people and permissions, go live, download the canvas, export SVG.
 - **Bottom centre: the style bar.** It is contextual:
 
   | Tool or selection | Groups shown |
@@ -34,7 +34,7 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
   | Select (nothing selected), Hand, Eraser, Comment | Hidden |
 
 - **Bottom left:** zoom out, zoom level (click for 100%), zoom in, fit, overview map (off by default).
-- **Selection toolbar:** floats above the selection with icon actions: edit, comment, duplicate, align, layer order, lock, group, vote, react, details, delete.
+- **Selection toolbar:** only what people reach for every time. That is edit, comment, vote and react (on notes), what a connection means (on connectors), align (on several), duplicate and delete. Everything else sits under **More**, in words: layer order, lock, group, copy, arrange in a grid, sort by votes, cluster, masonry, palette, line shape and style, and details. Style lives in the bottom bar; the toolbar is for actions.
 - **Side panels** (comments, outline, ledger, audit) open below the top bar, so it stays usable.
 - **Context menu:** right-click an element (or press the Menu key or Shift+F10) for edit, comment, duplicate, copy, layer order, lock, group and delete. On empty paper it offers paste, a sticky note or text right there, select all, fit and the outline. A right-drag still pans.
 - **People and permissions:** a table with one row per person and a column per permission: draw and write; comment, vote and react; move others' work; audit and sign off. "Everyone else" sets the default. Only the owner can change it. Each change is a signed `GRANT`.
@@ -45,7 +45,11 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 
 ## Tools behave like tools
 
-- A shape tool (Rectangle, Ellipse, Line) hands back to **Select** after one shape, with the new shape selected. That keeps the selection toolbar and style bar at hand.
+- **Select is the default**, so clicking around never leaves marks. `?tool=pen` opens with Draw (e.g. for a drawing kiosk).
+- The Shape and Line tools hand back to **Select** after one shape, with the new shape selected.
+- A tool's hint shows the first two times you pick it, for under three seconds, and never when the app switches tools for you.
+- The `+` handles on a selected node appear only when the pointer comes near it.
+- Sticky notes are picked in paper colours (the classic yellow first), not ink colours.
 - A line dragged from one element to another becomes a **bound connector** (an `ARROW` record by CID). Anywhere else, it is a straight 2-point stroke. Shift snaps to 45°.
 - The modifiers still work from Draw: Shift-drag for a rectangle, Alt-drag for an ellipse, and dragging from an element's edge for a connector.
 - Esc leaves the shape and hand tools. Space-drag pans with any tool.
@@ -89,3 +93,7 @@ The interface follows one rule: **the canvas is the product; the chrome floats o
 - The Share menu is a real `menu`: arrows, Home/End, Esc, and focus returns to Share.
 - Contrast: muted text, avatar initials, tags and status colours pass WCAG AA. axe-core runs in every suite.
 - Reduced motion turns off every transition.
+
+## Language
+
+People see what happened, never how it is stored. Messages say "Deleted 2 · ⌘Z undoes", not "2 revoked with -N-1". Nothing visible mentions signatures, records, CIDs or blobs, except the activity log and the details view, which exist to show them. Every element is still signed and verifiable; that's the product's guarantee, not its vocabulary.
