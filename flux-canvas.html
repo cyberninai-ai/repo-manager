@@ -556,7 +556,7 @@ body.history #tools{opacity:.45;pointer-events:none}
 /* feature panels (ui/panels) */
 .fx .fx-body{display:flex;flex-direction:column;gap:10px;padding:12px}
 .fx h3{margin:6px 0 0;font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px;align-items:center}
-.fx h3 .n{font-weight:600;color:var(--faint)}
+.fx h3 .n{font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
 .fx p{margin:0;font-size:13px;line-height:1.45}
 .fx .muted,.fx small{color:var(--muted);font-size:12px}
 .fx .card{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--panel)}
@@ -6602,6 +6602,516 @@ DELIVERY_HOOKS.proof.push((x, out) => {
   const at = claimsAt(claimBy, S.D, x.d.z); if (!at.size) return;
   out.push('', '## Claims at the time of delivery', '', ...[...at.values()].map(c => `- ${CLAIM_STATE[c.state][0]}${c.score != null ? ` (${c.score.toFixed(2)})` : ''}: “${elTitle(c.t)}” — ${c.ev.length} evidence, ${c.ok} independent check${c.ok === 1 ? '' : 's'} holding, ${c.no} not`));
 });
+// commits to the exact record (its CID), so nobody, not even its author, can change it after sealing, and nobody but its author
+// can read it early. Sealed bids, blind votes and pre-commitments use it directly; silent rounds (features/rounds) build on it.
+// @uses records, derive, db (keys), ui/panels, ui/form
+// SEAL-I-R-{nonce}-K-{note|bid|stance|commitment}-C-{CID of the sealed record}-B-{AES-GCM ciphertext, base64}-V-{iv}-W-{reveal at, ms}-O-{round|0}-X-Y-Z-T-SIG
+// REVEAL-I-R-{seal}-K-{key, base64}-Z-T-SIG     only the sealer's reveal counts, and clients open it only once its time has come
+// What it guarantees: the content can't change after sealing (the CID), and others can't read it before the sealer reveals.
+// What it can't: force a sealer who goes offline to reveal. The panel shows who still owes a reveal.
+const SEAL_KINDS = { note: 'Sealed note', bid: 'Sealed bid', stance: 'Blind stance', commitment: 'Pre-commitment' };
+const SEAL_CLOCKS = [];   // (seal) → its reveal time when something else decides it (a silent round's end), or undefined
+registerRecord('SEAL', { parse(r, f){ if (!f.R || !f.C || !f.B || !f.V || !(f.K in SEAL_KINDS)) throw Error('seal'); if (f.B.length > 24000) throw Error('too big');
+  r.kind = f.K; r.inner = f.C; r.at = Math.max(0, +f.W || 0); r.round = f.O && f.O !== '0' ? f.O : null; r.x = decInt(f.X || '0'); r.y = decInt(f.Y || '0'); } });
+registerRecord('REVEAL', { parse(r, f){ if (!f.R || !f.K) throw Error('reveal'); } });
+Object.assign(PERM_OF, { SEAL: 'comment', REVEAL: null });
+
+const sealKeys = new Map();   // seal CID → raw key, for the seals you made (kept in IndexedDB, or this tab when it can't)
+async function keepSealKey(cid, key){ sealKeys.set(cid, key); if (!await dbPut('keys', b64enc(key), 'seal:' + cid)) try { sessionStorage.setItem('flux:seal:' + cid, b64enc(key)); } catch {} }
+async function sealKey(cid){
+  if (sealKeys.has(cid)) return sealKeys.get(cid);
+  const v = await dbGet('keys', 'seal:' + cid) || (() => { try { return sessionStorage.getItem('flux:seal:' + cid); } catch { return null; } })();
+  if (v){ const k = b64dec(v); sealKeys.set(cid, k); return k; } return null;
+}
+const sealTime = s => { for (const f of SEAL_CLOCKS){ const t = f(s); if (t !== undefined) return t; } return s.at; };
+
+DERIVE_HOOKS.push((D, by) => {
+  const seals = new Map();
+  for (const s of by.SEAL || []) if (!D.hidden.has(s.cid)) seals.set(s.cid, { s, reveal: null });
+  for (const r of by.REVEAL || []){ const x = seals.get(r.f.R); if (x && samePerson(r.author, x.s.author) && !x.reveal) x.reveal = r; }
+  D.seals = seals;
+});
+const sealOpen = x => S.records.has(x.s.inner);
+
+// seal a record you signed: encrypt it, publish only the commitment
+async function sealRecord(innerRaw, { kind = 'note', at, round = null, x = 0, y = 0 }){
+  const key = crypto.getRandomValues(new Uint8Array(32)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const k = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt']);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(innerRaw)));
+  const inner = await cidOf(te.encode(innerRaw));
+  const raw = await signed('SEAL', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['K', kind], ['C', inner], ['B', b64enc(ct)], ['V', b64enc(iv)],
+    ['W', Math.round(at || 0)], ['O', round || '0'], ['X', encInt(Math.round(x))], ['Y', encInt(Math.round(y))], ['Z', ++S.lamport], ['T', Date.now()]]);
+  const cid = await cidOf(te.encode(raw));
+  await keepSealKey(cid, key);
+  await publish(raw);
+  return cid;
+}
+async function revealSeal(cid){
+  const x = S.D.seals.get(cid); if (!x || x.reveal || !samePerson(x.s.author, S.me.id)) return false;
+  const key = await sealKey(cid); if (!key) return false;
+  await publish(await signed('REVEAL', [['I', S.me.id], ['R', cid], ['K', b64enc(key)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  return true;
+}
+// open revealed seals whose time has come: decrypt, check the plaintext is the committed record, ingest it like any record
+const opening = new Set();
+async function openSeals(){
+  for (const [cid, x] of S.D.seals || []){
+    if (!x.reveal || sealOpen(x) || opening.has(cid) || Date.now() < sealTime(x.s)) continue;
+    opening.add(cid);
+    try {
+      const k = await crypto.subtle.importKey('raw', b64dec(x.reveal.f.K), 'AES-GCM', false, ['decrypt']);
+      const plain = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64dec(x.s.f.V) }, k, b64dec(x.s.f.B)));
+      const node = parse(plain);
+      if (await cidOf(te.encode(plain)) !== x.s.inner || !samePerson(node.fields.I, x.s.author)){ x.bad = true; continue; }
+      await ingest(plain);
+    } catch { x.bad = true; } finally { opening.delete(cid); }
+  }
+}
+// your own seals reveal themselves when their time comes, if this browser is open
+const revealing = new Set(), keyless = new Set();
+async function autoReveal(){
+  for (const [cid, x] of S.D.seals || []){
+    if (x.reveal || revealing.has(cid) || keyless.has(cid) || !samePerson(x.s.author, S.me?.id) || Date.now() < sealTime(x.s)) continue;
+    revealing.add(cid);
+    try { if (!await revealSeal(cid) && !await sealKey(cid)) keyless.add(cid); } finally { setTimeout(() => revealing.delete(cid), 3000); }
+  }
+}
+setInterval(() => { if (!S.me || S.histZ != null) return; autoReveal(); openSeals(); }, 1000);
+CHANGE_HOOKS.push(() => openSeals());
+
+/* sealed cards on the canvas: your own sealed work where you put it (others' stay out of sight; see features/rounds) */
+RENDER_HOOKS.world.push(() => {
+  for (const [, x] of S.D.seals || []){
+    if (sealOpen(x) || x.s.round && !samePerson(x.s.author, S.me?.id)) continue;
+    const z = S.view.zoom, w = 180, h = 64, left = Math.max(0, sealTime(x.s) - Date.now());
+    ctx.save(); ctx.globalAlpha = .9; rr(ctx, x.s.x, x.s.y, w, h, 10); ctx.fillStyle = TONE.acc[0]; ctx.fill(); ctx.setLineDash([6 / z, 4 / z]); ctx.lineWidth = 1.5 / z; ctx.strokeStyle = TONE.acc[1]; ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = TONE.acc[1]; ctx.font = `600 13px ${FONTS.sans}`; ctx.textBaseline = 'middle';
+    ctx.fillText(`🔒 ${SEAL_KINDS[x.s.kind]}`, x.s.x + 12, x.s.y + 22);
+    ctx.font = `500 11px ${FONTS.sans}`; ctx.fillText(`${whoName(x.s.author)} · ${left ? `opens in ${clock(left)}` : x.reveal ? 'opening…' : 'waiting for the reveal'}`, x.s.x + 12, x.s.y + 44);
+    ctx.restore();
+  }
+});
+
+/* sealing something by hand: a note or a bid, opened at a set time */
+async function newSealed(kind = 'note'){
+  const v = await formDialog(kind === 'bid' ? 'Seal a bid' : 'Seal a note', [
+    { id: 'kind', label: 'What is it', type: 'select', value: kind, options: Object.entries(SEAL_KINDS).filter(([k]) => k !== 'stance') },
+    { id: 'text', label: kind === 'bid' ? 'Your bid (amount and terms)' : 'What you are sealing', type: 'textarea', value: '' },
+    { id: 'at', label: 'Opens at', type: 'datetime', value: localDT(Date.now() + 15 * 6e4), hint: 'Nobody can read it before then. You can’t change it after you seal it.' },
+  ], { ok: 'Seal and sign', why: 'Everyone sees that you sealed something, and when it opens. Only you can open it, and only from that time.' });
+  if (!v || !v.text.trim()) return;
+  const at = new Date(v.at).getTime() || Date.now() + 15 * 6e4, c = { x: S.view.x + innerWidth / 2 / S.view.zoom - 90, y: S.view.y + innerHeight / 2 / S.view.zoom - 32 };
+  const inner = await signed('NODE', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(8)))], ['K', 'card'], ['X', encInt(Math.round(c.x))], ['Y', encInt(Math.round(c.y))], ['W', 0], ['H', 0], ['M', encTxt(`${SEAL_KINDS[v.kind]}: ${v.text.trim()}`)], ['C', 'violet'], ['P', '0'], ['Z', ++S.lamport], ['T', Date.now()]]);
+  await sealRecord(inner, { kind: v.kind, at, x: c.x, y: c.y });
+  toast(`Sealed until ${new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. It opens on its own if this browser is open then.`);
+}
+registerPanel({
+  id: 'sealed', title: 'Sealed', blurb: 'Bids, blind votes and commitments that nobody can read or change until they open.', sync: true,
+  paint(body){
+    const all = [...(S.D.seals?.values() || [])].sort((a, b) => sealTime(a.s) - sealTime(b.s));
+    const row = x => { const t = sealTime(x.s), open = sealOpen(x), mine = samePerson(x.s.author, S.me.id), el = open && S.records.get(x.s.inner);
+      return `<li class="card${open ? '' : ' hot'}"><div class="hd"><b>${esc(SEAL_KINDS[x.s.kind])} · ${esc(whoName(x.s.author))}</b><span class="pill ${open ? 'good' : x.bad ? 'bad' : 'acc'}">${open ? 'Opened ✓' : x.bad ? 'Doesn’t match its seal' : Date.now() < t ? `Opens in ${clock(t - Date.now())}` : x.reveal ? 'Opening…' : 'Waiting for reveal'}</span></div>
+        ${open ? `<p>${esc(el?.text || KIND(el))}</p><small>Matches the commitment it was sealed with (${x.s.inner.slice(-10)}).</small>` : `<small>Sealed ${when(x.s.t)} · commitment ${x.s.inner.slice(-10)}</small>`}
+        ${!open && mine && Date.now() >= t && !x.reveal ? '<div class="acts"><button class="btn primary" data-rv="' + x.s.cid + '">Reveal now</button></div>' : ''}${open ? `<div class="acts"><button class="btn" data-go="${x.s.inner}">Show</button></div>` : ''}</li>`; };
+    body.innerHTML = `<div class="acts"><button class="btn" data-new="note" data-autofocus>${ic('lock')}Seal a note…</button><button class="btn" data-new="bid">${ic('coin')}Seal a bid…</button></div>
+      ${all.length ? `<ul class="plain">${all.map(row).join('')}</ul>` : '<p class="empty">Nothing sealed. Use it for sealed bids, blind votes, or a decision you commit to now and reveal later, so nobody can say it was made up afterwards.</p>'}
+      <p class="muted">Only the person who sealed something can open it. If they are offline when it is due, it opens when they come back.</p>`;
+  },
+  click(e, b){ if (b.dataset.new) return newSealed(b.dataset.new); if (b.dataset.rv) return revealSeal(b.dataset.rv); if (b.dataset.go) return goTo(b.dataset.go); },
+});
+setInterval(() => { if (panelOpen === 'sealed') paintPanel(); }, 1000);
+registerFeature({ id: 'sealed', name: 'Sealed bids and commitments', group: 'decide', icon: 'lock', records: ['SEAL', 'REVEAL'],
+  blurb: 'Seal a bid, vote or commitment now; nobody can read or change it until it opens',
+  status: () => { const n = [...(S.D.seals?.values() || [])].filter(x => !sealOpen(x)).length; return n ? `${n} sealed` : ''; },
+  open: () => openPanel('sealed') });
+// without seeing anyone else's ideas; at the end every idea opens at the same moment. While a round runs, the notes you add are
+// sealed (features/seal), so nobody can read them early: not the round's starter, not the relay, not a curious participant.
+// A blind stance round does the same for stances on one item. Sealing is the primitive; the round is the ritual around it.
+// @uses features/seal, features/stances, records, ui/hub (strip), ui/form
+// ROUND-I-R-{nonce}-M-{prompt}-E-{ends at, ms}-A-{participants _|all}-K-{ideas|stances}-ON-{item for a stance round|0}-Z-T-SIG
+//   the starter may sign it again with the same R to end it early (latest by the starter wins)
+registerRecord('ROUND', { parse(r, f){ if (!f.R || !f.E || !['ideas', 'stances'].includes(f.K)) throw Error('round'); r.prompt = decTxt(f.M || ''); r.end = +f.E || 0;
+  r.who = f.A && f.A !== 'all' ? f.A.split('_').filter(Boolean) : null; r.mode = f.K; r.on = f.ON && f.ON !== '0' ? f.ON : null; } });
+PERM_OF.ROUND = 'draw';
+
+DERIVE_HOOKS.push((D, by) => {
+  const rounds = new Map();
+  for (const r of by.ROUND || []){ if (D.hidden.has(r.cid)) continue; const o = rounds.get(r.f.R); if (!o) rounds.set(r.f.R, { first: r, cur: r }); else if (samePerson(r.author, o.first.author)) o.cur = r; }
+  D.rounds = rounds;
+});
+// a sealed idea opens when its round ends, wherever the round's end moved to
+SEAL_CLOCKS.push(s => { if (!s.round) return undefined; const o = S.D.rounds?.get(s.round); return o ? o.cur.end : undefined; });
+const inRound = (o, id = S.me?.id) => !o.cur.who || o.cur.who.some(k => samePerson(k, id));
+function activeRound(){ for (const o of S.D.rounds?.values() || []) if (Date.now() < o.cur.end && inRound(o)) return o; return null; }
+const lastRound = () => [...(S.D.rounds?.values() || [])].sort((a, b) => b.first.z - a.first.z)[0] || null;
+function roundSeals(nonce){ return [...(S.D.seals?.values() || [])].filter(x => x.s.round === nonce); }
+
+async function startRound({ prompt, minutes = 5, who = null, mode = 'ideas', on = null }){
+  const R = b32(crypto.getRandomValues(new Uint8Array(8))), end = Date.now() + Math.max(.05, minutes) * 6e4;
+  await publish(await signed('ROUND', [['I', S.me.id], ['R', R], ['M', encTxt(prompt)], ['E', Math.round(end)], ['A', who?.length ? who.join('_') : 'all'], ['K', mode], ['ON', on || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+  post({ roundStart: { R } });
+  return R;
+}
+async function endRound(o){
+  const c = o.cur;
+  await publish(await signed('ROUND', [['I', S.me.id], ['R', c.f.R], ['M', c.f.M || ''], ['E', Date.now()], ['A', c.f.A], ['K', c.mode], ['ON', c.f.ON || '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+WIRE_HOOKS.roundStart = () => setTimeout(() => { const o = activeRound(); if (o) toast(`Silent round: ${o.cur.prompt || 'write your ideas'} · what you add stays sealed until it ends`); }, 400);
+
+const toldRounds = new Set();
+// while a round runs, a note you create is sealed instead of published; edits and everything else go through as usual
+PUBLISH_FILTERS.push(async (raw, blobs) => {
+  const o = activeRound(); if (!o || o.cur.mode !== 'ideas' || !raw.startsWith('NODE-') || Object.keys(blobs).length) return undefined;
+  const node = parse(raw); if (node.fields.E || !samePerson(node.fields.I, S.me.id)) return undefined;
+  const cid = await sealRecord(raw, { kind: 'note', round: o.first.f.R, at: o.cur.end, x: decInt(node.fields.X), y: decInt(node.fields.Y) });
+  if (!toldRounds.has(o.first.f.R)){ toldRounds.add(o.first.f.R); toast('Sealed until the round ends. Nobody can read it before then.'); }
+  return cid;
+});
+// a blind stance: sealed until the round ends, then every stance opens together
+async function blindStance(o, stance){
+  const raw = await signed('STANCE', [['I', S.me.id], ['R', o.cur.on], ['S', stance], ['M', ''], ['Z', ++S.lamport], ['T', Date.now()]]);
+  await sealRecord(raw, { kind: 'stance', round: o.first.f.R, at: o.cur.end });
+  toast(`${STANCES[stance].name}: sealed until the round ends.`);
+}
+
+/* the strip: the prompt, the time left, how many ideas are sealed (never whose content) */
+STRIP.push(() => {
+  const o = activeRound() || (() => { const l = lastRound(); return l && Date.now() - l.cur.end < 90000 ? l : null; })(); if (!o) return '';
+  const seals = roundSeals(o.first.f.R), mine = seals.filter(x => samePerson(x.s.author, S.me.id)).length, left = o.cur.end - Date.now();
+  if (left > 0){
+    const who = new Set(seals.map(x => personOf(x.s.author))).size;
+    return `<span class="sp sealed">${ic('lock')}<b>Silent round</b><span>${esc(o.cur.prompt.slice(0, 48))}</span><span class="t">${clock(left)}</span><span>${o.cur.mode === 'stances' ? `${seals.length} sealed stance${seals.length === 1 ? '' : 's'}` : `you ${mine} · room ${seals.length} from ${who}`}</span>
+      ${o.cur.mode === 'stances' ? Object.entries(STANCES).slice(0, 4).map(([k, s]) => `<button class="btn" data-strip="bs-${k}" aria-label="${s.name}, sealed">${s.mark}</button>`).join('') : '<button class="btn" data-strip="idea">Add idea</button>'}
+      ${samePerson(o.first.author, S.me.id) ? '<button class="btn" data-strip="endround">End now</button>' : ''}</span>`;
+  }
+  const open = seals.filter(sealOpen).length, owed = [...new Set(seals.filter(x => !sealOpen(x)).map(x => personOf(x.s.author)))];
+  return `<span class="sp">${ic('sparkle')}<b>Round revealed</b><span>${open} of ${seals.length} opened together${owed.length ? ` · waiting for ${owed.map(whoName).join(', ')} to reveal` : ''}</span></span>`;
+});
+STRIP_ACTIONS.idea = async () => {
+  const o = activeRound(); if (!o) return;
+  const text = await ask(o.cur.prompt || 'Your idea', '', 'Sealed until the round ends: nobody sees it before then, and you can’t change it after.');
+  if (!text?.trim()) return;
+  const n = roundSeals(o.first.f.R).filter(x => samePerson(x.s.author, S.me.id)).length, c = { x: S.view.x + innerWidth / 2 / S.view.zoom, y: S.view.y + innerHeight / 2 / S.view.zoom };
+  await commitNode({ kind: 'sticky', x: c.x - 300 + (n % 4) * 170, y: c.y - 120 + Math.floor(n / 4) * 170, label: text.trim() });
+};
+STRIP_ACTIONS.endround = () => { const o = activeRound(); if (o) endRound(o); };
+for (const k of Object.keys(STANCES)) STRIP_ACTIONS['bs-' + k] = () => { const o = activeRound(); if (o?.cur.mode === 'stances') blindStance(o, k); };
+
+async function roundForm(){
+  const sel = [...S.sel].map(c => S.records.get(c)).find(r => r && r.type !== 'DRAW' && r.type !== 'ARROW');
+  const v = await formDialog('Start a silent round', [
+    { id: 'mode', label: 'Kind of round', type: 'select', value: 'ideas', options: [['ideas', 'Ideas: everyone writes, then all ideas open together'], ...(sel ? [['stances', `Blind stances on “${elTitle(sel.cid).slice(0, 40)}”`]] : [])] },
+    { id: 'prompt', label: 'The question', type: 'text', value: sel ? `Where do you stand on: ${elTitle(sel.cid)}` : 'How might we…' },
+    { id: 'min', label: 'Minutes', type: 'number', value: 5, min: 1, max: 60 },
+    { id: 'who', label: 'Who takes part', type: 'people', value: people(), options: people(), hint: 'Everyone checked writes in silence; the round ends for all at once.' },
+  ], { ok: 'Start the round', why: 'Nobody sees anyone else’s ideas until the time is up. It stops the first idea or the loudest voice from steering the rest.' });
+  if (!v || !v.prompt.trim()) return;
+  const all = v.who.length >= people().length;
+  await startRound({ prompt: v.prompt.trim(), minutes: v.min || 5, who: all ? null : v.who, mode: v.mode, on: v.mode === 'stances' ? sel.cid : null });
+  toast('Round started. Notes you add now are sealed.');
+}
+registerFeature({ id: 'rounds', name: 'Silent round', group: 'meet', icon: 'lock', records: ['ROUND'],
+  blurb: 'Everyone writes without seeing the others; all ideas open at the same moment',
+  status: () => { const o = activeRound(); return o ? `${clock(o.cur.end - Date.now())} left` : ''; },
+  open: () => { const o = activeRound(); if (o){ toast(`A round is running: ${clock(o.cur.end - Date.now())} left`); return; } roundForm(); } });
+// boxes, pulls everyone to the next item, keeps a queue of raised hands, gives the floor and names a note-taker per item. The
+// meeting has a record of execution (planned against actual time, who spoke, what was decided) and minutes anyone can verify.
+// @uses records, derive, permissions (owner), ui/hub (strip), ui/panels, ui/form
+// FACIL-I-R-{person}-S-{1 start|0 end}-Z-T-SIG      the owner, or the current facilitator handing over (anyone, on an open canvas)
+// AGENDA-I-R-{nonce}-M-{title~minutes~frame _ …}-Z-T-SIG   NEXT-I-R-{agenda}-J-{item, or the item count when done}-Z-T-SIG
+// FLOOR-I-R-{person|0}-Z-T-SIG   SCRIBE-I-R-{person}-J-{item}-Z-T-SIG     (the facilitator's)    HAND-I-S-{1 up|0 down}-Z-T-SIG (anyone's)
+registerRecord('FACIL', { parse(r, f){ if (!f.R) throw Error('facil'); r.who = f.R; r.on = f.S !== '0'; }, inherit: false });
+registerRecord('AGENDA', { parse(r, f){ if (!f.M) throw Error('agenda'); r.items = f.M.split('_').filter(Boolean).map(it => { const [t, m, fr] = it.split('~'); return { title: decTxt(t || ''), min: Math.max(1, Math.min(240, +m || 5)), frame: fr && fr !== '0' ? fr : null }; }); if (!r.items.length) throw Error('agenda'); }, inherit: false });
+registerRecord('NEXT', { parse(r, f){ if (!f.R || f.J == null) throw Error('next'); r.n = Math.max(0, +f.J || 0); }, inherit: false });
+registerRecord('FLOOR', { parse(r, f){ r.who = f.R && f.R !== '0' ? f.R : null; }, inherit: false });
+registerRecord('SCRIBE', { parse(r, f){ if (!f.R) throw Error('scribe'); r.who = f.R; r.n = Math.max(0, +f.J || 0); }, inherit: false });
+registerRecord('HAND', { parse(r, f){ r.up = f.S !== '0'; }, inherit: false });
+Object.assign(PERM_OF, { FACIL: null, AGENDA: null, NEXT: null, FLOOR: null, SCRIBE: null, HAND: 'comment' });
+
+DERIVE_HOOKS.push((D, by) => {
+  const owner = S.P?.owner, recs = ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'].flatMap(t => by[t] || []).filter(r => !D.hidden.has(r.cid)).sort(byZ);
+  const m = { fac: null, roles: [], agenda: null, at: null, started: 0, floor: null, scribes: new Map(), hands: new Map(), log: [] };
+  const isFac = r => m.fac && samePerson(r.author, m.fac);
+  for (const r of recs){
+    if (r.type === 'FACIL'){ if (!owner || samePerson(r.author, owner) || isFac(r)){ m.fac = r.on ? r.who : null; m.roles.push(r); } }
+    else if (r.type === 'HAND'){ const p = personOf(r.author); if (r.up) m.hands.set(p, r.t); else m.hands.delete(p); }   // the queue goes by when hands went up
+    else if (!isFac(r)) continue;
+    else if (r.type === 'AGENDA'){ m.agenda = r; m.at = null; m.log = []; m.scribes = new Map(); }
+    else if (r.type === 'NEXT' && m.agenda && r.f.R === m.agenda.cid){
+      const last = m.log.at(-1); if (last && !last.end) last.end = r.t;
+      m.at = Math.min(r.n, m.agenda.items.length); m.started = r.t; m.floor = null;
+      if (m.at < m.agenda.items.length) m.log.push({ i: m.at, start: r.t, end: null, z: r.z, floors: [] });
+    }
+    else if (r.type === 'FLOOR'){ m.floor = r.who; if (r.who){ m.hands.delete(personOf(r.who)); m.log.at(-1)?.floors.push(r.who); } }
+    else if (r.type === 'SCRIBE') m.scribes.set(r.n, r.who);
+  }
+  m.queue = [...m.hands].sort((a, b) => a[1] - b[1]).map(([p]) => p);
+  m.done = !!m.agenda && m.at === m.agenda.items.length;
+  D.meet = m;
+});
+const meet = () => S.D.meet || { queue: [], log: [] };
+const amFac = () => !!meet().fac && samePerson(meet().fac, S.me?.id);
+const canFacilitate = () => !S.P?.owner || samePerson(S.P.owner, S.me?.id) || amFac();
+const item = () => { const m = meet(); return m.agenda && m.at != null && m.at < m.agenda.items.length ? m.agenda.items[m.at] : null; };
+const meetSign = async (type, pairs) => publish(await signed(type, [['I', S.me.id], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
+const facilitate = who => meetSign('FACIL', [['R', who], ['S', '1']]);
+const raiseHand = up => meetSign('HAND', [['S', up ? '1' : '0']]);
+const giveFloor = who => meetSign('FLOOR', [['R', who || '0']]);
+async function nextItem(n = null){ const m = meet(); if (!m.agenda) return; await meetSign('NEXT', [['R', m.agenda.cid], ['J', n ?? (m.at == null ? 0 : m.at + 1)]]); }
+async function setAgenda(items){ await meetSign('AGENDA', [['R', b32(crypto.getRandomValues(new Uint8Array(6)))], ['M', items.map(i => `${encTxt(i.title)}~${i.min}~${i.frame || '0'}`).join('_')]]); }
+async function agendaForm(){
+  const frames = S.D.els.filter(e => e.ek === 'frame' && !S.D.hidden.has(e.cid));
+  const cur = meet().agenda?.items || frames.map(f => ({ title: f.text || 'Item', min: 10 }));
+  const v = await formDialog('Agenda', [
+    { id: 'items', label: 'One item per line: title, then minutes after a bar', type: 'textarea', value: cur.map(i => `${i.title} | ${i.min}`).join('\n') || 'Check-in | 5\nMain topic | 20\nDecisions and owners | 10' },
+    { id: 'info', type: 'info', label: frames.length ? 'Items named like a frame on the canvas take everyone to that frame when they start.' : 'Tip: put each item in a frame with the same name, and everyone is taken there when it starts.' },
+  ], { ok: 'Sign the agenda', why: 'The agenda is a signed record: the meeting has an order, time boxes, and a record of how it went.' });
+  if (!v) return;
+  const items = v.items.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [t, m] = l.split('|').map(s => s.trim()); const fr = frames.find(f => (f.text || '').trim().toLowerCase() === t.toLowerCase()); return { title: t.slice(0, 80), min: Math.max(1, Math.min(240, +m || 10)), frame: fr?.cid || null }; });
+  if (items.length) await setAgenda(items);
+}
+
+/* following the facilitator: a new item pulls everyone's view to its frame; time up dims the canvas */
+const MEET = { seen: null, stay: false, warned: null };
+CHANGE_HOOKS.push(() => {
+  const m = meet(), key = m.agenda ? `${m.agenda.cid}:${m.at}` : null;
+  if (key === MEET.seen) return; const first = MEET.seen === null; MEET.seen = key;
+  if (first || !m.agenda || m.at == null || Date.now() - m.started > 15000) return;
+  if (m.done){ toast('Meeting complete. The minutes are in Team → Meeting.'); return; }
+  const it = item(); toast(`Now: ${it.title} · ${it.min} min${m.scribes.get(m.at) ? ` · notes: ${whoName(m.scribes.get(m.at))}` : ''}`);
+  if (it.frame && !MEET.stay){ const f = current(it.frame); if (f){ ensureVisible(f); dirty = true; } }
+});
+setInterval(() => {
+  const it = item(); if (!it) return; const over = Date.now() - meet().started - it.min * 6e4, key = `${meet().agenda.cid}:${meet().at}`;
+  if (over > 0 && MEET.warned !== key){ MEET.warned = key; toast(`Time is up for “${it.title}”.`); document.body.classList.add('dim'); setTimeout(() => document.body.classList.remove('dim'), 4000); }
+}, 1000);
+
+STRIP.push(() => {
+  const m = meet(); if (!m.agenda || m.done && Date.now() - m.started > 60000) return '';
+  const it = item(), mine = m.hands.has(personOf(S.me?.id)), fac = amFac();
+  if (!it) return fac && !m.done ? `<span class="sp">${ic('present')}<b>Agenda ready</b><span>${plural(m.agenda.items.length, 'item')}</span><button class="btn" data-strip="next">Start</button></span>` : m.done ? `<span class="sp">${ic('check')}<b>Meeting complete</b></span>` : '';
+  const left = m.started + it.min * 6e4 - Date.now();
+  return `<span class="sp${left < 0 ? ' over' : ''}">${ic('present')}<b>${m.at + 1}/${m.agenda.items.length} ${esc(it.title.slice(0, 32))}</b><span class="t">${left < 0 ? 'over ' + clock(-left) : clock(left)}</span>
+    ${m.floor ? `<span>Floor: ${esc(whoName(m.floor))}</span>` : ''}${m.queue.length ? `<span>✋ ${m.queue.length}</span>` : ''}
+    <button class="btn" data-strip="hand" aria-pressed="${mine}">${mine ? 'Lower hand' : '✋ Raise hand'}</button>
+    ${fac ? `${m.queue.length ? `<button class="btn" data-strip="floor">Floor to ${esc(whoName(m.queue[0]))}</button>` : ''}<button class="btn" data-strip="next">Next ▸</button>` : ''}</span>`;
+});
+STRIP_ACTIONS.hand = () => raiseHand(!meet().hands.has(personOf(S.me.id)));
+STRIP_ACTIONS.floor = () => { const q = meet().queue[0]; if (q) giveFloor(q); };
+STRIP_ACTIONS.next = () => nextItem();
+
+/* the Meeting panel: role, agenda, queue, note-takers, the record of execution, minutes */
+registerPanel({
+  id: 'meeting', title: 'Meeting', blurb: 'A facilitator, an agenda with time boxes, a queue for the floor, and a record of how the meeting went.', sync: true,
+  paint(body){
+    const m = meet(), fac = amFac(), here = [...new Set([S.me.id, ...peers.keys()])];
+    const items = m.agenda?.items || [];
+    const done = new Map(m.log.map(l => [l.i, l]));
+    body.innerHTML = `<div class="card${fac ? ' hot' : ''}"><div class="hd"><b>Facilitator: ${m.fac ? esc(whoName(m.fac)) : 'nobody yet'}</b>${m.roles.length > 1 ? `<small>${plural(m.roles.length, 'handover')}</small>` : ''}</div>
+        <div class="acts">${canFacilitate() && !fac ? '<button class="btn primary" data-fac="me" data-autofocus>Facilitate</button>' : ''}${canFacilitate() ? here.filter(id => !samePerson(id, m.fac)).filter(id => id !== S.me.id).map(id => `<button class="btn" data-fac="${id}">Hand to ${esc(short(id))}</button>`).join('') : ''}${fac ? '<button class="btn" data-fac="end">Stop facilitating</button>' : ''}</div></div>
+      <h3>Agenda</h3>${items.length ? `<table><tr><th>#</th><th>Item</th><th>Planned</th><th>Actual</th><th>Notes</th></tr>${items.map((it, i) => { const l = done.get(i), act = l ? Math.round(((l.end || Date.now()) - l.start) / 6e4) : null;
+        return `<tr${m.at === i ? ' style="font-weight:600"' : ''}><td>${i + 1}</td><td>${it.frame ? `<button class="link" data-go="${it.frame}">${esc(it.title)}</button>` : esc(it.title)}</td><td>${it.min} min</td><td>${act == null ? '–' : `<span class="${act > it.min ? 'pill warn' : ''}">${act} min</span>`}</td>
+          <td>${m.scribes.get(i) ? esc(whoName(m.scribes.get(i))) : fac ? `<select data-k="sc${i}" data-scribe="${i}" aria-label="Note-taker for ${esc(it.title)}"><option value="">Pick…</option>${here.map(id => `<option value="${id}">${esc(whoName(id))}</option>`).join('')}</select>` : '–'}</td></tr>`; }).join('')}</table>`
+        : '<p class="empty">No agenda yet.</p>'}
+      ${fac ? `<div class="acts"><button class="btn" data-agenda>${ic('list')}${items.length ? 'Change the agenda…' : 'Write the agenda…'}</button>${items.length && !m.done ? `<button class="btn primary" data-next>${m.at == null ? 'Start the meeting' : m.at + 1 < items.length ? 'Next item' : 'Finish the meeting'}</button>` : ''}<label class="muted"><input type="checkbox" data-k="stay"${MEET.stay ? ' checked' : ''}> Don’t move my view</label></div>` : `<label class="muted"><input type="checkbox" data-k="stay"${MEET.stay ? ' checked' : ''}> Don’t move my view when the item changes</label>`}
+      <h3>Queue for the floor <span class="n">${m.queue.length}</span></h3>
+      ${m.queue.length ? `<ul class="plain">${m.queue.map((p, i) => `<li class="row2">${avatar(p)}<span class="grow">${i + 1}. ${esc(whoName(p))}</span>${fac ? `<button class="btn" data-floor="${p}">Give the floor</button>` : ''}</li>`).join('')}</ul>` : '<p class="empty">Nobody waiting.</p>'}
+      <div class="acts"><button class="btn" data-hand>${m.hands.has(personOf(S.me.id)) ? 'Lower my hand' : '✋ Raise my hand'}</button>${m.floor ? `<span class="pill acc">Floor: ${esc(whoName(m.floor))}</span>${fac ? '<button class="btn" data-floor="">Close the floor</button>' : ''}` : ''}</div>
+      ${m.log.length ? `<div class="acts"><button class="btn" data-minutes>${ic('doc')}Minutes</button></div>` : ''}`;
+  },
+  click(e, b){
+    if (b.dataset.go) return goTo(b.dataset.go);
+    if (b.dataset.fac === 'me') return facilitate(S.me.id);
+    if (b.dataset.fac === 'end') return meetSign('FACIL', [['R', S.me.id], ['S', '0']]);
+    if (b.dataset.fac) return facilitate(b.dataset.fac);
+    if (b.hasAttribute('data-agenda')) return agendaForm();
+    if (b.hasAttribute('data-next')) return nextItem();
+    if (b.hasAttribute('data-hand')) return STRIP_ACTIONS.hand();
+    if (b.dataset.floor !== undefined) return giveFloor(b.dataset.floor || null);
+    if (b.hasAttribute('data-minutes')) return openReport(`Minutes — ${canvasTitle()}`, minutes(), 'minutes.md');
+  },
+  change(e){ const t = e.target; if (t.dataset.k === 'stay') MEET.stay = t.checked; if (t.dataset.scribe && t.value) meetSign('SCRIBE', [['R', t.value], ['J', +t.dataset.scribe]]); },
+});
+// minutes: per item what happened in its time slot, from the signed records themselves
+function minutes(){
+  const m = meet(), items = m.agenda?.items || [], out = [`# Minutes — ${canvasTitle()}`, '', `- **Facilitator:** ${m.fac ? short(m.fac) : '—'}`, `- **Agenda:** ${plural(items.length, 'item')}, ${items.reduce((a, i) => a + i.min, 0)} min planned`, ''];
+  for (const l of m.log){
+    const it = items[l.i], end = l.end || Date.now(), recs = [...S.records.values()].filter(r => r.t >= l.start && r.t < end);
+    const of = t => recs.filter(r => r.type === t);
+    out.push(`## ${l.i + 1}. ${it.title}`, '', `- ${new Date(l.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, ${Math.round((end - l.start) / 6e4)} of ${it.min} min${m.scribes.get(l.i) ? ` · notes by ${short(m.scribes.get(l.i))}` : ''}`,
+      ...(l.floors.length ? [`- Spoke: ${[...new Set(l.floors.map(short))].join(', ')}`] : []),
+      ...of('DECISION').map(d => `- **Decided:** ${d.text} (${short(d.author)})`),
+      ...of('TASK').filter(t => t.status !== 'x').map(t => `- **Action:** ${elTitle(t.f.R)}${t.owner ? ` → ${short(t.owner)}` : ''}`),
+      `- ${plural(of('NODE').length + of('TEXT').length, 'note')}, ${plural(of('COMMENT').length, 'comment')}, ${plural(of('STANCE').length, 'stance')}`, '');
+  }
+  return out.join('\n');
+}
+registerFeature({ id: 'meeting', name: 'Facilitated meeting', group: 'meet', icon: 'present', records: ['FACIL', 'AGENDA', 'NEXT', 'FLOOR', 'SCRIBE', 'HAND'],
+  blurb: 'A facilitator, an agenda with time boxes, a queue for the floor, note-takers, minutes',
+  status: () => { const it = item(); return it ? `${meet().at + 1}/${meet().agenda.items.length} ${it.title.slice(0, 18)}` : ''; },
+  open: () => openPanel('meeting') });
+PALETTE_HOOKS.push(add => { add('team', 'Raise or lower my hand', () => STRIP_ACTIONS.hand()); add('team', 'Next agenda item', () => amFac() ? nextItem() : toast('Only the facilitator moves the agenda.')); });
+// naming what it must produce (decisions, action items, stances…), how many people must take part, and its time box. It can only
+// close as a success when those outputs exist; when the time runs out it closes as incomplete, for everyone to see. A team's
+// record of rituals becomes a fact: "our retros closed 9 times out of 12".
+// @uses records, derive, ui/hub (strip), ui/panels, ui/form
+// RITUAL-I-R-{nonce}-M-{name}-U-{output~count _ …}-Q-{people}-E-{time box, minutes}-Z-T-SIG       starts at its T
+// CLOSE-I-R-{ritual}-O-{success|incomplete|aborted}-K-{output CIDs _|0}-M-{note}-Z-T-SIG          the first valid close wins
+// What counts as an output is only the record type, made after the ritual started: so every feature's records can be required.
+const RITUAL_OUTPUTS = {
+  decision: { label: 'decision', types: ['DECISION'] }, task: { label: 'action item', types: ['TASK'], ok: r => r.status !== 'x' },
+  stance: { label: 'stance', types: ['STANCE'] }, note: { label: 'note', types: ['NODE', 'TEXT'] }, claim: { label: 'grounded check', types: ['CHECK'] },
+  comment: { label: 'comment', types: ['COMMENT'] }, delivery: { label: 'delivery', types: ['DELIVER'] }, vote: { label: 'vote', types: ['REACT'] },
+};
+const RITUAL_KINDS = {
+  retro: { name: 'Retro', need: { note: 3, decision: 1, task: 2 }, people: 2, min: 45, blurb: 'What went well, what didn’t: at least one decision and two action items.' },
+  planning: { name: 'Sprint planning', need: { task: 3, decision: 1 }, people: 2, min: 60, blurb: 'Leaves with owned action items and a decision on scope.' },
+  review: { name: 'Design review', need: { stance: 3, decision: 1 }, people: 3, min: 30, blurb: 'Everyone takes a stance; it ends with a recorded decision.' },
+  kickoff: { name: 'Kickoff', need: { decision: 2, task: 3 }, people: 3, min: 60, blurb: 'Goals decided, first tasks owned.' },
+};
+registerRecord('RITUAL', { parse(r, f){ if (!f.R || !f.M) throw Error('ritual'); r.name = decTxt(f.M); r.need = Object.fromEntries((f.U || '').split('_').filter(Boolean).map(p => p.split('~')).filter(([k]) => k in RITUAL_OUTPUTS).map(([k, n]) => [k, Math.max(0, Math.min(99, +n || 0))]));
+  r.people = Math.max(1, +f.Q || 1); r.min = Math.max(1, Math.min(600, +f.E || 30)); r.ends = r.t + r.min * 6e4; }, inherit: false });
+registerRecord('CLOSE', { parse(r, f){ if (!f.R || !['success', 'incomplete', 'aborted'].includes(f.O)) throw Error('close'); r.outcome = f.O; r.outputs = f.K && f.K !== '0' ? f.K.split('_') : []; r.note = decTxt(f.M || ''); }, inherit: false });
+Object.assign(PERM_OF, { RITUAL: 'draw', CLOSE: 'comment' });
+
+// progress of a ritual up to record order z: the outputs made since it started, and who took part
+function ritualProgress(rit, z = Infinity){
+  const recs = [...S.records.values()].filter(r => r.z > rit.z && r.z < z && r.t >= rit.t && !S.D.hidden.has(r.cid) && r.type !== 'CLOSE');
+  const got = {}, out = new Set(), who = new Set();
+  for (const r of recs) who.add(personOf(r.author));
+  for (const [k, n] of Object.entries(rit.need)){ const spec = RITUAL_OUTPUTS[k], hits = recs.filter(r => spec.types.includes(r.type) && (!spec.ok || spec.ok(r))); got[k] = hits.length; hits.slice(0, n).forEach(r => out.add(r.cid)); }
+  const met = Object.entries(rit.need).every(([k, n]) => got[k] >= n) && who.size >= rit.people;
+  return { got, who, met, outputs: [...out] };
+}
+DERIVE_HOOKS.push((D, by) => {
+  const list = (by.RITUAL || []).filter(r => !D.hidden.has(r.cid)).map(r => ({ r, close: null }));
+  const byCid = new Map(list.map(x => [x.r.cid, x]));
+  for (const c of by.CLOSE || []){ const x = byCid.get(c.f.R); if (!x || x.close || D.hidden.has(c.cid)) continue; x.close = c; }
+  D.rituals = list;
+});
+// a "success" close only counts if the outputs were really there when it was signed; otherwise it reads as incomplete
+const outcomeOf = x => !x.close ? null : x.close.outcome === 'success' && !ritualProgress(x.r, x.close.z).met ? 'incomplete' : x.close.outcome;
+const openRitual = () => (S.D.rituals || []).filter(x => !x.close).at(-1) || null;
+async function startRitual(kind, { name, need, people: n, min } = {}){
+  const k = RITUAL_KINDS[kind] || {}; need ||= k.need; n ||= k.people; min ||= k.min;
+  await publish(await signed('RITUAL', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(6)))], ['M', encTxt(name || k.name || 'Ritual')], ['U', Object.entries(need).map(([o, c]) => `${o}~${c}`).join('_')], ['Q', n], ['E', min], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+async function closeRitual(x, outcome, note = ''){
+  const p = ritualProgress(x.r);
+  await publish(await signed('CLOSE', [['I', S.me.id], ['R', x.r.cid], ['O', outcome], ['K', p.outputs.length ? p.outputs.join('_') : '0'], ['M', encTxt(note)], ['Z', ++S.lamport], ['T', Date.now()]]));
+  toast(outcome === 'success' ? `${x.r.name} closed: every required output is there.` : `${x.r.name} closed as ${outcome}. That stays on the record.`);
+}
+const closingRituals = new Set();
+// time box over: the ritual's starter closes it as incomplete; if they are away, any participant does after five minutes
+setInterval(() => {
+  const x = openRitual(); if (!x || !S.me || S.histZ != null) return;
+  const over = Date.now() - x.r.ends, p = ritualProgress(x.r);
+  if (over > 0 && (samePerson(x.r.author, S.me.id) || over > 5 * 6e4 && p.who.has(personOf(S.me.id))) && !closingRituals.has(x.r.cid)){ closingRituals.add(x.r.cid); closeRitual(x, p.met ? 'success' : 'incomplete', 'Time box ran out'); }
+}, 2000);
+
+const needText = (rit, got) => Object.entries(rit.need).map(([k, n]) => `${Math.min(got?.[k] || 0, n)}/${n} ${RITUAL_OUTPUTS[k].label}${n === 1 ? '' : 's'}`).join(' · ');
+STRIP.push(() => {
+  const x = openRitual(); if (!x) return '';
+  const p = ritualProgress(x.r), left = x.r.ends - Date.now(), done = Object.entries(x.r.need).filter(([k, n]) => p.got[k] >= n).length, total = Object.keys(x.r.need).length;
+  return `<span class="sp${left < 0 ? ' over' : ''}">${ic('target')}<b>${esc(x.r.name)}</b><span class="t">${left < 0 ? 'over' : clock(left)}</span><span>${done}/${total} outputs${p.who.size < x.r.people ? ` · ${p.who.size}/${x.r.people} people` : ''}</span>
+    <button class="btn" data-strip="ritual">${p.met ? 'Close ✓' : 'Checklist'}</button></span>`;
+});
+STRIP_ACTIONS.ritual = () => { const x = openRitual(); if (x && ritualProgress(x.r).met) closeRitual(x, 'success'); else openPanel('rituals'); };
+
+registerPanel({
+  id: 'rituals', title: 'Rituals', blurb: 'Retros, plannings and reviews as contracts: they close as a success only when what they must produce exists.',
+  paint(body){
+    const x = openRitual(), all = (S.D.rituals || []).slice().reverse(), closed = all.filter(y => y.close);
+    const okN = closed.filter(y => outcomeOf(y) === 'success').length;
+    const cur = x ? (() => { const p = ritualProgress(x.r), left = x.r.ends - Date.now();
+      return `<div class="card hot"><div class="hd"><b>${esc(x.r.name)}</b><span class="pill ${left < 0 ? 'bad' : 'acc'}">${left < 0 ? 'Over time' : clock(left) + ' left'}</span></div>
+        <ul class="plain">${Object.entries(x.r.need).map(([k, n]) => `<li class="row2"><span class="pill ${p.got[k] >= n ? 'good' : ''}">${p.got[k] >= n ? '✓' : '○'} ${Math.min(p.got[k], n)}/${n}</span>${RITUAL_OUTPUTS[k].label}${n === 1 ? '' : 's'}</li>`).join('')}
+          <li class="row2"><span class="pill ${p.who.size >= x.r.people ? 'good' : ''}">${p.who.size >= x.r.people ? '✓' : '○'} ${p.who.size}/${x.r.people}</span>people taking part</li></ul>
+        <div class="acts">${p.met ? '<button class="btn primary" data-close="success" data-autofocus>Close as a success</button>' : ''}<button class="btn" data-close="incomplete">Close incomplete</button><button class="btn danger" data-close="aborted">Abort</button></div></div>`; })()
+      : `<div class="acts">${Object.entries(RITUAL_KINDS).map(([k, r]) => `<button class="btn" data-start="${k}">${ic('target')}${esc(r.name)}</button>`).join('')}<button class="btn" data-start="custom">Custom…</button></div>`;
+    body.innerHTML = `${cur}
+      ${closed.length ? `<h3>Record <span class="n">${okN} of ${closed.length} closed as a success</span></h3><ul class="plain">${closed.map(y => { const o = outcomeOf(y);
+        return `<li class="row2"><span class="pill ${o === 'success' ? 'good' : o === 'aborted' ? '' : 'bad'}">${o}</span><span class="grow">${esc(y.r.name)} · ${when(y.r.t)}</span><small>${needText(y.r, ritualProgress(y.r, y.close.z).got)}</small></li>`; }).join('')}</ul>` : ''}`;
+  },
+  async click(e, b){
+    const x = openRitual();
+    if (b.dataset.close && x) return closeRitual(x, b.dataset.close);
+    if (b.dataset.start === 'custom'){
+      const v = await formDialog('A custom ritual', [{ id: 'name', label: 'Name', type: 'text', value: 'Weekly review' },
+        ...Object.entries(RITUAL_OUTPUTS).map(([k, o]) => ({ id: k, label: `${o.label[0].toUpperCase() + o.label.slice(1)}s required`, type: 'number', value: k === 'decision' ? 1 : 0, min: 0, max: 99 })),
+        { id: 'people', label: 'People who must take part', type: 'number', value: 2, min: 1 }, { id: 'min', label: 'Time box, minutes', type: 'number', value: 30, min: 1 }], { ok: 'Start the ritual' });
+      if (v) await startRitual('custom', { name: v.name, need: Object.fromEntries(Object.keys(RITUAL_OUTPUTS).filter(k => v[k] > 0).map(k => [k, v[k]])), people: v.people, min: v.min });
+      return;
+    }
+    if (b.dataset.start){ await startRitual(b.dataset.start); toast(`${RITUAL_KINDS[b.dataset.start].name} started: ${RITUAL_KINDS[b.dataset.start].blurb}`); }
+  },
+});
+setInterval(() => { if (panelOpen === 'rituals') paintPanel(); }, 1000);
+registerFeature({ id: 'rituals', name: 'Ritual contracts', group: 'meet', icon: 'target', records: ['RITUAL', 'CLOSE'],
+  blurb: 'Retros, plannings and reviews that only close when their outputs exist',
+  status: () => { const x = openRitual(); if (x) return needText(x.r, ritualProgress(x.r).got).split(' · ')[0]; const c = (S.D.rituals || []).filter(y => y.close); return c.length ? `${c.filter(y => outcomeOf(y) === 'success').length}/${c.length} closed` : ''; },
+  open: () => openPanel('rituals') });
+FLOW_CONDITIONS.ritual = { label: 'The latest ritual closed as a success', test: () => { const c = (S.D.rituals || []).filter(y => y.close).at(-1); return !c ? 'no ritual closed yet' : outcomeOf(c) === 'success' || `${c.r.name} closed ${outcomeOf(c)}`; } };
+// item and for how long, reading the same note for minutes, idle, or looking at a decision without taking a stance. The Room
+// panel shows the room at a glance (who may be stuck, where attention gathers); the canvas marks items several people are on.
+// Attention travels with live presence and is never signed or stored: a permanent log of where everyone looked would bloat the
+// record and turn presence into surveillance. Anyone can stop sharing it.
+// @uses features/presence (PRESENCE_FIELDS, peers), features/decisions, features/stances, ui/panels
+const ATT = { share: true, hov: null, since: 0, input: Date.now() };
+try { ATT.share = localStorage.getItem('flux:attention') !== 'off'; } catch {}
+for (const t of ['pointermove', 'keydown', 'wheel', 'pointerdown']) addEventListener(t, () => { ATT.input = Date.now(); }, { passive: true, capture: true });
+FRAME_HOOKS.push(() => { const h = hoverCid || (S.sel.size === 1 ? [...S.sel][0] : null); if (h !== ATT.hov){ ATT.hov = h; ATT.since = Date.now(); } });
+PRESENCE_FIELDS.push(() => ATT.share ? { att: { on: ATT.hov, for: ATT.hov ? Date.now() - ATT.since : 0, idle: Date.now() - ATT.input } } : { att: { off: 1 } });
+
+// what a person is doing, from their presence and the records they signed lately
+const lastSigned = new Map();   // person → time of their latest record
+CHANGE_HOOKS.push(() => { for (const r of S.records.values()) if (r.t > (lastSigned.get(personOf(r.author)) || 0)) lastSigned.set(personOf(r.author), r.t); });
+const editSince = new Map();
+function modeOf(id, p){
+  const a = p.att || {}, age = Date.now() - p.t;
+  if (p.edit){ const k = id + p.edit; if (!editSince.has(k)) editSince.set(k, Date.now()); return { mode: 'editing', on: p.edit, for: Date.now() - editSince.get(k) }; }
+  if (a.off) return { mode: 'private' };
+  if ((a.idle || 0) + age > 2 * 6e4) return { mode: 'idle', for: (a.idle || 0) + age };
+  if (a.on && a.for > 10000){
+    const quiet = Date.now() - (lastSigned.get(personOf(id)) || 0) > 3 * 6e4;
+    const dec = S.D.decisions?.find(x => x.d.cid === a.on || x.d.on === a.on);
+    if (dec && !consensus(dec.d.cid).by?.has(personOf(id)) && a.for > 5000) return { mode: 'silent', on: a.on, for: a.for, dec };
+    return { mode: a.for > 9e4 && quiet ? 'stuck' : 'reading', on: a.on, for: a.for };
+  }
+  return { mode: 'active', on: a.on || p.sel?.[0] || null };
+}
+const MODE = { editing: ['Editing', 'acc'], reading: ['Reading', null], stuck: ['Maybe stuck', 'warn'], idle: ['Idle', null], active: ['Active', 'good'], silent: ['No stance yet', 'warn'], private: ['Not sharing', null] };
+const dur = ms => ms < 6e4 ? `${Math.round(ms / 1000)}s` : `${Math.round(ms / 6e4)} min`;
+// where attention gathers: items several people are on right now (hover, selection, editing)
+function hotSpots(){
+  const n = new Map();
+  for (const [id, p] of peers){ const on = new Set([p.edit, p.att?.on, ...(p.sel || [])].filter(Boolean)); for (const c of on) n.set(c, (n.get(c) || new Set()).add(id)); }
+  if (ATT.hov) n.set(ATT.hov, (n.get(ATT.hov) || new Set()).add(S.me.id));
+  return [...n].filter(([c, s]) => s.size >= 2 && S.records.has(c)).sort((a, b) => b[1].size - a[1].size);
+}
+RENDER_HOOKS.screen.push(() => {
+  for (const [c, who] of hotSpots()){ const sb = screenBox(current(c)); if (!sb) continue; drawBadge(sb.x + sb.w / 2 - 34, sb.y + sb.h + 30, `👁 ${who.size} here`, 'acc', () => openPanel('room')); }
+});
+registerPanel({
+  id: 'room', title: 'Room', blurb: 'What everyone is doing right now, who may be stuck, and where attention gathers. Live only: none of this is signed or kept.', sync: true,
+  paint(body){
+    const rows = [...peers].map(([id, p]) => ({ id, p, m: modeOf(id, p) }));
+    const hot = hotSpots(), stuck = rows.filter(r => r.m.mode === 'stuck'), silent = rows.filter(r => r.m.mode === 'silent');
+    body.innerHTML = `${hot.length ? `<div class="card hot"><b>Attention gathers on</b>${hot.slice(0, 3).map(([c, s]) => `<div class="row2"><button class="link grow" data-go="${c}">${esc(elTitle(c))}</button><span class="pill acc">${s.size} people</span></div>`).join('')}</div>` : ''}
+      ${stuck.length ? `<div class="card warn"><b>Maybe stuck</b>${stuck.map(r => `<small>${esc(whoName(r.id))} has been on “${esc(elTitle(r.m.on))}” for ${dur(r.m.for)} without adding anything.</small>`).join('')}</div>` : ''}
+      ${silent.length ? `<div class="card warn"><b>Looked, no stance</b>${silent.map(r => `<small>${esc(whoName(r.id))} is reading the decision “${esc(r.m.dec.d.text.slice(0, 60))}” and hasn’t said where they stand.</small>`).join('')}</div>` : ''}
+      <h3>People <span class="n">${rows.length + 1}</span></h3>
+      <ul class="plain">${rows.length ? rows.map(({ id, p, m }) => `<li class="row2">${avatar(id)}<span class="grow"><b>${esc(whoName(id))}</b> <small>${m.on ? `${MODE[m.mode][0].toLowerCase()} “${esc(elTitle(m.on).slice(0, 40))}”` : MODE[m.mode][0].toLowerCase()}${m.for ? ` · ${dur(m.for)}` : ''}${p.via === 'mesh' ? ' · via ' + esc(short(p.through)) : ''}</small></span><span class="pill ${MODE[m.mode][1] || ''}">${MODE[m.mode][0]}</span>${m.on ? `<button class="btn" data-go="${m.on}">Show</button>` : ''}</li>`).join('') : '<li class="empty">Nobody else is here. Invite people from the Live button.</li>'}</ul>
+      <label class="muted"><input type="checkbox" data-k="share"${ATT.share ? ' checked' : ''}> Share what I’m looking at (live only, never stored)</label>`;
+  },
+  click(e, b){ if (b.dataset.go) goTo(b.dataset.go); },
+  change(e){ if (e.target.dataset.k === 'share'){ ATT.share = e.target.checked; try { localStorage.setItem('flux:attention', ATT.share ? 'on' : 'off'); } catch {} sendPresence(false, true); } },
+});
+setInterval(() => { if (panelOpen === 'room') paintPanel(); }, 2000);
+registerFeature({ id: 'room', name: 'Room: who is doing what', group: 'meet', icon: 'eye', records: [],
+  blurb: 'Structural presence: editing, reading, idle, maybe stuck, and where attention gathers',
+  status: () => { const s = [...peers].filter(([id, p]) => modeOf(id, p).mode === 'stuck').length; return s ? `${s} maybe stuck` : peers.size ? `${peers.size + 1} here` : ''; },
+  open: () => openPanel('room') });
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 

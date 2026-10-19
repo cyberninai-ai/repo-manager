@@ -18,7 +18,7 @@
 /* feature panels (ui/panels) */
 .fx .fx-body{display:flex;flex-direction:column;gap:10px;padding:12px}
 .fx h3{margin:6px 0 0;font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px;align-items:center}
-.fx h3 .n{font-weight:600;color:var(--faint)}
+.fx h3 .n{font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
 .fx p{margin:0;font-size:13px;line-height:1.45}
 .fx .muted,.fx small{color:var(--muted);font-size:12px}
 .fx .card{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--panel)}
