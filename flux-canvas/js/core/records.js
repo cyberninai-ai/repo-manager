@@ -23,29 +23,44 @@ function toRec(node, cid){
   if (RECORD_TYPES[r.type]) RECORD_TYPES[r.type].parse(r, f);   // feature record types (core/hooks)
   return r;
 }
+// Why records were refused, for the ledger. "clock" records are parked, not dropped: they are retried as the canvas catches up.
+const reject = why => { S.rejected++; S.why[why] = (S.why[why] || 0) + 1; return null; };
+const Z_SLACK = 10000, T_SLACK = 60 * 60 * 1000;
 async function ingest(raw, persist = true){
   let node;
-  try { node = parse(raw); } catch { S.rejected++; return null; }
-  if (!KNOWN.has(node.action)){ S.rejected++; return null; }
+  try { node = parse(raw); } catch { return reject('malformed'); }
+  if (!KNOWN.has(node.action)) return reject('unknown type');
   const cid = await cidOf(te.encode(raw));
   if (S.records.has(cid)) return cid;
-  if (!await verifyRaw(node)){ S.rejected++; return null; }
-  let rec; try { rec = toRec(node, cid); } catch { S.rejected++; return null; }
+  if (!await verifyRaw(node)) return reject('bad signature');
+  let rec; try { rec = toRec(node, cid); } catch { return reject('malformed'); }
+  if (RECORD_TYPES[rec.type]?.check && !await RECORD_TYPES[rec.type].check(rec)) return reject('invalid claim');
+  // audit S3: Z and T are chosen by the signer. A Z far past anything seen, or a T far in the future, would win every
+  // "latest wins" rule and every layer order; such records wait until the canvas has caught up with them.
+  if (rec.z > S.lamport + Z_SLACK || rec.t > Date.now() + T_SLACK){
+    if (!S.parked.has(cid)){ S.parked.set(cid, { raw, persist, z: rec.z, t: rec.t }); S.why.clock = (S.why.clock || 0) + 1; }
+    return null;
+  }
   const fence = rec.type === 'GROUP' ? (a => ELEMENT.has(a)) : RECORD_TYPES[rec.type]?.fence ? (a => a === RECORD_TYPES[rec.type].fence) : null;
   if (fence && rec.neg === null && Array.isArray(node.fields.P)){   // every fenced child is verified and ingested on its own
     rec.members = [];
     for (const child of node.fields.P){
-      if (!fence(child.action)){ S.rejected++; return null; }
+      if (!fence(child.action)) return reject('malformed');
       const c = await ingest(child.raw, false);
-      if (!c){ S.rejected++; return null; }
+      if (!c) return reject('bad fenced child');
       rec.members.push(c);
     }
   }
   S.records.set(cid, rec);
-  if (rec.z > S.lamport) S.lamport = rec.z;
-  if (persist) save();
+  if (rec.z > S.lamport){ S.lamport = rec.z; if (S.parked.size) setTimeout(unpark, 0); }
+  if (persist) save(cid);
   changed();
   return cid;
+}
+async function unpark(){
+  for (const [cid, p] of [...S.parked]) if (p.z <= S.lamport + Z_SLACK && p.t <= Date.now() + T_SLACK){
+    S.parked.delete(cid); S.why.clock = Math.max(0, (S.why.clock || 1) - 1); await ingest(p.raw, p.persist);
+  }
 }
 async function publish(raw, blobs = {}){
   for (const [c, b] of Object.entries(blobs)) await addBlob(c, b);

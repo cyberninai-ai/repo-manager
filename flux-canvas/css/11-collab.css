@@ -88,3 +88,25 @@ body.history #tools{opacity:.45;pointer-events:none}
 .au h4{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
 .au .row2{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px}
 .t-REACT,.t-AUDIT,.t-SIGNOFF{color:var(--green)} .t-META{color:var(--muted)}
+
+/* people and permissions */
+#people{position:fixed;inset:0;z-index:26;background:var(--scrim);backdrop-filter:blur(3px)}
+#people .pp{position:absolute;left:50%;top:8vh;transform:translateX(-50%);width:min(760px,calc(100% - 24px));max-height:84vh;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-lg);padding:18px 20px}
+#people header{display:flex;align-items:center;gap:10px}
+#people h2{margin:0;font-size:17px;font-weight:650;flex:1}
+#people .sub{color:var(--muted);font-size:13px;margin:6px 0 12px}
+#people .tw{overflow:auto;border:1px solid var(--line2);border-radius:12px}
+#people table{width:100%;border-collapse:collapse;font-size:13px}
+#people th,#people td{padding:9px 12px;border-bottom:1px solid var(--line2);text-align:center}
+#people tr:last-child th,#people tr:last-child td{border-bottom:0}
+#people thead th,#people tr:first-child th{font-size:11px;font-weight:650;color:var(--muted);background:var(--panel2);position:sticky;top:0}
+#people th[scope=row]{text-align:left;display:flex;align-items:center;gap:10px;font-weight:400}
+#people th[scope=row] span:last-child{display:flex;flex-direction:column}
+#people th[scope=row] small{color:var(--muted);font-size:11px}
+#people .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;flex:none}
+#people input{width:18px;height:18px;accent-color:var(--cyan);cursor:pointer}
+#people input:disabled{cursor:default}
+#people tr.own{background:var(--accent-weak)}
+#people .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+#people .acts:empty{display:none}

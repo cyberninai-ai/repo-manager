@@ -66,11 +66,11 @@ function commands(){
   if (hex) add('color', `Use #${hex[1]}`, () => { S.color = hex[1].toLowerCase(); }, { sw: hex[1] });
   if (/^https?:/.test(location.href)) add('share', 'Copy canvas link', () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Open it in another tab to draw together.'));
   add('share', 'Copy canvas id', () => copy(canvasId, 'Canvas id copied'));
-  add('canvas', 'New canvas', () => switchCanvas(newCanvasId()));
+  add('canvas', 'New canvas', () => createOwnedCanvas());
   add('canvas', 'Open canvas by id…', async () => { let v = await ask('Canvas id'); v = (v || '').trim().replace(/^.*#/, ''); if (/^[a-z0-9]{6,32}$/.test(v)) switchCanvas(v); else if (v) toast('Not a canvas id.'); });
   add('identity', 'Copy my public key', () => copy(S.me.id, 'Public key copied'));
   add('identity', 'New identity for this tab', async () => {
-    const me = await newIdentity(); store.set('flux:identity', JSON.stringify({ alg: me.alg, id: me.id, jwk: me.jwk }), true);
+    const me = await newTabIdentity();
     S.me = me; S.hist = []; S.redo = []; paintAuthors(); toast(`Now drawing as ${short(me.id)} in this tab (${me.alg === 'ed' ? 'Ed25519' : 'ECDSA P-256'}).`);
   });
   add('help', 'Gestures, keyboard & help', () => toggleHelp(true), { k: '?' });

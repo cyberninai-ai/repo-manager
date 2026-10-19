@@ -87,7 +87,9 @@ async function insertImage(file, at){
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   const enc = t => new Promise(res => c.toBlob(res, t, 0.85));
   let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
-  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < 4e6 && k === 1) out = file;   // keep a small original when it's already smaller
+  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < MAX_BLOB && k === 1) out = file;   // keep a small original when it's already smaller
+  for (let q = 0.7; out && out.size > MAX_BLOB && q > 0.2; q -= 0.15) out = await new Promise(res => c.toBlob(res, 'image/jpeg', q));   // stay under the blob cap
+  if (!out || out.size > MAX_BLOB){ toast('That image is too large to sign and share, even re-encoded.'); return; }
   const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
   // place it at a comfortable on-screen size, centred on the drop point
   const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));

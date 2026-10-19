@@ -4,6 +4,7 @@
 /* ---------- ingest: verify, address, union-merge ---------- */
 async function addBlob(cid, bytes){
   if (S.blobs.has(cid)) return true;
+  if (!bytes || bytes.length > MAX_BLOB){ S.why['blob over 2 MB'] = (S.why['blob over 2 MB'] || 0) + 1; return false; }   // audit S5
   if (await cidOf(bytes) !== cid) return false;
   S.blobs.set(cid, bytes); dirty = true;
   return true;

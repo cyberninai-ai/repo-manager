@@ -32,37 +32,43 @@ const EXAMPLE_NAMES = ['Ana', 'Ben', 'Chen'];
 let exampleKeys = null;
 async function exampleAuthors(){
   if (exampleKeys) return exampleKeys;
-  let saved = null; try { saved = JSON.parse(localStorage.getItem('flux:exampleKeys') || 'null'); } catch {}
-  if (Array.isArray(saved) && saved.length === 3) try { exampleKeys = await Promise.all(saved.map(restoreIdentity)); exampleKeys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i])); return exampleKeys; } catch {}
-  exampleKeys = []; for (let i = 0; i < 3; i++) exampleKeys.push(await newIdentity());
-  try { localStorage.setItem('flux:exampleKeys', JSON.stringify(exampleKeys.map(m => ({ alg: m.alg, id: m.id, jwk: m.jwk })))); } catch {}
-  exampleKeys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i]));
-  return exampleKeys;
+  const keep = keys => { exampleKeys = keys; keys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i])); store.set('flux:exampleIds', JSON.stringify(keys.map(k => k.id))); return keys; };
+  const kept = await Promise.all([0, 1, 2].map(i => dbGet('keys', 'example:' + i)));
+  if (kept.every(k => k?.priv)) return keep(kept);
+  let saved = null; try { saved = JSON.parse(localStorage.getItem('flux:exampleKeys') || 'null'); } catch {}   // older versions kept JWKs
+  let keys = null;
+  if (Array.isArray(saved) && saved.length === 3) try { keys = await Promise.all(saved.map(restoreIdentity)); } catch {}
+  if (!keys){ keys = []; for (let i = 0; i < 3; i++) keys.push(await newIdentity(!DB.ok)); }
+  let stored = true; for (let i = 0; i < 3; i++) stored = await keepIdentity(keys[i], 'example:' + i) && stored;
+  if (stored) try { localStorage.removeItem('flux:exampleKeys'); } catch {}
+  else if (keys[0].jwk) store.set('flux:exampleKeys', JSON.stringify(keys.map(m => ({ alg: m.alg, id: m.id, jwk: m.jwk }))));
+  return keep(keys);
 }
 // names for example authors are known on every load, so reopened examples still read "Ana", not a key fragment
-try { (JSON.parse(localStorage.getItem('flux:exampleKeys') || '[]') || []).forEach((k, i) => k?.id && NAMES.set(k.id, EXAMPLE_NAMES[i])); } catch {}
+try { for (const key of ['flux:exampleIds', 'flux:exampleKeys']) (JSON.parse(localStorage.getItem(key) || '[]') || []).forEach((k, i) => { const id = typeof k === 'string' ? k : k?.id; if (id) NAMES.set(id, EXAMPLE_NAMES[i]); }); } catch {}
 // Sign everything inside fn as another identity (examples only).
 async function asAuthor(me, fn){ const prev = S.me; S.me = me; try { return await fn(); } finally { S.me = prev; } }
 
-/* canvas list: read straight from local storage, without verifying, for display only */
-function canvasList(){
-  const out = [];
+/* canvas list: summaries kept beside the record log (and any canvases older versions left in localStorage) */
+async function canvasList(){
+  const out = new Map();
+  for (const c of await dbAll('canvases')) out.set(c.id, { id: c.id, title: c.title, n: c.n, last: c.last });
   try {
     for (let i = 0; i < localStorage.length; i++){
       const key = localStorage.key(i); if (!key || !key.startsWith('flux:canvas:')) continue;
-      const id = key.slice(12); let title = '', n = 0, last = 0;
+      const id = key.slice(12); if (out.has(id)) continue; let title = '', n = 0, last = 0;
       for (const l of (localStorage.getItem(key) || '').split('\n')){
         if (!l || l.startsWith('BLOB-')) continue; n++;
         const t = l.match(/-T-(\d{10,})-SIG-/); if (t) last = Math.max(last, +t[1]);
         if (l.startsWith('META-') && l.includes(`-R-${id}-`)){ const m = l.match(/-M-([^-.]*)/); if (m) title = decTxt(m[1]); }
       }
-      out.push({ id, title, n, last });
+      out.set(id, { id, title, n, last });
     }
   } catch {}
-  const cur = out.find(c => c.id === canvasId);
+  const cur = out.get(canvasId);
   if (cur){ cur.title = S.D.meta?.title || cur.title; cur.n = S.records.size; cur.current = true; }
-  else out.push({ id: canvasId, title: S.D.meta?.title || '', n: S.records.size, last: Date.now(), current: true });
-  return out.sort((a, b) => (b.current - a.current) || b.last - a.last);
+  else out.set(canvasId, { id: canvasId, title: S.D.meta?.title || '', n: S.records.size, last: Date.now(), current: true });
+  return [...out.values()].filter(c => c.n || c.current).sort((a, b) => (!!b.current - !!a.current) || b.last - a.last);
 }
 const ago = t => { if (!t) return 'empty'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
 
@@ -77,9 +83,10 @@ function openHome(){
     return `<button class="card2 h-${i[1]}" ${attr}><span class="cic" aria-hidden="true">${face(ICON_NAMES.has(i[0]) ? i[0] : x.icon)}</span><b>${esc(x.name || x.title)}</b><span>${esc(x.blurb)}</span></button>`; };
   $('homeTpl').innerHTML = TEMPLATES.map(t => card(`data-tpl="${t.id}"`, t)).join('');
   $('homeEx').innerHTML = EXAMPLES.map(x => card(`data-ex="${x.id}"`, x)).join('');
-  $('homeList').innerHTML = canvasList().map(c => `<li${c.current ? ' class="cur"' : ''}>
+  $('homeList').innerHTML = '';
+  canvasList().then(list => { $('homeList').innerHTML = list.map(c => `<li${c.current ? ' class="cur"' : ''}>
       <button class="open" data-open="${c.id}"><b>${esc(c.title || 'Untitled canvas')}</b><span>${c.n} record${c.n === 1 ? '' : 's'} · ${ago(c.last)}${c.current ? ' · open now' : ''}</span></button>
-      ${c.current ? '' : `<button class="btn danger" data-rm="${c.id}" aria-label="Remove ${esc(c.title || 'untitled canvas')} from this browser">remove</button>`}</li>`).join('');
+      ${c.current ? '' : `<button class="btn danger" data-rm="${c.id}" aria-label="Remove ${esc(c.title || 'untitled canvas')} from this browser">remove</button>`}</li>`).join(''); });
   $('home').hidden = false;
   setTimeout(() => ($('homeTpl').querySelector('button') || $('homeClose')).focus(), 0);
   say('Canvas home. Start from a template, open an example, or reopen one of your canvases.');
@@ -87,7 +94,7 @@ function openHome(){
 function closeHome(){ $('home').hidden = true; (homeBack && document.contains(homeBack) && homeBack !== document.body ? homeBack : cv).focus({ preventScroll: true }); }
 async function newCanvasFrom(tpl){
   closeHome();
-  await switchCanvas(newCanvasId());
+  await createOwnedCanvas();
   await setTitle(tpl.id === 'blank' ? 'Untitled canvas' : tpl.name, tpl.id);
   S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 };
   if (tpl.build) await tpl.build(viewCenter());
@@ -97,7 +104,7 @@ async function newCanvasFrom(tpl){
 }
 async function openExample(x){
   closeHome();
-  await switchCanvas(newCanvasId());
+  await createOwnedCanvas();
   const A = await exampleAuthors();
   S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 };
   await asAuthor(A[0], () => setTitle(x.title, 'example:' + x.id));
@@ -117,6 +124,7 @@ $('home').addEventListener('click', async e => {
   if (b.dataset.rm){
     if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'confirm remove'; b.setAttribute('aria-label', 'Confirm removing this canvas from this browser'); return; }
     try { localStorage.removeItem('flux:canvas:' + b.dataset.rm); } catch {}
+    await dbDeleteCanvas(b.dataset.rm);
     b.closest('li').remove(); say('Removed from this browser. Copies other people hold are unaffected.');
   }
 });

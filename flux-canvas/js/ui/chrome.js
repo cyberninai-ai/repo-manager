@@ -46,7 +46,7 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = `hsl(${authorHue(id)} 58% 36%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
     b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.dataset.tip = `${id === S.me?.id ? 'You' : NAMES.get(id) || short(id)} · ${n} element${n === 1 ? '' : 's'} · click to show only theirs`;

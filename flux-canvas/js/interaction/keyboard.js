@@ -79,15 +79,14 @@ addEventListener('blur', () => { spaceDown = false; });
 addEventListener('hashchange', () => { const m = location.hash.match(/^#([a-z0-9]{6,32})$/); if (m && m[1] !== canvasId) switchCanvas(m[1]); });
 // Swap canvases in place: no reload, so it also works where the URL can't change.
 async function switchCanvas(id){
-  clearTimeout(saveT);
+  await flushSave();   // the canvas being left keeps everything it had
   canvasId = id; setHash(id);
   try { localStorage.setItem('flux:lastCanvas', id); } catch {}
-  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0,
+  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0, why: {}, parked: new Map(),
     view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
   openChannel(); activeThread = null; draft = null;
-  const saved = store.get('flux:canvas:' + id);
-  if (saved) await importText(saved, false);
+  const n = await loadCanvas(id);
   derive(); paintAuthors(); paintLedger(); dirty = true;
-  toast(`Canvas ${id}${saved ? '' : ' · empty'}`);
+  toast(`Canvas ${id}${n ? '' : ' · empty'}`);
 }
 

@@ -121,6 +121,8 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
+  { label: 'People and permissions…', icon: 'users', run: openPeople },
+  '-',
   { label: 'Export canvas (.flux, signed)', icon: 'download', run: () => exportCanvas(true) },
   { label: 'Export SVG', icon: 'image', run: exportSVG },
   { label: 'Copy SVG', icon: 'copy', run: () => copy(toSVG(), 'SVG copied') },

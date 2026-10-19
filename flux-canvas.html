@@ -418,6 +418,28 @@ body.history #tools{opacity:.45;pointer-events:none}
 .au h4{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
 .au .row2{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px}
 .t-REACT,.t-AUDIT,.t-SIGNOFF{color:var(--green)} .t-META{color:var(--muted)}
+
+/* people and permissions */
+#people{position:fixed;inset:0;z-index:26;background:var(--scrim);backdrop-filter:blur(3px)}
+#people .pp{position:absolute;left:50%;top:8vh;transform:translateX(-50%);width:min(760px,calc(100% - 24px));max-height:84vh;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-lg);padding:18px 20px}
+#people header{display:flex;align-items:center;gap:10px}
+#people h2{margin:0;font-size:17px;font-weight:650;flex:1}
+#people .sub{color:var(--muted);font-size:13px;margin:6px 0 12px}
+#people .tw{overflow:auto;border:1px solid var(--line2);border-radius:12px}
+#people table{width:100%;border-collapse:collapse;font-size:13px}
+#people th,#people td{padding:9px 12px;border-bottom:1px solid var(--line2);text-align:center}
+#people tr:last-child th,#people tr:last-child td{border-bottom:0}
+#people thead th,#people tr:first-child th{font-size:11px;font-weight:650;color:var(--muted);background:var(--panel2);position:sticky;top:0}
+#people th[scope=row]{text-align:left;display:flex;align-items:center;gap:10px;font-weight:400}
+#people th[scope=row] span:last-child{display:flex;flex-direction:column}
+#people th[scope=row] small{color:var(--muted);font-size:11px}
+#people .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;flex:none}
+#people input{width:18px;height:18px;accent-color:var(--cyan);cursor:pointer}
+#people input:disabled{cursor:default}
+#people tr.own{background:var(--accent-weak)}
+#people .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+#people .acts:empty{display:none}
 </style>
 </head>
 <body>
@@ -439,6 +461,7 @@ body.history #tools{opacity:.45;pointer-events:none}
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5"/><path d="M7.5 8L12 3.5 16.5 8"/><path d="M5 13v6.5h14V13"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -715,6 +738,14 @@ body.history #tools{opacity:.45;pointer-events:none}
     <div class="acts"><button class="btn" id="reportCopy">copy Markdown</button><button class="btn" id="reportSave">download .md</button></div>
   </div>
 </div>
+<div id="people" role="dialog" aria-modal="true" aria-labelledby="peopleT" hidden>
+  <div class="pp">
+    <header><h2 id="peopleT">People and permissions</h2><button class="ibtn sm" id="peopleClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></header>
+    <p class="sub" id="peopleSub"></p>
+    <div class="tw"><table id="peopleTable"></table></div>
+    <div class="acts" id="peopleActs"></div>
+  </div>
+</div>
 <input type="file" id="file" accept=".flux,.txt,text/plain">
 <input type="file" id="imgFile" accept="image/*" style="display:none">
 
@@ -867,6 +898,47 @@ function parseAt(s, i){
 }
 const payloadOf = raw => raw.slice(0, raw.lastIndexOf('-SIG-'));
 
+// Audit S4: without this, a peer on such a browser rejected every Ed25519 record and its canvas silently diverged.
+// Verification only (no secrets are handled here), so constant time doesn't matter. Cofactorless check, as WebCrypto does.
+const ED = (() => {
+  const P = 2n ** 255n - 19n, L = 2n ** 252n + 27742317777372353535851937790883648493n;
+  const mod = (a, m = P) => { const r = a % m; return r < 0n ? r + m : r; };
+  const pow = (b, e, m = P) => { let r = 1n; b = mod(b, m); while (e > 0n){ if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; } return r; };
+  const inv = a => pow(a, P - 2n);
+  const D = mod(-121665n * inv(121666n)), D2 = mod(2n * D), I = pow(2n, (P - 1n) / 4n);
+  const B = [15112221349535400772501151409588531511454012693041857206046113283949847762202n, 46316835694926478169428394003475163141307993866256225615783033603165251855960n];
+  const point = (x, y) => ({ X: x, Y: y, Z: 1n, T: mod(x * y) });
+  const ZERO = point(0n, 1n), BASE = point(B[0], B[1]);
+  function add(p, q){
+    const a = mod((p.Y - p.X) * (q.Y - q.X)), b = mod((p.Y + p.X) * (q.Y + q.X)), c = mod(p.T * D2 * q.T), d = mod(p.Z * 2n * q.Z);
+    const e = b - a, f = d - c, g = d + c, h = b + a;
+    return { X: mod(e * f), Y: mod(g * h), Z: mod(f * g), T: mod(e * h) };
+  }
+  function mul(p, n){ let r = ZERO, q = p; while (n > 0n){ if (n & 1n) r = add(r, q); q = add(q, q); n >>= 1n; } return r; }
+  const le = bytes => { let n = 0n; for (let i = bytes.length - 1; i >= 0; i--) n = (n << 8n) | BigInt(bytes[i]); return n; };
+  function decompress(bytes){
+    if (bytes.length !== 32) return null;
+    const last = bytes[31], sign = last >> 7, b = bytes.slice(); b[31] = last & 0x7f;
+    const y = le(b); if (y >= P) return null;
+    const y2 = mod(y * y), u = mod(y2 - 1n), v = mod(D * y2 + 1n);
+    let x = mod(u * pow(v, 3n) * pow(u * pow(v, 7n), (P - 5n) / 8n));
+    const vx2 = mod(v * x * x);
+    if (vx2 === mod(-u)) x = mod(x * I); else if (vx2 !== u) return null;
+    if (x === 0n && sign) return null;
+    if (Number(x & 1n) !== sign) x = P - x;
+    return point(x, y);
+  }
+  async function verify(sig, msg, pub){
+    if (sig.length !== 64) return false;
+    const A = decompress(pub), R = decompress(sig.slice(0, 32)), s = le(sig.slice(32));
+    if (!A || !R || s >= L) return false;
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-512', new Uint8Array([...sig.slice(0, 32), ...pub, ...msg])));
+    const k = mod(le(h), L);
+    const left = mul(BASE, s), right = add(R, mul(A, k));
+    return mod(left.X * right.Z - right.X * left.Z) === 0n && mod(left.Y * right.Z - right.Y * left.Z) === 0n;
+  }
+  return { verify };
+})();
 /* =====================================================================
    Identity · Auth Kit
    ===================================================================== */
@@ -876,28 +948,55 @@ const store = {
   get(k, s){ try { return (s ? sessionStorage : localStorage).getItem(k); } catch { return null; } },
   set(k, v, s){ try { (s ? sessionStorage : localStorage).setItem(k, v); return true; } catch { return false; } },
 };
-async function newIdentity(){
+// Audit S1: the private key is generated (or imported) non-extractable and kept as a CryptoKey in IndexedDB, so no script
+// can read its bytes. Only where IndexedDB is missing (sandboxed frames) does it fall back to an extractable JWK.
+async function newIdentity(extractable = false){
   let alg = 'ed', kp;
-  try { kp = await crypto.subtle.generateKey(ALG.ed, true, ['sign', 'verify']); }
-  catch { alg = 'ec'; kp = await crypto.subtle.generateKey(ALG.ec, true, ['sign', 'verify']); }
-  const raw = new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey));
-  const jwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
-  return { alg, id: alg + b58enc(raw), priv: kp.privateKey, jwk };
+  try { kp = await crypto.subtle.generateKey(ALG.ed, extractable, ['sign', 'verify']); }
+  catch { alg = 'ec'; kp = await crypto.subtle.generateKey(ALG.ec, extractable, ['sign', 'verify']); }
+  const raw = new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey));   // public keys are always exportable
+  return { alg, id: alg + b58enc(raw), priv: kp.privateKey, jwk: extractable ? await crypto.subtle.exportKey('jwk', kp.privateKey) : null };
 }
 async function restoreIdentity(o){
   const priv = await crypto.subtle.importKey('jwk', o.jwk, ALG[o.alg], false, ['sign']);
-  return { alg: o.alg, id: o.id, priv, jwk: o.jwk };
+  return { alg: o.alg, id: o.id, priv, jwk: null };
+}
+const keyRecord = me => ({ alg: me.alg, id: me.id, priv: me.priv });
+async function keepIdentity(me, name){
+  if (await dbPut('keys', keyRecord(me), name)) return true;
+  return false;
 }
 async function loadIdentity(){
-  for (const sess of [true, false]){
-    const s = store.get('flux:identity', sess);
-    if (s) try { return await restoreIdentity(JSON.parse(s)); } catch {}
-  }
-  const me = await newIdentity();
+  // a separate identity for this tab ("New identity for this tab")
+  const tab = store.get('flux:tabKey', true);
+  if (tab){ const k = await dbGet('keys', tab); if (k?.priv) return k; }
+  const sess = store.get('flux:identity', true);
+  if (sess) try { return await restoreIdentity(JSON.parse(sess)); } catch {}
+  const k = await dbGet('keys', 'me');
+  if (k?.priv) return k;
+  // migrate a key from older versions: import it non-extractable, then delete the readable copy
+  const legacy = store.get('flux:identity');
+  if (legacy) try {
+    const me = await restoreIdentity(JSON.parse(legacy));
+    if (await keepIdentity(me, 'me')) try { localStorage.removeItem('flux:identity'); } catch {}
+    return me;
+  } catch {}
+  if (await dbReady){ const me = await newIdentity(false); await keepIdentity(me, 'me'); return me; }
+  const me = await newIdentity(true);
   store.set('flux:identity', JSON.stringify({ alg: me.alg, id: me.id, jwk: me.jwk }));
   return me;
 }
+async function newTabIdentity(){
+  if (await dbReady){
+    const me = await newIdentity(false), name = 'tab:' + me.id.slice(2, 14);
+    if (await keepIdentity(me, name)){ store.set('flux:tabKey', name, true); return me; }
+  }
+  const me = await newIdentity(true);
+  store.set('flux:identity', JSON.stringify({ alg: me.alg, id: me.id, jwk: me.jwk }), true);
+  return me;
+}
 const pubCache = new Map();
+let edNative = null;   // does this browser's WebCrypto verify Ed25519? (null until first asked)
 function pubKey(id){
   if (!pubCache.has(id)){
     const alg = id.slice(0, 2);
@@ -908,15 +1007,24 @@ function pubKey(id){
 async function verifyRaw(node){
   const id = node.fields.I, sig = node.fields.SIG;
   if (typeof id !== 'string' || typeof sig !== 'string' || node.order[node.order.length - 1] !== 'SIG') return false;
+  const alg = id.slice(0, 2), msg = te.encode(payloadOf(node.raw));
   try {
-    const key = await pubKey(id); if (!key) return false;
-    return await crypto.subtle.verify(SIGALG[id.slice(0, 2)], key, b58dec(sig), te.encode(payloadOf(node.raw)));
+    if (alg === 'ed' && (edNative === false || S.jsVerify)) return await ED.verify(b58dec(sig), msg, b58dec(id.slice(2)));
+    const key = await pubKey(id);
+    if (!key){
+      if (alg !== 'ed') return false;
+      edNative = false;   // audit S4: no Ed25519 in this WebCrypto; verify in JS instead of rejecting
+      return await ED.verify(b58dec(sig), msg, b58dec(id.slice(2)));
+    }
+    if (alg === 'ed') edNative = true;
+    return await crypto.subtle.verify(SIGALG[alg], key, b58dec(sig), msg);
   } catch { return false; }
 }
 const auth = { until: 0, count: 0 };
 const AUTH_IDLE = 5000;
 async function signed(action, pairs){
   if (S.histZ != null){ toast('Viewing history: go back to now to make changes.'); const e = new Error('history view'); e.name = 'HistoryView'; throw e; }
+  checkMayDo(action, pairs);
   auth.until = Date.now() + AUTH_IDLE; auth.count++; paintAuth();
   const payload = build(action, pairs);
   const sig = new Uint8Array(await crypto.subtle.sign(SIGALG[S.me.alg], S.me.priv, te.encode(payload)));
@@ -932,10 +1040,11 @@ const KNOWN = new Set([...ELEMENT, 'GROUP', 'MOVE', 'COMMENT', 'RESOLVE', 'STYLE
 // history changes, so fall back to the last canvas remembered in storage.
 const newCanvasId = () => b32(crypto.getRandomValues(new Uint8Array(8)));
 function setHash(id){ try { history.replaceState(null, '', '#' + id); return location.hash === '#' + id; } catch { return false; } }
+let freshCanvas = false;
 let canvasId = (location.hash.match(/^#([a-z0-9]{6,32})$/) || [])[1];
 if (!canvasId){
   try { canvasId = (localStorage.getItem('flux:lastCanvas') || '').match(/^[a-z0-9]{6,32}$/)?.[0]; } catch {}
-  canvasId = canvasId || newCanvasId();
+  if (!canvasId){ canvasId = newCanvasId(); freshCanvas = true; }   // boot replaces it with an id owned by you (core/permissions)
   setHash(canvasId);
 }
 try { localStorage.setItem('flux:lastCanvas', canvasId); } catch {}
@@ -943,16 +1052,71 @@ const S = {
   me: null, records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0,
   view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 },
   color: 'ink', width: 4, textSize: 24, font: 'sans', fill: false, lassoMode: false,
-  sel: new Set(), filter: null, showHidden: false, ledger: false, rejected: 0,
-  hist: [], redo: [], ghosts: [], D: { els: [], hidden: new Set(), off: new Map(), groupOf: new Map(), groups: [], next: new Map(), superseded: new Set(), threads: new Map(), kids: new Map() },
+  sel: new Set(), filter: null, showHidden: false, ledger: false, rejected: 0, why: {}, parked: new Map(),
+  hist: [], redo: [], ghosts: [], P: null, D: { els: [], hidden: new Set(), denied: new Set(), off: new Map(), groupOf: new Map(), groups: [], next: new Map(), superseded: new Set(), threads: new Map(), kids: new Map() },
 };
 const byZ = (a, b) => a.z - b.z || (a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : 0);
 let channelName = `canvas.${canvasId}.strokes`;
 let bc = null;
 
+// Where IndexedDB is unavailable (sandboxed frames with an opaque origin), DB.ok is false and callers fall back to localStorage.
+const DB = { ok: false, db: null };
+const MAX_BLOB = 2 * 1024 * 1024;   // audit S5: one blob can't fill local storage or a peer's memory
+const idbReq = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const txDone = t => new Promise((res, rej) => { t.oncomplete = () => res(true); t.onerror = t.onabort = () => rej(t.error); });
+const dbReady = (async () => {
+  try {
+    const r = indexedDB.open('flux', 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      d.createObjectStore('keys');
+      d.createObjectStore('records', { keyPath: ['canvas', 'cid'] }).createIndex('canvas', 'canvas');
+      d.createObjectStore('blobs', { keyPath: ['canvas', 'cid'] }).createIndex('canvas', 'canvas');
+      d.createObjectStore('canvases', { keyPath: 'id' });
+    };
+    DB.db = await Promise.race([idbReq(r), new Promise((_, rej) => setTimeout(() => rej(Error('idb timeout')), 3000))]);
+    DB.ok = true;
+  } catch { DB.ok = false; }
+  return DB.ok;
+})();
+async function dbGet(store, key){
+  if (!await dbReady) return undefined;
+  try { return await idbReq(DB.db.transaction(store).objectStore(store).get(key)); } catch { return undefined; }
+}
+async function dbPut(store, value, key){
+  if (!await dbReady) return false;
+  try { const t = DB.db.transaction(store, 'readwrite'), s = t.objectStore(store); key === undefined ? s.put(value) : s.put(value, key); return await txDone(t); } catch { return false; }
+}
+async function dbAll(store, canvas){
+  if (!await dbReady) return [];
+  try { const s = DB.db.transaction(store).objectStore(store); return await idbReq(canvas === undefined ? s.getAll() : s.index('canvas').getAll(canvas)); } catch { return []; }
+}
+// delete records (and their blobs) by CID; used by compaction
+async function dbDeleteRecords(canvas, cids, blobCids = []){
+  if (!await dbReady || !cids.length && !blobCids.length) return false;
+  try {
+    const t = DB.db.transaction(['records', 'blobs'], 'readwrite');
+    for (const c of cids) t.objectStore('records').delete([canvas, c]);
+    for (const c of blobCids) t.objectStore('blobs').delete([canvas, c]);
+    return await txDone(t);
+  } catch { return false; }
+}
+async function dbDeleteCanvas(canvas){
+  if (!await dbReady) return false;
+  try {
+    const t = DB.db.transaction(['records', 'blobs', 'canvases'], 'readwrite');
+    for (const st of ['records', 'blobs']){
+      const ix = t.objectStore(st).index('canvas');
+      ix.openKeyCursor(IDBKeyRange.only(canvas)).onsuccess = e => { const cur = e.target.result; if (cur){ t.objectStore(st).delete(cur.primaryKey); cur.continue(); } };
+    }
+    t.objectStore('canvases').delete(canvas);
+    return await txDone(t);
+  } catch { return false; }
+}
 /* ---------- ingest: verify, address, union-merge ---------- */
 async function addBlob(cid, bytes){
   if (S.blobs.has(cid)) return true;
+  if (!bytes || bytes.length > MAX_BLOB){ S.why['blob over 2 MB'] = (S.why['blob over 2 MB'] || 0) + 1; return false; }   // audit S5
   if (await cidOf(bytes) !== cid) return false;
   S.blobs.set(cid, bytes); dirty = true;
   return true;
@@ -1027,29 +1191,44 @@ function toRec(node, cid){
   if (RECORD_TYPES[r.type]) RECORD_TYPES[r.type].parse(r, f);   // feature record types (core/hooks)
   return r;
 }
+// Why records were refused, for the ledger. "clock" records are parked, not dropped: they are retried as the canvas catches up.
+const reject = why => { S.rejected++; S.why[why] = (S.why[why] || 0) + 1; return null; };
+const Z_SLACK = 10000, T_SLACK = 60 * 60 * 1000;
 async function ingest(raw, persist = true){
   let node;
-  try { node = parse(raw); } catch { S.rejected++; return null; }
-  if (!KNOWN.has(node.action)){ S.rejected++; return null; }
+  try { node = parse(raw); } catch { return reject('malformed'); }
+  if (!KNOWN.has(node.action)) return reject('unknown type');
   const cid = await cidOf(te.encode(raw));
   if (S.records.has(cid)) return cid;
-  if (!await verifyRaw(node)){ S.rejected++; return null; }
-  let rec; try { rec = toRec(node, cid); } catch { S.rejected++; return null; }
+  if (!await verifyRaw(node)) return reject('bad signature');
+  let rec; try { rec = toRec(node, cid); } catch { return reject('malformed'); }
+  if (RECORD_TYPES[rec.type]?.check && !await RECORD_TYPES[rec.type].check(rec)) return reject('invalid claim');
+  // audit S3: Z and T are chosen by the signer. A Z far past anything seen, or a T far in the future, would win every
+  // "latest wins" rule and every layer order; such records wait until the canvas has caught up with them.
+  if (rec.z > S.lamport + Z_SLACK || rec.t > Date.now() + T_SLACK){
+    if (!S.parked.has(cid)){ S.parked.set(cid, { raw, persist, z: rec.z, t: rec.t }); S.why.clock = (S.why.clock || 0) + 1; }
+    return null;
+  }
   const fence = rec.type === 'GROUP' ? (a => ELEMENT.has(a)) : RECORD_TYPES[rec.type]?.fence ? (a => a === RECORD_TYPES[rec.type].fence) : null;
   if (fence && rec.neg === null && Array.isArray(node.fields.P)){   // every fenced child is verified and ingested on its own
     rec.members = [];
     for (const child of node.fields.P){
-      if (!fence(child.action)){ S.rejected++; return null; }
+      if (!fence(child.action)) return reject('malformed');
       const c = await ingest(child.raw, false);
-      if (!c){ S.rejected++; return null; }
+      if (!c) return reject('bad fenced child');
       rec.members.push(c);
     }
   }
   S.records.set(cid, rec);
-  if (rec.z > S.lamport) S.lamport = rec.z;
-  if (persist) save();
+  if (rec.z > S.lamport){ S.lamport = rec.z; if (S.parked.size) setTimeout(unpark, 0); }
+  if (persist) save(cid);
   changed();
   return cid;
+}
+async function unpark(){
+  for (const [cid, p] of [...S.parked]) if (p.z <= S.lamport + Z_SLACK && p.t <= Date.now() + T_SLACK){
+    S.parked.delete(cid); S.why.clock = Math.max(0, (S.why.clock || 1) - 1); await ingest(p.raw, p.persist);
+  }
 }
 async function publish(raw, blobs = {}){
   for (const [c, b] of Object.entries(blobs)) await addBlob(c, b);
@@ -1074,17 +1253,65 @@ function openChannel(){
 }
 openChannel();
 
-/* ---------- persistence: the stored form is the export form, one record per line ---------- */
+/* ---------- persistence: each record is stored once, as signed; blobs beside it. The export form is the same lines. ---------- */
 let saveT = 0;
+const pendingSave = new Set();
+const blobOf = r => (r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null ? r.f.R : null;
 function lines(recs){
   const out = recs.map(r => r.raw);
   const seen = new Set();
-  for (const r of recs) if ((r.type === 'DRAW' || r.type === 'IMAGE') && r.neg === null && S.blobs.has(r.f.R) && !seen.has(r.f.R)){ seen.add(r.f.R); out.push('BLOB-R-' + r.f.R + '-B64-' + b64enc(S.blobs.get(r.f.R))); }
+  for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b) && !seen.has(b)){ seen.add(b); out.push('BLOB-R-' + b + '-B64-' + b64enc(S.blobs.get(b))); } }
   return out;
 }
-function save(){
+// queue one record (or, with no argument, every record) for the next write
+function save(cid){
+  if (cid) pendingSave.add(cid); else for (const c of S.records.keys()) pendingSave.add(c);
+  clearTimeout(saveT); saveT = setTimeout(flushSave, 120);
+}
+function canvasSummary(){
+  let last = 0; for (const r of S.records.values()) if (r.t > last) last = r.t;
+  return { id: canvasId, title: S.D.meta?.title || '', n: S.records.size, last };
+}
+async function flushSave(){
   clearTimeout(saveT);
-  saveT = setTimeout(() => { if (!store.set('flux:canvas:' + canvasId, lines([...S.records.values()].sort(byZ)).join('\n'))) toast('Local storage is full or blocked; records live in this tab only.'); }, 250);
+  const cids = [...pendingSave]; pendingSave.clear();
+  if (!cids.length) return;
+  if (!await dbReady){   // no IndexedDB: the whole canvas as one string, as before
+    if (!store.set('flux:canvas:' + canvasId, lines([...S.records.values()].sort(byZ)).join('\n'))) toast('Local storage is full or blocked; records live in this tab only.');
+    return;
+  }
+  try {
+    const t = DB.db.transaction(['records', 'blobs', 'canvases'], 'readwrite'), rs = t.objectStore('records'), bs = t.objectStore('blobs');
+    for (const c of cids){
+      const r = S.records.get(c); if (!r) continue;
+      rs.put({ canvas: canvasId, cid: c, raw: r.raw, z: r.z });
+      const b = blobOf(r); if (b && S.blobs.has(b)) bs.put({ canvas: canvasId, cid: b, bytes: S.blobs.get(b) });
+    }
+    t.objectStore('canvases').put(canvasSummary());
+    await txDone(t);
+  } catch { toast('Storage is full or blocked; new records live in this tab only.'); }
+}
+// Load a canvas: from IndexedDB, else migrate it from localStorage (older versions), else the localStorage fallback.
+async function loadCanvas(id){
+  const legacyKey = 'flux:canvas:' + id;
+  if (await dbReady){
+    const recs = await dbAll('records', id);
+    if (recs.length){
+      for (const b of await dbAll('blobs', id)) try { await addBlob(b.cid, b.bytes); } catch {}
+      recs.sort((a, b) => a.z - b.z);
+      for (const r of recs) await ingest(r.raw, false);
+      return recs.length;
+    }
+    const legacy = store.get(legacyKey);
+    if (!legacy) return 0;
+    await importText(legacy, false);
+    save(); await flushSave();
+    if ((await dbAll('records', id)).length) try { localStorage.removeItem(legacyKey); } catch {}
+    return S.records.size;
+  }
+  const saved = store.get(legacyKey);
+  if (saved) await importText(saved, false);
+  return saved ? S.records.size : 0;
 }
 async function importText(text, persist = true){
   const ls = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -1096,8 +1323,8 @@ async function importText(text, persist = true){
   for (const l of ls){
     if (l.startsWith('BLOB-')) continue;
     if (l.startsWith('CANVAS-')){
-      let node; try { node = parse(l); } catch { S.rejected++; continue; }
-      if (!await verifyRaw(node) || !Array.isArray(node.fields.P)){ S.rejected++; continue; }
+      let node; try { node = parse(l); } catch { reject('malformed'); continue; }
+      if (!await verifyRaw(node) || !Array.isArray(node.fields.P)){ reject('bad signature'); continue; }
       for (const c of node.fields.P){ const had = S.records.size; if (await ingest(c.raw, persist) && S.records.size > had) added++; }
       if (node.fields.VIEW && persist){ const [x, y, z] = node.fields.VIEW.split('_'); try { S.view = { x: decInt(x), y: decInt(y), zoom: decInt(z) / 100 || 1 }; } catch {} }
       continue;
@@ -1108,10 +1335,76 @@ async function importText(text, persist = true){
   return { added, rejected: S.rejected - before };
 }
 
+// OWNER-I-{owner}-R-{canvas}-K-{nonce}-Z-T-SIG   valid only if canvas = ownedId(owner, nonce): the id commits to the key
+// GRANT-I-{owner}-R-{canvas}-A-{author|all}-P-{draw_comment_move_audit|none}-Z-T-SIG   owner only; latest z per A wins
+// A canvas without an OWNER record (older canvases, ids typed by hand) stays open: everyone may do everything.
+// Grants apply to everything an author signed, not only later records: Z is signer-chosen, so "before the grant" can't be trusted.
+const PERMS = ['draw', 'comment', 'move', 'audit'];
+const PERM_NAMES = { draw: 'Draw and write', comment: 'Comment, vote, react', move: 'Move others’ work', audit: 'Audit and sign off' };
+async function ownedId(owner, nonce){
+  return 'o' + b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(`flux-canvas:${owner}:${nonce}`)))).slice(0, 15);
+}
+registerRecord('OWNER', {
+  parse(r, f){ if (!f.R || !f.K) throw Error('owner'); r.nonce = f.K; },
+  check: async r => r.f.R === await ownedId(r.author, r.nonce),
+});
+registerRecord('GRANT', {
+  parse(r, f){ if (!f.R || !f.A || !f.P) throw Error('grant'); r.who = f.A; r.perms = new Set(f.P === 'none' ? [] : f.P.split('_').filter(p => PERMS.includes(p))); },
+});
+// what a record needs: by type, plus moving someone else's element needs "move"
+const PERM_OF = { COMMENT: 'comment', RESOLVE: 'comment', REACT: 'comment', AUDIT: 'audit', SIGNOFF: 'audit', OWNER: null, GRANT: null };
+function permFor(type, author, target){
+  if (type === 'MOVE'){ const t = target && S.records.get(target); return t && t.author !== author ? 'move' : 'draw'; }
+  return type in PERM_OF ? PERM_OF[type] : 'draw';
+}
+function policyOf(recs){
+  let owner = null; const grants = new Map();
+  for (const r of recs) if (r.type === 'OWNER' && r.f.R === canvasId && r.neg === null){ owner = r.author; break; }
+  if (owner) for (const r of recs) if (r.type === 'GRANT' && r.author === owner && r.f.R === canvasId && r.neg === null) grants.set(r.who, r);   // z order: latest wins
+  const can = (author, perm) => {
+    if (!owner || author === owner || perm === null) return true;
+    if (perm === 'owner') return false;
+    const g = grants.get(author) || grants.get('all');
+    return !g || g.perms.has(perm);
+  };
+  return { owner, grants, can };
+}
+function permitted(r, P){
+  if (!P.owner) return true;
+  if (r.neg !== null){ const t = S.records.get(r.f.R); return !!t && t.author === r.author; }   // you may always take back your own work
+  return P.can(r.author, permFor(r.type, r.author, r.f.R));
+}
+// refuse to sign what the canvas would not show, instead of signing it and silently hiding it
+function checkMayDo(action, pairs){
+  const P = S.P; if (!P?.owner || !S.me) return;
+  const f = Object.fromEntries(pairs), perm = 'N' in f ? null : permFor(action, S.me.id, f.R);
+  if (P.can(S.me.id, perm)) return;
+  toast(perm === 'owner' ? 'Only the canvas owner can do that.' : `The owner hasn’t given you “${PERM_NAMES[perm] || perm}” on this canvas.`);
+  const e = new Error('not permitted'); e.name = 'NotPermitted'; throw e;
+}
+// A new canvas you own: its id is derived from your key and a nonce, and the OWNER record proves it.
+async function ownedCanvasId(){
+  const nonce = b32(crypto.getRandomValues(new Uint8Array(10)));
+  return { nonce, id: await ownedId(S.me.id, nonce) };
+}
+async function claimCanvas(nonce){
+  return publish(await signed('OWNER', [['I', S.me.id], ['R', canvasId], ['K', nonce], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+async function createOwnedCanvas(){
+  const { nonce, id } = await ownedCanvasId();
+  await switchCanvas(id); await claimCanvas(nonce);
+  return id;
+}
+async function grant(who, perms){
+  return publish(await signed('GRANT', [['I', S.me.id], ['R', canvasId], ['A', who], ['P', perms.length ? perms.join('_') : 'none'], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
 /* ---------- derived view of the union ---------- */
 function derive(){
   // the history scrubber replays the union as it stood at record order S.histZ
-  const recs = [...S.records.values()].filter(r => S.histZ == null || r.z <= S.histZ).sort(byZ);
+  const all = [...S.records.values()].filter(r => S.histZ == null || r.z <= S.histZ).sort(byZ);
+  // permissions (core/permissions): records their author may not make on this canvas take no part in the view
+  const P = S.P = policyOf(all), denied = new Set();
+  const recs = P.owner ? all.filter(r => permitted(r, P) || !denied.add(r.cid)) : all;
   const byType = {};
   const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map(), styles = new Map();
   for (const r of recs){
@@ -1154,7 +1447,7 @@ function derive(){
   for (const c of comments) if (c.re && threads.has(c.re)) threads.get(c.re).replies.push(c);
   const groupOf = new Map();
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
-  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids };
+  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids, denied };
   runHooks(DERIVE_HOOKS, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
@@ -1522,7 +1815,9 @@ async function insertImage(file, at){
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   const enc = t => new Promise(res => c.toBlob(res, t, 0.85));
   let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') out = await enc('image/jpeg');
-  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < 4e6 && k === 1) out = file;   // keep a small original when it's already smaller
+  if (/png|gif|svg/.test(file.type) && out && out.size > file.size && file.size < MAX_BLOB && k === 1) out = file;   // keep a small original when it's already smaller
+  for (let q = 0.7; out && out.size > MAX_BLOB && q > 0.2; q -= 0.15) out = await new Promise(res => c.toBlob(res, 'image/jpeg', q));   // stay under the blob cap
+  if (!out || out.size > MAX_BLOB){ toast('That image is too large to sign and share, even re-encoded.'); return; }
   const bytes = new Uint8Array(await out.arrayBuffer()), R = await cidOf(bytes);
   // place it at a comfortable on-screen size, centred on the drop point
   const fit = Math.min(1, (Math.min(innerWidth, innerHeight) * 0.6 / S.view.zoom) / Math.max(c.width, c.height));
@@ -2185,7 +2480,7 @@ function paintAuthors(){
   for (const id of peers.keys()) if (!counts.has(id)) counts.set(id, 0);
   for (const [id, n] of [...counts].sort((a, b) => (b[0] === S.me?.id) - (a[0] === S.me?.id) || b[1] - a[1]).slice(0, 8)){
     const b = document.createElement('button');
-    b.style.background = `hsl(${authorHue(id)} 58% 36%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
+    b.style.background = `hsl(${authorHue(id)} 55% 30%)`;   // the author's hue, dark enough for white initials (WCAG AA) b.textContent = NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4);
     b.setAttribute('aria-label', `${NAMES.has(id) ? NAMES.get(id).slice(0, 2) : id.slice(2, 4)}: ${id === S.me?.id ? 'you' : 'author ' + short(id)}, ${n} element${n === 1 ? '' : 's'}. Show only this author`);
     b.setAttribute('aria-pressed', S.filter ? String(S.filter.has(id)) : 'false');
     b.dataset.tip = `${id === S.me?.id ? 'You' : NAMES.get(id) || short(id)} · ${n} element${n === 1 ? '' : 's'} · click to show only theirs`;
@@ -3353,12 +3648,15 @@ function paintLedger(){
   const bytes = recs.reduce((s, r) => s + recBytes(r), 0);
   const authors = new Set(recs.map(r => r.author));
   $('ledgerStats').innerHTML = `${recs.length} records · ${authors.size} author${authors.size === 1 ? '' : 's'} · ${(bytes / 1024).toFixed(1)} KB
-    ${S.rejected ? ` · <span class="bad">${S.rejected} rejected</span>` : ''}<br>canvas ${esc(canvasId)} · channel <span class="kbd">${esc(channelName)}</span>${bc ? '' : ' (unavailable)'}`;
+    ${S.rejected ? ` · <span class="bad">${S.rejected} rejected (${Object.entries(S.why).filter(([k, v]) => v && k !== 'clock').map(([k, v]) => `${v} ${k}`).join(', ')})</span>` : ''}
+    ${S.parked.size ? ` · <span class="bad">${S.parked.size} waiting: clock ahead of this canvas</span>` : ''}
+    ${edNative === false ? ' · Ed25519 verified in JS' : ''}<br>canvas ${esc(canvasId)} · channel <span class="kbd">${esc(channelName)}</span>${bc ? '' : ' (unavailable)'}`;
   $('ledgerList').innerHTML = recs.slice(0, 500).map(r => {
     const tag = r.neg !== null ? `<span class="tag t-neg">${r.type} N-${r.neg ? 1 : 0}</span>` : `<span class="tag t-${r.type}">${r.type}</span>`;
+    const deny = S.D.denied?.has(r.cid) ? '<span class="tag t-neg">not permitted</span>' : '';
     const target = r.neg !== null || r.type === 'MOVE' ? r.f.R : r.cid;
     return `<div class="row${S.sel.has(target) ? ' sel' : ''}" data-t="${esc(target)}" role="button" tabindex="0">
-      <div class="top">${tag}<span class="dot" style="background:${authorColor(r.author)}"></span>${r.author === S.me?.id ? 'you' : esc(short(r.author))}
+      <div class="top">${tag}${deny}<span class="dot" style="background:${authorColor(r.author)}"></span>${r.author === S.me?.id ? 'you' : esc(short(r.author))}
       <span class="meta">z ${r.z} · ${recBytes(r)} B · <span class="ok">✓</span></span></div><div class="raw">${esc(r.raw)}</div></div>`;
   }).join('') + (recs.length > 500 ? `<div class="row meta">… ${recs.length - 500} older records</div>` : '') +
   (recs.length ? '' : '<div class="row meta">No records yet. Draw something.</div>');
@@ -3437,11 +3735,11 @@ function commands(){
   if (hex) add('color', `Use #${hex[1]}`, () => { S.color = hex[1].toLowerCase(); }, { sw: hex[1] });
   if (/^https?:/.test(location.href)) add('share', 'Copy canvas link', () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Open it in another tab to draw together.'));
   add('share', 'Copy canvas id', () => copy(canvasId, 'Canvas id copied'));
-  add('canvas', 'New canvas', () => switchCanvas(newCanvasId()));
+  add('canvas', 'New canvas', () => createOwnedCanvas());
   add('canvas', 'Open canvas by id…', async () => { let v = await ask('Canvas id'); v = (v || '').trim().replace(/^.*#/, ''); if (/^[a-z0-9]{6,32}$/.test(v)) switchCanvas(v); else if (v) toast('Not a canvas id.'); });
   add('identity', 'Copy my public key', () => copy(S.me.id, 'Public key copied'));
   add('identity', 'New identity for this tab', async () => {
-    const me = await newIdentity(); store.set('flux:identity', JSON.stringify({ alg: me.alg, id: me.id, jwk: me.jwk }), true);
+    const me = await newTabIdentity();
     S.me = me; S.hist = []; S.redo = []; paintAuthors(); toast(`Now drawing as ${short(me.id)} in this tab (${me.alg === 'ed' ? 'Ed25519' : 'ECDSA P-256'}).`);
   });
   add('help', 'Gestures, keyboard & help', () => toggleHelp(true), { k: '?' });
@@ -3656,37 +3954,43 @@ const EXAMPLE_NAMES = ['Ana', 'Ben', 'Chen'];
 let exampleKeys = null;
 async function exampleAuthors(){
   if (exampleKeys) return exampleKeys;
-  let saved = null; try { saved = JSON.parse(localStorage.getItem('flux:exampleKeys') || 'null'); } catch {}
-  if (Array.isArray(saved) && saved.length === 3) try { exampleKeys = await Promise.all(saved.map(restoreIdentity)); exampleKeys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i])); return exampleKeys; } catch {}
-  exampleKeys = []; for (let i = 0; i < 3; i++) exampleKeys.push(await newIdentity());
-  try { localStorage.setItem('flux:exampleKeys', JSON.stringify(exampleKeys.map(m => ({ alg: m.alg, id: m.id, jwk: m.jwk })))); } catch {}
-  exampleKeys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i]));
-  return exampleKeys;
+  const keep = keys => { exampleKeys = keys; keys.forEach((k, i) => NAMES.set(k.id, EXAMPLE_NAMES[i])); store.set('flux:exampleIds', JSON.stringify(keys.map(k => k.id))); return keys; };
+  const kept = await Promise.all([0, 1, 2].map(i => dbGet('keys', 'example:' + i)));
+  if (kept.every(k => k?.priv)) return keep(kept);
+  let saved = null; try { saved = JSON.parse(localStorage.getItem('flux:exampleKeys') || 'null'); } catch {}   // older versions kept JWKs
+  let keys = null;
+  if (Array.isArray(saved) && saved.length === 3) try { keys = await Promise.all(saved.map(restoreIdentity)); } catch {}
+  if (!keys){ keys = []; for (let i = 0; i < 3; i++) keys.push(await newIdentity(!DB.ok)); }
+  let stored = true; for (let i = 0; i < 3; i++) stored = await keepIdentity(keys[i], 'example:' + i) && stored;
+  if (stored) try { localStorage.removeItem('flux:exampleKeys'); } catch {}
+  else if (keys[0].jwk) store.set('flux:exampleKeys', JSON.stringify(keys.map(m => ({ alg: m.alg, id: m.id, jwk: m.jwk }))));
+  return keep(keys);
 }
 // names for example authors are known on every load, so reopened examples still read "Ana", not a key fragment
-try { (JSON.parse(localStorage.getItem('flux:exampleKeys') || '[]') || []).forEach((k, i) => k?.id && NAMES.set(k.id, EXAMPLE_NAMES[i])); } catch {}
+try { for (const key of ['flux:exampleIds', 'flux:exampleKeys']) (JSON.parse(localStorage.getItem(key) || '[]') || []).forEach((k, i) => { const id = typeof k === 'string' ? k : k?.id; if (id) NAMES.set(id, EXAMPLE_NAMES[i]); }); } catch {}
 // Sign everything inside fn as another identity (examples only).
 async function asAuthor(me, fn){ const prev = S.me; S.me = me; try { return await fn(); } finally { S.me = prev; } }
 
-/* canvas list: read straight from local storage, without verifying, for display only */
-function canvasList(){
-  const out = [];
+/* canvas list: summaries kept beside the record log (and any canvases older versions left in localStorage) */
+async function canvasList(){
+  const out = new Map();
+  for (const c of await dbAll('canvases')) out.set(c.id, { id: c.id, title: c.title, n: c.n, last: c.last });
   try {
     for (let i = 0; i < localStorage.length; i++){
       const key = localStorage.key(i); if (!key || !key.startsWith('flux:canvas:')) continue;
-      const id = key.slice(12); let title = '', n = 0, last = 0;
+      const id = key.slice(12); if (out.has(id)) continue; let title = '', n = 0, last = 0;
       for (const l of (localStorage.getItem(key) || '').split('\n')){
         if (!l || l.startsWith('BLOB-')) continue; n++;
         const t = l.match(/-T-(\d{10,})-SIG-/); if (t) last = Math.max(last, +t[1]);
         if (l.startsWith('META-') && l.includes(`-R-${id}-`)){ const m = l.match(/-M-([^-.]*)/); if (m) title = decTxt(m[1]); }
       }
-      out.push({ id, title, n, last });
+      out.set(id, { id, title, n, last });
     }
   } catch {}
-  const cur = out.find(c => c.id === canvasId);
+  const cur = out.get(canvasId);
   if (cur){ cur.title = S.D.meta?.title || cur.title; cur.n = S.records.size; cur.current = true; }
-  else out.push({ id: canvasId, title: S.D.meta?.title || '', n: S.records.size, last: Date.now(), current: true });
-  return out.sort((a, b) => (b.current - a.current) || b.last - a.last);
+  else out.set(canvasId, { id: canvasId, title: S.D.meta?.title || '', n: S.records.size, last: Date.now(), current: true });
+  return [...out.values()].filter(c => c.n || c.current).sort((a, b) => (!!b.current - !!a.current) || b.last - a.last);
 }
 const ago = t => { if (!t) return 'empty'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
 
@@ -3701,9 +4005,10 @@ function openHome(){
     return `<button class="card2 h-${i[1]}" ${attr}><span class="cic" aria-hidden="true">${face(ICON_NAMES.has(i[0]) ? i[0] : x.icon)}</span><b>${esc(x.name || x.title)}</b><span>${esc(x.blurb)}</span></button>`; };
   $('homeTpl').innerHTML = TEMPLATES.map(t => card(`data-tpl="${t.id}"`, t)).join('');
   $('homeEx').innerHTML = EXAMPLES.map(x => card(`data-ex="${x.id}"`, x)).join('');
-  $('homeList').innerHTML = canvasList().map(c => `<li${c.current ? ' class="cur"' : ''}>
+  $('homeList').innerHTML = '';
+  canvasList().then(list => { $('homeList').innerHTML = list.map(c => `<li${c.current ? ' class="cur"' : ''}>
       <button class="open" data-open="${c.id}"><b>${esc(c.title || 'Untitled canvas')}</b><span>${c.n} record${c.n === 1 ? '' : 's'} · ${ago(c.last)}${c.current ? ' · open now' : ''}</span></button>
-      ${c.current ? '' : `<button class="btn danger" data-rm="${c.id}" aria-label="Remove ${esc(c.title || 'untitled canvas')} from this browser">remove</button>`}</li>`).join('');
+      ${c.current ? '' : `<button class="btn danger" data-rm="${c.id}" aria-label="Remove ${esc(c.title || 'untitled canvas')} from this browser">remove</button>`}</li>`).join(''); });
   $('home').hidden = false;
   setTimeout(() => ($('homeTpl').querySelector('button') || $('homeClose')).focus(), 0);
   say('Canvas home. Start from a template, open an example, or reopen one of your canvases.');
@@ -3711,7 +4016,7 @@ function openHome(){
 function closeHome(){ $('home').hidden = true; (homeBack && document.contains(homeBack) && homeBack !== document.body ? homeBack : cv).focus({ preventScroll: true }); }
 async function newCanvasFrom(tpl){
   closeHome();
-  await switchCanvas(newCanvasId());
+  await createOwnedCanvas();
   await setTitle(tpl.id === 'blank' ? 'Untitled canvas' : tpl.name, tpl.id);
   S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 };
   if (tpl.build) await tpl.build(viewCenter());
@@ -3721,7 +4026,7 @@ async function newCanvasFrom(tpl){
 }
 async function openExample(x){
   closeHome();
-  await switchCanvas(newCanvasId());
+  await createOwnedCanvas();
   const A = await exampleAuthors();
   S.view = { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 };
   await asAuthor(A[0], () => setTitle(x.title, 'example:' + x.id));
@@ -3741,6 +4046,7 @@ $('home').addEventListener('click', async e => {
   if (b.dataset.rm){
     if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'confirm remove'; b.setAttribute('aria-label', 'Confirm removing this canvas from this browser'); return; }
     try { localStorage.removeItem('flux:canvas:' + b.dataset.rm); } catch {}
+    await dbDeleteCanvas(b.dataset.rm);
     b.closest('li').remove(); say('Removed from this browser. Copies other people hold are unaffected.');
   }
 });
@@ -4516,6 +4822,51 @@ EXAMPLES.push({ id: 'expense', title: 'Expense approval — audited flow', icon:
   const t = await by(ben, () => noteOn(ids.r, 'Fix: set the age limit to 60 days and re-test.'));
   await by(chen, () => replyTo(t, 'Shipping the config change today.'));
 } });
+let peopleBack = null;
+function peopleRows(){
+  const P = S.P || { owner: null, grants: new Map(), can: () => true }, ids = new Set();
+  for (const r of S.records.values()) if (r.author) ids.add(r.author);
+  for (const id of peers.keys()) ids.add(id);
+  if (S.me) ids.add(S.me.id);
+  for (const k of P.grants.keys()) if (k !== 'all') ids.add(k);
+  const name = id => id === S.me?.id ? 'You' : NAMES.get(id) || short(id);
+  const list = [...ids].sort((a, b) => (b === P.owner) - (a === P.owner) || (b === S.me?.id) - (a === S.me?.id) || name(a).localeCompare(name(b)));
+  return { P, rows: [{ id: 'all', label: 'Everyone else', sub: 'Anyone who opens this canvas' }, ...list.map(id => ({ id, label: name(id), sub: id === P.owner ? 'Owner' : P.grants.has(id) ? 'Own permissions' : 'Follows “Everyone else”' }))] };
+}
+function paintPeople(){
+  const { P, rows } = peopleRows(), mine = P.owner && P.owner === S.me?.id;
+  $('peopleSub').textContent = !P.owner ? 'This canvas has no owner, so everyone may do everything. It was made before permissions or opened by id. Make an owned copy to choose who can do what.'
+    : mine ? 'You own this canvas. Each change is a signed GRANT record; it applies to everything that person has signed here, earlier work included.'
+    : `Owned by ${P.owner === S.me?.id ? 'you' : NAMES.get(P.owner) || short(P.owner)}. Only the owner can change permissions.`;
+  const head = `<tr><th scope="col">Person</th>${PERMS.map(p => `<th scope="col">${PERM_NAMES[p]}</th>`).join('')}</tr>`;
+  $('peopleTable').innerHTML = head + rows.map(r => {
+    const owner = r.id === P.owner;
+    return `<tr${owner ? ' class="own"' : ''}><th scope="row"><span class="av" style="background:${r.id === 'all' ? 'var(--muted)' : `hsl(${authorHue(r.id)} 55% 30%)`}" aria-hidden="true">${r.id === 'all' ? '∗' : esc(r.label.slice(0, 2))}</span><span><b>${esc(r.label)}</b><small>${esc(r.sub)}</small></span></th>`
+      + PERMS.map(p => `<td><input type="checkbox" data-who="${esc(r.id)}" data-p="${p}" aria-label="${esc(r.label)}: ${PERM_NAMES[p]}"${(owner || P.can(r.id === 'all' ? '\u0000' : r.id, p)) ? ' checked' : ''}${!mine || owner ? ' disabled' : ''}></td>`).join('') + '</tr>';
+  }).join('');
+  $('peopleActs').innerHTML = P.owner ? '' : '<button class="btn primary" id="peopleCopy">Make an owned copy</button>';
+}
+function openPeople(){ peopleBack = document.activeElement; $('people').hidden = false; paintPeople(); setTimeout(() => ($('people').querySelector('input:not([disabled]), #peopleCopy') || $('peopleClose')).focus(), 0); say('People and permissions.'); }
+function closePeople(){ $('people').hidden = true; (peopleBack && document.contains(peopleBack) ? peopleBack : cv).focus({ preventScroll: true }); }
+$('peopleClose').onclick = closePeople;
+$('people').addEventListener('keydown', e => { e.stopPropagation(); trapTab(e, $('people')); if (e.key === 'Escape') closePeople(); });
+$('people').addEventListener('change', async e => {
+  const who = e.target.dataset.who; if (!who) return;
+  const perms = [...$('people').querySelectorAll(`input[data-who="${CSS.escape(who)}"]`)].filter(i => i.checked).map(i => i.dataset.p);
+  try { await grant(who, perms); } catch { return; }
+  await tick(); paintPeople(); $('people').querySelector(`input[data-who="${CSS.escape(who)}"][data-p="${e.target.dataset.p}"]`)?.focus();
+  say(`${who === 'all' ? 'Everyone else' : NAMES.get(who) || short(who)}: ${perms.length ? perms.map(p => PERM_NAMES[p]).join(', ') : 'view only'}. Signed.`);
+});
+$('people').addEventListener('click', async e => {
+  if (e.target.id !== 'peopleCopy') return;
+  const raws = [...S.records.values()].filter(r => r.type !== 'OWNER' && r.type !== 'GRANT').sort(byZ).map(r => r.raw), blobs = new Map(S.blobs), title = S.D.meta?.title || '';
+  closePeople(); await createOwnedCanvas();
+  for (const [c, b] of blobs) await addBlob(c, b);
+  for (const raw of raws) await ingest(raw);
+  if (title) await setTitle(title);
+  zoomFit(); toast('Owned copy ready. Share → People and permissions to choose who can do what.');
+});
+PALETTE_HOOKS.push(add => add('share', 'People and permissions…', openPeople));
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 
@@ -4637,6 +4988,8 @@ document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.targ
 
 const shareItems = () => [
   ...(/^https?:/.test(location.href) ? [{ label: 'Copy link to this canvas', icon: 'link', run: () => copy(location.href.split('#')[0] + '#' + canvasId, 'Link copied. Anyone who opens it in this browser joins the canvas.') }] : [{ label: 'Copy canvas id', icon: 'link', run: () => copy(canvasId, 'Canvas id copied') }]),
+  { label: 'People and permissions…', icon: 'users', run: openPeople },
+  '-',
   { label: 'Export canvas (.flux, signed)', icon: 'download', run: () => exportCanvas(true) },
   { label: 'Export SVG', icon: 'image', run: exportSVG },
   { label: 'Copy SVG', icon: 'copy', run: () => copy(toSVG(), 'SVG copied') },
@@ -4751,16 +5104,15 @@ addEventListener('blur', () => { spaceDown = false; });
 addEventListener('hashchange', () => { const m = location.hash.match(/^#([a-z0-9]{6,32})$/); if (m && m[1] !== canvasId) switchCanvas(m[1]); });
 // Swap canvases in place: no reload, so it also works where the URL can't change.
 async function switchCanvas(id){
-  clearTimeout(saveT);
+  await flushSave();   // the canvas being left keeps everything it had
   canvasId = id; setHash(id);
   try { localStorage.setItem('flux:lastCanvas', id); } catch {}
-  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0,
+  Object.assign(S, { records: new Map(), blobs: new Map(), geom: new Map(), imgs: new Map(), lamport: 0, sel: new Set(), filter: null, hist: [], redo: [], ghosts: [], rejected: 0, why: {}, parked: new Map(),
     view: { x: -innerWidth / 2, y: -innerHeight / 2, zoom: 1 } });
   openChannel(); activeThread = null; draft = null;
-  const saved = store.get('flux:canvas:' + id);
-  if (saved) await importText(saved, false);
+  const n = await loadCanvas(id);
   derive(); paintAuthors(); paintLedger(); dirty = true;
-  toast(`Canvas ${id}${saved ? '' : ' · empty'}`);
+  toast(`Canvas ${id}${n ? '' : ' · empty'}`);
 }
 
 /* =====================================================================
@@ -4770,13 +5122,14 @@ async function switchCanvas(id){
   resize();
   if (!crypto?.subtle){ toast('This page needs a secure context (https or file://) for WebCrypto signing.'); return; }
   S.me = await loadIdentity();
-  const saved = store.get('flux:canvas:' + canvasId);
-  if (saved) await importText(saved, false);
+  let claim = null;
+  if (freshCanvas){ const o = await ownedCanvasId(); claim = o.nonce; canvasId = o.id; setHash(canvasId); store.set('flux:lastCanvas', canvasId); openChannel(); }
+  await loadCanvas(canvasId);
+  if (claim) await claimCanvas(claim);
   derive(); paintAuthors(); paintAuth(); paintBar(); document.documentElement.style.setProperty('--barH', barH() + 'px'); dirty = true; loop();
-  if (saved) setTimeout(() => { $('hint').classList.add('gone'); }, 2500);
 })();
 // a refused signature while viewing history is expected, not an error
-addEventListener('unhandledrejection', e => { if (e.reason?.name === 'HistoryView') e.preventDefault(); });
+addEventListener('unhandledrejection', e => { if (e.reason?.name === 'HistoryView' || e.reason?.name === 'NotPermitted') e.preventDefault(); });
 </script>
 </body>
 </html>

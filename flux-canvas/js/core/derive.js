@@ -4,7 +4,10 @@
 /* ---------- derived view of the union ---------- */
 function derive(){
   // the history scrubber replays the union as it stood at record order S.histZ
-  const recs = [...S.records.values()].filter(r => S.histZ == null || r.z <= S.histZ).sort(byZ);
+  const all = [...S.records.values()].filter(r => S.histZ == null || r.z <= S.histZ).sort(byZ);
+  // permissions (core/permissions): records their author may not make on this canvas take no part in the view
+  const P = S.P = policyOf(all), denied = new Set();
+  const recs = P.owner ? all.filter(r => permitted(r, P) || !denied.add(r.cid)) : all;
   const byType = {};
   const els = [], negs = new Map(), off = new Map(), groups = [], comments = [], resolves = new Map(), styles = new Map();
   for (const r of recs){
@@ -47,7 +50,7 @@ function derive(){
   for (const c of comments) if (c.re && threads.has(c.re)) threads.get(c.re).replies.push(c);
   const groupOf = new Map();
   for (const g of groups) if (!hidden.has(g.cid)) for (const m of g.members) groupOf.set(m, g.cid);
-  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids };
+  S.D = { els, hidden, off, groupOf, groups, next, superseded, threads, kids, denied };
   runHooks(DERIVE_HOOKS, S.D, byType);
   for (const c of [...S.sel]) if (!S.records.has(c) || (hidden.has(c) && !S.showHidden)) S.sel.delete(c);
 }
