@@ -3,6 +3,7 @@
 // toolbar buttons, palette commands, keys, channel messages, templates and examples here instead of editing the core.
 // Every hook list is read at the moment it is used, so a feature only has to load before boot.
 
+// Field N is reserved: on any record it means revoke (N-1) or restore (N-0) the record named by R (core/records).
 // ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence;
 //            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments) }
 const RECORD_TYPES = {};

@@ -956,6 +956,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 // toolbar buttons, palette commands, keys, channel messages, templates and examples here instead of editing the core.
 // Every hook list is read at the moment it is used, so a feature only has to load before boot.
 
+// Field N is reserved: on any record it means revoke (N-1) or restore (N-0) the record named by R (core/records).
 // ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence;
 //            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments) }
 const RECORD_TYPES = {};
@@ -7112,6 +7113,480 @@ registerFeature({ id: 'room', name: 'Room: who is doing what', group: 'meet', ic
   blurb: 'Structural presence: editing, reading, idle, maybe stuck, and where attention gathers',
   status: () => { const s = [...peers].filter(([id, p]) => modeOf(id, p).mode === 'stuck').length; return s ? `${s} maybe stuck` : peers.size ? `${peers.size + 1} here` : ''; },
   open: () => openPanel('room') });
+// groups of people with their own thresholds (Engineering 2 of 3, Legal 1 of 1), an optional order (Legal signs only after
+// Engineering), conditions on the canvas itself (every claim grounded, every task done, no split decision, a ritual closed), and
+// an escalation flow that applies when a group stalls. A delivery names its flow; every peer evaluates it the same way.
+// @uses features/work (DELIVERY_HOOKS), FLOW_CONDITIONS from other features, ui/panels, ui/form
+// FLOW-I-R-{nonce}-M-{name}-G-{group~need~key+key… _ …}-Q-{1 in order|0}-C-{condition _ …|0}-E-{escalation flow|0}-D-{after hours|0}-Z-T-SIG
+registerRecord('FLOW', { parse(r, f){ if (!f.R || !f.G) throw Error('flow'); r.name = decTxt(f.M || 'Approval flow');
+  r.groups = f.G.split('_').filter(Boolean).map(g => { const [n, need, ks] = g.split('~'); const members = (ks || '').split('+').filter(Boolean); return { name: decTxt(n || ''), need: Math.max(1, Math.min(members.length || 1, +need || 1)), members }; }).filter(g => g.members.length);
+  if (!r.groups.length) throw Error('flow'); r.ordered = f.Q === '1'; r.conds = f.C && f.C !== '0' ? f.C.split('_').filter(Boolean) : []; r.esc = f.E && f.E !== '0' ? f.E : null; r.after = Math.max(0, +f.D || 0); }, inherit: true });
+PERM_OF.FLOW = 'draw';
+FLOW_CONDITIONS.tasks = { label: 'Every task is done', test: () => { const n = [...(S.D.tasks?.values() || [])].filter(t => t.status !== 'done').length; return n ? `${plural(n, 'task')} not done` : true; } };
+FLOW_CONDITIONS.signoff = { label: 'An audit was signed off', test: () => [...S.records.values()].some(r => r.type === 'SIGNOFF' && !S.D.hidden.has(r.cid)) || 'no audit sign-off yet' };
+
+// a flow against a delivery's approvals: each group's valid signatures, in order when the flow says so
+function evalFlow(flow, x){
+  const votes = [...x.votes.values()].filter(a => a.ok && a.root === x.d.root).sort(byZ);
+  let gate = -Infinity; const groups = [];
+  for (const g of flow.groups){
+    const valid = votes.filter(a => g.members.some(m => samePerson(m, a.author)) && (!flow.ordered || a.z > gate));
+    const done = valid.length >= g.need;
+    groups.push({ g, valid, done, waiting: flow.ordered && gate === Infinity });
+    gate = !flow.ordered ? gate : done ? valid[g.need - 1].z : Infinity;
+  }
+  const conds = flow.conds.map(id => ({ id, c: FLOW_CONDITIONS[id], r: FLOW_CONDITIONS[id] ? FLOW_CONDITIONS[id].test(S.D) : `unknown condition ${id}` }));
+  return { groups, conds, done: groups.every(g => g.done) && conds.every(c => c.r === true) };
+}
+DELIVERY_HOOKS.evaluate.push(x => {
+  if (!x.d.flow) return;
+  const flow = S.records.get(x.d.flow);
+  if (!flow || flow.type !== 'FLOW' || S.D.hidden.has(flow.cid)){ x.done = false; x.blockers.push('Its approval flow isn’t on this canvas'); return; }
+  let ev = evalFlow(flow, x), via = flow;
+  const up = flow.esc && S.records.get(flow.esc);
+  if (!ev.done && up?.type === 'FLOW' && Date.now() > x.d.t + flow.after * 36e5){ const e2 = evalFlow(up, x); if (e2.done){ ev = e2; via = up; } else x.blockers.push(`Escalated to “${up.name}”`); }
+  x.flow = { flow: via, ...ev };
+  x.done = ev.done;
+  x.label = ev.groups.map(g => `${g.g.name} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}`).join(' · ');
+  for (const g of ev.groups) if (!g.done && g.waiting) x.blockers.push(`${g.g.name} signs after ${ev.groups[ev.groups.indexOf(g) - 1].g.name}`);
+  for (const c of ev.conds) if (c.r !== true) x.blockers.push(`${c.c?.label || c.id}: ${c.r}`);
+});
+DELIVERY_HOOKS.row.push(x => x.flow ? `<div class="wk-ap">${x.flow.groups.map(g => `<span class="chip ${g.done ? 'yes' : ''}">${esc(g.g.name)} ${Math.min(g.valid.length, g.g.need)}/${g.g.need}${g.done ? ' ✓' : ''}</span>`).join('')}${x.flow.conds.map(c => `<span class="chip ${c.r === true ? 'yes' : 'no'}">${esc(c.c?.label || c.id)}${c.r === true ? ' ✓' : ''}</span>`).join('')}</div><small class="wk-note">Flow: ${esc(x.flow.flow.name)}${x.flow.flow.ordered ? ' · in order' : ''}</small>` : '');
+DELIVERY_HOOKS.proof.push((x, out) => {
+  if (!x.flow) return;
+  out.push('', `## Approval flow — ${x.flow.flow.name}`, '', `- **Rule record:** \`${x.flow.flow.cid}\`${x.flow.flow.ordered ? ' · groups sign in order' : ''}`,
+    ...x.flow.groups.map(g => `- **${g.g.name}** ${Math.min(g.valid.length, g.g.need)} of ${g.g.need} needed${g.done ? ' ✓' : ''}: ${g.valid.map(a => `${short(a.author)} (${new Date(a.t).toLocaleString()})`).join(', ') || 'none yet'}`),
+    ...x.flow.conds.map(c => `- **Condition:** ${c.c?.label || c.id} — ${c.r === true ? 'met' : c.r}`));
+});
+DELIVERY_HOOKS.choices.push(() => flowsHere().map(f => ({ label: `Use the approval flow “${f.name}”`, icon: 'shield', value: { approvers: [...new Set(f.groups.flatMap(g => g.members))], quorum: f.groups.reduce((a, g) => a + g.need, 0), flow: f.cid } })));
+const flowsHere = () => [...S.records.values()].filter(r => r.type === 'FLOW' && !S.D.hidden.has(r.cid)).sort(byZ);
+
+async function flowForm(){
+  const ppl = people(), conds = Object.entries(FLOW_CONDITIONS);
+  const v = await formDialog('New approval flow', [
+    { id: 'name', label: 'Name', type: 'text', value: 'Launch approval' },
+    ...[1, 2, 3].flatMap(i => [{ id: `g${i}`, label: `Group ${i} name`, type: 'text', value: ['Engineering', 'Legal', ''][i - 1], hint: i === 3 ? 'Leave a name empty to skip that group.' : '' },
+      { id: `p${i}`, label: `Group ${i} people`, type: 'people', value: [], options: ppl }, { id: `n${i}`, label: `Group ${i}: signatures needed`, type: 'number', value: 1, min: 1 }]),
+    { id: 'ordered', label: 'Order', type: 'select', value: '0', options: [['0', 'Groups sign in any order'], ['1', 'Groups sign in the order above']] },
+    { id: 'conds', label: 'The canvas must also have', type: 'checks', value: [], options: conds.map(([k, c]) => [k, c.label]) },
+    ...(flowsHere().length ? [{ id: 'esc', label: 'If it stalls, also accept', type: 'select', value: '', options: [['', 'No escalation'], ...flowsHere().map(f => [f.cid, f.name])] }, { id: 'after', label: 'Escalate after (hours)', type: 'number', value: 48, min: 1 }] : []),
+  ], { ok: 'Sign the flow', why: 'A flow is a signed rule. Deliveries that use it are approved only when every group and condition is met.' });
+  if (!v) return;
+  const groups = [1, 2, 3].map(i => ({ name: v[`g${i}`].trim(), members: v[`p${i}`], need: Math.max(1, Math.min(v[`p${i}`].length, v[`n${i}`] || 1)) })).filter(g => g.name && g.members.length);
+  if (!groups.length){ toast('A flow needs at least one group with people in it.'); return; }
+  await publish(await signed('FLOW', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(6)))], ['M', encTxt(v.name.trim() || 'Approval flow')],
+    ['G', groups.map(g => `${encTxt(g.name)}~${g.need}~${g.members.join('+')}`).join('_')], ['Q', v.ordered], ['C', v.conds.length ? v.conds.join('_') : '0'], ['E', v.esc || '0'], ['D', v.esc ? v.after || 48 : 0], ['Z', ++S.lamport], ['T', Date.now()]]));
+  toast('Approval flow signed. Choose it when you deliver.');
+}
+registerPanel({
+  id: 'flows', title: 'Approval flows', blurb: 'Signed rules for approving a delivery: groups with thresholds, an order, conditions on the canvas, escalation.',
+  paint(body){
+    const fs = flowsHere();
+    body.innerHTML = `<div class="acts"><button class="btn primary" data-new data-autofocus>${ic('shield')}New approval flow…</button></div>
+      ${fs.length ? `<ul class="plain">${fs.map(f => `<li class="card"><div class="hd"><b>${esc(f.name)}</b>${f.ordered ? '<span class="pill">In order</span>' : ''}</div>
+        ${f.groups.map((g, i) => `<div class="row2"><span class="pill acc">${f.ordered ? i + 1 + '. ' : ''}${esc(g.name)} ${g.need} of ${g.members.length}</span><small>${g.members.map(m => esc(whoName(m))).join(', ')}</small></div>`).join('')}
+        ${f.conds.length ? `<small>Also needs: ${f.conds.map(c => esc(FLOW_CONDITIONS[c]?.label || c)).join('; ')}</small>` : ''}
+        ${f.esc ? `<small>Escalates to “${esc(S.records.get(f.esc)?.name || '?')}” after ${f.after} h</small>` : ''}<small>by ${esc(whoName(f.author))} · ${when(f.t)}</small></li>`).join('')}</ul>`
+      : '<p class="empty">No flows yet. Without one, a delivery is approved by a simple quorum of the people you name.</p>'}`;
+  },
+  click(e, b){ if (b.hasAttribute('data-new')) flowForm(); },
+});
+registerFeature({ id: 'flows', name: 'Approval flows', group: 'deliver', icon: 'shield', records: ['FLOW'],
+  blurb: 'Governance as a record: groups, thresholds, order, conditions on the canvas, escalation', open: () => openPanel('flows') });
+// argued about afterwards. A method (weights per kind of work) is itself a signed record; anyone can propose another and the room
+// takes stances on it. For each delivery, its author signs a CREDIT record with everyone's share of the delivered version, which
+// anyone can recompute. Payouts (features/payouts) can split by it; across canvases it becomes a portable record of work.
+// @uses records, derive, features/stances (on methods), features/work (deliveries), ui/panels, ui/form
+// METHOD-I-R-{nonce}-M-{name}-W-{kind~tenths _ …}-Z-T-SIG
+// CREDIT-I-R-{delivery}-H-{root}-L-{person~basis points _ …}-K-{method|default}-Z-T-SIG   the delivery's author; must recompute
+const WORK_KINDS = {
+  create: { label: 'Created (notes, shapes, drawings)', w: 30 }, edit: { label: 'Refined (edits, restyles)', w: 10 }, move: { label: 'Arranged (moves)', w: 2 },
+  comment: { label: 'Commented', w: 10 }, stance: { label: 'Took a stance', w: 5 }, vote: { label: 'Voted', w: 2 }, ground: { label: 'Grounded claims (evidence, checks)', w: 20 },
+  decide: { label: 'Recorded decisions', w: 20 }, task: { label: 'Finished tasks they owned', w: 30 }, facilitate: { label: 'Facilitated', w: 10 }, approve: { label: 'Approved the delivery', w: 10 },
+};
+const KIND_OF = { DRAW: 'create', SHAPE: 'create', IMAGE: 'create', ARROW: 'create', MOVE: 'move', STYLE: 'edit', COMMENT: 'comment', STANCE: 'stance', REACT: 'vote',
+  EVIDENCE: 'ground', CHECK: 'ground', DECISION: 'decide', AGENDA: 'facilitate', NEXT: 'facilitate', FLOOR: 'facilitate' };
+const DEFAULT_METHOD = { cid: 'default', name: 'Default', w: Object.fromEntries(Object.entries(WORK_KINDS).map(([k, v]) => [k, v.w])) };
+registerRecord('METHOD', { parse(r, f){ if (!f.R || !f.W) throw Error('method'); r.name = decTxt(f.M || 'Method'); r.w = { ...Object.fromEntries(Object.keys(WORK_KINDS).map(k => [k, 0])), ...Object.fromEntries(f.W.split('_').map(p => p.split('~')).filter(([k]) => k in WORK_KINDS).map(([k, n]) => [k, Math.max(0, Math.min(1000, +n || 0))])) }; } });
+registerRecord('CREDIT', { parse(r, f){ if (!f.R || !f.H || !f.L) throw Error('credit'); r.shares = new Map(f.L.split('_').map(p => p.split('~')).map(([k, n]) => [k, Math.max(0, +n || 0)])); r.method = f.K || 'default'; }, inherit: false });
+Object.assign(PERM_OF, { METHOD: 'comment', CREDIT: null });
+
+// the method in use: the owner's latest; on an open canvas, the proposal the most people agree with; else the default
+function methodInUse(){
+  const ms = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
+  const owner = S.P?.owner;
+  if (owner){ const m = ms.filter(r => samePerson(r.author, owner)).at(-1); if (m) return m; }
+  let best = null, n = 0; for (const m of ms){ const a = consensus(m.cid).c.agree; if (a > n || a === n && a > 0){ best = m; n = a; } }
+  return best || DEFAULT_METHOD;
+}
+// each person's work in the records before order z, weighted by a method; returns person → { pts, by: { kind: count } }
+function workUpTo(z, method, extra = []){
+  const D = S.D, out = new Map(), add = (who, kind) => { if (!who || !method.w[kind]) return; const p = personOf(who), o = out.get(p) || { pts: 0, by: {} }; o.pts += method.w[kind]; o.by[kind] = (o.by[kind] || 0) + 1; out.set(p, o); };
+  const done = new Map();   // element → owner of a task that was done before z
+  for (const r of [...S.records.values()].filter(r => r.z < z && !D.hidden.has(r.cid)).sort(byZ)){
+    if (r.neg !== null) continue;
+    if (r.type === 'TEXT' || r.type === 'NODE') add(r.author, r.edits ? 'edit' : 'create');
+    else if (r.type === 'TASK'){ if (r.status === 'done' && r.owner) done.set(r.f.R, r.owner); else done.delete(r.f.R); }
+    else if (KIND_OF[r.type]) add(r.author, KIND_OF[r.type]);
+  }
+  for (const who of done.values()) add(who, 'task');
+  for (const who of extra) add(who, 'approve');
+  return out;
+}
+// shares in basis points (sum 10000), largest remainder so they always add up
+function toShares(work){
+  const total = [...work.values()].reduce((a, o) => a + o.pts, 0); if (!total) return new Map();
+  const raw = [...work].map(([k, o]) => [k, o.pts / total * 10000]), floor = raw.map(([k, v]) => [k, Math.floor(v)]);
+  let left = 10000 - floor.reduce((a, [, v]) => a + v, 0);
+  const order = raw.map(([k, v], i) => [i, v - Math.floor(v)]).sort((a, b) => b[1] - a[1] || (raw[a[0]][0] < raw[b[0]][0] ? -1 : 1));
+  for (const [i] of order){ if (left <= 0) break; floor[i][1]++; left--; }
+  return new Map(floor.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]));
+}
+// a delivery's shares: the signed CREDIT if there is a valid one, else computed now
+function contributionShares(x){
+  const signedOne = creditOf(x); if (signedOne) return signedOne.shares;
+  return toShares(workUpTo(x.d.z, methodInUse(), x.ok.map(a => a.author)));
+}
+const creditOf = x => [...S.records.values()].filter(r => r.type === 'CREDIT' && r.f.R === x.d.cid && r.f.H === x.d.root && samePerson(r.author, x.d.author) && !S.D.hidden.has(r.cid) && r.valid !== false).sort(byZ).at(-1) || null;
+const sameShares = (a, b) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
+// a CREDIT must recompute: same method, same version, same approvals → same shares
+DERIVE_HOOKS.push(() => {
+  for (const r of S.records.values()) if (r.type === 'CREDIT' && r.valid === undefined){
+    const x = S.D.deliveries?.find(v => v.d.cid === r.f.R), m = r.method === 'default' ? DEFAULT_METHOD : S.records.get(r.method);
+    if (!x || !m) continue;
+    r.valid = sameShares(r.shares, toShares(workUpTo(x.d.z, m, x.ok.filter(a => a.z < r.z).map(a => a.author))));
+  }
+});
+async function signCredit(x){
+  const m = methodInUse(), shares = toShares(workUpTo(x.d.z, m, x.ok.map(a => a.author)));
+  await publish(await signed('CREDIT', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', [...shares].map(([k, v]) => `${k}~${v}`).join('_')], ['K', m.cid], ['Z', ++S.lamport], ['T', Date.now()]]));
+  toast('Contribution record signed. Anyone can recompute it from the records.');
+}
+const pct = bp => `${(bp / 100).toFixed(bp % 100 ? 1 : 0)}%`;
+DELIVERY_HOOKS.row.push(x => { const sh = contributionShares(x); if (!sh.size) return ''; const c = creditOf(x);
+  return `<div class="wk-ap">${[...sh].slice(0, 5).map(([k, v]) => `<span class="chip">${esc(whoName(k))} ${pct(v)}</span>`).join('')}${c ? '<span class="chip yes">Credit signed ✓</span>' : samePerson(x.d.author, S.me.id) && x.done ? `<button class="btn" data-credit="${x.d.cid}">Sign credit</button>` : ''}</div>`; });
+DELIVERY_HOOKS.proof.push((x, out) => {
+  const sh = contributionShares(x), c = creditOf(x), m = c ? (c.method === 'default' ? DEFAULT_METHOD : S.records.get(c.method)) : methodInUse(); if (!sh.size) return;
+  out.push('', '## Contribution', '', `- **Method:** ${m?.name || 'Default'}${m?.cid && m.cid !== 'default' ? ` (\`${m.cid}\`)` : ''} · ${c ? `signed as \`${c.cid}\`` : 'computed, not yet signed'}`,
+    ...[...sh].map(([k, v]) => `- ${short(k)}: ${pct(v)}`));
+});
+document.addEventListener('click', e => { const b = e.target.closest?.('[data-credit]'); if (!b) return; const x = S.D.deliveries.find(v => v.d.cid === b.dataset.credit); if (x) signCredit(x); });
+
+async function methodForm(){
+  const cur = methodInUse();
+  const v = await formDialog('Propose a method', [{ id: 'name', label: 'Name', type: 'text', value: 'Our weights' },
+    ...Object.entries(WORK_KINDS).map(([k, o]) => ({ id: k, label: `${o.label} (points)`, type: 'number', value: cur.w[k] / 10, min: 0, max: 100 }))],
+    { ok: 'Propose and sign', why: S.P?.owner && !samePerson(S.P.owner, S.me.id) ? 'The canvas owner’s method applies; yours is a proposal people can take stances on.' : 'The method most people agree with applies (stances on it count).' });
+  if (!v) return;
+  await publish(await signed('METHOD', [['I', S.me.id], ['R', b32(crypto.getRandomValues(new Uint8Array(6)))], ['M', encTxt(v.name || 'Method')], ['W', Object.keys(WORK_KINDS).map(k => `${k}~${Math.round((v[k] || 0) * 10)}`).join('_')], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+registerPanel({
+  id: 'contribution', title: 'Contribution', blurb: 'Who did how much, from the signed records. The method is a record too: propose another and the room decides.',
+  paint(body){
+    const m = methodInUse(), now = toShares(workUpTo(Infinity, m)), work = workUpTo(Infinity, m), props = [...S.records.values()].filter(r => r.type === 'METHOD' && !S.D.hidden.has(r.cid)).sort(byZ);
+    const bars = sh => `<ul class="plain">${[...sh].map(([k, v]) => `<li class="row2">${avatar(k)}<span class="grow">${esc(whoName(k))}<small> · ${Object.entries(work.get(k)?.by || {}).map(([kk, n]) => `${n} ${kk}`).join(', ')}</small></span><b>${pct(v)}</b></li><li><div class="bar"><i style="width:${v / 100}%;background:hsl(${authorHue(k)} 55% 40%)"></i></div></li>`).join('')}</ul>`;
+    body.innerHTML = `<div class="card"><div class="hd"><b>Method: ${esc(m.name)}</b>${m.cid === 'default' ? '<span class="pill">Default</span>' : `<span class="pill acc">by ${esc(whoName(m.author))}</span>`}</div>
+        <small>${Object.entries(m.w).filter(([, w]) => w).map(([k, w]) => `${WORK_KINDS[k].label.split(' (')[0].toLowerCase()} ${w / 10}`).join(' · ')}</small>
+        <div class="acts"><button class="btn" data-method>${ic('edit')}Propose a method…</button></div></div>
+      <h3>This canvas so far</h3>${now.size ? bars(now) : '<p class="empty">No work yet.</p>'}
+      ${props.length ? `<h3>Proposed methods <span class="n">${props.length}</span></h3><ul class="plain">${props.map(p => { const c = consensus(p.cid); return `<li class="card${p.cid === m.cid ? ' hot' : ''}"><div class="hd"><b>${esc(p.name)}</b><small>${esc(whoName(p.author))}</small></div><small>${Object.entries(p.w).filter(([, w]) => w).map(([k, w]) => `${k} ${w / 10}`).join(' · ')}</small>
+        <div class="acts">${Object.entries(STANCES).slice(0, 3).map(([k, s]) => `<button class="btn" data-st="${k}" data-t="${p.cid}" aria-pressed="${c.mine === k}" aria-label="${s.name}">${s.mark} ${c.c[k] || ''}</button>`).join('')}</div></li>`; }).join('')}</ul>` : ''}
+      ${(S.D.deliveries || []).length ? `<h3>Per delivery</h3>${S.D.deliveries.map(x => `<div class="card"><div class="hd"><b>${esc(x.d.title)}</b>${creditOf(x) ? '<span class="pill good">Signed</span>' : ''}</div>${bars(contributionShares(x))}</div>`).join('')}` : ''}`;
+  },
+  click(e, b){ if (b.hasAttribute('data-method')) return methodForm(); if (b.dataset.st) return takeStance([b.dataset.t], b.dataset.st); },
+});
+registerFeature({ id: 'contribution', name: 'Contribution proof', group: 'deliver', icon: 'users', records: ['METHOD', 'CREDIT'],
+  blurb: 'Shares of the work derived from the signed records, by a method the team agrees on', open: () => openPanel('contribution') });
+// payment terms (an amount, split evenly, by contribution, or by fixed shares, plus any template royalty); when its approvals are
+// complete, its author signs a settlement whose lines every peer recomputes. The settlement is the payment instruction and its
+// proof in one record; a payment connector (a chain, a bank, a service pool) executes it through PAYOUT_CONNECTORS.
+// Without a connector Flux moves no money: it produces the signed instruction and a manifest to hand to whoever pays.
+// @uses features/work (deliveries), features/contribution (shares), features/lineage (royalties via SETTLE_HOOKS), ui/panels, ui/form
+// FUND-I-R-{canvas}-A-{amount, cents}-U-{unit}-M-{note}-Z-T-SIG                         a backer's signed pledge to the pool
+// PAY-I-R-{delivery}-A-{amount, cents}-U-{unit}-S-{even|credit|fixed}-P-{person~bp _ …|0}-Z-T-SIG   the delivery author's terms
+// SETTLE-I-R-{delivery}-H-{root}-L-{person~cents _ …}-U-{unit}-Z-T-SIG                  the release; valid only if the lines recompute
+const PAYOUT_CONNECTORS = [];   // { name, run: async (manifest) → receipt text }  e.g. an FXN service-pool resolver or a payment API
+const SETTLE_HOOKS = [];        // (x, amount) → [{ to, bp, why }] lines taken before the split (template royalties)
+const unitOk = u => /^[A-Za-z0-9]{1,8}$/.test(u || '');
+registerRecord('FUND', { parse(r, f){ if (!f.R || !unitOk(f.U)) throw Error('fund'); r.cents = Math.max(0, +f.A || 0); r.unit = f.U.toUpperCase(); r.note = decTxt(f.M || ''); }, inherit: false });
+registerRecord('PAY', { parse(r, f){ if (!f.R || !unitOk(f.U) || !['even', 'credit', 'fixed'].includes(f.S)) throw Error('pay'); r.cents = Math.max(0, +f.A || 0); r.unit = f.U.toUpperCase(); r.split = f.S;
+  r.fixed = f.P && f.P !== '0' ? new Map(f.P.split('_').map(p => p.split('~')).map(([k, n]) => [k, Math.max(0, +n || 0)])) : null; }, inherit: false });
+registerRecord('SETTLE', { parse(r, f){ if (!f.R || !f.H || !f.L || !unitOk(f.U)) throw Error('settle'); r.lines = f.L.split('_').map(p => p.split('~')).map(([k, n]) => ({ to: k, cents: Math.max(0, +n || 0) })); r.unit = f.U.toUpperCase(); }, inherit: false });
+Object.assign(PERM_OF, { FUND: 'comment', PAY: null, SETTLE: null });
+const money = (c, u) => `${(c / 100).toLocaleString([], { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 })} ${u}`;
+
+// deterministic lines: royalties first, then the split; cents rounded down, the remainder to the largest share
+function payoutLines(x, pay){
+  const lines = [], add = (to, cents, why) => { const l = lines.find(l => l.to === to && l.why === why); if (l) l.cents += cents; else lines.push({ to, cents, why }); };
+  let rest = pay.cents;
+  for (const h of SETTLE_HOOKS) for (const r of h(x, pay.cents) || []){ const c = Math.floor(pay.cents * r.bp / 10000); if (c > 0 && c <= rest){ add(r.to, c, r.why); rest -= c; } }
+  let shares;
+  if (pay.split === 'fixed' && pay.fixed) shares = pay.fixed;
+  else if (pay.split === 'credit') shares = contributionShares(x);
+  else { const who = [...new Set([...S.records.values()].filter(r => r.z < x.d.z && r.neg === null && ELEMENT.has(r.type) && !S.D.hidden.has(r.cid)).map(r => personOf(r.author)))].sort(); shares = new Map(who.map(k => [k, 10000 / (who.length || 1)])); }
+  const tot = [...shares.values()].reduce((a, v) => a + v, 0) || 1, parts = [...shares].map(([k, v]) => [k, Math.floor(rest * v / tot)]);
+  let left = rest - parts.reduce((a, [, c]) => a + c, 0);
+  parts.sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)); for (const p of parts){ if (left <= 0) break; p[1]++; left--; }
+  for (const [k, c] of parts) if (c > 0) add(k, c, 'work');
+  return lines;
+}
+const sameLines = (a, b) => { const m = new Map(); for (const l of a) m.set(l.to, (m.get(l.to) || 0) + l.cents); const n = new Map(); for (const l of b) n.set(l.to, (n.get(l.to) || 0) + l.cents); return m.size === n.size && [...m].every(([k, v]) => n.get(k) === v); };
+DERIVE_HOOKS.push((D, by) => {
+  const pays = new Map(), settles = new Map();
+  for (const x of D.deliveries || []){
+    const p = (by.PAY || []).filter(r => r.f.R === x.d.cid && samePerson(r.author, x.d.author) && !D.hidden.has(r.cid)).at(-1);
+    if (p) pays.set(x.d.cid, p);
+    const s = (by.SETTLE || []).find(r => r.f.R === x.d.cid && r.f.H === x.d.root && samePerson(r.author, x.d.author) && !D.hidden.has(r.cid));
+    if (s) settles.set(x.d.cid, s);
+  }
+  const pool = new Map(); for (const f of by.FUND || []) if (!D.hidden.has(f.cid) && f.f.R === canvasId){ const o = pool.get(f.unit) || { pledged: 0, paid: 0, backers: new Map() }; o.pledged += f.cents; o.backers.set(personOf(f.author), (o.backers.get(personOf(f.author)) || 0) + f.cents); pool.set(f.unit, o); }
+  for (const s of settles.values()){ const o = pool.get(s.unit); if (o) o.paid += s.lines.reduce((a, l) => a + l.cents, 0); }
+  D.pays = pays; D.settles = settles; D.pool = pool;
+});
+// a settlement counts only if its lines are what the terms give for the approved version (checked lazily: shares need derive)
+const settleValid = (x, s) => { if (!s.valid){ const p = S.D.pays.get(x.d.cid); s.valid = !!p && p.unit === s.unit && sameLines(s.lines, payoutLines(x, p)); } return s.valid; };
+
+async function attachPay(x){
+  const v = await formDialog('Payment for this delivery', [
+    { id: 'amt', label: 'Amount', type: 'number', value: 1000, min: 0 }, { id: 'unit', label: 'Unit (FXN, USD, EUR…)', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' },
+    { id: 'split', label: 'Split', type: 'select', value: 'credit', options: [['credit', 'By contribution (the signed records)'], ['even', 'Evenly among contributors'], ['fixed', 'Fixed shares (below)']] },
+    { id: 'fixed', label: 'Fixed shares: one per line, name or key, then a percent', type: 'textarea', value: people().map(id => `${short(id)} ${Math.floor(100 / people().length)}`).join('\n'), hint: 'Only used for fixed shares.' },
+  ], { ok: 'Sign the terms', why: `When “${x.d.title}” is approved, you release the payment; the lines are computed from these terms, so everyone can check them.` });
+  if (!v || !unitOk(v.unit)) return;
+  const fixed = v.split === 'fixed' ? v.fixed.split('\n').map(l => l.trim().match(/^(.+?)\s+([\d.]+)%?$/)).filter(Boolean).map(([, who, p]) => [people().find(id => short(id).toLowerCase() === who.toLowerCase() || id === who), Math.round(+p * 100)]).filter(([k]) => k) : [];
+  await publish(await signed('PAY', [['I', S.me.id], ['R', x.d.cid], ['A', Math.round(v.amt * 100)], ['U', v.unit.toUpperCase()], ['S', v.split], ['P', fixed.length ? fixed.map(([k, b]) => `${k}~${b}`).join('_') : '0'], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+async function release(x){
+  const p = S.D.pays.get(x.d.cid); if (!p || !x.done) return;
+  const lines = payoutLines(x, p);
+  await publish(await signed('SETTLE', [['I', S.me.id], ['R', x.d.cid], ['H', x.d.root], ['L', lines.map(l => `${l.to}~${l.cents}`).join('_')], ['U', p.unit], ['Z', ++S.lamport], ['T', Date.now()]]));
+  toast(`Payment released: ${money(p.cents, p.unit)} in ${plural(lines.length, 'line')}.${PAYOUT_CONNECTORS.length ? '' : ' Hand the manifest to whoever pays.'}`);
+  for (const c of PAYOUT_CONNECTORS) try { toast(`${c.name}: ${await c.run(manifest(x))}`); } catch (err){ toast(`${c.name} failed: ${err.message}`); }
+}
+function manifest(x){
+  const s = S.D.settles.get(x.d.cid), p = S.D.pays.get(x.d.cid);
+  return { flux: 'payout', v: 1, canvas: canvasId, title: canvasTitle(), delivery: { cid: x.d.cid, title: x.d.title, root: x.d.root, raw: x.d.raw }, approvals: x.ok.map(a => a.raw),
+    terms: p?.raw, settlement: s?.raw, unit: p?.unit, lines: (s?.lines || []).map(l => ({ to: l.to, name: short(l.to), amount: l.cents / 100 })), pool: Object.fromEntries([...S.D.pool].map(([u, o]) => [u, { pledged: o.pledged / 100, paid: o.paid / 100 }])) };
+}
+function downloadJSON(name, text){ const a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(text); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+function payRow(x){
+  const p = S.D.pays?.get(x.d.cid), s = S.D.settles?.get(x.d.cid), mine = samePerson(x.d.author, S.me.id);
+  if (!p) return mine ? `<div class="acts"><button class="btn" data-pay="${x.d.cid}">${ic('coin')}Attach payment…</button></div>` : '';
+  const ok = s && settleValid(x, s);
+  return `<div class="row2"><span class="pill ${ok ? 'good' : 'acc'}">${ic('coin')}${money(p.cents, p.unit)} · ${{ credit: 'by contribution', even: 'evenly', fixed: 'fixed shares' }[p.split]}</span>
+    ${s ? (ok ? `<small>Paid: ${s.lines.map(l => `${esc(whoName(l.to))} ${money(l.cents, s.unit)}`).join(' · ')}</small><button class="btn" data-manifest="${x.d.cid}">Manifest</button>` : '<span class="pill bad">Settlement doesn’t match the terms</span>')
+      : x.done && mine ? `<button class="btn primary" data-release="${x.d.cid}">Release payment</button>` : '<small>Released when approved</small>'}</div>`;
+}
+DELIVERY_HOOKS.row.push(payRow);
+DELIVERY_HOOKS.proof.push((x, out) => {
+  const p = S.D.pays.get(x.d.cid), s = S.D.settles.get(x.d.cid); if (!p) return;
+  out.push('', '## Payment', '', `- **Terms:** ${money(p.cents, p.unit)}, split ${p.split} (\`${p.cid}\`)`, ...(s ? [`- **Released:** ${new Date(s.t).toLocaleString()} (\`${s.cid}\`)${settleValid(x, s) ? ' · recomputes ✓' : ' · does not recompute ✕'}`, ...s.lines.map(l => `  - ${short(l.to)}: ${money(l.cents, s.unit)}`)] : ['- Not released yet']));
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest?.('[data-pay],[data-release],[data-manifest]'); if (!b) return;
+  const x = S.D.deliveries.find(v => v.d.cid === (b.dataset.pay || b.dataset.release || b.dataset.manifest)); if (!x) return;
+  if (b.dataset.pay) attachPay(x); else if (b.dataset.release) release(x); else downloadJSON(`payout-${x.d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(manifest(x), null, 2));
+});
+async function pledge(){
+  const v = await formDialog('Back this canvas', [{ id: 'amt', label: 'Amount', type: 'number', value: 500, min: 0 }, { id: 'unit', label: 'Unit', type: 'text', value: [...S.D.pool.keys()][0] || 'FXN' }, { id: 'note', label: 'Note', type: 'text', value: '' }],
+    { ok: 'Sign the pledge', why: 'A pledge is a signed promise to fund deliveries on this canvas. It moves no money by itself; a payment connector does.' });
+  if (!v || !unitOk(v.unit) || !(v.amt > 0)) return;
+  await publish(await signed('FUND', [['I', S.me.id], ['R', canvasId], ['A', Math.round(v.amt * 100)], ['U', v.unit.toUpperCase()], ['M', encTxt(v.note)], ['Z', ++S.lamport], ['T', Date.now()]]));
+}
+registerPanel({
+  id: 'funding', title: 'Funding and payouts', blurb: 'The canvas as a contract: backers pledge, deliveries carry terms, approval releases the payment.',
+  paint(body){
+    const pool = [...(S.D.pool || new Map())], dl = S.D.deliveries || [];
+    body.innerHTML = `${pool.length ? pool.map(([u, o]) => `<div class="card"><div class="hd"><b>Pool · ${money(o.pledged, u)} pledged</b><span class="pill ${o.pledged - o.paid >= 0 ? 'good' : 'bad'}">${money(o.pledged - o.paid, u)} left</span></div>
+        <div class="bar"><i style="width:${Math.min(100, o.paid / (o.pledged || 1) * 100)}%;background:var(--cyan)"></i></div><small>${money(o.paid, u)} paid out</small>
+        ${[...o.backers].map(([k, c]) => `<div class="row2">${avatar(k)}<span class="grow">${esc(whoName(k))}</span><small>${money(c, u)} · ${pct(Math.round(c / o.pledged * 10000))} of the pool</small></div>`).join('')}</div>`).join('') : '<p class="empty">No pledges yet. Backers can pledge to fund the deliveries made on this canvas.</p>'}
+      <div class="acts"><button class="btn" data-pledge data-autofocus>${ic('coin')}Pledge to this canvas…</button></div>
+      <h3>Deliveries</h3>${dl.length ? `<ul class="plain">${dl.map(x => `<li class="card"><div class="hd"><b>${esc(x.d.title)}</b><span class="pill ${x.done ? 'good' : ''}">${x.done ? 'Approved' : 'Waiting'}</span></div>${payRow(x)}</li>`).join('')}</ul>` : '<p class="empty">No deliveries yet (Work → Deliver this work).</p>'}
+      <p class="muted">${PAYOUT_CONNECTORS.length ? `Connected: ${PAYOUT_CONNECTORS.map(c => esc(c.name)).join(', ')}.` : 'No payment connector here: Flux signs the instruction and its proof, and gives you a manifest. A chain or payment service executes it.'}</p>`;
+  },
+  click(e, b){ if (b.hasAttribute('data-pledge')) pledge(); },
+});
+registerFeature({ id: 'funding', name: 'Canvas-to-Cash', group: 'deliver', icon: 'coin', records: ['FUND', 'PAY', 'SETTLE'],
+  blurb: 'Pledges to a pool, payment terms on deliveries, approval releases a signed settlement',
+  status: () => { const p = [...(S.D.pool?.entries() || [])][0]; return p ? `${money(p[1].pledged - p[1].paid, p[0])} in pool` : ''; }, open: () => openPanel('funding') });
+// independent witnesses on the same version give it a timestamp and an existence proof without a blockchain: to deny the
+// version existed, every witness would have to have lied. Witnesses on a delivery's version show beside its approvals.
+// The witnessed version is recomputable: the same root a delivery uses (every record before the witness, minus deliveries and
+// approvals), so each peer checks each witness against its own records.
+// @uses features/work (rootAt, deliveries), ui/panels
+// WITNESS-I-R-{canvas}-H-{root}-C-{records it covers}-M-{note}-Z-T-SIG
+registerRecord('WITNESS', { parse(r, f){ if (!f.R || !f.H) throw Error('witness'); r.root = f.H; r.n = Math.max(0, +f.C || 0); r.note = decTxt(f.M || ''); }, inherit: false });
+PERM_OF.WITNESS = null;
+const WIT = { auto: false, checked: new Map() };   // witness CID → true / false once recomputed here
+try { WIT.auto = localStorage.getItem('flux:autowitness') === 'on'; } catch {}
+DERIVE_HOOKS.push((D, by) => {
+  const byRoot = new Map();
+  for (const w of by.WITNESS || []) if (!D.hidden.has(w.cid) && w.f.R === canvasId){ if (!byRoot.has(w.root)) byRoot.set(w.root, []); const l = byRoot.get(w.root); if (!l.some(o => samePerson(o.author, w.author))) l.push(w); }
+  D.witnessed = byRoot;
+});
+// check each witness once: does its root match the version this browser computes for its place in the order?
+async function checkWitnesses(){
+  for (const ws of S.D.witnessed?.values() || []) for (const w of ws) if (!WIT.checked.has(w.cid)){ WIT.checked.set(w.cid, null); WIT.checked.set(w.cid, await rootAt(w.z) === w.root); if (panelOpen === 'witness') paintPanel(); }
+}
+CHANGE_HOOKS.push(() => { checkWitnesses(); });
+async function witnessNow(note = '', root = null, z = null){
+  z = z ?? S.lamport + 1; root = root || await rootAt(z);
+  const n = [...S.records.values()].filter(r => r.z < z && r.type !== 'DELIVER' && r.type !== 'APPROVE').length;
+  await publish(await signed('WITNESS', [['I', S.me.id], ['R', canvasId], ['H', root], ['C', n], ['M', encTxt(note)], ['Z', z], ['T', Date.now()]]));
+  toast(`Witnessed: ${plural(n, 'record')}, version ${root.slice(0, 8)}.`);
+}
+// a delivery's version is witnessed by signing its root at the delivery's own place in the order
+const witnessDelivery = x => witnessNow(`Delivery: ${x.d.title}`, x.d.root, x.d.z);
+const witnessesOf = root => (S.D.witnessed?.get(root) || []).filter(w => WIT.checked.get(w.cid) !== false);
+const spread = ws => { if (!ws.length) return ''; const ts = ws.map(w => w.t).sort(), a = new Date(ts[0]), b = new Date(ts.at(-1)); const f = d => d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); return f(a) === f(b) ? f(a) : `${f(a)} – ${f(b)}`; };
+DELIVERY_HOOKS.row.push(x => {
+  const ws = witnessesOf(x.d.root), me = ws.some(w => samePerson(w.author, S.me.id));
+  return `<div class="row2">${ws.length ? `<span class="pill good">${ic('stamp')}Witnessed by ${ws.length}</span><small>${ws.map(w => esc(whoName(w.author))).join(', ')} · ${spread(ws)}</small>` : '<small>No witnesses yet.</small>'}${me ? '' : `<button class="btn" data-witness="${x.d.cid}">Witness this version</button>`}</div>`;
+});
+DELIVERY_HOOKS.proof.push((x, out) => {
+  const ws = witnessesOf(x.d.root); if (!ws.length) return;
+  out.push('', '## Witnesses', '', `${ws.length} independent ${ws.length === 1 ? 'person' : 'people'} countersigned this exact version (${spread(ws)}):`, '', ...ws.map(w => `- ${short(w.author)} · ${new Date(w.t).toLocaleString()} · \`${w.raw}\``));
+});
+document.addEventListener('click', e => { const b = e.target.closest?.('[data-witness]'); if (!b) return; const x = S.D.deliveries.find(v => v.d.cid === b.dataset.witness); if (x) witnessDelivery(x); });
+// optional: witness every delivery that completes while you are here (you didn't make or approve it: an outside witness)
+const autoDone = new Set();
+CHANGE_HOOKS.push(() => {
+  if (!WIT.auto || !S.me || S.histZ != null) return;
+  for (const x of S.D.deliveries || []) if (x.done && !autoDone.has(x.d.cid) && !witnessesOf(x.d.root).some(w => samePerson(w.author, S.me.id))){ autoDone.add(x.d.cid); witnessDelivery(x); }
+});
+registerPanel({
+  id: 'witness', title: 'Witnesses', blurb: 'Independent countersignatures that a version existed at a time: a timestamp without a chain.',
+  paint(body){
+    const rows = [...(S.D.witnessed || new Map())].map(([root, ws]) => ({ root, ws, d: S.D.deliveries?.find(x => x.d.root === root) })).sort((a, b) => Math.max(...b.ws.map(w => w.t)) - Math.max(...a.ws.map(w => w.t)));
+    body.innerHTML = `<div class="acts"><button class="btn primary" data-now data-autofocus>${ic('stamp')}Witness the canvas as it is now</button></div>
+      <label class="muted"><input type="checkbox" data-k="auto"${WIT.auto ? ' checked' : ''}> Witness every delivery that completes while I’m here</label>
+      ${rows.length ? `<ul class="plain">${rows.map(({ root, ws, d }) => `<li class="card"><div class="hd"><b>${d ? esc(d.d.title) : `Version ${root.slice(0, 8)}`}</b><span class="pill good">${ws.length} witness${ws.length === 1 ? '' : 'es'}</span></div>
+        <small>${ws[0].n} records · ${spread(ws)}</small>${ws.map(w => `<div class="row2">${avatar(w.author)}<span class="grow">${esc(whoName(w.author))}${w.note ? ` <small>· ${esc(w.note)}</small>` : ''}</span><span class="pill ${WIT.checked.get(w.cid) ? 'good' : WIT.checked.get(w.cid) === false ? 'bad' : ''}">${WIT.checked.get(w.cid) ? 'Matches ✓' : WIT.checked.get(w.cid) === false ? 'Doesn’t match' : 'Checking'}</span></div>`).join('')}</li>`).join('')}</ul>`
+      : '<p class="empty">Nothing witnessed yet. Ask people outside the work (a client, an auditor) to witness a delivery: their signatures date it.</p>'}`;
+  },
+  click(e, b){ if (b.hasAttribute('data-now')) witnessNow(); },
+  change(e){ if (e.target.dataset.k === 'auto'){ WIT.auto = e.target.checked; try { localStorage.setItem('flux:autowitness', WIT.auto ? 'on' : 'off'); } catch {} } },
+});
+registerFeature({ id: 'witness', name: 'Peer witnesses', group: 'deliver', icon: 'stamp', records: ['WITNESS'],
+  blurb: 'Countersign that a version existed at a time: independent witnesses instead of a chain', open: () => openPanel('witness') });
+// that it belongs to the version that was approved, without sending the rest. The excerpt carries its records, the delivery and
+// its approvals, and the list of record IDs (hashes only) the version contains. The recipient checks every signature, recomputes
+// the version's root from the IDs, and confirms each excerpt record is in it. Nothing outside the excerpt is revealed but its hash.
+// @uses features/work (deliveries, rootAt), core identity (verifyRaw), ui/panels, ui/form
+// The excerpt file: { flux: 'excerpt', v: 1, canvas, title, delivery, approvals: [raw], ids: [CID…], records: [raw], blobs: { cid: base64 } }
+function versionRecords(x){ return [...S.records.values()].filter(r => r.z < x.d.z && r.type !== 'DELIVER' && r.type !== 'APPROVE'); }
+// what to include for the chosen elements: the elements and every change in the version that targets them (moves, styles, edits)
+function excerptOf(x, cids){
+  const inV = versionRecords(x), want = new Set(cids), out = new Map();
+  for (const c of cids){ const el = S.records.get(c); if (el?.ek === 'frame' || el?.type === 'NODE' && el.k === 'frame'){ const fb = box(el); for (const e of S.D.els) if (e.cid !== c && !S.D.hidden.has(e.cid)){ const b = box(e); if (b && fb && b.x >= fb.x && b.y >= fb.y && b.x + b.w <= fb.x + fb.w && b.y + b.h <= fb.y + fb.h) want.add(e.cid); } } }
+  for (const c of [...want]){ let n = c, k = 0; while (S.D.next.has(n) && k++ < 1000){ n = S.D.next.get(n); want.add(n); } }
+  for (const r of inV) if (want.has(r.cid) || r.f.R && want.has(r.f.R) || r.type === 'ARROW' && want.has(r.f.FROM) && want.has(r.f.TO)) out.set(r.cid, r);
+  return [...out.values()].sort(byZ);
+}
+function makeExcerpt(x, cids){
+  const recs = excerptOf(x, cids), blobs = {};
+  for (const r of recs){ const b = blobOf(r); if (b && S.blobs.has(b)) blobs[b] = b64enc(S.blobs.get(b)); }
+  return { flux: 'excerpt', v: 1, canvas: canvasId, title: canvasTitle(), delivery: x.d.raw, approvals: x.ok.map(a => a.raw), ids: versionRecords(x).map(r => r.cid).sort(), records: recs.map(r => r.raw), blobs };
+}
+async function shareExcerpt(x){
+  const cids = [...S.sel].filter(c => S.records.has(c));
+  if (!cids.length){ toast('Select what to share first (a frame or some notes), then share the excerpt.'); return; }
+  const ex = makeExcerpt(x, cids);
+  downloadJSON(`excerpt-${(x.d.title || 'delivery').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(ex));
+  toast(`Excerpt: ${plural(ex.records.length, 'record')} of ${ex.ids.length}, with the proof. Only their hashes reveal the rest.`);
+  return ex;
+}
+// verify an excerpt file: signatures, the version root, membership, approvals
+async function verifyExcerpt(ex){
+  const res = { ok: false, lines: [], records: 0, approvals: 0, quorum: 0, approvers: [] };
+  const fail = m => { res.lines.push('✕ ' + m); return res; };
+  if (!ex || ex.flux !== 'excerpt' || !Array.isArray(ex.ids) || !Array.isArray(ex.records)) return fail('Not a Flux excerpt.');
+  const check = async raw => { try { const n = parse(raw); return await verifyRaw(n) ? { n, cid: await cidOf(te.encode(raw)) } : null; } catch { return null; } };
+  const d = await check(ex.delivery); if (!d || d.n.action !== 'DELIVER') return fail('The delivery record is missing or its signature doesn’t verify.');
+  const root = b32(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode([...ex.ids].sort().join('\n')))));
+  if (root !== d.n.fields.H) return fail('The record IDs don’t add up to the delivered version.');
+  res.lines.push(`✓ The ${ex.ids.length} record IDs recompute to the delivered version ${root.slice(0, 10)}…`);
+  const ids = new Set(ex.ids), approvers = (d.n.fields.A || '').split('_'), quorum = +d.n.fields.Q || 1, seen = new Set();
+  for (const raw of ex.approvals || []){ const a = await check(raw); if (a && a.n.action === 'APPROVE' && a.n.fields.R === d.cid && a.n.fields.H === root && a.n.fields.S !== '0' && approvers.includes(a.n.fields.I)) seen.add(a.n.fields.I); }
+  res.approvals = seen.size; res.quorum = quorum; res.approvers = [...seen];
+  res.lines.push(`${seen.size >= quorum ? '✓' : '✕'} ${seen.size} of ${quorum} required approvals are signed on exactly this version`);
+  for (const raw of ex.records){ const r = await check(raw); if (!r) return fail('A record’s signature doesn’t verify.'); if (!ids.has(r.cid)) return fail('A record isn’t part of the delivered version.'); res.records++; }
+  for (const [c, b] of Object.entries(ex.blobs || {})) if (await cidOf(b64dec(b)) !== c) return fail('An attached image or drawing doesn’t match its ID.');
+  res.lines.push(`✓ All ${res.records} records in the excerpt are signed and part of that version`, `• ${ex.ids.length - res.records} other records stay private: only their hashes are shared`);
+  res.ok = seen.size >= quorum; res.title = decTxt(d.n.fields.M || ''); return res;
+}
+async function openExcerptFile(){
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.onchange = async () => { const f = inp.files[0]; if (!f) return; let ex; try { ex = JSON.parse(await f.text()); } catch { toast('That file isn’t an excerpt.'); return; } showVerdict(ex); };
+  inp.click();
+}
+let lastExcerpt = null;
+async function showVerdict(ex){
+  const v = await verifyExcerpt(ex); lastExcerpt = v.ok ? ex : null;
+  openReport(v.ok ? `Verified excerpt — ${v.title}` : 'Excerpt does not verify', [`# ${v.ok ? 'Verified' : 'Not verified'}: ${v.title || 'excerpt'}`, '', ...v.lines, '', v.ok ? `Approved by: ${v.approvers.map(k => NAMES.get(k) || k.slice(0, 10)).join(', ')}` : ''].join('\n'), 'excerpt-verification.md');
+  return v;
+}
+// open a verified excerpt as its own canvas, to look at it (its records are the originals, so they verify there too)
+async function openExcerptCanvas(ex){
+  await switchCanvas(b32(crypto.getRandomValues(new Uint8Array(8))));
+  for (const [c, b] of Object.entries(ex.blobs || {})) await addBlob(c, b64dec(b));
+  await bulk(async () => { for (const raw of ex.records) await ingest(raw); });
+  toast(`Opened the excerpt: ${plural(ex.records.length, 'record')}, read as the originals.`);
+}
+DELIVERY_HOOKS.row.push(x => x.done ? `<div class="acts"><button class="btn" data-excerpt="${x.d.cid}">${ic('excerpt')}Share an excerpt with proof…</button></div>` : '');
+document.addEventListener('click', e => { const b = e.target.closest?.('[data-excerpt]'); if (!b) return; const x = S.D.deliveries.find(v => v.d.cid === b.dataset.excerpt); if (x) shareExcerpt(x); });
+registerPanel({
+  id: 'excerpt', title: 'Excerpts with proof', blurb: 'Share part of an approved delivery, with proof it belongs to the approved version, and nothing else.',
+  paint(body){
+    const done = (S.D.deliveries || []).filter(x => x.done);
+    body.innerHTML = `<p>Select a frame or some notes, then share them from an approved delivery. The recipient sees only that part, and can check it was approved.</p>
+      ${done.length ? `<ul class="plain">${done.map(x => `<li class="card"><div class="hd"><b>${esc(x.d.title)}</b><span class="pill good">Approved</span></div><div class="acts"><button class="btn" data-excerpt="${x.d.cid}">${ic('excerpt')}Share the selection…</button></div></li>`).join('')}</ul>` : '<p class="empty">No approved delivery yet.</p>'}
+      <h3>Received one?</h3><div class="acts"><button class="btn" data-verify data-autofocus>${ic('shield')}Verify an excerpt file…</button>${lastExcerpt ? '<button class="btn" data-open>Open the verified excerpt</button>' : ''}</div>`;
+  },
+  click(e, b){ if (b.hasAttribute('data-verify')) openExcerptFile(); if (b.hasAttribute('data-open') && lastExcerpt) openExcerptCanvas(lastExcerpt); },
+});
+registerFeature({ id: 'excerpt', name: 'Excerpts with proof', group: 'deliver', icon: 'excerpt', records: [],
+  blurb: 'Share part of an approved delivery with proof it belongs to it, revealing nothing else', open: () => openPanel('excerpt') });
+// connection (other tabs, the relay, each direct peer) except the one it came from; presence and room signals go on with a hop
+// count. So Ana–Ben–Chen connected in a line, or a star of direct connections, all see each other live, with no server.
+// Forwarding can't forge anything: records are verified by everyone who receives them, and a known record is never sent again,
+// so a message stops as soon as everyone has it.
+// @uses core records (post, WIRE_INGEST_HOOKS), features/presence (peers), ui/panels
+const MESH = { on: true, records: 0, signals: 0, seen: new Map() };
+try { MESH.on = localStorage.getItem('flux:mesh') !== 'off'; } catch {}
+WIRE_INGEST_HOOKS.push((msg, from, chan) => {
+  if (!MESH.on || !from) return;
+  if (msg.records){ post({ records: msg.records }, { from, chan }); MESH.records += msg.records.length; }
+  else { post({ raw: msg.raw, blobs: msg.blobs || {} }, { from, chan }); MESH.records++; }
+});
+// ephemeral signals: forwarded once each, at most three hops
+const MESH_KEYS = ['presence', 'spotlight', 'ask', 'roundStart'];
+function remember(key){ const now = Date.now(); for (const [k, t] of MESH.seen) if (now - t > 10000) MESH.seen.delete(k); if (MESH.seen.has(key)) return false; MESH.seen.set(key, now); return true; }
+for (const k of MESH_KEYS){
+  const base = WIRE_HOOKS[k]; if (!base) continue;
+  WIRE_HOOKS[k] = (p, from, chan) => {
+    const hop = p?.hop | 0, { hop: _h, through: _t, ...body } = p || {};
+    const fresh = remember(k + JSON.stringify(body));
+    // hearing someone directly beats hearing them through someone else
+    const direct = k === 'presence' && hop > 0 && peers.get(p.id)?.via !== 'mesh' && Date.now() - (peers.get(p.id)?.t || 0) < 5000;
+    if (fresh && !direct) base(p, from, chan);
+    if (MESH.on && fresh && from && hop < 3 && p?.id !== S.me?.id){ post({ [k]: { ...p, hop: hop + 1, through: hop ? p.through : S.me?.id } }, { from, chan }); MESH.signals++; }
+  };
+}
+registerPanel({
+  id: 'mesh', title: 'Mesh', blurb: 'Every browser passes on what it hears, so people connected through each other all stay in sync without a server.', sync: true,
+  paint(body){
+    const rows = [...peers];
+    body.innerHTML = `<label class="muted"><input type="checkbox" data-k="on"${MESH.on ? ' checked' : ''} data-autofocus> Pass on records and presence for others</label>
+      <p>${MESH.records ? `Passed on ${plural(MESH.records, 'record')} and ${plural(MESH.signals, 'live signal')} this session.` : 'Nothing passed on yet.'}</p>
+      <h3>Routes <span class="n">${rows.length}</span></h3>
+      ${rows.length ? `<ul class="plain">${rows.map(([id, p]) => `<li class="row2">${avatar(id)}<span class="grow">${esc(whoName(id))}</span><span class="pill ${p.via === 'mesh' ? 'acc' : 'good'}">${p.via === 'mesh' ? `through ${esc(whoName(p.through))}` : { tab: 'this browser', net: 'relay', direct: 'direct' }[p.via] || p.via}</span>${p.root && S.root && p.root !== S.root ? '<span class="pill warn">syncing</span>' : '<span class="pill good">same state</span>'}</li>`).join('')}</ul>` : '<p class="empty">Nobody connected.</p>'}`;
+  },
+  change(e){ if (e.target.dataset.k === 'on'){ MESH.on = e.target.checked; try { localStorage.setItem('flux:mesh', MESH.on ? 'on' : 'off'); } catch {} } },
+});
+registerFeature({ id: 'mesh', name: 'Mesh relay', group: 'network', icon: 'mesh', records: [],
+  blurb: 'Peers pass records and presence on for each other: groups stay in sync without a server',
+  status: () => { const n = [...peers.values()].filter(p => p.via === 'mesh').length; return n ? `${n} through others` : ''; }, open: () => openPanel('mesh') });
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 
