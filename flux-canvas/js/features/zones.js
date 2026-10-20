@@ -12,6 +12,7 @@ registerRecord('ZONE', { parse(r, f){ must(isCid(f.R) && ['open', 'suggest', 'lo
 registerRecord('ACCEPT', { parse(r, f){ must(isCid(f.R), 'accept'); r.yes = f.S !== '0'; }, inherit: false });
 Object.assign(PERM_OF, { ZONE: 'draw', ACCEPT: null });
 const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'DRAW', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
+const ZONE_TARGETED = new Set(['STYLE']);   // records that change the element named by R, where that element is (data cells: features/data)
 const isFrameNode = r => r?.type === 'NODE' && r.k === 'frame';
 // zones from the permitted records (before derive): the latest valid, unrevoked ZONE per frame, with the frame's current area
 function zonesOf(all, P){
@@ -34,7 +35,7 @@ const inZone = (z, x, y) => x >= z.zx && y >= z.zy && x <= z.zx + z.zw && y <= z
 function anchorsOf(r){
   const at = t => t && Number.isFinite(t.x) ? [{ x: t.x, y: t.y }] : t?.type === 'DRAW' ? (g => g ? [{ x: g.box.x, y: g.box.y }, { x: g.box.x + g.box.w, y: g.box.y + g.box.h }] : [])(strokeGeom(t.f.R)) : [];
   if (r.type === 'MOVE'){ const t = S.records.get(r.f.R), p = at(t); return [...p, ...p.map(q => ({ x: q.x + r.dx, y: q.y + r.dy }))]; }
-  if (r.type === 'STYLE') return at(S.records.get(r.f.R));
+  if (ZONE_TARGETED.has(r.type)) return at(S.records.get(r.f.R));
   if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits) return [...at(S.records.get(r.edits)), ...at(r)];
   if (r.type === 'ARROW') return [...at(S.records.get(r.f.FROM)), ...at(S.records.get(r.f.TO))];
   if (r.type === 'GROUP') return (r.members || []).flatMap(c => at(S.records.get(c)));

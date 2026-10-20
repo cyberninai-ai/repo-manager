@@ -5,7 +5,7 @@ const KIND = el => el.type === 'NODE' ? (NODE_KINDS[el.ek || el.k]?.name || 'car
 function describe(el){
   if (!el) return '';
   const who = el.author === S.me?.id ? 'you' : 'author ' + short(el.author);
-  const what = el.type === 'NODE' ? `${KIND(el)} “${el.text.slice(0, 80)}”${el.parent && current(el.parent)?.text ? `, connected to “${current(el.parent).text.slice(0, 40)}”` : ''}` : el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
+  const what = el.type === 'NODE' && NODE_KINDS[el.ek]?.describe ? NODE_KINDS[el.ek].describe(el) : el.type === 'NODE' ? `${KIND(el)} “${el.text.slice(0, 80)}”${el.parent && current(el.parent)?.text ? `, connected to “${current(el.parent).text.slice(0, 40)}”` : ''}` : el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
   return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', deleted' : ''}`;
 }
 function announceSel(){

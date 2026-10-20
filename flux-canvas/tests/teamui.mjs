@@ -15,7 +15,7 @@ for (const f of feats){
   await A.click('#hubBtn'); await A.waitForTimeout(80);
   const item = A.locator('#menu [role^=menuitem]', { hasText: f.name }).first();
   await item.click(); await A.waitForTimeout(250);
-  const where = await A.evaluate(id => document.getElementById('px-' + id)?.style.display === 'flex' ? '#px-' + id : !document.getElementById('history').hidden ? '#history' : document.getElementById('formDlg')?.style.display === 'block' ? '#formDlg' : WK.on ? '#work' : '', f.id);
+  const where = await A.evaluate(id => document.getElementById('px-' + id)?.style.display === 'flex' ? '#px-' + id : !document.getElementById('history').hidden ? '#history' : !document.getElementById('menu').hidden && /Insert data/.test(document.getElementById('menu').textContent) ? '#menu' : document.getElementById('formDlg')?.style.display === 'block' ? '#formDlg' : WK.on ? '#work' : '', f.id);
   ok(!!where, `${f.name} opens (${where || 'nothing'})`);
   if (where) v.push(...(await axeOn(A, where)).map(x => `${f.id}: ${x}`));
   await closeAll(A);

@@ -32,7 +32,7 @@ function activityText(r){
     case 'DELIVER': return 'asked for approval of' + quote(r.title);
     case 'APPROVE': return r.ok ? 'approved a delivery' : 'requested changes' + quote(r.note);
   }
-  return r.type.toLowerCase();
+  return RECORD_TYPES[r.type]?.say?.(r, t) || r.type.toLowerCase();
 }
 function paintLedger(){
   if (!S.ledger) return;

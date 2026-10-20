@@ -3,7 +3,7 @@
 // labelled fields, keyboard and screen-reader friendly, no <form> element so it works in sandboxed frames
 // @uses ui/dialogs (trapTab), ui/icons
 // fields: [{ id, label, type: text|textarea|number|date|datetime|select|people|checks|info|section, value, options: [[value, label]…], hint, min, max,
-//            half (two half fields share a row) }]; a section is a small heading that groups the fields after it
+//            half (two half fields share a row), rows and mono (a textarea's height, and code in a fixed-width font) }]; a section is a small heading that groups the fields after it
 let formRes = null, formBack = null;
 function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
   if (formRes) formRes(null);
@@ -30,7 +30,7 @@ function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
     const v = f.value ?? '', ff = f.half ? 'ff half' : 'ff';
     if (f.type === 'section') return `<h3 class="ff-sec">${esc(f.label)}</h3>`;
     if (f.type === 'info') return `<p class="ff-info">${esc(f.label)}</p>`;
-    if (f.type === 'textarea') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><textarea id="${id}"${desc} rows="3">${esc(v)}</textarea>${hint}</div>`;
+    if (f.type === 'textarea') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><textarea id="${id}"${desc} rows="${f.rows || 3}"${f.mono ? ' class="mono" spellcheck="false"' : ''}>${esc(v)}</textarea>${hint}</div>`;
     if (f.type === 'select') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><select id="${id}"${desc}>${f.options.map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>${hint}</div>`;
     if (f.type === 'people' || f.type === 'checks'){
       const opts = f.type === 'people' ? (f.options || []).map(k => [k, k === S.me?.id ? `${short(k)} (you)` : short(k)]) : f.options;

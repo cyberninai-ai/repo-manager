@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="css/10-responsive.css">
 <link rel="stylesheet" href="css/11-collab.css">
 <link rel="stylesheet" href="css/12-team.css">
+<link rel="stylesheet" href="css/13-data.css">
 </head>
 <body>
 <!-- icon set: one stroke style, 24px grid; use with <svg class="ic"><use href="#i-name"/></svg> -->
@@ -117,6 +118,13 @@
   <symbol id="i-zone" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" stroke-dasharray="3 3"/><path d="M9 12h6"/></symbol>
   <symbol id="i-mesh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6.5 10.5l4-4M13.5 6.5l4 4M17.5 13.5l-4 4M10.5 17.5l-4-4"/></symbol>
   <symbol id="i-excerpt" viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8.2 8.4 20 17M8.2 15.6 20 7"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10"/></symbol>
+  <symbol id="i-checklist" viewBox="0 0 24 24"><path d="M4 6.5l1.6 1.6L8.5 5M4 12.5l1.6 1.6 2.9-3.1M4.5 18h3"/><path d="M11.5 6.5H20M11.5 12.5H20M11.5 18H20"/></symbol>
+  <symbol id="i-metric" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-7"/><path d="M15 7h3v3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><rect x="7.5" y="11" width="3" height="6" rx=".8"/><rect x="12.5" y="7" width="3" height="10" rx=".8"/><rect x="17.5" y="13" width="2" height="4" rx=".8"/></symbol>
+  <symbol id="i-formula" viewBox="0 0 24 24"><path d="M17 5H7l5.5 7L7 19h10"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M8 17h2"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5M13.5 5l-3 14"/></symbol>
   <symbol id="i-deps" viewBox="0 0 24 24"><rect x="3" y="4" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="15" width="7.5" height="5" rx="1.5"/><path d="M6.75 9v3.5a2 2 0 0 0 2 2h4.75"/></symbol>
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
   <symbol id="i-audit" viewBox="0 0 24 24"><path d="M9 4.5h6a1 1 0 0 1 1 1v1H8v-1a1 1 0 0 1 1-1z"/><path d="M8 5.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5V7A1.5 1.5 0 0 0 18 5.5h-2"/><path d="M8.5 13l2.3 2.3 4.7-4.6"/></symbol>
@@ -175,6 +183,7 @@
   <button class="ibtn" data-tool="line" aria-label="Connector line"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
   <button class="ibtn" data-tool="text" id="textBtn" aria-label="Text" data-key="T"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg></button>
   <button class="ibtn" id="addImg" aria-label="Image" data-key="I"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></button>
+  <button class="ibtn" id="dataBtn" aria-label="Data: table, checklist, metric, chart, formula, date, link, code" data-key="D" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-table"/></svg></button>
   <span class="tsep" aria-hidden="true"></span>
   <button class="ibtn" data-tool="comment" id="cmtBtn" aria-label="Comment" data-key="M"><svg class="ic" aria-hidden="true"><use href="#i-comment"/></svg></button>
 </div>
@@ -317,6 +326,13 @@
     <tr><td>Work → Deliver this work</td><td>Name who approves (or an approval flow) and, if you like, the payment; they sign this exact version</td></tr>
     <tr><td>⇧H</td><td>Replay: watch the canvas being made, or only its decisions</td></tr>
     <tr><td>The strip under the title</td><td>What the room is doing now: a silent round, the agenda item and its time, a ritual and its outputs</td></tr>
+  </table>
+  <h2>Data on the canvas</h2>
+  <table>
+    <tr><td>Data button (grid) · D</td><td>Insert a table, checklist, metric, chart, formula, date, link or code snippet</td></tr>
+    <tr><td>Double-click a cell · Tab</td><td>Change one value in place; Tab moves to the next cell. Anyone who can draw can change cells, tick boxes, add rows and log values; each change is signed, and ⌘Z takes yours back</td></tr>
+    <tr><td>Enter on a data node</td><td>Its author changes the structure: columns, items, the unit and target, the expression</td></tr>
+    <tr><td>Chart · Formula</td><td>A chart connected to a table or metric redraws as it changes; a formula names other nodes, as in [Revenue] / [Costs] or sum([Work.Days])</td></tr>
   </table>
   <h2>Keyboard only</h2>
   <table>
@@ -464,6 +480,16 @@
 <script src="js/features/devices.js"></script>
 <script src="js/features/zones.js"></script>
 <script src="js/features/taskflow.js"></script>
+<script src="js/features/data/core.js"></script>
+<script src="js/features/data/table.js"></script>
+<script src="js/features/data/checklist.js"></script>
+<script src="js/features/data/metric.js"></script>
+<script src="js/features/data/date.js"></script>
+<script src="js/features/data/chart.js"></script>
+<script src="js/features/data/formula.js"></script>
+<script src="js/features/data/link.js"></script>
+<script src="js/features/data/code.js"></script>
+<script src="js/features/data/templates.js"></script>
 <script src="js/ui/toolbar.js"></script>
 <script src="js/interaction/keyboard.js"></script>
 <script src="js/boot.js"></script>

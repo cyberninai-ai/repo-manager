@@ -355,7 +355,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5
 @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 
 /* medium widths: the dock leaves the top edge to the title and collaborators */
-@media (max-width:1100px) and (min-width:641px){
+@media (max-width:1300px) and (min-width:641px){
   #titlebar{max-width:calc(100% - 420px)}
   #tools{left:12px;top:calc(max(12px,env(safe-area-inset-top)) + 56px);transform:none;flex-direction:column;max-height:calc(100% - 140px);overflow:auto}
   #tools .tsep{width:22px;height:1px;margin:4px 0}
@@ -665,6 +665,10 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 #session .se-tile.on{border-color:var(--accent-line);background:var(--accent-weak)} #session .se-tile.on .ic{color:var(--cyan)}
 .fx .cl-sum{display:grid;gap:8px} .fx .cl-bar{display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden}
 .fx .cl-bar i{min-width:4px;background:var(--faint)} .fx .cl-bar i.good{background:var(--green)} .fx .cl-bar i.acc{background:var(--cyan)} .fx .cl-bar i.warn{background:var(--amber)} .fx .cl-bar i.bad{background:var(--red)}
+.data-field{position:fixed;z-index:30;box-sizing:border-box;padding:0 8px;border:2px solid var(--cyan);border-radius:6px;background:var(--panel);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 0 0 4px var(--accent-weak),var(--shadow);outline:none}
+.data-field[hidden]{display:none}
+#formDlg textarea.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.45;tab-size:2;white-space:pre;overflow:auto}
+#menu.data{width:min(460px,calc(100vw - 16px))}
 </style>
 </head>
 <body>
@@ -765,6 +769,13 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
   <symbol id="i-zone" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" stroke-dasharray="3 3"/><path d="M9 12h6"/></symbol>
   <symbol id="i-mesh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6.5 10.5l4-4M13.5 6.5l4 4M17.5 13.5l-4 4M10.5 17.5l-4-4"/></symbol>
   <symbol id="i-excerpt" viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8.2 8.4 20 17M8.2 15.6 20 7"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10"/></symbol>
+  <symbol id="i-checklist" viewBox="0 0 24 24"><path d="M4 6.5l1.6 1.6L8.5 5M4 12.5l1.6 1.6 2.9-3.1M4.5 18h3"/><path d="M11.5 6.5H20M11.5 12.5H20M11.5 18H20"/></symbol>
+  <symbol id="i-metric" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-7"/><path d="M15 7h3v3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><rect x="7.5" y="11" width="3" height="6" rx=".8"/><rect x="12.5" y="7" width="3" height="10" rx=".8"/><rect x="17.5" y="13" width="2" height="4" rx=".8"/></symbol>
+  <symbol id="i-formula" viewBox="0 0 24 24"><path d="M17 5H7l5.5 7L7 19h10"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M8 17h2"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5M13.5 5l-3 14"/></symbol>
   <symbol id="i-deps" viewBox="0 0 24 24"><rect x="3" y="4" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="15" width="7.5" height="5" rx="1.5"/><path d="M6.75 9v3.5a2 2 0 0 0 2 2h4.75"/></symbol>
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
   <symbol id="i-audit" viewBox="0 0 24 24"><path d="M9 4.5h6a1 1 0 0 1 1 1v1H8v-1a1 1 0 0 1 1-1z"/><path d="M8 5.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5V7A1.5 1.5 0 0 0 18 5.5h-2"/><path d="M8.5 13l2.3 2.3 4.7-4.6"/></symbol>
@@ -823,6 +834,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
   <button class="ibtn" data-tool="line" aria-label="Connector line"><svg class="ic" aria-hidden="true"><use href="#i-line"/></svg></button>
   <button class="ibtn" data-tool="text" id="textBtn" aria-label="Text" data-key="T"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg></button>
   <button class="ibtn" id="addImg" aria-label="Image" data-key="I"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></button>
+  <button class="ibtn" id="dataBtn" aria-label="Data: table, checklist, metric, chart, formula, date, link, code" data-key="D" aria-haspopup="menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-table"/></svg></button>
   <span class="tsep" aria-hidden="true"></span>
   <button class="ibtn" data-tool="comment" id="cmtBtn" aria-label="Comment" data-key="M"><svg class="ic" aria-hidden="true"><use href="#i-comment"/></svg></button>
 </div>
@@ -966,6 +978,13 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
     <tr><td>⇧H</td><td>Replay: watch the canvas being made, or only its decisions</td></tr>
     <tr><td>The strip under the title</td><td>What the room is doing now: a silent round, the agenda item and its time, a ritual and its outputs</td></tr>
   </table>
+  <h2>Data on the canvas</h2>
+  <table>
+    <tr><td>Data button (grid) · D</td><td>Insert a table, checklist, metric, chart, formula, date, link or code snippet</td></tr>
+    <tr><td>Double-click a cell · Tab</td><td>Change one value in place; Tab moves to the next cell. Anyone who can draw can change cells, tick boxes, add rows and log values; each change is signed, and ⌘Z takes yours back</td></tr>
+    <tr><td>Enter on a data node</td><td>Its author changes the structure: columns, items, the unit and target, the expression</td></tr>
+    <tr><td>Chart · Formula</td><td>A chart connected to a table or metric redraws as it changes; a formula names other nodes, as in [Revenue] / [Costs] or sum([Work.Days])</td></tr>
+  </table>
   <h2>Keyboard only</h2>
   <table>
     <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
@@ -1037,7 +1056,8 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 
 // Field N is reserved: on any record it means revoke (N-1) or restore (N-0) the record named by R (core/records).
 // ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence;
-//            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments) }
+//            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments);
+//            say?: (rec, target) → what it did, in words, for the activity log }
 const RECORD_TYPES = {};
 const NAMES = new Map();           // author key → display name (example authors; profiles later)
 function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(action); }
@@ -2111,6 +2131,9 @@ const NODE_KINDS = {
   swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
   frame:   { name: 'frame',             icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
 };
+// a kind may lay itself out and draw itself (features/data: tables, charts…): layout(text) → { w, h, …parsed } and
+// draw(box, L, { el, accent, col }); its parse comes from the label alone, so the layout cache stays valid. fit(el, L) → { w, h }
+// grows the box with data that lives outside the label
 S.nodeKind = 'rect';   // the Shape tool starts with a rectangle
 function wrapLines(text, maxW){
   const out = [];
@@ -2135,6 +2158,12 @@ function nodeLayout(kind, text, minW = 0, minH = 0, size = 'm'){
   const key = [kind, text, minW, minH, fs].join('\u0000');
   if (layoutCache.has(key)) return layoutCache.get(key);
   const font = `${K.bold ? 600 : 400} ${fs}px ${FONTS.sans}`;
+  if (K.layout){
+    let d; try { d = K.layout(String(text || '')); } catch { d = { w: K.min[0], h: K.min[1] }; }
+    const L = { w: Math.ceil(Math.max(d.w, K.min[0], minW)), h: Math.ceil(Math.max(d.h, K.min[1], minH)), lines: [], font, lh: Math.round(fs * 1.35), K, fs, d };
+    if (layoutCache.size > 3000) layoutCache.clear();
+    layoutCache.set(key, L); return L;
+  }
   mctx.font = font;
   const wrap = Math.max(K.wrap, minW - K.pad[0] * 2);
   const lines = wrapLines(text || ' ', wrap * fs / K.font), lh = Math.round(fs * 1.35);
@@ -2152,12 +2181,15 @@ function nodeBox(el){
   const o = S.D.off.get(el.cid);
   let mw = el.bw + (o ? o.w : 0), mh = el.bh + (o ? o.h : 0);
   if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.nb.w; mh = G.nb.h; }
-  return nodeLayout(el.ek || el.k, el.text, mw, mh, el.esize);
+  const L = nodeLayout(el.ek || el.k, el.text, mw, mh, el.esize);
+  const f = L.K.fit?.(el, L);   // live data can make a node bigger than its label alone (rows others added)
+  return f && (f.w > L.w || f.h > L.h) ? { ...L, w: Math.max(L.w, f.w), h: Math.max(L.h, f.h) } : L;
 }
 let TH = {};
 function readTheme(){
   const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
-  TH = { ink: INK, panel: v('--panel'), line: v('--line'), muted: v('--muted'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot') };
+  TH = { ink: INK, panel: v('--panel'), panel2: v('--panel2'), line: v('--line'), line2: v('--line2'), muted: v('--muted'), faint: v('--faint'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot'),
+    green: v('--green'), red: v('--red'), amber: v('--amber'), accentWeak: v('--accent-weak') };
 }
 function rr(c, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 // colour blending in JS: canvas and SVG consumers can't be relied on to understand color-mix()
@@ -2171,9 +2203,10 @@ function rgbOf(c){
 function mixHex(a, b, t){ const A = rgbOf(a), B = rgbOf(b); return '#' + A.map((v, i) => Math.max(0, Math.min(255, Math.round(v * t + B[i] * (1 - t)))).toString(16).padStart(2, '0')).join(''); }
 const tint = (col, a) => mixHex(col, TH.panel || '#ffffff', a);
 // Draw a node of a kind at p with layout L. Colour 'ink' keeps nodes neutral; any other colour accents them.
-function drawNode(kind, p, L, col, noText, colName, fill = null){
+function drawNode(kind, p, L, col, noText, colName, fill = null, el = null){
   const { x, y } = p, w = L.w, h = L.h, K = L.K, accent = colName && colName !== 'ink' ? col : null;
   ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5;
+  if (K.draw){ try { K.draw({ x, y, w, h }, L, { el, accent, col }); } catch (err){ console.warn('node draw failed', err); } ctx.restore(); return; }
   let textCol = TH.ink;
   // shapes: no fill, a light tint (the default) or solid colour with text that stays readable on it
   const paint = (c, a) => { if (fill === 'none') return; ctx.fillStyle = fill === 'solid' ? c : tint(c, a); ctx.fill(); if (fill === 'solid') textCol = readableOn(c); };
@@ -2334,7 +2367,7 @@ function drawEl(el){
     if (el.f.F && el.f.F !== 'none'){ ctx.save(); ctx.globalAlpha *= 0.16; ctx.fillStyle = colorOf(el.ec && el.ec !== el.f.C ? el.ec : el.f.F); ctx.fill(); ctx.restore(); }
     ctx.stroke();
   } else if (el.type === 'NODE'){
-    drawNode(el.ek, { x: el.x, y: el.y }, nodeBox(el), colorOf(ecol(el)), false, ecol(el), el.efill);
+    drawNode(el.ek, { x: el.x, y: el.y }, nodeBox(el), colorOf(ecol(el)), false, ecol(el), el.efill, el);
   } else if (el.type === 'TEXT'){
     const fs = el._previewFs || el.fs;
     ctx.font = `${fs}px ${FONTS[el.f.F] || FONTS.sans}`; ctx.textBaseline = 'top';
@@ -3186,7 +3219,7 @@ const KIND = el => el.type === 'NODE' ? (NODE_KINDS[el.ek || el.k]?.name || 'car
 function describe(el){
   if (!el) return '';
   const who = el.author === S.me?.id ? 'you' : 'author ' + short(el.author);
-  const what = el.type === 'NODE' ? `${KIND(el)} “${el.text.slice(0, 80)}”${el.parent && current(el.parent)?.text ? `, connected to “${current(el.parent).text.slice(0, 40)}”` : ''}` : el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
+  const what = el.type === 'NODE' && NODE_KINDS[el.ek]?.describe ? NODE_KINDS[el.ek].describe(el) : el.type === 'NODE' ? `${KIND(el)} “${el.text.slice(0, 80)}”${el.parent && current(el.parent)?.text ? `, connected to “${current(el.parent).text.slice(0, 40)}”` : ''}` : el.type === 'TEXT' ? `text “${el.text.slice(0, 80)}”` : el.type === 'IMAGE' ? `image${el.alt ? ` “${el.alt}”` : ' without alt text'}` : KIND(el);
   return `${what} by ${who}${S.D.groupOf.has(el.cid) ? ', grouped' : ''}${S.D.hidden.has(el.cid) ? ', deleted' : ''}`;
 }
 function announceSel(){
@@ -3815,7 +3848,7 @@ async function commitNode({ kind, x, y, W = 0, H = 0, label, color = 'ink', pare
 }
 function startChild(p, dir){
   p = current(p.cid);
-  const kind = p.ek === 'frame' ? 'card' : p.ek, L = nodeLayout(kind, NODE_KINDS[kind].label), pb = box(p);
+  const kind = p.ek === 'frame' || NODE_KINDS[p.ek].layout ? 'card' : p.ek, L = nodeLayout(kind, NODE_KINDS[kind].label), pb = box(p);
   const spot = placeNear(pb, dir, L.w, L.h, p.cid);
   const ax = dir === 'left' ? 1 : dir === 'right' ? 0 : .5, ay = dir === 'up' ? 1 : dir === 'down' ? 0 : .5;
   startNode({ kind, parent: p.cid, color: ecol(p), anchor: { x: spot.x + ax * L.w, y: spot.y + ay * L.h, ax, ay } });
@@ -3823,14 +3856,15 @@ function startChild(p, dir){
 function startSibling(n){
   n = current(n.cid);
   const p = n.parent && current(n.parent);
-  const nb = box(n), L = nodeLayout(n.ek, NODE_KINDS[n.ek].label);
+  const kind = NODE_KINDS[n.ek].layout ? 'card' : n.ek, nb = box(n), L = nodeLayout(kind, NODE_KINDS[kind].label);
   // stack below this node, then step past anything in the way
   const others = boxesExcept(null); let y = nb.y + nb.h + 22, guard = 0;
   while (others.some(o => overlaps({ x: nb.x, y, w: L.w, h: L.h }, o, 10)) && guard++ < 60) y += L.h + 22;
-  startNode({ kind: n.ek, parent: p ? p.cid : null, color: ecol(n), anchor: { x: nb.x, y, ax: 0, ay: 0 } });
+  startNode({ kind, parent: p ? p.cid : null, color: ecol(n), anchor: { x: nb.x, y, ax: 0, ay: 0 } });
 }
 function editNode(el){
   el = current(el.cid);
+  if (NODE_KINDS[el.ek]?.edit) return NODE_KINDS[el.ek].edit(el, lastPointer) ?? true;   // data kinds edit their own way (a cell, a form)
   if (el.author !== S.me.id){ toast('Only its author can edit this. Add a comment instead (M).'); return true; }
   const b = box(el);
   startNode({ kind: el.ek, parent: el.parent, color: ecol(el), orig: el, anchor: { x: b.x, y: b.y, ax: 0, ay: 0 } });
@@ -3936,7 +3970,7 @@ DERIVE_HOOKS.push(D => { for (const el of D.els) if (el.type === 'NODE' && !NODE
 // a shape you just made is blank: start typing and the text goes into it (no double-click needed)
 KEY_HOOKS.unshift((e, c) => {
   if (!c.onCanvas || c.mod || e.altKey || e.key.length !== 1 || S.sel.size !== 1) return false;
-  const el = current([...S.sel][0]); if (!el || el.type !== 'NODE' || el.text || el.author !== S.me?.id) return false;
+  const el = current([...S.sel][0]); if (!el || el.type !== 'NODE' || el.text || el.author !== S.me?.id || NODE_KINDS[el.ek]?.layout) return false;
   e.preventDefault(); const b = box(el); startNode({ kind: el.ek, parent: el.parent, color: ecol(el), orig: el, anchor: { x: b.x, y: b.y, ax: 0, ay: 0 }, typed: e.key }); return true;
 });
 // the Shape tool: drag out a shape (or click for a standard one); it appears at once, selected, blank and ready to type into
@@ -3990,6 +4024,8 @@ function toSVG(){
       const d = c.bez ? `M${n(c.bez.p0.x)} ${n(c.bez.p0.y)} C${n(c.bez.c0.x)} ${n(c.bez.c0.y)} ${n(c.bez.c1.x)} ${n(c.bez.c1.y)} ${n(c.bez.p1.x)} ${n(c.bez.p1.y)}` : 'M' + c.pts.map(p => `${n(p.x)} ${n(p.y)}`).join(' L');
       o.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${svgDash(el.edash, w)}/>`, headSVG(c.from, c.to, 7 + w * 2, col, w));
       if (el.elabel) o.push(`<text x="${n(c.mid.x)}" y="${n(c.mid.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`);
+    } else if (el.type === 'NODE' && nodeBox(el).K.svg){
+      o.push(nodeBox(el).K.svg(el, box(el), n));   // data kinds (features/data) export themselves
     } else if (el.type === 'NODE'){
       const b = box(el), L = nodeBox(el), K = L.K, ac = ecol(el) !== 'ink' ? col : null, k = el.ek;
       let fillN = { card: TH.panel, topic: mix(ac || TH.accent, .16), rect: mix(ac || TH.ink, .07), ellipse: mix(ac || TH.ink, .07), diamond: mix(ac || TH.ink, .07),
@@ -4051,9 +4087,9 @@ function barGroups(){
     if (rs.length) g.add('color');
     if (rs.some(r => r.type === 'DRAW' || r.type === 'SHAPE' || r.type === 'ARROW')) g.add('brush');
     if (rs.some(r => r.type === 'TEXT')) g.add('text');
-    if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky')) g.add('kind');   // a sticky note is a sticky note: colour only
+    if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky' && !NODE_KINDS[r.ek]?.data)) g.add('kind');   // a sticky note is a sticky note, a table a table: colour only
     if (rs.some(r => r.type === 'NODE' && FILLABLE.has(r.ek))) g.add('nfill');
-    if (rs.some(r => r.type === 'NODE')) g.add('nsize');
+    if (rs.some(r => r.type === 'NODE' && !NODE_KINDS[r.ek]?.data)) g.add('nsize');
     return g;
   }
   for (const k of (TOOL_GROUPS[t] || '').split(' ')) if (k) g.add(k);
@@ -4436,7 +4472,7 @@ function activityText(r){
     case 'DELIVER': return 'asked for approval of' + quote(r.title);
     case 'APPROVE': return r.ok ? 'approved a delivery' : 'requested changes' + quote(r.note);
   }
-  return r.type.toLowerCase();
+  return RECORD_TYPES[r.type]?.say?.(r, t) || r.type.toLowerCase();
 }
 function paintLedger(){
   if (!S.ledger) return;
@@ -6280,7 +6316,7 @@ POINTER_HOOKS.push(e => { const b = BADGES.find(b => e.clientX >= b.x && e.clien
 // labelled fields, keyboard and screen-reader friendly, no <form> element so it works in sandboxed frames
 // @uses ui/dialogs (trapTab), ui/icons
 // fields: [{ id, label, type: text|textarea|number|date|datetime|select|people|checks|info|section, value, options: [[value, label]…], hint, min, max,
-//            half (two half fields share a row) }]; a section is a small heading that groups the fields after it
+//            half (two half fields share a row), rows and mono (a textarea's height, and code in a fixed-width font) }]; a section is a small heading that groups the fields after it
 let formRes = null, formBack = null;
 function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
   if (formRes) formRes(null);
@@ -6307,7 +6343,7 @@ function formDialog(title, fields, { ok = 'OK', why = '' } = {}){
     const v = f.value ?? '', ff = f.half ? 'ff half' : 'ff';
     if (f.type === 'section') return `<h3 class="ff-sec">${esc(f.label)}</h3>`;
     if (f.type === 'info') return `<p class="ff-info">${esc(f.label)}</p>`;
-    if (f.type === 'textarea') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><textarea id="${id}"${desc} rows="3">${esc(v)}</textarea>${hint}</div>`;
+    if (f.type === 'textarea') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><textarea id="${id}"${desc} rows="${f.rows || 3}"${f.mono ? ' class="mono" spellcheck="false"' : ''}>${esc(v)}</textarea>${hint}</div>`;
     if (f.type === 'select') return `<div class="${ff}"><label for="${id}">${esc(f.label)}</label><select id="${id}"${desc}>${f.options.map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>${hint}</div>`;
     if (f.type === 'people' || f.type === 'checks'){
       const opts = f.type === 'people' ? (f.options || []).map(k => [k, k === S.me?.id ? `${short(k)} (you)` : short(k)]) : f.options;
@@ -8338,6 +8374,7 @@ registerRecord('ZONE', { parse(r, f){ must(isCid(f.R) && ['open', 'suggest', 'lo
 registerRecord('ACCEPT', { parse(r, f){ must(isCid(f.R), 'accept'); r.yes = f.S !== '0'; }, inherit: false });
 Object.assign(PERM_OF, { ZONE: 'draw', ACCEPT: null });
 const GATED = new Set(['NODE', 'TEXT', 'SHAPE', 'IMAGE', 'DRAW', 'MOVE', 'STYLE', 'ARROW', 'GROUP']);
+const ZONE_TARGETED = new Set(['STYLE']);   // records that change the element named by R, where that element is (data cells: features/data)
 const isFrameNode = r => r?.type === 'NODE' && r.k === 'frame';
 // zones from the permitted records (before derive): the latest valid, unrevoked ZONE per frame, with the frame's current area
 function zonesOf(all, P){
@@ -8360,7 +8397,7 @@ const inZone = (z, x, y) => x >= z.zx && y >= z.zy && x <= z.zx + z.zw && y <= z
 function anchorsOf(r){
   const at = t => t && Number.isFinite(t.x) ? [{ x: t.x, y: t.y }] : t?.type === 'DRAW' ? (g => g ? [{ x: g.box.x, y: g.box.y }, { x: g.box.x + g.box.w, y: g.box.y + g.box.h }] : [])(strokeGeom(t.f.R)) : [];
   if (r.type === 'MOVE'){ const t = S.records.get(r.f.R), p = at(t); return [...p, ...p.map(q => ({ x: q.x + r.dx, y: q.y + r.dy }))]; }
-  if (r.type === 'STYLE') return at(S.records.get(r.f.R));
+  if (ZONE_TARGETED.has(r.type)) return at(S.records.get(r.f.R));
   if ((r.type === 'TEXT' || r.type === 'NODE') && r.edits) return [...at(S.records.get(r.edits)), ...at(r)];
   if (r.type === 'ARROW') return [...at(S.records.get(r.f.FROM)), ...at(S.records.get(r.f.TO))];
   if (r.type === 'GROUP') return (r.members || []).flatMap(c => at(S.records.get(c)));
@@ -8507,6 +8544,965 @@ registerFeature({ id: 'taskflow', name: 'Dependencies and critical path', group:
   blurb: 'Connect tasks to order them: what is blocked, what is ready, and the chain that sets the date',
   status: () => { if (!S.D.tasks?.size) return ''; const p = plan(); return p.blocked.size ? `${p.blocked.size} blocked` : ''; },
   open: () => { toggleWork(true); toast('Connect two tasks: “depends on” points at what must finish first.'); } });
+// formulas, links, code, dates) and the signed records that change that data one value at a time, so two people
+// editing different cells, ticking different items or logging a reading never overwrite each other.
+// @uses render/nodes, renderer, commands, diagrams, ui/form, ui/panels, ui/hub, zones
+//
+// A data node is an ordinary NODE: its label is the data in a readable form (a markdown table, a list, "unit: $k"),
+// so search, history, forks, deliveries and exports keep working. Its author changes the structure by signing a new
+// version (E). Everyone else with "draw" changes values through four records that name the node's first version (R):
+// CELL-I-R-{root}-A-{row}-B-{column}-M-{value}-Z-T-SIG     a table cell; latest Z wins per row and column
+// TICK-I-R-{root}-A-{item}-S-{1|0}-Z-T-SIG                a checklist item done or not; latest Z wins per item
+// READING-I-R-{root}-V-{number}-M-{note}-Z-T-SIG          a metric's new value; the history is every reading in Z order
+// ROW-I-R-{root}-M-{values, tab separated}-Z-T-SIG        a row appended to a table, or an item to a checklist
+// Rows and items are named by their first cell or text (a second "Team" is "Team#2"), not by position, so a record
+// keeps meaning the same thing when the author adds, removes or reorders rows. While a node is locked, values signed
+// after the lock take no part.
+const DATA_KINDS = {};    // kind → spec, see registerDataKind
+const DATA = { cells: new Map(), ticks: new Map(), readings: new Map(), rows: new Map(), memo: new Map(), titles: new Map() };
+const txtOk = (s, max) => typeof s === 'string' && s.length <= max;
+const DATA_NUM = /^-?\d{1,15}(\.\d{1,9})?$/;
+registerRecord('CELL', { parse(r, f){ must(isCid(f.R), 'cell'); r.row = decTxt(f.A || ''); r.col = decTxt(f.B || ''); r.val = decTxt(f.M || ''); must(r.row && txtOk(r.row, 200) && txtOk(r.col, 200) && txtOk(r.val, 2000), 'cell'); },
+  say: (r, t) => `set ${r.col} of “${r.row.slice(0, 30)}” to “${r.val.slice(0, 40)}”` });
+registerRecord('TICK', { parse(r, f){ must(isCid(f.R) && (f.S === '1' || f.S === '0'), 'tick'); r.item = decTxt(f.A || ''); r.done = f.S === '1'; must(r.item && txtOk(r.item, 400), 'tick'); },
+  say: r => `${r.done ? 'ticked' : 'unticked'} “${r.item.slice(0, 40)}”` });
+registerRecord('READING', { parse(r, f){ must(isCid(f.R), 'reading'); const v = decTxt(f.V || ''); must(DATA_NUM.test(v), 'reading'); r.value = +v; r.note = decTxt(f.M || ''); must(txtOk(r.note, 400), 'reading'); },
+  say: r => `logged ${fmtNum(r.value)}${r.note ? ` (${r.note.slice(0, 30)})` : ''}` });
+registerRecord('ROW', { parse(r, f){ must(isCid(f.R), 'row'); r.vals = decTxt(f.M || '').split('\t').map(v => v.slice(0, 2000)).slice(0, 40); must(r.vals[0] && txtOk(r.vals[0], 400), 'row'); },
+  say: r => `added “${r.vals[0].slice(0, 40)}”` });
+for (const t of ['CELL', 'TICK', 'READING', 'ROW']){ GATED.add(t); ZONE_TARGETED.add(t); }   // in someone's zone they wait for the owner, like any edit
+
+// the first version of a node: the records above name it, so they survive the author's edits
+function dataRoot(el){ let r = el, n = 0; while (r?.edits && n++ < 1000){ const p = S.records.get(r.edits); if (!p || p.type !== 'NODE' || p.author !== r.author) break; r = p; } return r?.cid; }
+// "Team", "Team", "Pro" → "Team", "Team#2", "Pro": a row or item name that stays the same when others move around it
+function keyed(names){ const seen = new Map(); return names.map(n => { const k = String(n).trim().toLowerCase(), c = (seen.get(k) || 0) + 1; seen.set(k, c); return c > 1 ? `${n}#${c}` : String(n); }); }
+
+DERIVE_HOOKS.push((D, by) => {
+  DATA.memo.clear();
+  const lockZ = new Map();   // a locked node: the Z of the STYLE that locked it, by its author
+  for (const r of S.records.values()) if (r.type === 'STYLE' && r.sl === true && r.neg === null){ const t = S.records.get(r.f.R); if (t?.type === 'NODE' && t.author === r.author) lockZ.set(t.cid, Math.max(lockZ.get(t.cid) || 0, r.z)); }
+  const roots = new Map();   // root → current version
+  for (const el of D.els) if (el.type === 'NODE' && DATA_KINDS[el.ek] && !D.superseded.has(el.cid)) roots.set(dataRoot(el), el);
+  const late = r => { if (D.hidden.has(r.cid)) return true; const el = roots.get(r.f.R); return !!el && el.locked && r.z > (lockZ.get(el.cid) ?? Infinity); };
+  const put = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+  DATA.cells = new Map(); DATA.ticks = new Map(); DATA.readings = new Map(); DATA.rows = new Map();
+  for (const r of by.CELL || []) if (!late(r)){ const m = DATA.cells.get(r.f.R) || new Map(); m.set(r.row + '\u0000' + r.col.toLowerCase(), r); DATA.cells.set(r.f.R, m); }   // z order: latest wins
+  for (const r of by.TICK || []) if (!late(r)){ const m = DATA.ticks.get(r.f.R) || new Map(); m.set(r.item.toLowerCase(), r); DATA.ticks.set(r.f.R, m); }
+  for (const r of by.READING || []) if (!late(r)) put(DATA.readings, r.f.R, r);
+  for (const r of by.ROW || []) if (!late(r)) put(DATA.rows, r.f.R, r);
+  // data nodes by title, for formulas: [Revenue], [Pricing.Price]
+  DATA.titles = new Map();
+  for (const el of roots.values()) if (!D.hidden.has(el.cid)){ const t = dataTitle(el).toLowerCase(); if (t && !DATA.titles.has(t)) DATA.titles.set(t, el); }
+});
+// per derive: a node's merged data is computed once, however often it is drawn or hit-tested
+const dataMemo = (el, tag, f) => { const k = el.cid + tag; if (!DATA.memo.has(k)) DATA.memo.set(k, f()); return DATA.memo.get(k); };
+const dataTitle = el => (DATA_KINDS[el.ek]?.title?.(el.text) ?? el.text.split('\n')[0]).trim().slice(0, 80);
+// a number as people write it: 1,200 · $49 · 12.5% · −3
+function dataNum(v){ const s = String(v ?? '').trim().replace(/[,\s]/g, '').replace(/^[$€£¥]/, '').replace(/%$/, '').replace('−', '-'); return /^-?\d+(\.\d+)?$/.test(s) ? +s : null; }
+function fmtNum(v, dp = null){
+  if (v == null || !Number.isFinite(v)) return '—';
+  const a = Math.abs(v);
+  if (dp == null && a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  return v.toLocaleString('en-US', { maximumFractionDigits: dp ?? (a >= 100 ? 0 : a >= 1 ? 2 : 3), minimumFractionDigits: dp ?? 0 });
+}
+
+/* a kind registers its layout, drawing, editing and export; the core turns it into a NODE kind */
+// spec: { name, icon, blurb, label (a sample label), min: [w, h], layout(text) → { w, h, … }, fit?(el, L) → { w, h } with live
+//         data, draw(b, L, { el, accent }), hit?(el, w, b) → { act, … }, press?(el, hit) (a click), edit?(el, hit) (a double-click),
+//         form(el | null, { source }) → label | null, title?(text), describe(el), lines(el) → text rows for export, svg? }
+function registerDataKind(kind, spec){
+  DATA_KINDS[kind] = spec;
+  NODE_KINDS[kind] = { name: spec.name, icon: spec.glyph || '▦', label: spec.label, font: 14, pad: [12, 10], wrap: 300, min: spec.min, align: 'left', data: true,
+    layout: spec.layout, draw: spec.draw, fit: spec.fit, describe: el => `${spec.name} “${dataTitle(el)}”: ${spec.describe(el)}`,
+    edit: (el, w) => dataEdit(el, w), svg: (el, b, n) => dataSVG(el, b, n) };
+}
+
+/* drawing: the parts every data node shares */
+function dataCard(b, accent, kind){
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.10)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 2;
+  rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.fillStyle = TH.panel; ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.lineWidth = 1; ctx.strokeStyle = accent || TH.line; ctx.stroke(); ctx.restore();
+  if (accent){ ctx.save(); rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(b.x, b.y, b.w, 3); ctx.restore(); }
+}
+// the title row: a small kind tag on the right, the title on the left; returns the y where content starts
+function dataHead(b, title, tag, extra = ''){
+  const y = b.y + 18;
+  ctx.font = `500 12px ${FONTS.sans}`; const ew = extra ? ctx.measureText(extra).width : 0;
+  ctx.font = `600 10px ${FONTS.sans}`; const tw = ctx.measureText(tag).width + 12;
+  rr(ctx, b.x + b.w - tw - 10, y - 8, tw, 16, 8); ctx.fillStyle = TH.panel2 || TH.paper; ctx.fill();
+  ctx.fillStyle = TH.muted; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(tag, b.x + b.w - tw / 2 - 10, y + .5);
+  ctx.textAlign = 'left';
+  fitText(title || 'Untitled', b.x + 12, y, b.w - tw - 34 - (extra ? ew + 8 : 0), `650 14px ${FONTS.sans}`, TH.ink);
+  if (extra){ ctx.font = `500 12px ${FONTS.sans}`; ctx.fillStyle = TH.muted; ctx.textBaseline = 'middle'; ctx.fillText(extra, b.x + b.w - tw - 18 - ew, y + .5); }
+  ctx.beginPath(); ctx.moveTo(b.x + 1, b.y + 36); ctx.lineTo(b.x + b.w - 1, b.y + 36); ctx.strokeStyle = TH.line2 || TH.line; ctx.lineWidth = 1; ctx.stroke();
+  return b.y + 36;
+}
+// one line of text, cut with an ellipsis to fit; returns the width drawn
+function fitText(t, x, y, maxW, font, color, align = 'left'){
+  ctx.font = font; ctx.fillStyle = color; ctx.textBaseline = 'middle'; ctx.textAlign = align;
+  t = String(t ?? ''); if (maxW <= 4) return 0;
+  let w = ctx.measureText(t).width;
+  if (w > maxW){ let lo = 0, hi = t.length; while (lo < hi){ const m = (lo + hi + 1) >> 1; if (ctx.measureText(t.slice(0, m) + '…').width <= maxW) lo = m; else hi = m - 1; } t = t.slice(0, lo) + '…'; w = ctx.measureText(t).width; }
+  ctx.fillText(t, x, y + .5); ctx.textAlign = 'left'; return w;
+}
+// "+ Add row" along the foot of a node
+function dataFoot(b, label, y){
+  ctx.beginPath(); ctx.moveTo(b.x + 1, y); ctx.lineTo(b.x + b.w - 1, y); ctx.strokeStyle = TH.line2 || TH.line; ctx.lineWidth = 1; ctx.stroke();
+  fitText('+ ' + label, b.x + 12, y + 14, b.w - 24, `500 12px ${FONTS.sans}`, TH.accent);
+  return { x: b.x, y, w: b.w, h: 28 };
+}
+function dataAvatar(id, x, y, r = 8){
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = `hsl(${authorHue(personOf(id))} 55% 38%)`; ctx.fill();
+  ctx.font = `600 ${Math.round(r * .95)}px ${FONTS.sans}`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(initials(personOf(id)).toUpperCase(), x, y + .5); ctx.textAlign = 'left';
+}
+function sparkline(vals, x, y, w, h, col){
+  if (vals.length < 2) return;
+  const lo = Math.min(...vals), hi = Math.max(...vals), sp = hi - lo || 1, pt = (v, i) => [x + i / (vals.length - 1) * w, y + h - (v - lo) / sp * h];
+  ctx.save(); ctx.beginPath(); vals.forEach((v, i) => { const [px, py] = pt(v, i); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+  ctx.strokeStyle = col; ctx.lineWidth = 1.75; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.closePath(); ctx.globalAlpha = .1; ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1;
+  const [ex, ey] = pt(vals.at(-1), vals.length - 1); ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); ctx.restore();
+}
+const SERIES = () => [TH.accent, TH.green, TH.amber, TH.red, '#1c7ed6', '#d6336c'];
+const inRect = (w, r) => r && w.x >= r.x && w.x <= r.x + r.w && w.y >= r.y && w.y <= r.y + r.h;
+
+/* clicking inside a data node: a checkbox, "+ Add row", "Open ↗" act on one click; a cell edits on a double-click */
+const dataAt = w => { const el = hitTest(w); return el?.type === 'NODE' && DATA_KINDS[el.ek] && !el.locked ? el : null; };
+POINTER_HOOKS.push((e, w) => {
+  if (!S.lassoMode || placing || erasing || e.shiftKey || e.ctrlKey || e.metaKey || S.handTool) return false;
+  const el = dataAt(w), K = el && DATA_KINDS[el.ek]; if (!K?.hit || !K.press) return false;
+  const h = K.hit(el, w, box(el)); if (!h || !h.press) return false;
+  S.sel = new Set([el.cid]); announceSel();
+  Promise.resolve(K.press(el, h)).catch(err => { if (err?.name !== 'NotPermitted' && err?.name !== 'HistoryView') console.warn(err); });
+  return true;
+});
+// hovering something clickable inside a node shows a pointer
+FRAME_HOOKS.push(() => { if (!lastPointer || G) return; const el = S.lassoMode && !placing && dataAt(lastPointer), K = el && DATA_KINDS[el.ek], h = K?.hit?.(el, lastPointer, box(el)); const want = h?.press ? 'pointer' : ''; if (cv.style.cursor !== want && (want || cv.dataset.dataCur)){ cv.style.cursor = want; cv.dataset.dataCur = want ? '1' : ''; } });
+// Enter, double-click or "Edit": a cell or item under the pointer edits in place; otherwise the author gets the form
+function dataEdit(el, w){
+  const K = DATA_KINDS[el.ek], h = w && K.hit?.(el, w, box(el));
+  if (h && K.edit && K.edit(el, h) !== false) return true;
+  if (el.author !== S.me.id){ toast(K.others || 'Only its author can change its structure. Comment on it instead (M).'); return true; }
+  dataStructure(el); return true;
+}
+async function dataStructure(el){
+  const K = DATA_KINDS[el.ek], text = await K.form(el, {}); if (text == null) return;
+  const cur = current(el.cid); if (!cur) return;
+  const label = typeof text === 'string' ? text : text.label, parent = typeof text === 'string' ? cur.parent : text.parent ?? null;
+  if (label === cur.text && parent === cur.parent){ toast('Nothing changed.'); return; }
+  const b = box(cur), o = S.D.off.get(cur.cid) || { w: 0, h: 0 };
+  const cid = await commitNode({ kind: cur.ek, x: b.x, y: b.y, W: cur.bw + o.w, H: cur.bh + o.h, label, color: ecol(cur), parent, edits: cur.cid, fill: cur.fill });
+  if (cid){ S.sel = new Set([cid]); dirty = true; say(`${K.name} updated.`); }
+}
+async function dataInsert(kind, at = null){
+  const K = DATA_KINDS[kind]; closeMenu(false);
+  const sel = S.sel.size === 1 ? current([...S.sel][0]) : null, source = sel?.type === 'NODE' && DATA_KINDS[sel.ek] ? sel : null;
+  const out = await K.form(null, { source }); if (out == null) return null;
+  const label = typeof out === 'string' ? out : out.label, parent = typeof out === 'string' ? null : out.parent ?? null;
+  const L = nodeLayout(kind, label), sb = source && box(source), c = at || viewCenter();
+  const spot = sb ? placeNear(sb, 'right', L.w, L.h, null) : { x: c.x - L.w / 2, y: c.y - L.h / 2 };
+  const cid = await commitNode({ kind, x: spot.x, y: spot.y, label, color: 'ink', parent });
+  if (cid){ S.sel = new Set([cid]); ensureVisible(current(cid)); dirty = true; say(`${K.name} “${label.split('\n')[0].slice(0, 50)}” added. Double-click a value to change it.`); }
+  return cid;
+}
+
+/* editing one value in place: a field over the node that follows pans and zooms */
+let DF = null;
+const dfEl = document.createElement('input'); dfEl.id = 'dataField'; dfEl.className = 'data-field'; dfEl.autocomplete = 'off'; dfEl.hidden = true;
+document.body.appendChild(dfEl);
+// o: { el, rect (world), value, label (for screen readers), numeric?, align?, commit(value) → Promise, tab?(back) }
+function dataField(o){
+  if (DF) dfClose(true);
+  DF = o; dfEl.value = o.value ?? ''; dfEl.placeholder = o.placeholder || ''; dfEl.setAttribute('aria-label', o.label); dfEl.inputMode = o.numeric ? 'decimal' : 'text';
+  dfEl.style.textAlign = o.align || 'left'; dfEl.hidden = false; dfPlace(); DF.opened = Date.now();
+  dfEl.focus(); dfEl.select(); setTimeout(() => { if (DF === o && document.activeElement !== dfEl){ dfEl.focus(); dfEl.select(); } }, 0); say(`Editing ${o.label}. Enter saves, Tab moves on, Escape cancels.`);
+}
+function dfPlace(){
+  if (!DF) return; const r = DF.rect, z = S.view.zoom, p = toScreen(r.x, r.y);
+  Object.assign(dfEl.style, { left: p.x + 'px', top: p.y + 'px', width: Math.max(60, r.w * z) + 'px', height: Math.max(22, r.h * z) + 'px', fontSize: Math.max(11, 13 * z) + 'px' });
+}
+async function dfClose(save, then = null){
+  const o = DF; if (!o) return; DF = null; dfEl.hidden = true; cv.focus({ preventScroll: true });
+  const v = dfEl.value.trim();
+  if (save && v !== String(o.value ?? '').trim()){
+    if (o.numeric && v && dataNum(v) == null){ toast('That isn’t a number.'); return; }
+    try { await o.commit(v); } catch (err){ if (err?.name !== 'NotPermitted' && err?.name !== 'HistoryView') console.warn(err); }
+  }
+  if (then && o.tab) setTimeout(() => o.tab(then === 'back'), 0);
+}
+dfEl.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Enter'){ e.preventDefault(); dfClose(true); }
+  else if (e.key === 'Escape'){ e.preventDefault(); dfClose(false); say('Cancelled.'); }
+  else if (e.key === 'Tab' && DF?.tab){ e.preventDefault(); dfClose(true, e.shiftKey ? 'back' : 'next'); }
+});
+// leaving the field saves it, unless the click that opened it is still settling (a double-click's last pointer events)
+dfEl.addEventListener('blur', () => { if (!DF) return; if (Date.now() - DF.opened < 400){ setTimeout(() => DF && dfEl.focus(), 0); return; } dfClose(true); });
+dfEl.addEventListener('pointerdown', e => e.stopPropagation());
+FRAME_HOOKS.push(dfPlace);
+ACTION_HOOKS.push(() => { if (DF) dfClose(true); });
+
+/* signing the values */
+const dataSign = async (type, root, pairs) => publish(await signed(type, [['I', S.me.id], ['R', root], ...pairs, ['Z', ++S.lamport], ['T', Date.now()]]));
+// ⌘Z takes a value back the way it was given: a cell or tick is set to what it was, a row or reading is revoked
+function dataUndo(undo, redo){ S.hist.push({ kind: 'fn', undo, redo }); S.redo = []; }
+async function setCell(el, row, col, val, prev){
+  const sign = v => dataSign('CELL', dataRoot(el), [['A', encTxt(row)], ['B', encTxt(col)], ['M', encTxt(v)]]), cid = await sign(val);
+  if (cid && prev !== undefined) dataUndo(() => sign(prev ?? ''), () => sign(val));
+  return cid;
+}
+async function setTick(el, item, done, undoable = true){
+  const sign = d => dataSign('TICK', dataRoot(el), [['A', encTxt(item)], ['S', d ? '1' : '0']]), cid = await sign(done);
+  if (cid && undoable) dataUndo(() => sign(!done), () => sign(done));
+  return cid;
+}
+function addReading(el, v, note = ''){
+  const s = String(Math.round(v * 1e6) / 1e6); if (!DATA_NUM.test(s)){ toast('That number is too large to log.'); return Promise.resolve(null); }
+  return dataSign('READING', dataRoot(el), [['V', encTxt(s)], ['M', encTxt(note)]]).then(c => (recordCreate(c), c));
+}
+const addRow = (el, vals) => dataSign('ROW', dataRoot(el), [['M', encTxt(vals.map(v => String(v).replace(/\t/g, ' ')).join('\t'))]]).then(c => (recordCreate(c), c));
+
+/* export: a card with the title and the data as text rows, so an SVG reads the same as the canvas */
+function dataSVG(el, b, n){
+  const K = DATA_KINDS[el.ek], rows = (() => { try { return K.lines(el); } catch { return []; } })().slice(0, 40), x = v => esc(String(v));
+  const o = [`<g><rect x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" rx="10" fill="${TH.panel}" stroke="${TH.line}"/>`,
+    `<text x="${n(b.x + 12)}" y="${n(b.y + 19)}" font-family="${x(FONTS.sans)}" font-size="14" font-weight="650" fill="${TH.ink}" dominant-baseline="central">${x(dataTitle(el))}</text>`,
+    `<line x1="${n(b.x)}" y1="${n(b.y + 36)}" x2="${n(b.x + b.w)}" y2="${n(b.y + 36)}" stroke="${TH.line}"/>`];
+  rows.forEach((r, i) => { const y = b.y + 50 + i * 20; if (y < b.y + b.h - 6) o.push(`<text x="${n(b.x + 12)}" y="${n(y)}" font-family="${x(el.ek === 'code' ? FONTS.mono : FONTS.sans)}" font-size="12.5" fill="${TH.ink}" dominant-baseline="central">${x(r.slice(0, 90))}</text>`); });
+  return o.join('') + '</g>';
+}
+
+/* inserting: the Data button in the dock, the palette, and D */
+const DATA_ORDER = ['table', 'checklist', 'metric', 'chart', 'formula', 'date', 'link', 'code'];
+const dataItems = () => [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => dataInsert(k) }))];
+const dataBtn = $('dataBtn');
+function openData(){ openMenu(dataBtn, dataItems(), null, 'hub data'); }
+dataBtn.onclick = () => $('menu').hidden ? openData() : closeMenu();
+PALETTE_HOOKS.push(add => { for (const k of DATA_ORDER) if (DATA_KINDS[k]) add('data', `Insert ${DATA_KINDS[k].name.toLowerCase()}: ${DATA_KINDS[k].blurb}`, () => dataInsert(k)); });
+KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'd'){ e.preventDefault(); openData(); return true; } return false; });
+registerFeature({ id: 'data', name: 'Data nodes', group: 'remember', icon: 'table', records: ['CELL', 'TICK', 'READING', 'ROW'],
+  blurb: 'Tables, checklists, metrics, charts, formulas, dates, links and code on the canvas, edited one signed value at a time',
+  status: () => { const n = S.D.els.filter(el => el.type === 'NODE' && DATA_KINDS[el.ek] && visible(el)).length; return n ? plural(n, 'data node') : ''; },
+  open: openData });
+// change in place (CELL), rows anyone can add (ROW), and a total under every number column
+// @uses features/data/core
+// label:  Title
+//         | Plan | Price | Seats |
+//         | --- | --- | --- |
+//         | Free | 0 | 1 |
+const TB = { head: 36, hrow: 30, row: 28, foot: 28, maxCols: 12, maxRows: 200 };
+function parseTable(text){
+  let title = ''; const rows = [];
+  for (const l of String(text).split('\n')){
+    const t = l.trim(); if (!t) continue;
+    if (t.startsWith('|') || t.includes('\t')){
+      const cells = t.startsWith('|') ? t.replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(c => c.replace(/\\\|/g, '|').trim()) : t.split('\t').map(c => c.trim());
+      if (!cells.every(c => /^:?-{2,}:?$/.test(c))) rows.push(cells.slice(0, TB.maxCols));
+    } else if (!title && !rows.length) title = t.slice(0, 120);
+  }
+  const cols = (rows.shift() || ['Name', 'Value']).map((c, i) => c || `Column ${i + 1}`);
+  return { title, cols, rows: rows.slice(0, TB.maxRows).map(r => cols.map((_, i) => r[i] ?? '')) };
+}
+const tableCell = v => String(v ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+const tableText = (title, cols, rows) => [title, `| ${cols.map(tableCell).join(' | ')} |`, `| ${cols.map(() => '---').join(' | ')} |`, ...rows.map(r => `| ${cols.map((_, i) => tableCell(r[i])).join(' | ')} |`)].filter(Boolean).join('\n');
+// the table as everyone sees it: the label's rows, then rows others added, with every cell's latest value
+function tableView(el){
+  return dataMemo(el, 'tb', () => {
+    const T = parseTable(el.text), root = dataRoot(el), rows = T.rows.map(r => ({ vals: r.slice(), by: r.map(() => null), row: null }));
+    for (const r of DATA.rows.get(root) || []) if (rows.length < TB.maxRows) rows.push({ vals: T.cols.map((_, i) => r.vals[i] ?? ''), by: T.cols.map(() => null), row: r });
+    const keys = keyed(rows.map(r => r.vals[0] || '—')), colKeys = keyed(T.cols), cells = DATA.cells.get(root);
+    if (cells) rows.forEach((r, i) => colKeys.forEach((c, j) => { const rec = cells.get(keys[i] + '\u0000' + c.toLowerCase()); if (rec){ r.vals[j] = rec.val; r.by[j] = rec; } }));
+    // a column of numbers gets a total
+    const sums = T.cols.map((_, j) => { const vs = rows.map(r => r.vals[j]).filter(v => String(v).trim()); return vs.length && vs.every(v => dataNum(v) != null) ? vs.reduce((s, v) => s + dataNum(v), 0) : null; });
+    sums[0] = null;
+    return { ...T, rows, keys, colKeys, sums, hasSum: sums.some(s => s != null) };
+  });
+}
+function tableWidths(T){
+  mctx.font = `600 12px ${FONTS.sans}`; const hw = T.cols.map(c => mctx.measureText(c).width);
+  mctx.font = `400 13px ${FONTS.sans}`;
+  return T.cols.map((_, j) => Math.round(Math.min(240, Math.max(64, hw[j] + 26, ...T.rows.map(r => mctx.measureText(String(r[j] ?? '')).width + 22)))));
+}
+function tableGeom(el, b){
+  const V = tableView(el), ws = dataMemo(el, 'tw', () => tableWidths({ cols: V.cols, rows: V.rows.map(r => r.vals) })).slice();   // the widths fit every value, others' too
+  while (ws.length < V.cols.length) ws.push(80);
+  const extra = b.w - ws.reduce((s, w) => s + w, 0); if (extra > 0) ws[ws.length - 1] += extra;
+  const xs = []; let x = b.x; for (const w of ws){ xs.push(x); x += w; }
+  const y0 = b.y + TB.head, rowY = i => y0 + TB.hrow + i * TB.row, sumY = rowY(V.rows.length), footY = sumY + (V.hasSum ? TB.row : 0);
+  return { V, xs, ws, y0, rowY, sumY, footY };
+}
+registerDataKind('table', {
+  name: 'Table', icon: 'table', glyph: '▦', blurb: 'Rows and columns; anyone can change a cell or add a row', min: [240, 120],
+  label: tableText('Table', ['Name', 'Value'], [['', '']]),
+  layout(text){ const T = parseTable(text), widths = tableWidths(T); return { w: Math.max(240, widths.reduce((s, w) => s + w, 0)), h: TB.head + TB.hrow + T.rows.length * TB.row + TB.foot, widths }; },
+  fit(el){ const V = tableView(el), ws = dataMemo(el, 'tw', () => tableWidths({ cols: V.cols, rows: V.rows.map(r => r.vals) })); return { w: ws.reduce((s, w) => s + w, 0), h: TB.head + TB.hrow + V.rows.length * TB.row + (V.hasSum ? TB.row : 0) + TB.foot }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const g = tableGeom(el, b), V = g.V;
+    dataCard(b, accent); dataHead(b, V.title || 'Table', 'TABLE', plural(V.rows.length, 'row'));
+    ctx.fillStyle = TH.panel2 || TH.paper; ctx.fillRect(b.x + 1, g.y0, b.w - 2, TB.hrow);
+    // numbers sit on the right, so they line up, and so does their column's name
+    V.cols.forEach((c, j) => { const num = V.sums[j] != null; fitText(c, num ? g.xs[j] + g.ws[j] - 10 : g.xs[j] + 10, g.y0 + TB.hrow / 2, g.ws[j] - 18, `600 12px ${FONTS.sans}`, TH.muted, num ? 'right' : 'left'); });
+    V.rows.forEach((r, i) => {
+      const y = g.rowY(i);
+      ctx.beginPath(); ctx.moveTo(b.x + 1, y); ctx.lineTo(b.x + b.w - 1, y); ctx.strokeStyle = TH.line2 || TH.line; ctx.lineWidth = 1; ctx.stroke();
+      r.vals.forEach((v, j) => {
+        const num = V.sums[j] != null && dataNum(v) != null, x = num ? g.xs[j] + g.ws[j] - 10 : g.xs[j] + 10;
+        fitText(v, x, y + TB.row / 2, g.ws[j] - 18, `${j === 0 ? 550 : 400} 13px ${FONTS.sans}`, TH.ink, num ? 'right' : 'left');
+        if (r.by[j] && r.by[j].author !== el.author){ ctx.beginPath(); ctx.arc(g.xs[j] + g.ws[j] - 4, y + 5, 2.2, 0, Math.PI * 2); ctx.fillStyle = `hsl(${authorHue(personOf(r.by[j].author))} 55% 45%)`; ctx.fill(); }   // someone else set this value
+      });
+      if (r.row && r.row.author !== el.author){ ctx.fillStyle = `hsl(${authorHue(personOf(r.row.author))} 55% 45%)`; ctx.fillRect(b.x + 1, y + 6, 2, TB.row - 12); }   // a row someone else added
+    });
+    for (let j = 1; j < V.cols.length; j++){ ctx.beginPath(); ctx.moveTo(g.xs[j], g.y0); ctx.lineTo(g.xs[j], g.footY); ctx.strokeStyle = TH.line2 || TH.line; ctx.stroke(); }
+    if (V.hasSum){
+      ctx.beginPath(); ctx.moveTo(b.x + 1, g.sumY); ctx.lineTo(b.x + b.w - 1, g.sumY); ctx.strokeStyle = TH.line; ctx.stroke();
+      fitText('Total', g.xs[0] + 10, g.sumY + TB.row / 2, g.ws[0] - 18, `600 12px ${FONTS.sans}`, TH.muted);
+      V.sums.forEach((s, j) => { if (s != null) fitText(fmtNum(s), g.xs[j] + g.ws[j] - 10, g.sumY + TB.row / 2, g.ws[j] - 18, `650 13px ${FONTS.sans}`, TH.ink, 'right'); });
+    }
+    dataFoot(b, 'Add row', g.footY);
+  },
+  hit(el, w, b){
+    const g = tableGeom(el, b), V = g.V;
+    if (w.y >= g.footY && w.y <= b.y + b.h) return { act: 'add', press: true, rect: { x: b.x + 6, y: g.footY + 3, w: Math.min(b.w - 12, 220), h: TB.foot - 6 } };
+    if (w.y < g.rowY(0) || w.y >= g.sumY) return null;
+    const i = Math.floor((w.y - g.rowY(0)) / TB.row), j = g.xs.findLastIndex(x => w.x >= x);
+    return i >= 0 && i < V.rows.length && j >= 0 ? { act: 'cell', i, j } : null;
+  },
+  press(el, h){ if (h.act === 'add') tableAdd(el); },
+  edit(el, h){ if (h.act !== 'cell') return false; tableCellEdit(el, h.i, h.j); return true; },
+  others: 'Double-click a cell to change it, or add a row at the bottom. Only its author changes the columns.',
+  async form(el){
+    const V = el ? tableView(el) : null, base = V ? V.rows.filter(r => !r.row) : null;
+    const v = await formDialog(el ? 'Edit table' : 'New table', [
+      { id: 'title', label: 'Title', type: 'text', value: V ? V.title : 'Estimates' },
+      { id: 'cols', label: 'Columns', type: 'text', value: (V ? V.cols : ['Task', 'Owner', 'Days']).join(', '), hint: 'Separated by commas. The first column names each row.' },
+      { id: 'rows', label: 'Rows', type: 'textarea', rows: 8, mono: true, value: base ? base.map(r => r.vals.join(' | ')).join('\n') : 'Research | Ana | 3\nDesign | | 5\nBuild | | 8',
+        hint: `One row per line, cells separated by |.${V && V.rows.length > base.length ? ` ${plural(V.rows.length - base.length, 'row')} added by others stay as they are.` : ''}` },
+    ], { ok: el ? 'Sign the new version' : 'Add table', why: el ? 'Everyone keeps editing cells; the values you change here are signed as cell edits.' : 'Anyone who can draw on this canvas can change a cell or add a row; each change is signed.' });
+    if (!v) return null;
+    const cols = v.cols.split(',').map(c => c.trim()).filter(Boolean).slice(0, TB.maxCols); if (!cols.length) cols.push('Name');
+    const rows = v.rows.split('\n').filter(l => l.trim()).slice(0, TB.maxRows).map(l => l.split('|').map(c => c.trim()));
+    const label = tableText(v.title.trim(), cols, rows);
+    // values changed in the form become cell edits too: a newer cell edit by someone else would otherwise still win
+    if (el){ const keys = keyed(rows.map(r => r[0] || '—')), at = new Map(V.keys.map((k, i) => [k, V.rows[i]])), ci = new Map(V.colKeys.map((c, j) => [c.toLowerCase(), j]));
+      const kc = keyed(cols), todo = [];
+      rows.forEach((r, i) => { const old = at.get(keys[i]); if (!old || old.row) return; kc.forEach((c, j) => { const oj = ci.get(c.toLowerCase()); if (oj != null && j > 0 && (r[j] ?? '') !== (old.vals[oj] ?? '')) todo.push([keys[i], c, r[j] ?? '']); }); });
+      setTimeout(async () => { for (const [k, c, val] of todo) await setCell(current(el.cid) || el, k, c, val); }, 0);
+    }
+    return label;
+  },
+  title: text => parseTable(text).title,
+  describe(el){ const V = tableView(el); return `${plural(V.cols.length, 'column')} (${V.cols.join(', ')}), ${plural(V.rows.length, 'row')}${V.hasSum ? `; totals ${V.cols.map((c, j) => V.sums[j] != null ? `${c} ${fmtNum(V.sums[j])}` : '').filter(Boolean).join(', ')}` : ''}`; },
+  lines(el){ const V = tableView(el); return [V.cols.join(' | '), ...V.rows.map(r => r.vals.join(' | ')), ...(V.hasSum ? ['Total | ' + V.sums.slice(1).map(s => s == null ? '' : fmtNum(s)).join(' | ')] : [])]; },
+});
+function tableCellEdit(el, i, j){
+  el = current(el.cid); if (!el) return;
+  const g = tableGeom(el, box(el)), V = g.V; if (!V.rows[i] || j >= V.cols.length) return;
+  dataField({ el, rect: { x: g.xs[j] + 2, y: g.rowY(i) + 2, w: g.ws[j] - 4, h: TB.row - 4 }, value: V.rows[i].vals[j], align: V.sums[j] != null ? 'right' : 'left',
+    label: `${V.cols[j]} of ${V.rows[i].vals[0] || 'row ' + (i + 1)}`,
+    commit: v => setCell(el, V.keys[i], V.colKeys[j], v, V.rows[i].vals[j]),
+    tab: back => { const n = V.cols.length, k = i * n + j + (back ? -1 : 1); if (k >= 0 && k < V.rows.length * n) tableCellEdit(el, Math.floor(k / n), k % n); } });
+}
+function tableAdd(el){
+  const g = tableGeom(el, box(el)), V = g.V;
+  dataField({ el, rect: { x: g.xs[0] + 2, y: g.footY + 2, w: Math.max(140, g.ws[0] - 4), h: TB.foot - 4 }, value: '', placeholder: V.cols[0], label: `New row: ${V.cols[0]}`,
+    commit: async v => { if (!v) return; await addRow(el, [v]); say(`Row “${v}” added. Double-click its cells to fill them in.`); } });
+}
+// what and when), items anyone can add (ROW), and progress at the top
+// @uses features/data/core
+// label:  Launch checklist
+//         - [x] Pricing page live
+//         - [ ] Docs updated
+const CL = { row: 28, top: 14, foot: 28, max: 100 };
+function parseChecklist(text){
+  let title = ''; const items = [];
+  for (const l of String(text).split('\n')){
+    const t = l.trim(); if (!t) continue;
+    const m = t.match(/^(?:[-*]\s*)?\[( |x|X)\]\s*(.*)$/) || t.match(/^[-*]\s+()(.*)$/);
+    if (m && m[2].trim()) items.push({ text: m[2].trim().slice(0, 300), done: /x/i.test(m[1]) });
+    else if (!m && !title && !items.length) title = t.slice(0, 120);
+  }
+  return { title, items: items.slice(0, CL.max) };
+}
+const checklistText = (title, items) => [title, ...items.map(i => `- [${i.done ? 'x' : ' '}] ${i.text.replace(/\n/g, ' ')}`)].filter(Boolean).join('\n');
+function checklistView(el){
+  return dataMemo(el, 'cl', () => {
+    const C = parseChecklist(el.text), root = dataRoot(el), items = C.items.map(i => ({ ...i, by: null, row: null }));
+    for (const r of DATA.rows.get(root) || []) if (items.length < CL.max) items.push({ text: r.vals[0].slice(0, 300), done: false, by: null, row: r });
+    const keys = keyed(items.map(i => i.text)), ticks = DATA.ticks.get(root);
+    if (ticks) items.forEach((it, i) => { const t = ticks.get(keys[i].toLowerCase()); if (t){ it.done = t.done; it.by = t; } });
+    return { ...C, items, keys, done: items.filter(i => i.done).length };
+  });
+}
+function checklistGeom(el, b){ const V = checklistView(el), y0 = b.y + 36 + CL.top; return { V, y0, rowY: i => y0 + i * CL.row, footY: y0 + V.items.length * CL.row + 4 }; }
+registerDataKind('checklist', {
+  name: 'Checklist', icon: 'checklist', glyph: '☑', blurb: 'Items anyone can tick; each tick is signed', min: [240, 110],
+  label: checklistText('Checklist', [{ text: 'First thing', done: false }]),
+  layout(text){ const C = parseChecklist(text); mctx.font = `400 13px ${FONTS.sans}`; return { w: Math.min(420, Math.max(260, ...C.items.map(i => mctx.measureText(i.text).width + 76))), h: 36 + CL.top + C.items.length * CL.row + 4 + CL.foot }; },
+  fit(el){ const V = checklistView(el); return { w: 0, h: 36 + CL.top + V.items.length * CL.row + 4 + CL.foot }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const g = checklistGeom(el, b), V = g.V, n = V.items.length;
+    dataCard(b, accent); dataHead(b, V.title || 'Checklist', 'CHECKLIST', `${V.done}/${n}`);
+    // progress
+    const px = b.x + 12, pw = b.w - 24, py = b.y + 36 + 6;
+    rr(ctx, px, py, pw, 4, 2); ctx.fillStyle = TH.line2 || TH.line; ctx.fill();
+    if (V.done){ rr(ctx, px, py, Math.max(4, pw * V.done / Math.max(1, n)), 4, 2); ctx.fillStyle = V.done === n ? TH.green : TH.accent; ctx.fill(); }
+    V.items.forEach((it, i) => {
+      const y = g.rowY(i) + CL.row / 2, bx = b.x + 12;
+      rr(ctx, bx, y - 8, 16, 16, 4);
+      if (it.done){ ctx.fillStyle = TH.accent; ctx.fill(); ctx.beginPath(); ctx.moveTo(bx + 4, y); ctx.lineTo(bx + 7, y + 3.5); ctx.lineTo(bx + 12.5, y - 3.5); ctx.strokeStyle = TH.panel; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); }
+      else { ctx.lineWidth = 1.5; ctx.strokeStyle = TH.muted; ctx.stroke(); }
+      const right = it.done && it.by ? 26 : 0, tw = fitText(it.text, bx + 26, y, b.w - 50 - right, `400 13px ${FONTS.sans}`, it.done ? TH.muted : TH.ink);
+      if (it.done){ ctx.beginPath(); ctx.moveTo(bx + 26, y + 1); ctx.lineTo(bx + 26 + tw, y + 1); ctx.strokeStyle = TH.muted; ctx.lineWidth = 1; ctx.stroke(); }
+      if (it.done && it.by) dataAvatar(it.by.author, b.x + b.w - 20, y, 8);
+      if (it.row && it.row.author !== el.author){ ctx.fillStyle = `hsl(${authorHue(personOf(it.row.author))} 55% 45%)`; ctx.fillRect(b.x + 1, y - 8, 2, 16); }
+    });
+    dataFoot(b, 'Add item', g.footY);
+  },
+  hit(el, w, b){
+    const g = checklistGeom(el, b);
+    if (w.y >= g.footY && w.y <= b.y + b.h) return { act: 'add', press: true };
+    const i = Math.floor((w.y - g.y0) / CL.row);
+    if (i < 0 || i >= g.V.items.length || w.y < g.y0) return null;
+    return w.x <= b.x + 40 ? { act: 'tick', i, press: true } : { act: 'item', i };
+  },
+  async press(el, h){
+    const g = checklistGeom(el, box(el)), V = g.V;
+    if (h.act === 'tick'){ const it = V.items[h.i]; await setTick(el, V.keys[h.i], !it.done); say(`${it.done ? 'Unticked' : 'Ticked'} “${it.text}”.`); return; }
+    dataField({ el, rect: { x: b0(el).x + 34, y: g.footY + 3, w: Math.min(260, b0(el).w - 46), h: CL.foot - 6 }, value: '', placeholder: 'New item', label: 'New checklist item',
+      commit: async v => { if (v){ await addRow(el, [v]); say(`Item “${v}” added.`); } } });
+  },
+  edit(el, h){ if (h.act !== 'item' && h.act !== 'tick') return false; const V = checklistView(el), it = V.items[h.i]; setTick(el, V.keys[h.i], !it.done); return true; },
+  others: 'Tick items with their box, or add one at the bottom. Only its author changes the list itself.',
+  async form(el){
+    const V = el ? checklistView(el) : null, base = V ? V.items.filter(i => !i.row) : null;
+    const v = await formDialog(el ? 'Edit checklist' : 'New checklist', [
+      { id: 'title', label: 'Title', type: 'text', value: V ? V.title : 'Launch checklist' },
+      { id: 'items', label: 'Items', type: 'textarea', rows: 8, value: base ? base.map(i => `[${i.done ? 'x' : ' '}] ${i.text}`).join('\n') : '[ ] Pricing page live\n[ ] Docs updated\n[ ] Announcement drafted',
+        hint: `One per line; start a line with [x] for done.${V && V.items.length > base.length ? ` ${plural(V.items.length - base.length, 'item')} added by others stay.` : ''}` },
+    ], { ok: el ? 'Sign the new version' : 'Add checklist', why: 'Anyone who can draw here can tick an item or add one; each tick is signed, so the list shows who did what.' });
+    if (!v) return null;
+    const items = parseChecklist('x\n' + v.items.split('\n').map(l => /^\s*(?:[-*]\s*)?\[/.test(l) ? l : l.trim() ? `- [ ] ${l.trim()}` : '').join('\n')).items;
+    if (el){   // a box ticked or unticked in the form is signed as a tick, so it wins over older ticks
+      const keys = keyed(items.map(i => i.text)), was = new Map(V.keys.map((k, i) => [k.toLowerCase(), V.items[i]]));
+      const todo = items.map((it, i) => [keys[i], it.done, was.get(keys[i].toLowerCase())]).filter(([, d, o]) => o && !o.row && o.done !== d);
+      setTimeout(async () => { for (const [k, d] of todo) await setTick(current(el.cid) || el, k, d, false); }, 0);
+    }
+    return checklistText(v.title.trim(), items);
+  },
+  title: text => parseChecklist(text).title,
+  describe(el){ const V = checklistView(el); return `${V.done} of ${V.items.length} done${V.items.length ? `; ${V.items.map(i => `${i.done ? 'done' : 'open'}: ${i.text}`).join('; ')}` : ''}`; },
+  lines(el){ const V = checklistView(el); return V.items.map(i => `${i.done ? '☑' : '☐'} ${i.text}`); },
+});
+const b0 = el => box(current(el.cid) || el);
+// node shows the latest, the change since the one before, progress to a target and a sparkline of every reading
+// @uses features/data/core
+// label:  Monthly revenue
+//         value: 38        (the starting value, before any reading)
+//         unit: $k
+//         target: 50
+//         better: higher   (or lower: costs, bugs, time to answer)
+function parseMetric(text){
+  const M = { title: '', value: null, unit: '', target: null, better: 'higher' };
+  for (const l of String(text).split('\n')){
+    const t = l.trim(), m = t.match(/^(value|unit|target|better)\s*:\s*(.*)$/i);
+    if (m){ const k = m[1].toLowerCase(), v = m[2].trim(); if (k === 'value' || k === 'target') M[k] = dataNum(v); else if (k === 'unit') M.unit = v.slice(0, 16); else M.better = /^low/i.test(v) ? 'lower' : 'higher'; }
+    else if (t && !M.title) M.title = t.slice(0, 120);
+  }
+  return M;
+}
+const metricText = m => [m.title, ...(m.value != null ? [`value: ${m.value}`] : []), ...(m.unit ? [`unit: ${m.unit}`] : []), ...(m.target != null ? [`target: ${m.target}`] : []), ...(m.better === 'lower' ? ['better: lower'] : [])].join('\n');
+function metricView(el){
+  return dataMemo(el, 'mt', () => {
+    const M = parseMetric(el.text), rs = DATA.readings.get(dataRoot(el)) || [];
+    const hist = [...(M.value != null ? [{ value: M.value, base: true }] : []), ...rs.map(r => ({ value: r.value, r }))];
+    const cur = hist.at(-1) || null, prev = hist.at(-2) || null;
+    return { ...M, hist, cur, prev, last: rs.at(-1) || null };
+  });
+}
+// the value right now, for formulas
+const metricValue = el => metricView(el).cur?.value ?? null;
+registerDataKind('metric', {
+  name: 'Metric', icon: 'metric', glyph: '↗', blurb: 'A number with a target; anyone logs a new value and the history stays', min: [260, 168],
+  label: metricText({ title: 'Metric', value: 0 }),
+  layout(){ return { w: 260, h: 168 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const V = metricView(el), y0 = b.y + 36, good = TH.green, bad = TH.red;
+    dataCard(b, accent); dataHead(b, V.title || 'Metric', 'METRIC');
+    const spark = V.hist.length >= 2 && b.w >= 240, vw = spark ? b.w * .55 : b.w - 24;
+    ctx.font = `700 30px ${FONTS.sans}`; const val = V.cur ? fmtNum(V.cur.value) : '—';
+    const w1 = fitText(val, b.x + 12, y0 + 30, vw - 30, `700 30px ${FONTS.sans}`, TH.ink);
+    if (V.unit) fitText(V.unit, b.x + 16 + w1, y0 + 34, vw - w1 - 10, `500 14px ${FONTS.sans}`, TH.muted);
+    if (V.cur && V.prev && V.prev.value !== V.cur.value){
+      const d = V.cur.value - V.prev.value, up = d > 0, pct = V.prev.value ? Math.abs(d / V.prev.value * 100) : null, better = up === (V.better === 'higher');
+      fitText(`${up ? '▲' : '▼'} ${pct != null ? fmtNum(pct, pct < 10 ? 1 : 0) + '%' : fmtNum(Math.abs(d))} since last`, b.x + 12, y0 + 58, vw, `600 12px ${FONTS.sans}`, better ? good : bad);
+    } else fitText(!V.hist.length ? 'No value yet' : V.hist.length === 1 && V.hist[0].base ? 'Starting value' : plural(V.hist.length, 'reading'), b.x + 12, y0 + 58, vw, `500 12px ${FONTS.sans}`, TH.muted);
+    if (spark) sparkline(V.hist.slice(-24).map(h => h.value), b.x + b.w * .6, y0 + 14, b.w * .4 - 14, 40, accent || TH.accent);
+    // progress to the target
+    const ty = y0 + 80;
+    if (V.target != null && V.cur){
+      const p = V.better === 'higher' ? V.cur.value / (V.target || 1) : V.target / (V.cur.value || 1), f = Math.max(0, Math.min(1, p));
+      rr(ctx, b.x + 12, ty, b.w - 24, 6, 3); ctx.fillStyle = TH.line2 || TH.line; ctx.fill();
+      rr(ctx, b.x + 12, ty, Math.max(6, (b.w - 24) * f), 6, 3); ctx.fillStyle = p >= 1 ? good : accent || TH.accent; ctx.fill();
+      fitText(`${fmtNum(Math.round(p * 100))}% of target ${fmtNum(V.target)}${V.unit ? ' ' + V.unit : ''}`, b.x + 12, ty + 17, b.w - 24, `500 11.5px ${FONTS.sans}`, TH.muted);
+    } else if (V.last) {
+      dataAvatar(V.last.author, b.x + 20, ty + 8, 8);
+      fitText(`${whoName(V.last.author)} · ${when(V.last.t)}${V.last.note ? ' · ' + V.last.note : ''}`, b.x + 34, ty + 8, b.w - 46, `500 11.5px ${FONTS.sans}`, TH.muted);
+    }
+    dataFoot(b, 'Log a value', b.y + b.h - 28);
+  },
+  hit(el, w, b){ return w.y >= b.y + b.h - 28 ? { act: 'log', press: true } : w.y > b.y + 36 ? { act: 'value' } : null; },
+  press(el){ metricLog(el); },
+  edit(el, h){ if (h.act !== 'value' && h.act !== 'log') return false; metricLog(el); return true; },
+  others: 'Log a new value at the bottom. Only its author changes the name, unit and target.',
+  async form(el){
+    const V = el ? metricView(el) : null;
+    const v = await formDialog(el ? 'Edit metric' : 'New metric', [
+      { id: 'title', label: 'What it measures', type: 'text', value: V ? V.title : 'Weekly active teams' },
+      { id: 'value', label: el ? 'Starting value' : 'Value now', type: 'text', value: V?.value ?? '', half: true },
+      { id: 'unit', label: 'Unit', type: 'text', value: V ? V.unit : '', half: true, hint: '$k, %, ms, users…' },
+      { id: 'target', label: 'Target', type: 'text', value: V?.target ?? '', half: true },
+      { id: 'better', label: 'Better is', type: 'select', value: V?.better || 'higher', options: [['higher', 'Higher'], ['lower', 'Lower']], half: true },
+    ], { ok: el ? 'Sign the new version' : 'Add metric', why: 'Anyone who can draw here logs new values; every reading is signed and kept, so the history can’t be rewritten.' });
+    if (!v) return null;
+    const num = s => String(s).trim() === '' ? null : dataNum(s);
+    if (String(v.value).trim() && num(v.value) == null || String(v.target).trim() && num(v.target) == null){ toast('Value and target must be numbers.'); return null; }
+    return metricText({ title: v.title.trim() || 'Metric', value: num(v.value), unit: v.unit.trim(), target: num(v.target), better: v.better });
+  },
+  describe(el){ const V = metricView(el); return `${V.cur ? fmtNum(V.cur.value) : 'no value'}${V.unit ? ' ' + V.unit : ''}${V.target != null ? `, target ${fmtNum(V.target)}` : ''}, ${plural(V.hist.length, 'reading')}`; },
+  lines(el){ const V = metricView(el); return [`${V.cur ? fmtNum(V.cur.value) : '—'} ${V.unit}`.trim(), ...(V.target != null ? [`Target ${fmtNum(V.target)}`] : []), ...V.hist.slice(-8).map(h => `${h.r ? new Date(h.r.t).toLocaleDateString() : 'start'}: ${fmtNum(h.value)}`)]; },
+});
+function metricLog(el){
+  const b = box(current(el.cid) || el), V = metricView(el);
+  dataField({ el, rect: { x: b.x + 8, y: b.y + b.h - 26, w: Math.min(180, b.w - 16), h: 24 }, value: '', numeric: true, placeholder: V.cur ? String(V.cur.value) : 'Value',
+    label: `New value for ${V.title || 'the metric'}`, commit: async v => { if (!v) return; await addReading(el, dataNum(v)); say(`Logged ${v} for ${V.title}.`); } });
+}
+// before and grey once passed; formulas read it as days from today ([Beta launch] - 14)
+// @uses features/data/core
+// label:  Beta launch
+//         2026-11-15 14:00
+//         Invite the first 20 teams     (a note, optional)
+function parseDate(text){
+  const D = { title: '', y: null, mo: null, d: null, hh: null, mm: null, note: '' };
+  for (const l of String(text).split('\n')){
+    const t = l.trim(), m = t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?$/);
+    if (m && D.y == null){ [D.y, D.mo, D.d] = [+m[1], +m[2], +m[3]]; if (m[4] != null){ D.hh = Math.min(23, +m[4]); D.mm = Math.min(59, +m[5]); } }
+    else if (t && !D.title) D.title = t.slice(0, 120);
+    else if (t && !D.note) D.note = t.slice(0, 200);
+  }
+  if (D.y != null && (D.mo < 1 || D.mo > 12 || D.d < 1 || D.d > 31)) D.y = null;
+  return D;
+}
+const pad2 = n => String(n).padStart(2, '0');
+const dateText = D => [D.title, ...(D.y != null ? [`${D.y}-${pad2(D.mo)}-${pad2(D.d)}${D.hh != null ? ` ${pad2(D.hh)}:${pad2(D.mm)}` : ''}`] : []), ...(D.note ? [D.note] : [])].join('\n');
+const dateOf = D => D.y == null ? null : new Date(D.y, D.mo - 1, D.d, D.hh ?? 0, D.mm ?? 0);
+// whole days from today to the date (negative once it has passed): local calendar days, not 24-hour blocks
+function dateDays(el){ const D = parseDate(el.text); if (D.y == null) return null; const t = new Date(), a = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()), b = Date.UTC(D.y, D.mo - 1, D.d); return Math.round((b - a) / 864e5); }
+const dateRel = n => n == null ? 'No date set' : n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n === -1 ? 'Yesterday' : n > 0 ? `In ${plural(n, 'day')}` : `${plural(-n, 'day')} ago`;
+registerDataKind('date', {
+  name: 'Date', icon: 'calendar', glyph: '▤', blurb: 'A launch or deadline that counts down; formulas read it as days away', min: [250, 88],
+  label: dateText({ title: 'Date', y: new Date().getFullYear(), mo: new Date().getMonth() + 1, d: new Date().getDate() }),
+  layout(text){ const D = parseDate(text); return { w: 270, h: D.note ? 104 : 88 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const D = parseDate(el.text), n = dateDays(el), dt = dateOf(D);
+    const tone = n == null ? TH.muted : n < 0 ? TH.faint || TH.muted : n === 0 ? TH.accent : n <= 3 ? TH.amber : accent || TH.accent;
+    dataCard(b, accent);
+    // the calendar leaf
+    const cx = b.x + 12, cy = b.y + 14;
+    ctx.save(); rr(ctx, cx, cy, 52, 60, 8); ctx.fillStyle = TH.panel2 || TH.paper; ctx.fill(); ctx.clip(); ctx.fillStyle = tone; ctx.fillRect(cx, cy, 52, 17); ctx.restore();
+    rr(ctx, cx, cy, 52, 60, 8); ctx.strokeStyle = TH.line; ctx.lineWidth = 1; ctx.stroke();
+    fitText(dt ? dt.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : '—', cx + 26, cy + 9, 48, `700 10px ${FONTS.sans}`, '#fff', 'center');
+    fitText(dt ? String(dt.getDate()) : '?', cx + 26, cy + 39, 48, `700 24px ${FONTS.sans}`, TH.ink, 'center');
+    const tx = cx + 66, tw = b.w - (tx - b.x) - 12;
+    fitText(D.title || 'Date', tx, b.y + 24, tw, `650 14px ${FONTS.sans}`, TH.ink);
+    fitText(dateRel(n), tx, b.y + 45, tw, `650 13px ${FONTS.sans}`, tone);
+    if (dt) fitText(dt.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: dt.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' }) + (D.hh != null ? ` · ${pad2(D.hh)}:${pad2(D.mm)}` : ''), tx, b.y + 64, tw, `500 12px ${FONTS.sans}`, TH.muted);
+    if (D.note) fitText(D.note, b.x + 12, b.y + b.h - 15, b.w - 24, `400 12px ${FONTS.sans}`, TH.muted);
+  },
+  others: 'Only its author moves the date. Comment on it instead (M).',
+  async form(el){
+    const D = el ? parseDate(el.text) : null, t = new Date(Date.now() + 14 * 864e5);
+    const v = await formDialog(el ? 'Edit date' : 'New date', [
+      { id: 'title', label: 'What happens', type: 'text', value: D ? D.title : 'Beta launch' },
+      { id: 'day', label: 'Day', type: 'date', value: D?.y != null ? `${D.y}-${pad2(D.mo)}-${pad2(D.d)}` : `${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())}`, half: true },
+      { id: 'time', label: 'Time (optional)', type: 'text', value: D?.hh != null ? `${pad2(D.hh)}:${pad2(D.mm)}` : '', half: true, hint: 'HH:MM, 24-hour' },
+      { id: 'note', label: 'Note', type: 'text', value: D?.note || '' },
+    ], { ok: el ? 'Sign the new version' : 'Add date', why: 'It counts down for everyone, and formulas can use it: [Beta launch] is the number of days left.' });
+    if (!v) return null;
+    const m = v.day.match(/^(\d{4})-(\d{2})-(\d{2})$/), tm = v.time.trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (!m){ toast('Pick a day.'); return null; }
+    if (v.time.trim() && !tm){ toast('Write the time as HH:MM.'); return null; }
+    return dateText({ title: v.title.trim() || 'Date', y: +m[1], mo: +m[2], d: +m[3], hh: tm ? Math.min(23, +tm[1]) : null, mm: tm ? Math.min(59, +tm[2]) : null, note: v.note.trim() });
+  },
+  describe(el){ const D = parseDate(el.text), dt = dateOf(D); return dt ? `${dt.toDateString()}${D.hh != null ? ` at ${pad2(D.hh)}:${pad2(D.mm)}` : ''}, ${dateRel(dateDays(el)).toLowerCase()}` : 'no date set'; },
+  lines(el){ const D = parseDate(el.text), dt = dateOf(D); return [dt ? dt.toDateString() : 'No date', dateRel(dateDays(el)), ...(D.note ? [D.note] : [])]; },
+});
+// or checklist it is connected to (its parent, P), so it redraws as people change cells and log readings
+// @uses features/data/core, features/data/table, features/data/metric, features/data/checklist
+// label:  Signups by month
+//         type: bar          (bar, line or pie)
+//         column: Seats      (a table's column; every number column when absent)
+//         Jan: 12            (values, when it isn't connected to a source)
+const CHART_TYPES = [['bar', 'Bars'], ['line', 'Line'], ['pie', 'Donut']];
+function parseChart(text){
+  const C = { title: '', type: 'bar', column: '', points: [] };
+  for (const l of String(text).split('\n')){
+    const t = l.trim(); if (!t) continue;
+    if (!C.title){ C.title = t.slice(0, 120); continue; }   // the first line is the title, whatever it says
+    const o = t.match(/^(type|column)\s*:\s*(.*)$/i), p = t.match(/^(.{1,60}?)\s*:\s*(.+)$/);
+    if (o){ const v = o[2].trim(); if (o[1].toLowerCase() === 'type'){ if (CHART_TYPES.some(([k]) => k === v.toLowerCase())) C.type = v.toLowerCase(); } else C.column = v.slice(0, 60); }
+    else if (p && dataNum(p[2]) != null && C.points.length < 60) C.points.push([p[1], dataNum(p[2])]);
+  }
+  return C;
+}
+const chartText = c => [c.title, `type: ${c.type}`, ...(c.column ? [`column: ${c.column}`] : []), ...c.points.map(([k, v]) => `${k}: ${v}`)].join('\n');
+// where the numbers come from: { labels, series: [{ name, vals }], from }
+function chartData(el){
+  return dataMemo(el, 'ch', () => {
+    const C = parseChart(el.text), src = el.parent && current(el.parent), ok = src && visible(src) && !S.D.hidden.has(src.cid);
+    if (ok && src.ek === 'table'){
+      const V = tableView(src), want = C.column.toLowerCase();
+      const cols = V.cols.map((c, j) => [c, j]).filter(([c, j]) => j > 0 && (want ? c.toLowerCase() === want : V.sums[j] != null)).slice(0, 4);
+      return { ...C, from: dataTitle(src) || 'a table', labels: V.rows.map(r => r.vals[0] || '—'), series: cols.map(([c, j]) => ({ name: c, vals: V.rows.map(r => dataNum(r.vals[j]) ?? 0) })) };
+    }
+    if (ok && src.ek === 'metric'){
+      const V = metricView(src), days = new Set(V.hist.filter(h => h.r).map(h => new Date(h.r.t).toDateString()));   // all on one day: label by time
+      const tag = h => !h.r ? 'start' : days.size > 1 ? new Date(h.r.t).toLocaleDateString([], { month: 'short', day: 'numeric' }) : new Date(h.r.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      return { ...C, type: C.type === 'bar' && !/type:/i.test(el.text) ? 'line' : C.type, from: V.title, labels: V.hist.map(tag), series: [{ name: V.title, vals: V.hist.map(h => h.value) }] };
+    }
+    if (ok && src.ek === 'checklist'){ const V = checklistView(src); return { ...C, from: V.title, labels: ['Done', 'Open'], series: [{ name: V.title, vals: [V.done, V.items.length - V.done] }] }; }
+    return { ...C, from: null, labels: C.points.map(p => p[0]), series: C.points.length ? [{ name: C.title, vals: C.points.map(p => p[1]) }] : [] };
+  });
+}
+// a round axis maximum: 37 → 40, 120 → 150
+function niceMax(v){ if (v <= 0) return 1; const p = 10 ** Math.floor(Math.log10(v)), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; }
+registerDataKind('chart', {
+  name: 'Chart', icon: 'chart', glyph: '▥', blurb: 'Bars, a line or a donut, live from a table or metric it is connected to', min: [300, 200],
+  label: chartText({ title: 'Chart', type: 'bar', points: [['A', 3], ['B', 5], ['C', 2]] }),
+  layout(){ return { w: 380, h: 240 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const D = chartData(el), cols = SERIES(); if (accent) cols.unshift(accent);
+    dataCard(b, accent); dataHead(b, D.title || 'Chart', 'CHART', D.from ? `from ${D.from}`.slice(0, 28) : '');
+    const n = D.labels.length, all = D.series.flatMap(s => s.vals);
+    if (!n || !all.length){ fitText(el.parent ? 'The source has no numbers yet.' : 'No values yet. Edit the chart to add some.', b.x + 12, b.y + b.h / 2 + 10, b.w - 24, `500 12.5px ${FONTS.sans}`, TH.muted); return; }
+    const legend = D.series.length > 1 && D.type !== 'pie', top = b.y + 36 + (legend ? 30 : 14), bottom = b.y + b.h - 26;
+    if (legend){ let lx = b.x + 12; D.series.forEach((s, i) => { ctx.fillStyle = cols[i % cols.length]; rr(ctx, lx, b.y + 50, 10, 10, 2); ctx.fill(); lx += 16 + fitText(s.name, lx + 14, b.y + 55, 120, `500 11.5px ${FONTS.sans}`, TH.muted) + 12; }); }
+    if (D.type === 'pie'){
+      const vals = D.series[0].vals.map(v => Math.max(0, v)), tot = vals.reduce((s, v) => s + v, 0) || 1, r = Math.min((bottom - top) / 2 + 8, b.w * .22), cx = b.x + 16 + r, cy = (top + bottom) / 2 + 6;
+      let a = -Math.PI / 2;
+      vals.forEach((v, i) => { const da = v / tot * Math.PI * 2; ctx.beginPath(); ctx.arc(cx, cy, r, a, a + da); ctx.arc(cx, cy, r * .58, a + da, a, true); ctx.closePath(); ctx.fillStyle = cols[i % cols.length]; ctx.fill(); a += da; });
+      fitText(fmtNum(tot), cx, cy, r, `700 15px ${FONTS.sans}`, TH.ink, 'center');
+      const lx = cx + r + 18, rows = Math.min(n, Math.floor((bottom - top + 20) / 20));
+      for (let i = 0; i < rows; i++){ const y = top + 4 + i * 20; ctx.fillStyle = cols[i % cols.length]; rr(ctx, lx, y - 5, 10, 10, 2); ctx.fill();
+        const w = fitText(D.labels[i], lx + 16, y, b.x + b.w - lx - 70, `500 12px ${FONTS.sans}`, TH.ink); void w;
+        fitText(`${fmtNum(vals[i])} · ${Math.round(vals[i] / tot * 100)}%`, b.x + b.w - 12, y, 64, `500 11.5px ${FONTS.sans}`, TH.muted, 'right'); }
+      return;
+    }
+    const lo = Math.min(0, ...all), hi = niceMax(Math.max(...all, 0) || 1), left = b.x + 44, right = b.x + b.w - 12, H = bottom - top, yOf = v => bottom - (v - lo) / (hi - lo || 1) * H;
+    for (let k = 0; k <= 4; k++){ const v = lo + (hi - lo) * k / 4, y = yOf(v);
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.strokeStyle = k ? TH.line2 || TH.line : TH.line; ctx.lineWidth = 1; ctx.stroke();
+      fitText(fmtNum(v), left - 6, y, 38, `500 10.5px ${FONTS.sans}`, TH.muted, 'right'); }
+    const step = (right - left) / n, every = Math.ceil(n / Math.max(1, Math.floor((right - left) / 54)));
+    D.labels.forEach((l, i) => { if (i % every === 0) fitText(l, left + step * (i + .5), bottom + 12, step * every - 4, `500 11px ${FONTS.sans}`, TH.muted, 'center'); });
+    if (D.type === 'line'){
+      D.series.forEach((s, si) => { const c = cols[si % cols.length]; ctx.beginPath(); s.vals.forEach((v, i) => { const x = left + step * (i + .5), y = yOf(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.strokeStyle = c; ctx.lineWidth = 2.25; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+        s.vals.forEach((v, i) => { ctx.beginPath(); ctx.arc(left + step * (i + .5), yOf(v), 3, 0, Math.PI * 2); ctx.fillStyle = TH.panel; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = c; ctx.stroke(); }); });
+      return;
+    }
+    const k = D.series.length, gw = Math.min(step * .72, 26 * k + 8), bw = gw / k;
+    D.series.forEach((s, si) => s.vals.forEach((v, i) => { const x = left + step * i + (step - gw) / 2 + si * bw, y0 = yOf(Math.max(0, lo)), y = yOf(v);
+      rr(ctx, x + 1, Math.min(y, y0), Math.max(2, bw - 2), Math.max(1, Math.abs(y0 - y)), Math.min(4, bw / 3)); ctx.fillStyle = cols[si % cols.length]; ctx.fill();
+      if (k === 1 && bw > 26) fitText(fmtNum(v), x + bw / 2, Math.min(y, y0) - 8, bw + 10, `600 10.5px ${FONTS.sans}`, TH.muted, 'center'); }));
+  },
+  others: 'A chart follows its data: change the table or metric it is connected to.',
+  async form(el, { source } = {}){
+    const C = el ? parseChart(el.text) : null, srcs = S.D.els.filter(e => e.type === 'NODE' && ['table', 'metric', 'checklist'].includes(e.ek) && visible(e) && !S.D.hidden.has(e.cid) && !S.D.superseded.has(e.cid));
+    const cur = el ? (el.parent && current(el.parent)?.cid) || '' : source && ['table', 'metric', 'checklist'].includes(source.ek) ? source.cid : '';
+    const v = await formDialog(el ? 'Edit chart' : 'New chart', [
+      { id: 'title', label: 'Title', type: 'text', value: C ? C.title : (cur ? dataTitle(current(cur)) : 'Signups by month') },
+      { id: 'type', label: 'Kind', type: 'select', value: C?.type || (current(cur)?.ek === 'metric' ? 'line' : current(cur)?.ek === 'checklist' ? 'pie' : 'bar'), options: CHART_TYPES, half: true },
+      { id: 'src', label: 'Data from', type: 'select', value: cur, options: [['', 'The values below'], ...srcs.map(s => [s.cid, `${DATA_KINDS[s.ek].name}: ${dataTitle(s) || 'untitled'}`])], half: true },
+      { id: 'column', label: 'Table column', type: 'text', value: C?.column || '', hint: 'For a table: one column to chart. Empty charts every number column.' },
+      { id: 'points', label: 'Values', type: 'textarea', rows: 5, value: C ? C.points.map(([k, n]) => `${k}: ${n}`).join('\n') : 'Jan: 12\nFeb: 19\nMar: 27\nApr: 31', hint: 'One “label: number” per line, used when the chart isn’t connected to a source.' },
+    ], { ok: el ? 'Sign the new version' : 'Add chart', why: 'Connected to a table or metric, the chart redraws whenever someone changes a cell or logs a value.' });
+    if (!v) return null;
+    const label = chartText({ title: v.title.trim() || 'Chart', type: v.type, column: v.column.trim(), points: parseChart('x\n' + v.points).points });
+    return { label, parent: v.src && S.records.has(v.src) ? v.src : null };
+  },
+  describe(el){ const D = chartData(el); return `${{ bar: 'bar', line: 'line', pie: 'donut' }[D.type]} chart${D.from ? ` from ${D.from}` : ''}: ${D.series.map(s => `${s.name} ${D.labels.map((l, i) => `${l} ${fmtNum(s.vals[i])}`).join(', ')}`).join('; ') || 'no values'}`; },
+  lines(el){ const D = chartData(el); return D.labels.map((l, i) => `${l}: ${D.series.map(s => fmtNum(s.vals[i])).join(' / ')}`); },
+});
+// sum([Estimates.Days])), recalculated whenever any of them changes. A spreadsheet that spans the canvas.
+// @uses features/data/core, features/data/table, features/data/metric, features/data/checklist
+// label:  Runway
+//         = [Cash] / [Monthly burn]
+//         unit: months
+//         decimals: 1
+// [Name] is a metric, formula, date (days from today) or checklist (percent done); [Table.Column] is a column's numbers,
+// for sum, avg, min, max and count; [Table.Row.Column] is one cell.
+function parseFormula(text){
+  const F = { title: '', expr: '', unit: '', dp: null };
+  for (const l of String(text).split('\n')){
+    const t = l.trim(); if (!t) continue;
+    const o = t.match(/^(unit|decimals)\s*:\s*(.*)$/i);
+    if (t.startsWith('=')) F.expr = t.slice(1).trim().slice(0, 400);
+    else if (o){ if (o[1].toLowerCase() === 'unit') F.unit = o[2].trim().slice(0, 16); else { const d = parseInt(o[2], 10); F.dp = d >= 0 && d <= 6 ? d : null; } }
+    else if (!F.title) F.title = t.slice(0, 120);
+  }
+  return F;
+}
+const formulaText = f => [f.title, `= ${f.expr}`, ...(f.unit ? [`unit: ${f.unit}`] : []), ...(f.dp != null ? [`decimals: ${f.dp}`] : [])].join('\n');
+const FX_FN = { sum: a => a.reduce((s, v) => s + v, 0), avg: a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN, min: a => Math.min(...a), max: a => Math.max(...a), count: a => a.length,
+  round: (a, d) => { const k = 10 ** (d?.[0] ?? 0); return Math.round(a[0] * k) / k; }, abs: a => Math.abs(a[0]) };
+class FxError extends Error {}
+const fxFail = m => { throw new FxError(m); };
+function fxTokens(s){
+  const out = [], re = /\s*(?:(\d+(?:\.\d+)?)|\[([^\]]{1,120})\]|([a-z]+)|([-+*/^%(),]))/iy; let pos = 0;
+  while (pos < s.length){ re.lastIndex = pos; const m = re.exec(s); if (!m) break; pos = re.lastIndex;
+    out.push(m[1] != null ? { n: +m[1] } : m[2] != null ? { ref: m[2].trim() } : m[3] != null ? { id: m[3].toLowerCase() } : { op: m[4] }); }
+  if (s.slice(pos).trim()) fxFail(`I can’t read “${s.slice(pos).trim().slice(0, 12)}”`);
+  return out;
+}
+// evaluate: numbers, + - * / % ^, parentheses, functions and references; refs(name) → number or list of numbers
+function fxEval(expr, refs){
+  const t = fxTokens(expr); let i = 0;
+  const peek = () => t[i], eat = op => t[i]?.op === op ? (i++, true) : false;
+  const num = v => Array.isArray(v) ? fxFail('Use sum(), avg(), min(), max() or count() on a column') : v;
+  const expr0 = () => { let v = term(); for (;;){ if (eat('+')) v = num(v) + num(term()); else if (eat('-')) v = num(v) - num(term()); else return v; } };
+  const term = () => { let v = power(); for (;;){ if (eat('*')) v = num(v) * num(power()); else if (eat('/')){ const d = num(power()); v = d === 0 ? fxFail('Division by zero') : num(v) / d; } else if (eat('%')) v = num(v) % num(power()); else return v; } };
+  const power = () => { const v = unary(); return eat('^') ? num(v) ** num(power()) : v; };
+  const unary = () => eat('-') ? -num(unary()) : eat('+') ? num(unary()) : prim();
+  const prim = () => {
+    const k = t[i++]; if (!k) fxFail('The expression ends too soon');
+    if (k.n != null) return k.n;
+    if (k.ref != null) return refs(k.ref);
+    if (k.op === '('){ const v = expr0(); if (!eat(')')) fxFail('A “)” is missing'); return v; }
+    if (k.id){
+      const f = FX_FN[k.id]; if (!f) fxFail(`No function “${k.id}”`); if (!eat('(')) fxFail(`${k.id} needs ( )`);
+      const args = []; if (!eat(')')){ do args.push(expr0()); while (eat(',')); if (!eat(')')) fxFail('A “)” is missing'); }
+      const flat = args.slice(0, k.id === 'round' ? 1 : undefined).flat();
+      if (!flat.length && k.id !== 'count') fxFail(`${k.id}() needs numbers`);
+      return f(flat, k.id === 'round' ? args.slice(1).map(num) : undefined);
+    }
+    fxFail(`Unexpected “${k.op}”`);
+  };
+  const v = expr0(); if (i < t.length) fxFail(`Unexpected “${peek().op ?? peek().id ?? '…'}”`);
+  return num(v);
+}
+const FX_BUSY = new Set();
+// what [name] means: a node by its title, or a table's column or cell
+function fxRef(name, used){
+  const n = name.toLowerCase(), direct = DATA.titles.get(n);
+  if (direct){ used.add(direct.cid); return fxNodeValue(direct, name); }
+  const parts = name.split('.');
+  for (let k = parts.length - 1; k >= 1; k--){
+    const tb = DATA.titles.get(parts.slice(0, k).join('.').trim().toLowerCase()); if (tb?.ek !== 'table') continue;
+    used.add(tb.cid);
+    const V = tableView(tb), rest = parts.slice(k).map(p => p.trim().toLowerCase()), col = V.cols.findIndex(c => c.toLowerCase() === rest.at(-1));
+    if (col < 0) fxFail(`${dataTitle(tb)} has no column “${parts.at(-1).trim()}”`);
+    if (rest.length === 1) return V.rows.map(r => dataNum(r.vals[col])).filter(v => v != null);
+    const row = V.rows.find(r => String(r.vals[0]).trim().toLowerCase() === rest.slice(0, -1).join('.'));
+    if (!row) fxFail(`${dataTitle(tb)} has no row “${parts.slice(k, -1).join('.').trim()}”`);
+    const v = dataNum(row.vals[col]); return v == null ? fxFail(`“${row.vals[col]}” isn’t a number`) : v;
+  }
+  fxFail(`Nothing here is called “${name}”`);
+}
+function fxNodeValue(el, name){
+  if (el.ek === 'metric'){ const v = metricValue(el); return v == null ? fxFail(`${name} has no value yet`) : v; }
+  if (el.ek === 'formula'){ const r = formulaResult(el); return r.err ? fxFail(/depends on itself/.test(r.err) ? 'It depends on itself' : `${name} can’t be calculated`) : r.value; }
+  if (el.ek === 'checklist'){ const V = checklistView(el); return V.items.length ? V.done / V.items.length * 100 : 0; }
+  if (el.ek === 'date'){ const d = dateDays(el); return d == null ? fxFail(`${name} has no date`) : d; }
+  if (el.ek === 'table') fxFail(`Name a column: [${name}.Column]`);
+  fxFail(`${name} isn’t a number`);
+}
+function formulaResult(el){
+  return dataMemo(el, 'fx', () => {
+    const F = parseFormula(el.text), used = new Set();
+    if (FX_BUSY.has(el.cid)) return { ...F, err: 'It depends on itself', used };
+    if (!F.expr) return { ...F, err: 'No expression yet', used };
+    FX_BUSY.add(el.cid);
+    try { const v = fxEval(F.expr, name => fxRef(name, used)); return Number.isFinite(v) ? { ...F, value: v, used } : { ...F, err: 'Not a finite number', used }; }
+    catch (e){ return { ...F, err: e instanceof FxError ? e.message : 'Can’t calculate this', used }; }
+    finally { FX_BUSY.delete(el.cid); }
+  });
+}
+registerDataKind('formula', {
+  name: 'Formula', icon: 'formula', glyph: 'ƒ', blurb: 'A value computed from other data nodes by name, always up to date', min: [240, 124],
+  label: formulaText({ title: 'Formula', expr: '1 + 1' }),
+  layout(text){ const F = parseFormula(text); mctx.font = `500 12px ${FONTS.mono}`; return { w: Math.min(440, Math.max(240, mctx.measureText('= ' + F.expr).width + 28)), h: 124 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const R = formulaResult(el); dataCard(b, accent); dataHead(b, R.title || 'Formula', 'FORMULA');
+    if (R.err) fitText('⚠ ' + R.err, b.x + 12, b.y + 66, b.w - 24, `600 13px ${FONTS.sans}`, TH.red);
+    else { const w = fitText(fmtNum(R.value, R.dp), b.x + 12, b.y + 64, b.w - 60, `700 28px ${FONTS.sans}`, TH.ink); if (R.unit) fitText(R.unit, b.x + 16 + w, b.y + 68, b.w - w - 28, `500 14px ${FONTS.sans}`, TH.muted); }
+    ctx.fillStyle = TH.panel2 || TH.paper; rr(ctx, b.x + 8, b.y + b.h - 34, b.w - 16, 26, 6); ctx.fill();
+    fitText('= ' + R.expr, b.x + 16, b.y + b.h - 21, b.w - 32, `500 12px ${FONTS.mono}`, TH.muted);
+  },
+  hit(el, w, b){ return w.y > b.y + 36 ? { act: 'expr' } : null; },
+  others: 'A formula recalculates from the nodes it names. Only its author changes the expression.',
+  async form(el){
+    const F = el ? parseFormula(el.text) : null, names = [...DATA.titles.entries()].filter(([, e]) => e.ek !== 'chart' && e.ek !== 'link' && e.ek !== 'code' && e.cid !== el?.cid).map(([, e]) => e.ek === 'table' ? `[${dataTitle(e)}.${tableView(e).cols[1] || 'Column'}]` : `[${dataTitle(e)}]`).slice(0, 8);
+    const v = await formDialog(el ? 'Edit formula' : 'New formula', [
+      { id: 'title', label: 'Name', type: 'text', value: F ? F.title : 'Runway', hint: 'Other formulas can use it as [Name].' },
+      { id: 'expr', label: 'Expression', type: 'text', value: F ? F.expr : (names.length >= 2 ? `${names[0]} / ${names[1]}` : names[0] ? `${names[0]} * 2` : '12 * 4'),
+        hint: names.length ? `On this canvas: ${names.join(' ')}. Also sum( ) avg( ) min( ) max( ) count( ) round(x, d) abs( ).` : 'Name other data nodes in [brackets]: [Revenue] / [Costs], sum([Table.Column]).' },
+      { id: 'unit', label: 'Unit', type: 'text', value: F?.unit || '', half: true },
+      { id: 'dp', label: 'Decimals', type: 'text', value: F?.dp ?? '', half: true, hint: 'Empty: as many as it needs.' },
+    ], { ok: el ? 'Sign the new version' : 'Add formula', why: 'The value is never stored: everyone computes it from the same signed data, so it can’t drift.' });
+    if (!v) return null;
+    try { fxTokens(v.expr); } catch (e){ toast(e.message); return null; }
+    return formulaText({ title: v.title.trim() || 'Formula', expr: v.expr.replace(/^\s*=/, '').trim(), unit: v.unit.trim(), dp: /^[0-6]$/.test(String(v.dp).trim()) ? +String(v.dp).trim() : null });
+  },
+  describe(el){ const R = formulaResult(el); return R.err ? `${R.expr}, which can’t be calculated: ${R.err}` : `${fmtNum(R.value, R.dp)}${R.unit ? ' ' + R.unit : ''}, computed as ${R.expr}`; },
+  lines(el){ const R = formulaResult(el); return [R.err ? '⚠ ' + R.err : `${fmtNum(R.value, R.dp)} ${R.unit}`.trim(), '= ' + R.expr]; },
+});
+// a selected formula shows where its numbers come from
+RENDER_HOOKS.under.push(() => {
+  if (S.sel.size !== 1) return;
+  const el = current([...S.sel][0]); if (el?.type !== 'NODE' || el.ek !== 'formula' || !visible(el)) return;
+  const R = formulaResult(el), to = box(el);
+  for (const c of R.used || []){ const s = current(c); if (!s || !visible(s)) continue; ctx.save(); ctx.setLineDash([5 / S.view.zoom, 5 / S.view.zoom]); drawLink(box(s), to, true, TH.accent, 1.5 / Math.max(.5, S.view.zoom)); ctx.restore(); }
+});
+// http and https open; anything else (javascript:, data:, file:) is shown as text and never followed.
+// @uses features/data/core
+// label:  Competitor pricing
+//         https://example.com/pricing
+//         They dropped the free tier in March     (a note, optional)
+function parseLink(text){
+  const K = { title: '', url: '', note: '' };
+  for (const l of String(text).split('\n')){
+    const t = l.trim(); if (!t) continue;
+    if (!K.url && /^[a-z][a-z0-9+.-]*:\S+$/i.test(t)) K.url = t.slice(0, 2000);
+    else if (!K.title) K.title = t.slice(0, 160);
+    else if (!K.note) K.note = t.slice(0, 300);
+  }
+  return K;
+}
+// a link that may be followed: http(s) only, parsed by the browser
+function safeUrl(u){ try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x : null; } catch { return null; } }
+const linkText = K => [K.title, K.url, ...(K.note ? [K.note] : [])].filter(Boolean).join('\n');
+function linkCardGeom(b){ return { open: { x: b.x + b.w - 70, y: b.y + 12, w: 58, h: 24 } }; }
+registerDataKind('link', {
+  name: 'Link', icon: 'link', glyph: '↗', blurb: 'A web page with its title, site and a note; opens in one click', min: [260, 76],
+  label: linkText({ title: 'Link', url: 'https://example.com' }),
+  layout(text){ const K = parseLink(text); return { w: 320, h: K.note ? 100 : 76 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const K = parseLink(el.text), u = safeUrl(K.url), host = u ? u.hostname.replace(/^www\./, '') : K.url || 'no address', g = linkCardGeom(b);
+    dataCard(b, accent);
+    // the site's letter, in a colour of its own
+    const hue = authorHue(host); rr(ctx, b.x + 12, b.y + 14, 36, 36, 9); ctx.fillStyle = u ? `hsl(${hue} 60% 92%)` : TH.panel2 || TH.paper; ctx.fill();
+    fitText((host.match(/[a-z0-9]/i)?.[0] || '?').toUpperCase(), b.x + 30, b.y + 32, 30, `700 17px ${FONTS.sans}`, u ? `hsl(${hue} 55% 32%)` : TH.muted, 'center');
+    const tx = b.x + 60, tw = g.open.x - tx - 8;
+    fitText(K.title || host, tx, b.y + 24, tw, `650 14px ${FONTS.sans}`, TH.ink);
+    fitText(u ? host + (u.pathname.length > 1 ? u.pathname : '') : `Not a web address: ${K.url || 'none'}`, tx, b.y + 43, tw, `500 12px ${FONTS.sans}`, u ? TH.muted : TH.red);
+    if (K.note) fitText(K.note, b.x + 12, b.y + 74, b.w - 24, `400 12.5px ${FONTS.sans}`, TH.ink);
+    if (u){ rr(ctx, g.open.x, g.open.y, g.open.w, g.open.h, 12); ctx.fillStyle = TH.accentWeak || TH.panel2; ctx.fill(); fitText('Open ↗', g.open.x + g.open.w / 2, g.open.y + 12, g.open.w - 6, `600 11.5px ${FONTS.sans}`, TH.accent, 'center'); }
+  },
+  hit(el, w, b){ return inRect(w, linkCardGeom(b).open) && safeUrl(parseLink(el.text).url) ? { act: 'open', press: true } : null; },
+  press(el){ linkOpen(el); },
+  others: 'Only its author changes the address. Open it with the button, or comment on it (M).',
+  async form(el){
+    const K = el ? parseLink(el.text) : null;
+    const v = await formDialog(el ? 'Edit link' : 'New link', [
+      { id: 'url', label: 'Address', type: 'text', value: K ? K.url : 'https://', hint: 'http or https' },
+      { id: 'title', label: 'Title', type: 'text', value: K ? K.title : '' },
+      { id: 'note', label: 'Why it matters', type: 'text', value: K?.note || '' },
+    ], { ok: el ? 'Sign the new version' : 'Add link', why: 'The card shows the site, so people see where a link goes before they open it.' });
+    if (!v) return null;
+    const u = safeUrl(v.url.trim()); if (!u){ toast('That isn’t an http or https address.'); return null; }
+    return linkText({ title: v.title.trim() || u.hostname.replace(/^www\./, ''), url: u.href, note: v.note.trim() });
+  },
+  describe(el){ const K = parseLink(el.text), u = safeUrl(K.url); return u ? `a link to ${u.hostname}${K.note ? `: ${K.note}` : ''}` : 'an address that isn’t a web link'; },
+  lines(el){ const K = parseLink(el.text); return [K.url, ...(K.note ? [K.note] : [])]; },
+});
+function linkOpen(el){
+  const u = safeUrl(parseLink(el.text).url); if (!u){ toast('Only http and https links open.'); return; }
+  const w = window.open(u.href, '_blank', 'noopener,noreferrer'); if (!w) toast(`Your browser blocked the new tab. The address is ${u.href}`);
+}
+// Copy it with C on the selection like any text; the label is a fenced block, so it pastes into docs as is.
+// @uses features/data/core
+// label:  Retry with backoff      (a title, optional)
+//         ```js
+//         for (let i = 0; i < 5; i++) …
+//         ```
+const CODE = { lh: 18, font: 12.5, max: 80 };
+const CODE_LANGS = [['js', 'JavaScript'], ['ts', 'TypeScript'], ['py', 'Python'], ['sql', 'SQL'], ['json', 'JSON'], ['html', 'HTML'], ['css', 'CSS'], ['sh', 'Shell'], ['go', 'Go'], ['rust', 'Rust'], ['text', 'Plain text']];
+const CODE_KW = new Set('const let var function return if else for while do switch case break continue new class extends import export from default async await try catch finally throw typeof instanceof in of this null undefined true false def lambda pass yield with as elif not and or is None True False select insert update delete where join left right inner outer on group by order limit create table values into fn pub struct impl enum match mut use func package type interface go defer chan map range'.split(' '));
+function parseCode(text){
+  const lines = String(text).split('\n'); let title = '', lang = 'text', i = 0;
+  while (i < lines.length && !lines[i].trim()) i++;
+  if (i < lines.length && !lines[i].startsWith('```')){ title = lines[i].trim().slice(0, 120); i++; }
+  let body = lines.slice(i);
+  if (body[0]?.startsWith('```')){ lang = body[0].slice(3).trim().toLowerCase().slice(0, 12) || 'text'; body = body.slice(1); const end = body.findIndex(l => l.startsWith('```')); if (end >= 0) body = body.slice(0, end); }
+  while (body.length && !body.at(-1).trim()) body.pop();
+  return { title, lang, lines: body.map(l => l.replace(/\t/g, '  ')) };
+}
+const codeText = (title, lang, code) => [...(title ? [title] : []), '```' + lang, code.replace(/```/g, 'ˋˋˋ'), '```'].join('\n');
+// a line in coloured pieces: comments, strings, numbers, keywords, the rest
+function codeTokens(line, lang){
+  const out = [], re = /(\/\/.*$|#.*$|--.*$)|("(?:[^"\\]|\\.)*"?|'(?:[^'\\]|\\.)*'?|`[^`]*`?)|(\b\d[\d_.]*\b)|([A-Za-z_]\w*)|(\s+|.)/g; let m;
+  while ((m = re.exec(line))){
+    const [t] = m;
+    if (m[1] && !(m[1][0] === '#' && !['py', 'sh', 'text'].includes(lang)) && !(m[1].startsWith('--') && lang !== 'sql')) { out.push([t, 'c']); continue; }
+    out.push([t, m[2] ? 's' : m[3] ? 'n' : m[4] && CODE_KW.has(lang === 'sql' ? m[4].toLowerCase() : m[4]) ? 'k' : '']);
+  }
+  return out;
+}
+registerDataKind('code', {
+  name: 'Code', icon: 'code', glyph: '‹›', blurb: 'A snippet with line numbers and colours, in a fixed-width font', min: [280, 90],
+  label: codeText('', 'js', '// code'),
+  layout(text){ const C = parseCode(text), n = Math.min(C.lines.length, CODE.max); mctx.font = `400 ${CODE.font}px ${FONTS.mono}`;
+    return { w: Math.min(680, Math.max(300, 48 + Math.max(0, ...C.lines.slice(0, CODE.max).map(l => mctx.measureText(l).width)) + 20)), h: 36 + 12 + Math.max(1, n) * CODE.lh + (C.lines.length > CODE.max ? CODE.lh : 0) + 10 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const C = parseCode(el.text), lang = CODE_LANGS.find(([k]) => k === C.lang)?.[1] || C.lang;
+    dataCard(b, accent); dataHead(b, C.title || lang, 'CODE', C.title ? lang : plural(C.lines.length, 'line'));
+    const top = b.y + 36; ctx.save(); ctx.beginPath(); ctx.rect(b.x + 1, top + 1, b.w - 2, b.h - 38); ctx.clip();
+    ctx.fillStyle = TH.panel2 || TH.paper; ctx.fillRect(b.x + 1, top, 40, b.h - 37);
+    const col = { c: TH.muted, s: TH.green, n: TH.amber, k: accent || TH.accent, '': TH.ink };
+    C.lines.slice(0, CODE.max).forEach((line, i) => {
+      const y = top + 12 + i * CODE.lh + CODE.lh / 2; if (y > b.y + b.h) return;
+      ctx.font = `400 11px ${FONTS.mono}`; ctx.fillStyle = TH.faint || TH.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), b.x + 32, y + .5);
+      ctx.textAlign = 'left'; let x = b.x + 50;
+      for (const [t, k] of codeTokens(line, C.lang)){ ctx.font = `${k === 'c' ? 'italic ' : ''}${k === 'k' ? 600 : 400} ${CODE.font}px ${FONTS.mono}`; ctx.fillStyle = col[k]; ctx.fillText(t, x, y + .5); x += ctx.measureText(t).width; if (x > b.x + b.w) break; }
+    });
+    if (C.lines.length > CODE.max) fitText(`… ${plural(C.lines.length - CODE.max, 'more line')}`, b.x + 50, top + 12 + CODE.max * CODE.lh + CODE.lh / 2, b.w - 60, `500 11.5px ${FONTS.sans}`, TH.muted);
+    ctx.restore();
+  },
+  others: 'Only its author changes the code. Copy it (⌘C) or comment on a line (M).',
+  async form(el){
+    const C = el ? parseCode(el.text) : null;
+    const v = await formDialog(el ? 'Edit code' : 'New code snippet', [
+      { id: 'title', label: 'Title (optional)', type: 'text', value: C?.title || '', half: true },
+      { id: 'lang', label: 'Language', type: 'select', value: C?.lang && CODE_LANGS.some(([k]) => k === C.lang) ? C.lang : 'js', options: CODE_LANGS, half: true },
+      { id: 'code', label: 'Code', type: 'textarea', rows: 12, mono: true, value: C ? C.lines.join('\n') : 'async function retry(fn, tries = 5){\n  for (let i = 0; i < tries; i++){\n    try { return await fn(); }\n    catch (e){ await sleep(2 ** i * 100); }\n  }\n  throw new Error(\'gave up\');\n}' },
+    ], { ok: el ? 'Sign the new version' : 'Add code', why: 'Signed like everything else: the snippet people approved is the snippet that ships.' });
+    if (!v) return null;
+    return codeText(v.title.trim(), v.lang, v.code.replace(/\s+$/, ''));
+  },
+  title: text => parseCode(text).title || (CODE_LANGS.find(([k]) => k === parseCode(text).lang)?.[1] ?? 'Code'),
+  describe(el){ const C = parseCode(el.text); return `${plural(C.lines.length, 'line')} of ${CODE_LANGS.find(([k]) => k === C.lang)?.[1] || C.lang}${C.lines[0] ? `, starting “${C.lines[0].trim().slice(0, 60)}”` : ''}`; },
+  lines(el){ return parseCode(el.text).lines; },
+});
+// a canvas to start from: work with estimates, what must be true before launch, a number to watch, and the date
+TEMPLATES.push({ id: 'tracker', name: 'Project tracker', icon: 'table', blurb: 'A table of work with estimates, a launch checklist, a metric, a chart and a countdown, all live.', build: async c => {
+  const mk = (kind, dx, dy, label, parent = null) => commitNode({ kind, x: c.x + dx, y: c.y + dy, label, parent });
+  const t = new Date(Date.now() + 21 * 864e5);
+  const work = await mk('table', -560, -260, tableText('Work', ['Task', 'Owner', 'Days', 'Status'], [['Research', '', '3', 'Done'], ['Design', '', '5', 'Doing'], ['Build', '', '8', 'To do'], ['Test', '', '3', 'To do']]));
+  await mk('chart', -560, 30, chartText({ title: 'Days by task', type: 'bar', column: 'Days', points: [] }), work);
+  await mk('formula', -120, -260, formulaText({ title: 'Total days', expr: 'sum([Work.Days])', unit: 'days' }));
+  await mk('date', -120, -110, dateText({ title: 'Launch', y: t.getFullYear(), mo: t.getMonth() + 1, d: t.getDate() }));
+  await mk('formula', -120, 0, formulaText({ title: 'Slack', expr: '[Launch] - [Total days]', unit: 'days' }));
+  await mk('checklist', 180, -260, checklistText('Before launch', [{ text: 'Pricing page live' }, { text: 'Docs updated' }, { text: 'Support briefed' }]));
+  await mk('metric', 180, -20, metricText({ title: 'Teams in the beta', value: 0, target: 20 }));
+} });
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit
 

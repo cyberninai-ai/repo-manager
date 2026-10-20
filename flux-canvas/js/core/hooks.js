@@ -5,7 +5,8 @@
 
 // Field N is reserved: on any record it means revoke (N-1) or restore (N-0) the record named by R (core/records).
 // ACTION → { parse(rec, fields) — fill rec from fields, throw on malformed; fence?: action allowed inside a P-fence;
-//            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments) }
+//            check?: async (rec) → false to refuse it; inherit?: false when a fork must not copy it (governance, payments);
+//            say?: (rec, target) → what it did, in words, for the activity log }
 const RECORD_TYPES = {};
 const NAMES = new Map();           // author key → display name (example authors; profiles later)
 function registerRecord(action, spec){ RECORD_TYPES[action] = spec; KNOWN.add(action); }

@@ -21,6 +21,7 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 | **Work panel** | Deliver this work: one dialog for what, who approves (or an approval flow) and the payment terms, which approvers see before they sign. Each delivery card has one labelled line per part (approvals, flow, shares, payment, witnesses) and an excerpt button. A *Next up* card above the tasks shows what can start now and the critical path as a chain |
 | **Session bar** (under the title) | A silent round's prompt and time, the agenda item and its time box with the queue for the floor, a ritual's outputs; each with its buttons |
 | **On the canvas** | Stance counts, "Decided", claim states, tasks blocked and the critical path, zone owners and suggestions to accept, where attention gathers, sealed cards, replay's marker, what changed |
+| **Data button** (grid, in the dock; D) | Tables, checklists, metrics, charts, formulas, dates, links and code: data anyone can change one signed value at a time ([DATA.md](DATA.md)) |
 | **Canvas home** | Retro, sprint planning, design review and kickoff with their contract running |
 | **Help (?)** | *Working as a team* explains all of this |
 

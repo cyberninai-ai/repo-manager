@@ -17,6 +17,9 @@ const NODE_KINDS = {
   swatch:  { name: 'colour swatch',     icon: '◼', label: 'Colour',    font: 12, pad: [8, 8],   wrap: 110, min: [108, 128], bold: true },
   frame:   { name: 'frame',             icon: '▯', label: 'Screen',    font: 13, pad: [12, 8],  wrap: 300, min: [220, 200], align: 'left', top: true, bold: true },
 };
+// a kind may lay itself out and draw itself (features/data: tables, charts…): layout(text) → { w, h, …parsed } and
+// draw(box, L, { el, accent, col }); its parse comes from the label alone, so the layout cache stays valid. fit(el, L) → { w, h }
+// grows the box with data that lives outside the label
 S.nodeKind = 'rect';   // the Shape tool starts with a rectangle
 function wrapLines(text, maxW){
   const out = [];
@@ -41,6 +44,12 @@ function nodeLayout(kind, text, minW = 0, minH = 0, size = 'm'){
   const key = [kind, text, minW, minH, fs].join('\u0000');
   if (layoutCache.has(key)) return layoutCache.get(key);
   const font = `${K.bold ? 600 : 400} ${fs}px ${FONTS.sans}`;
+  if (K.layout){
+    let d; try { d = K.layout(String(text || '')); } catch { d = { w: K.min[0], h: K.min[1] }; }
+    const L = { w: Math.ceil(Math.max(d.w, K.min[0], minW)), h: Math.ceil(Math.max(d.h, K.min[1], minH)), lines: [], font, lh: Math.round(fs * 1.35), K, fs, d };
+    if (layoutCache.size > 3000) layoutCache.clear();
+    layoutCache.set(key, L); return L;
+  }
   mctx.font = font;
   const wrap = Math.max(K.wrap, minW - K.pad[0] * 2);
   const lines = wrapLines(text || ' ', wrap * fs / K.font), lh = Math.round(fs * 1.35);
@@ -58,12 +67,15 @@ function nodeBox(el){
   const o = S.D.off.get(el.cid);
   let mw = el.bw + (o ? o.w : 0), mh = el.bh + (o ? o.h : 0);
   if (G && G.kind === 'resize' && G.target === el.cid){ mw = G.nb.w; mh = G.nb.h; }
-  return nodeLayout(el.ek || el.k, el.text, mw, mh, el.esize);
+  const L = nodeLayout(el.ek || el.k, el.text, mw, mh, el.esize);
+  const f = L.K.fit?.(el, L);   // live data can make a node bigger than its label alone (rows others added)
+  return f && (f.w > L.w || f.h > L.h) ? { ...L, w: Math.max(L.w, f.w), h: Math.max(L.h, f.h) } : L;
 }
 let TH = {};
 function readTheme(){
   const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
-  TH = { ink: INK, panel: v('--panel'), line: v('--line'), muted: v('--muted'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot') };
+  TH = { ink: INK, panel: v('--panel'), panel2: v('--panel2'), line: v('--line'), line2: v('--line2'), muted: v('--muted'), faint: v('--faint'), paper: v('--paper'), accent: v('--cyan'), dot: v('--dot'),
+    green: v('--green'), red: v('--red'), amber: v('--amber'), accentWeak: v('--accent-weak') };
 }
 function rr(c, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 // colour blending in JS: canvas and SVG consumers can't be relied on to understand color-mix()
@@ -77,9 +89,10 @@ function rgbOf(c){
 function mixHex(a, b, t){ const A = rgbOf(a), B = rgbOf(b); return '#' + A.map((v, i) => Math.max(0, Math.min(255, Math.round(v * t + B[i] * (1 - t)))).toString(16).padStart(2, '0')).join(''); }
 const tint = (col, a) => mixHex(col, TH.panel || '#ffffff', a);
 // Draw a node of a kind at p with layout L. Colour 'ink' keeps nodes neutral; any other colour accents them.
-function drawNode(kind, p, L, col, noText, colName, fill = null){
+function drawNode(kind, p, L, col, noText, colName, fill = null, el = null){
   const { x, y } = p, w = L.w, h = L.h, K = L.K, accent = colName && colName !== 'ink' ? col : null;
   ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5;
+  if (K.draw){ try { K.draw({ x, y, w, h }, L, { el, accent, col }); } catch (err){ console.warn('node draw failed', err); } ctx.restore(); return; }
   let textCol = TH.ink;
   // shapes: no fill, a light tint (the default) or solid colour with text that stays readable on it
   const paint = (c, a) => { if (fill === 'none') return; ctx.fillStyle = fill === 'solid' ? c : tint(c, a); ctx.fill(); if (fill === 'solid') textCol = readableOn(c); };

@@ -116,6 +116,13 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 - **Remember and network:** replay, what changed, lineage forks, the canvas graph, linked devices and guardian recovery, the mesh relay.
 - **Accept:** `tests/reason.mjs`, `meeting.mjs`, `economy.mjs`, `memory.mjs` (99 checks, two to four people over WebRTC).
 
+### 16 · Data nodes (done) · see DATA.md
+- **Kinds:** table, checklist, metric, chart, formula, date, link, code; each a `NODE` kind in its own module under `features/data/`.
+- **Values:** `CELL`, `TICK`, `READING`, `ROW` name the node's first version and a row or item by name, so concurrent edits never collide and survive structure edits.
+- **Live:** charts follow the table, metric or checklist they connect to; formulas compute across the canvas by name.
+- **Interface:** the Data button and D, in-place editing (double-click, Tab), one-click ticks and "+ Add row", the Project tracker template.
+- **Accept:** `tests/datanodes.mjs` (36 checks, two people over WebRTC).
+
 ### Decisions recorded
 - **Transport:** a plain WebSocket relay rather than Gun, untrusted by design because clients verify every record. WebRTC was added in phase 14 as a third transport behind the same `post()`/`onWire()` pair; codes are swapped by hand so no signalling server is needed.
 - **ES modules:** deferred. `file://` refuses them, and the shared frame state would need setters everywhere. Enforced layers give the boundary guarantee now.

@@ -2,7 +2,7 @@
 @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 
 /* medium widths: the dock leaves the top edge to the title and collaborators */
-@media (max-width:1100px) and (min-width:641px){
+@media (max-width:1300px) and (min-width:641px){
   #titlebar{max-width:calc(100% - 420px)}
   #tools{left:12px;top:calc(max(12px,env(safe-area-inset-top)) + 56px);transform:none;flex-direction:column;max-height:calc(100% - 140px);overflow:auto}
   #tools .tsep{width:22px;height:1px;margin:4px 0}

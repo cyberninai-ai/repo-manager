@@ -56,7 +56,7 @@ function drawEl(el){
     if (el.f.F && el.f.F !== 'none'){ ctx.save(); ctx.globalAlpha *= 0.16; ctx.fillStyle = colorOf(el.ec && el.ec !== el.f.C ? el.ec : el.f.F); ctx.fill(); ctx.restore(); }
     ctx.stroke();
   } else if (el.type === 'NODE'){
-    drawNode(el.ek, { x: el.x, y: el.y }, nodeBox(el), colorOf(ecol(el)), false, ecol(el), el.efill);
+    drawNode(el.ek, { x: el.x, y: el.y }, nodeBox(el), colorOf(ecol(el)), false, ecol(el), el.efill, el);
   } else if (el.type === 'TEXT'){
     const fs = el._previewFs || el.fs;
     ctx.font = `${fs}px ${FONTS[el.f.F] || FONTS.sans}`; ctx.textBaseline = 'top';

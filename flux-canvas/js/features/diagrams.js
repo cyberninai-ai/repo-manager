@@ -114,7 +114,7 @@ async function commitNode({ kind, x, y, W = 0, H = 0, label, color = 'ink', pare
 }
 function startChild(p, dir){
   p = current(p.cid);
-  const kind = p.ek === 'frame' ? 'card' : p.ek, L = nodeLayout(kind, NODE_KINDS[kind].label), pb = box(p);
+  const kind = p.ek === 'frame' || NODE_KINDS[p.ek].layout ? 'card' : p.ek, L = nodeLayout(kind, NODE_KINDS[kind].label), pb = box(p);
   const spot = placeNear(pb, dir, L.w, L.h, p.cid);
   const ax = dir === 'left' ? 1 : dir === 'right' ? 0 : .5, ay = dir === 'up' ? 1 : dir === 'down' ? 0 : .5;
   startNode({ kind, parent: p.cid, color: ecol(p), anchor: { x: spot.x + ax * L.w, y: spot.y + ay * L.h, ax, ay } });
@@ -122,14 +122,15 @@ function startChild(p, dir){
 function startSibling(n){
   n = current(n.cid);
   const p = n.parent && current(n.parent);
-  const nb = box(n), L = nodeLayout(n.ek, NODE_KINDS[n.ek].label);
+  const kind = NODE_KINDS[n.ek].layout ? 'card' : n.ek, nb = box(n), L = nodeLayout(kind, NODE_KINDS[kind].label);
   // stack below this node, then step past anything in the way
   const others = boxesExcept(null); let y = nb.y + nb.h + 22, guard = 0;
   while (others.some(o => overlaps({ x: nb.x, y, w: L.w, h: L.h }, o, 10)) && guard++ < 60) y += L.h + 22;
-  startNode({ kind: n.ek, parent: p ? p.cid : null, color: ecol(n), anchor: { x: nb.x, y, ax: 0, ay: 0 } });
+  startNode({ kind, parent: p ? p.cid : null, color: ecol(n), anchor: { x: nb.x, y, ax: 0, ay: 0 } });
 }
 function editNode(el){
   el = current(el.cid);
+  if (NODE_KINDS[el.ek]?.edit) return NODE_KINDS[el.ek].edit(el, lastPointer) ?? true;   // data kinds edit their own way (a cell, a form)
   if (el.author !== S.me.id){ toast('Only its author can edit this. Add a comment instead (M).'); return true; }
   const b = box(el);
   startNode({ kind: el.ek, parent: el.parent, color: ecol(el), orig: el, anchor: { x: b.x, y: b.y, ax: 0, ay: 0 } });
@@ -235,7 +236,7 @@ DERIVE_HOOKS.push(D => { for (const el of D.els) if (el.type === 'NODE' && !NODE
 // a shape you just made is blank: start typing and the text goes into it (no double-click needed)
 KEY_HOOKS.unshift((e, c) => {
   if (!c.onCanvas || c.mod || e.altKey || e.key.length !== 1 || S.sel.size !== 1) return false;
-  const el = current([...S.sel][0]); if (!el || el.type !== 'NODE' || el.text || el.author !== S.me?.id) return false;
+  const el = current([...S.sel][0]); if (!el || el.type !== 'NODE' || el.text || el.author !== S.me?.id || NODE_KINDS[el.ek]?.layout) return false;
   e.preventDefault(); const b = box(el); startNode({ kind: el.ek, parent: el.parent, color: ecol(el), orig: el, anchor: { x: b.x, y: b.y, ax: 0, ay: 0 }, typed: e.key }); return true;
 });
 // the Shape tool: drag out a shape (or click for a standard one); it appears at once, selected, blank and ready to type into

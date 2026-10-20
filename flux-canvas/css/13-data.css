@@ -1,0 +1,5 @@
+/* @module css/data — Data nodes: the field that edits one value in place, code in the form dialog, the Data menu */
+.data-field{position:fixed;z-index:30;box-sizing:border-box;padding:0 8px;border:2px solid var(--cyan);border-radius:6px;background:var(--panel);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 0 0 4px var(--accent-weak),var(--shadow);outline:none}
+.data-field[hidden]{display:none}
+#formDlg textarea.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.45;tab-size:2;white-space:pre;overflow:auto}
+#menu.data{width:min(460px,calc(100vw - 16px))}

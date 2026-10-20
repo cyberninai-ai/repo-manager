@@ -45,6 +45,8 @@ function toSVG(){
       const d = c.bez ? `M${n(c.bez.p0.x)} ${n(c.bez.p0.y)} C${n(c.bez.c0.x)} ${n(c.bez.c0.y)} ${n(c.bez.c1.x)} ${n(c.bez.c1.y)} ${n(c.bez.p1.x)} ${n(c.bez.p1.y)}` : 'M' + c.pts.map(p => `${n(p.x)} ${n(p.y)}`).join(' L');
       o.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${svgDash(el.edash, w)}/>`, headSVG(c.from, c.to, 7 + w * 2, col, w));
       if (el.elabel) o.push(`<text x="${n(c.mid.x)}" y="${n(c.mid.y)}" font-family="${xe(FONTS.sans)}" font-size="13" font-weight="500" fill="${TH.ink}" text-anchor="middle" dominant-baseline="central" paint-order="stroke" stroke="${TH.paper}" stroke-width="5">${xe(el.elabel)}</text>`);
+    } else if (el.type === 'NODE' && nodeBox(el).K.svg){
+      o.push(nodeBox(el).K.svg(el, box(el), n));   // data kinds (features/data) export themselves
     } else if (el.type === 'NODE'){
       const b = box(el), L = nodeBox(el), K = L.K, ac = ecol(el) !== 'ink' ? col : null, k = el.ek;
       let fillN = { card: TH.panel, topic: mix(ac || TH.accent, .16), rect: mix(ac || TH.ink, .07), ellipse: mix(ac || TH.ink, .07), diamond: mix(ac || TH.ink, .07),

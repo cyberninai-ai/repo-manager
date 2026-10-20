@@ -116,6 +116,19 @@ Twenty-one features add their own records; each is specified in its module heade
 | `ZONE` / `ACCEPT` | `I R S` / `I R S` | open, suggest or locked; the area is the frame's own; by the frame's author or the canvas owner, who is never gated; every overlapping zone's owner must accept |
 | `RESULT` | `I Q H C K` | a signed canvas-graph result; never stored on a canvas |
 
+## Data nodes
+
+Tables, checklists, metrics, charts, formulas, dates, links and code are `NODE` kinds whose label holds the data in a readable form; their author changes the structure with a new version. Values change through four records that name the node's first version (`R`), so they survive edits. Rows and items are named by their first cell or text (`Name#2` for a repeat), never by position. Full reference: [DATA.md](DATA.md).
+
+| Action | Fields | Who · rule |
+|---|---|---|
+| `CELL` | `I R A B M` | row name, column name, value; latest `Z` per row and column wins · draw |
+| `TICK` | `I R A S` | item text, done `1` or not `0`; latest `Z` per item wins · draw |
+| `READING` | `I R V M` | a plain decimal and a note; all kept in `Z` order · draw |
+| `ROW` | `I R M` | tab-separated values: a table row or a checklist item; its author revokes it · draw |
+
+While a node is locked, values signed after the lock take no part. In a zone they are gated like any edit.
+
 `N` is reserved on every record (revoke or restore). Records marked `inherit: false` (ownership, grants, titles, deliveries, approvals, payments, meetings, identity) stay out of forks.
 
 ## Not records

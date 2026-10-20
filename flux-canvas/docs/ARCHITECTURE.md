@@ -131,6 +131,9 @@ A feature registers here and needs no edits to the core:
 | `registerPanel({ id, title, blurb, paint, click?, change? })` (ui/panels) | a side panel: one open at a time, repainted on change keeping focus and typed text | every team feature panel |
 | `STRIP` / `STRIP_ACTIONS` (ui/hub) | chips in the session strip under the title bar | silent rounds, facilitation, rituals |
 | `drawBadge(x, y, text, tone, run?)` / `screenBox(el)` (ui/panels) | clickable labels beside elements | stances, decisions, claims, zones, dependencies, what changed |
+| `NODE_KINDS[kind].layout` / `.draw` / `.fit` / `.edit` / `.svg` / `.describe` (render/nodes) | a node kind that lays itself out from its label, draws itself, grows with live data, edits and exports its own way | data nodes |
+| `registerDataKind(kind, spec)` (features/data/core) | a data node kind: layout, draw, hit areas, in-place edits, structure form, description, export lines ([DATA.md](DATA.md)) | table, checklist, metric, chart, formula, date, link, code |
+| `RECORD_TYPES[action].say(rec, target)` | what a record did, in words, for the activity log | data records |
 | `runHooks(list, …)` | calls each hook, logs and isolates failures | — |
 
 Undo for anything that isn't a plain create, move or style: push `{ kind: 'fn', undo, redo }` onto `S.hist`.
@@ -259,6 +262,16 @@ Each row is one user-facing surface, with the files that own it.
 | features/devices.js | Linked devices and guardian recovery: LINK, GUARD, RECOVER; key → person |
 | features/zones.js | Zones and suggest mode: ZONE, ACCEPT; record gate for suggestions and locked areas |
 | features/taskflow.js | Task dependencies, ready and blocked work, the critical path, loops |
+| features/data/core.js | Data nodes: CELL, TICK, READING, ROW; the derived index, shared drawing, the in-place field, the Data menu |
+| features/data/table.js | Tables: rows and columns in the label, cells and rows from anyone, totals |
+| features/data/checklist.js | Checklists: items in the label, signed ticks, items from anyone |
+| features/data/metric.js | Metrics: readings from anyone, change, target, sparkline |
+| features/data/date.js | Dates: a countdown; days from today for formulas |
+| features/data/chart.js | Charts: bars, line or donut from values or live from a table, metric or checklist |
+| features/data/formula.js | Formulas: an expression over data nodes by name, its own reader, loops reported |
+| features/data/link.js | Link cards: http(s) only, opened with one click |
+| features/data/code.js | Code snippets: line numbers, fixed width, light colours |
+| features/data/templates.js | The Project tracker template |
 | ui/toolbar.js | The tool model (select, hand, draw, eraser, rectangle, ellipse, line, sticky note, shapes, text, |
 | interaction/keyboard.js | Global keyboard map |
 | boot.js | Boot: identity, saved records, first render |

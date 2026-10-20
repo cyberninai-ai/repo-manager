@@ -25,9 +25,9 @@ function barGroups(){
     if (rs.length) g.add('color');
     if (rs.some(r => r.type === 'DRAW' || r.type === 'SHAPE' || r.type === 'ARROW')) g.add('brush');
     if (rs.some(r => r.type === 'TEXT')) g.add('text');
-    if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky')) g.add('kind');   // a sticky note is a sticky note: colour only
+    if (rs.some(r => r.type === 'NODE' && r.ek !== 'sticky' && !NODE_KINDS[r.ek]?.data)) g.add('kind');   // a sticky note is a sticky note, a table a table: colour only
     if (rs.some(r => r.type === 'NODE' && FILLABLE.has(r.ek))) g.add('nfill');
-    if (rs.some(r => r.type === 'NODE')) g.add('nsize');
+    if (rs.some(r => r.type === 'NODE' && !NODE_KINDS[r.ek]?.data)) g.add('nsize');
     return g;
   }
   for (const k of (TOOL_GROUPS[t] || '').split(' ')) if (k) g.add(k);
