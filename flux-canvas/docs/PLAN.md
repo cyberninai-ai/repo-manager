@@ -129,6 +129,13 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 - **AI-ready:** `FLOW_RESPONDERS` takes any responder; until one is connected, built-in responders fill in prompts and spark ideas.
 - **Accept:** `tests/pipes.mjs` (21 checks, two people, a stand-in AI on one side).
 
+### 18 · Code on the canvas and drop-in flows (done) · see FLOWS.md
+- **Live code:** HTML or canvas JavaScript running in sandboxed frames over the board; an editor that updates the canvas as you type, signed on demand.
+- **Code step and Results:** your JavaScript in a sealed worker (no network or storage, two-second limit); a Results node that shows a flow's output, including a rendered page.
+- **Consent:** code by someone else runs only after you choose to run it.
+- **Templates:** thirteen flows to drop in, across eight kinds of work, each running without AI.
+- **Accept:** `tests/livecode.mjs` (29 checks, two people).
+
 ### Decisions recorded
 - **Transport:** a plain WebSocket relay rather than Gun, untrusted by design because clients verify every record. WebRTC was added in phase 14 as a third transport behind the same `post()`/`onWire()` pair; codes are swapped by hand so no signalling server is needed.
 - **ES modules:** deferred. `file://` refuses them, and the shared frame state would need setters everywhere. Enforced layers give the boundary guarantee now.

@@ -673,6 +673,13 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 .fx .fl-trace > li{border:1px solid var(--line2);border-radius:10px;padding:8px 10px;display:grid;gap:4px;font-size:12.5px}
 .fx .fl-trace .hd{display:flex;align-items:center;gap:8px} .fx .fl-trace .hd b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .fx .fl-trace .hd small{color:var(--muted);white-space:nowrap}
 .fx .fl-trace ul{margin:0;padding-left:16px;display:grid;gap:2px} .fx .fl-trace .bad{color:var(--red);margin:0}
+/* live code and result pages: sandboxed frames laid over the canvas, placed and scaled with the view */
+#liveLayer{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+#liveLayer .live-frame{position:absolute;transform-origin:0 0;border:0;background:#fff;border-radius:0 0 9px 9px}
+#liveLayer .live-frame:focus-visible{outline:2px solid var(--cyan)}
+#px-livecode .lc-code{width:100%;min-height:340px;font:12.5px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace;tab-size:2;white-space:pre;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);resize:vertical}
+#px-livecode select,#px-livecode input{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink)}
+#px-livecode code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 </style>
 </head>
 <body>
@@ -991,6 +998,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
     <tr><td>Double-click a cell · Tab</td><td>Change one value in place; Tab moves to the next cell. Anyone who can draw can change cells, tick boxes, add rows and log values; each change is signed, and ⌘Z takes yours back</td></tr>
     <tr><td>Enter on a data node</td><td>Its author changes the structure: columns, items, the unit and target, the expression</td></tr>
     <tr><td>Flow · Step</td><td>Data → Flow starts a flow; with it (or the last step) selected, Data → Step adds the next one, connected. Connect notes and tables into steps; press ▶ Run. Steps pass data, respond (AI connects here) or write back</td></tr>
+    <tr><td>Live code · Results · Flow templates</td><td>Data → Live code runs HTML or JavaScript on the canvas; double-click it to edit as it runs. A Results node at the end of a flow shows what it produced, even as a web page. Data → Flow templates drops in ready-made flows for writing, coding, design, video and more</td></tr>
     <tr><td>Chart · Formula</td><td>A chart connected to a table or metric redraws as it changes; a formula names other nodes, as in [Revenue] / [Costs] or sum([Work.Days])</td></tr>
   </table>
   <h2>Keyboard only</h2>
@@ -8726,11 +8734,16 @@ function dataEdit(el, w){
 async function dataStructure(el){
   const K = DATA_KINDS[el.ek], text = await K.form(el, {}); if (text == null) return;
   const cur = current(el.cid); if (!cur) return;
-  const label = typeof text === 'string' ? text : text.label, parent = typeof text === 'string' ? cur.parent : text.parent ?? null;
-  if (label === cur.text && parent === cur.parent){ toast('Nothing changed.'); return; }
+  return dataSave(cur, typeof text === 'string' ? text : text.label, typeof text === 'string' ? cur.parent : text.parent ?? null);
+}
+// a new version of a data node in place: same spot, same size, same colour
+async function dataSave(el, label, parent = el.parent){
+  const cur = current(el.cid), K = DATA_KINDS[cur.ek];
+  if (label === cur.text && parent === cur.parent){ toast('Nothing changed.'); return null; }
   const b = box(cur), o = S.D.off.get(cur.cid) || { w: 0, h: 0 };
   const cid = await commitNode({ kind: cur.ek, x: b.x, y: b.y, W: cur.bw + o.w, H: cur.bh + o.h, label, color: ecol(cur), parent, edits: cur.cid, fill: cur.fill });
   if (cid){ S.sel = new Set([cid]); dirty = true; say(`${K.name} updated.`); }
+  return cid;
 }
 async function dataInsert(kind, at = null){
   const K = DATA_KINDS[kind]; closeMenu(false);
@@ -8814,8 +8827,9 @@ function dataSVG(el, b, n){
 const DATA_ORDER = ['table', 'checklist', 'metric', 'chart', 'formula', 'date', 'link', 'code'];
 // kinds with menu: 'flow' (features/flow) get their own heading; a kind may insert its own way (insert)
 const dataItem = k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => (DATA_KINDS[k].insert || dataInsert)(k) });
-const dataItems = () => { const flow = Object.keys(DATA_KINDS).filter(k => DATA_KINDS[k].menu === 'flow');
-  return [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(dataItem), ...(flow.length ? [{ head: 'Build a flow' }, ...flow.map(dataItem)] : [])]; };
+const DATA_MENU_EXTRA = [];   // { menu: 'flow', label, sub, icon, run }: entries that aren't a kind (the flow templates gallery)
+const dataItems = () => { const flow = [...Object.keys(DATA_KINDS).filter(k => DATA_KINDS[k].menu === 'flow').map(dataItem), ...DATA_MENU_EXTRA.filter(x => x.menu === 'flow')];
+  return [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(dataItem), ...(flow.length ? [{ head: 'Build a flow' }, ...flow] : [])]; };
 const dataBtn = $('dataBtn');
 function openData(){ openMenu(dataBtn, dataItems(), null, 'hub data'); }
 dataBtn.onclick = () => $('menu').hidden ? openData() : closeMenu();
@@ -9556,6 +9570,7 @@ const PIPE_STEPS = {};       // do → { mode: 'pass' | 'respond' | 'write', nam
 const FLOW_RESPONDERS = {};  // id → { name, builtin?, run: async ({ kind, prompt, items, count, cfg, step }) → string | string[] }: AI connects here
 const PIPE_MODES = { pass: ['Passes data', null], respond: ['Responds', 'acc'], write: ['Writes', 'good'] };
 const PIPE = { runs: new Map(), last: new Map(), logs: new Map(), focus: null };
+const PIPE_GUARDS = [];      // async (plan, flow) → false to stop a run before it starts (code by someone else: features/flow/sandbox)
 const PIPE_LIVE = new Map();  // during a run in this browser: element → { state: 'wait' | 'run' | 'ok' | 'err', out, err, ms }
 let pipeRunning = null;
 const PIPE_CAP = { steps: 60, items: 500, text: 2000, writes: 100, log: 256 * 1024 };
@@ -9638,7 +9653,8 @@ function pipeItems(el){
   if (t === 'date'){ const D = parseDate(el.text), d = dateDays(el), it = { text: `${D.title}: ${dateRel(d).toLowerCase()}`, f: { name: D.title, days: String(d ?? '') } }; if (d != null) it.n = d; return [it]; }
   if (t === 'link'){ const K = parseLink(el.text); return [{ text: [K.title, K.url, K.note].filter(Boolean).join(' — '), f: { title: K.title, url: K.url, note: K.note } }]; }
   if (t === 'code'){ const C = parseCode(el.text); return [{ text: C.lines.join('\n'), f: { language: C.lang } }]; }
-  if (t === 'chart' || t === 'flow' || t === 'frame') return [];
+  if (t === 'live'){ const C = parseCode(el.text); return [{ text: C.lines.join('\n'), f: { language: C.lang } }]; }
+  if (t === 'chart' || t === 'flow' || t === 'frame' || t === 'results') return [];   // a results node shows what reaches it and passes it on
   return el.text.trim() ? [{ text: el.text.trim() }] : [];   // a note, card, idea or shape: its words are context
 }
 
@@ -9648,6 +9664,7 @@ async function runFlow(flowEl){
   flowEl = current(flowEl.cid);
   if (pipeRunning){ toast('A flow is already running here. Wait for it to finish.'); return null; }
   const P = pipePlan(flowEl); if (P.err){ toast(P.err); if (P.at) goTo(P.at); return null; }
+  for (const g of PIPE_GUARDS) if (await g(P, flowEl) === false){ say('Run cancelled.'); return null; }
   const F = parseFlow(flowEl.text), outs = new Map(), log = [], ctx = { flow: flowEl, writes: 0, made: [] };
   pipeRunning = flowEl.cid; PIPE_LIVE.clear(); for (const c of P.order) PIPE_LIVE.set(c, { state: 'wait' }); dirty = true;
   say(`Running “${F.title}”: ${plural(P.order.length - 1, 'step')}.`);
@@ -9747,7 +9764,8 @@ pipeStep('ideas', { mode: 'respond', name: 'Ideas', blurb: 'New ideas from each 
   summary: c => `${c.count || 3} per item`,
   async run(items, c, ctx){ const R = pipeResponder(c, 'spark'), n = Math.min(10, Math.max(1, parseInt(c.count, 10) || 3));
     const r = await R.run({ kind: 'ideas', prompt: c.prompt || '', items: items.slice(0, 20), count: n, cfg: c, step: ctx.step }); return pipeLines(r).slice(0, 100).map(text => ({ text })); } });
-FLOW_RESPONDERS.echo = { name: 'Built-in: fill in the prompt', builtin: true, run: ({ prompt }) => prompt };
+// without AI: one answer is the prompt filled in (what an AI would be asked); a list is one draft line per item
+FLOW_RESPONDERS.echo = { name: 'Built-in: fill in the prompt', builtin: true, run: ({ prompt, items, cfg }) => cfg?.as === 'list' && items.length ? items.map(i => `Draft: ${i.text}`) : prompt };
 // built-in brainstorming without AI: prompts that turn each item into new angles (SCAMPER), and pairs of items combined
 const SPARK = ['What if “%” were free for the first month?', 'What could replace “%” entirely?', 'Combine “%” with something people already use daily', 'What if “%” took one click instead of many?',
   'Who else could use “%”, and how?', 'Remove one step from “%”: what breaks, what improves?', 'Do “%” in reverse order', 'Make “%” visible to the whole team', 'What would “%” look like on a phone?', 'Turn “%” into a weekly ritual'];
@@ -9788,7 +9806,8 @@ const flowText = (title, input) => [title, ...input.map(i => `- ${i}`)].join('\n
 function parseStep(text){
   const ls = String(text).split('\n'), c = { title: '', do: 'filter' }; let last = null;
   for (const l of ls){
-    const m = l.match(/^\s*([a-z]+)\s*:\s?(.*)$/i);
+    const m = l.match(/^([a-z]+)\s*:\s?(.*)$/i);
+    if (last && (last === 'prompt' || last === 'text') && /^ {2}|^$/.test(l)){ c[last] += '\n' + l.replace(/^ {2}/, ''); continue; }   // indented: more of a prompt or code
     if (m && STEP_KEYS.has(m[1].toLowerCase())){ last = m[1].toLowerCase(); c[last] = m[2].trim().slice(0, 2000); }
     else if (!c.title && !last && l.trim()) c.title = l.trim().slice(0, 120);
     else if (last && (last === 'prompt' || last === 'text')) c[last] += '\n' + l.replace(/^ {2}/, '');
@@ -9895,6 +9914,357 @@ async function stepInsert(action){
   say(`Step “${parseStep(label).title}” added${from ? ` after ${pipeTitle(from)}` : ''}. With it selected, D → Step adds the next one.`);
   return cid;
 }
+// storage, no access to the page, stopped after two seconds. Live code and result pages render in sandboxed frames laid
+// over the canvas: scripts run, but the frame has no origin (it can't read the app, its keys or its storage) and its
+// content policy blocks every network request. Code someone else wrote runs only after you choose to run it.
+// @uses features/flow/engine
+const SANDBOX_MS = 2000;
+// the worker: network and storage APIs removed before the code runs; the code is a function body over `items`
+const SANDBOX_SRC = `for (const k of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts', 'Worker', 'SharedWorker', 'BroadcastChannel', 'indexedDB', 'caches', 'WebTransport', 'navigator'])
+  try { Object.defineProperty(self, k, { value: undefined, configurable: false, writable: false }); } catch {}
+onmessage = e => { let out, err = ''; try { out = new Function('items', '"use strict";\\n' + e.data.code)(e.data.items); } catch (x) { err = String(x && x.message || x).slice(0, 300); }
+  try { postMessage({ out: JSON.parse(JSON.stringify(out === undefined ? null : out)), err }); } catch (x) { postMessage({ out: null, err: 'The result must be text, numbers, lists or plain objects' }); } };`;
+function pipeSandbox(code, items, ms = SANDBOX_MS){
+  return new Promise((res, rej) => {
+    let w; try { w = new Worker('data:text/javascript,' + encodeURIComponent(SANDBOX_SRC)); } catch { rej(new Error('Code can’t run in this browser (workers are blocked here)')); return; }
+    const t = setTimeout(() => { w.terminate(); rej(new Error(`The code ran longer than ${ms / 1000} seconds and was stopped`)); }, ms);
+    w.onmessage = e => { clearTimeout(t); w.terminate(); e.data?.err ? rej(new Error(e.data.err)) : res(e.data?.out); };
+    w.onerror = e => { clearTimeout(t); w.terminate(); e.preventDefault?.(); rej(new Error(e.message || 'The code failed')); };
+    w.postMessage({ code: String(code), items: JSON.parse(JSON.stringify(items)) });
+  });
+}
+// what code returns, as flow items: a list of items or strings, one string, or a number
+function sandboxItems(out){
+  if (out == null) return [];
+  const obj = x => pipeItem(x.text == null ? { ...x, text: Object.values(x).filter(v => v != null && typeof v !== 'object').join(' · ') } : x);   // { Plan, Price } reads as its values
+  if (Array.isArray(out)) return out.slice(0, PIPE_CAP.items).map(x => x && typeof x === 'object' ? obj(x) : typeof x === 'number' ? { text: fmtNum(x), n: x } : { text: String(x) });
+  if (typeof out === 'object') return [obj(out)];
+  return typeof out === 'number' ? [{ text: fmtNum(out), n: out }] : [{ text: String(out) }];
+}
+// code steps and live code by someone else wait for a yes, once per browser session
+const CODE_OK = new Set();
+const codeTrusted = el => !el || el.author === S.me?.id || samePerson(el.author, S.me?.id) || CODE_OK.has(dataRoot(el));
+async function trustCode(els){
+  const todo = els.filter(e => !codeTrusted(e)); if (!todo.length) return true;
+  const who = [...new Set(todo.map(e => whoName(e.author)))].join(', ');
+  const v = await formDialog('Run code written by someone else?', [{ id: 'i', type: 'info', label: `${plural(todo.length, 'code step')} here ${todo.length === 1 ? 'was' : 'were'} written by ${who}. Code runs sealed off: no network, no access to your keys, your storage or this page, and it stops after ${SANDBOX_MS / 1000} seconds.` }],
+    { ok: 'Run it', why: 'Read it first if you aren’t sure: double-click a step to see its code.' });
+  if (!v) return false;
+  for (const e of todo) CODE_OK.add(dataRoot(e)); return true;
+}
+
+/* live frames over the canvas: one per visible live-code or page node, placed and scaled with the view */
+const liveLayer = document.createElement('div'); liveLayer.id = 'liveLayer'; liveLayer.setAttribute('aria-hidden', 'false');
+document.body.insertBefore(liveLayer, document.body.firstChild?.nextSibling || null);
+const LIVE_FRAMES = new Map();   // node root → { frame, doc }
+const LIVE_MAX = 8;
+const LIVE_CSP = `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; media-src data:`;
+// a whole document from HTML, or from JavaScript drawing on a canvas the size of the frame
+function liveDoc(lang, code, w, h){
+  const body = lang === 'js' ? `<canvas id="c" width="${Math.round(w)}" height="${Math.round(h)}"></canvas><script>const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');\n${String(code).replace(/<\/script/gi, '<\\/script')}\n<\/script>` : String(code);
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${LIVE_CSP}"><style>html,body{margin:0;height:100%;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:#1d2129;background:#fff;overflow:auto}canvas{display:block}</style></head><body>${body}</body></html>`;
+}
+// sources: (el) → { lang, code, area: { x, y, w, h } relative to the node's box } or null
+const LIVE_SOURCES = [];
+function paintLiveFrames(){
+  const want = new Map(), z = S.view.zoom;
+  if (!S.histZ) for (const el of S.D.els){
+    if (el.type !== 'NODE' || !visible(el) || S.D.hidden.has(el.cid) || want.size >= LIVE_MAX) continue;
+    for (const src of LIVE_SOURCES){ const s = src(el); if (!s) continue;
+      const b = box(el), a = { x: b.x + s.area.x, y: b.y + s.area.y, w: s.area.w, h: s.area.h }, p = toScreen(a.x, a.y);
+      if (p.x > innerWidth || p.y > innerHeight || p.x + a.w * z < 0 || p.y + a.h * z < 0 || a.w * z < 24) continue;   // off screen or too small to read
+      want.set(dataRoot(el), { el, s, a, p }); }
+  }
+  for (const [k, f] of LIVE_FRAMES) if (!want.has(k)){ f.frame.remove(); LIVE_FRAMES.delete(k); }
+  for (const [k, { el, s, a, p }] of want){
+    let f = LIVE_FRAMES.get(k);
+    if (!f){ const frame = document.createElement('iframe'); frame.sandbox = 'allow-scripts'; frame.referrerPolicy = 'no-referrer'; frame.className = 'live-frame'; frame.title = `${DATA_KINDS[el.ek]?.name || 'Live'}: ${dataTitle(el)}`; liveLayer.appendChild(frame); f = { frame, doc: '' }; LIVE_FRAMES.set(k, f); }
+    const doc = liveDoc(s.lang, s.code, a.w, a.h);
+    if (doc !== f.doc){ f.doc = doc; f.frame.srcdoc = doc; }
+    const sel = S.sel.size === 1 && S.sel.has(el.cid) && !G;
+    Object.assign(f.frame.style, { left: p.x + 'px', top: p.y + 'px', width: a.w + 'px', height: a.h + 'px', transform: `scale(${z})`, pointerEvents: sel ? 'auto' : 'none' });
+    f.frame.tabIndex = sel ? 0 : -1;
+  }
+}
+RENDER_HOOKS.dom.push(paintLiveFrames);
+// JavaScript drawing on a canvas) rendered in place and edited with the canvas updating as you type; a Results node
+// that shows what reaches the end of a flow as a list, table, text, cards or a rendered page; and a Code step that runs
+// your JavaScript over the items in a sealed worker
+// @uses features/flow/engine, features/flow/nodes, features/flow/sandbox, features/data/core, features/data/code, ui/panels
+// Live code label:  Bouncing dots         Results label:  Edit decision list
+//                   ```js                                 show: list      (list, table, text, cards or page)
+//                   ctx.fillRect(…)
+//                   ```
+
+/* the Code step */
+pipeStep('code', { mode: 'pass', name: 'Run code', blurb: 'Your JavaScript over the items; what it returns flows on', fields: [
+  { id: 'text', label: 'Code: the body of a function of items', type: 'textarea', rows: 10, mono: true, value: 'return items.map(i => ({ ...i, text: i.text.toUpperCase() }));',
+    hint: 'Each item is { text, f: { field: value }, n }. Return a list, a string or a number. It runs sealed off (no network, no storage) and stops after 2 seconds.' }],
+  summary: c => (String(c.text || '').split('\n').find(l => l.trim()) || '…').trim().slice(0, 48),
+  async run(items, c){ return sandboxItems(await pipeSandbox(c.text || 'return items', items)); } });
+// a flow with code someone else wrote asks first
+PIPE_GUARDS.push(async P => trustCode(P.order.map(c => current(c) || S.records.get(c)).filter(e => e?.type === 'NODE' && (e.ek === 'step' && parseStep(e.text).do === 'code'))));
+
+/* the Results node */
+const RESULT_SHOW = [['list', 'A list'], ['table', 'A table of the fields'], ['text', 'Text'], ['cards', 'Cards'], ['page', 'A page (the items as HTML)']];
+function parseResults(text){ const ls = String(text).split('\n').map(l => l.trim()), m = ls.map(l => l.match(/^show\s*:\s*(\w+)/i)).find(Boolean); return { title: (ls.find(l => l && !/^show\s*:/i.test(l)) || 'Results').slice(0, 120), show: m && RESULT_SHOW.some(([k]) => k === m[1].toLowerCase()) ? m[1].toLowerCase() : 'list' }; }
+const resultsText = (title, show) => `${title}\nshow: ${show}`;
+const resultsOut = el => pipeOut(el)?.out || [];
+function resultsFields(items){ const ks = []; for (const i of items.slice(0, 50)) for (const k of Object.keys(i.f || {})) if (!ks.includes(k) && ks.length < 5) ks.push(k); return ks; }
+registerDataKind('results', {
+  name: 'Results', icon: 'list', glyph: '☰', menu: 'flow', blurb: 'Shows what reaches the end of a flow: a list, table, text, cards or a page', min: [300, 180],
+  label: resultsText('Results', 'list'),
+  layout(){ return { w: 380, h: 280 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const R = parseResults(el.text), o = pipeOut(el), items = o?.out || [], y0 = b.y + 36;
+    dataCard(b, accent); dataHead(b, R.title, 'RESULTS', o ? plural(items.length, 'item') : '');
+    if (!o){ fitText('Connect it at the end of a flow, then run the flow', b.x + 12, y0 + 22, b.w - 24, `500 12.5px ${FONTS.sans}`, TH.muted); return; }
+    if (o.state === 'run'){ fitText('Working…', b.x + 12, y0 + 22, b.w - 24, `500 12.5px ${FONTS.sans}`, TH.accent); return; }
+    if (!items.length){ fitText('Nothing reached it in the last run', b.x + 12, y0 + 22, b.w - 24, `500 12.5px ${FONTS.sans}`, TH.muted); return; }
+    const bottom = b.y + b.h - 22;
+    ctx.save(); ctx.beginPath(); ctx.rect(b.x + 1, y0 + 1, b.w - 2, b.h - 38); ctx.clip();
+    if (R.show === 'page'){ if (!resultsTrusted(el, o)){ rr(ctx, b.x + b.w / 2 - 110, y0 + 40, 220, 30, 15); ctx.fillStyle = TH.accent; ctx.fill(); fitText(`▶ Show the page from ${whoName(o.run.author)}’s run`, b.x + b.w / 2, y0 + 55, 210, `600 12px ${FONTS.sans}`, '#fff', 'center'); } }
+    else if (R.show === 'table'){
+      const ks = resultsFields(items), cols = ks.length ? ks : ['text'], cw = (b.w - 24) / cols.length;
+      ctx.fillStyle = TH.panel2 || TH.paper; ctx.fillRect(b.x + 1, y0, b.w - 2, 26);
+      cols.forEach((k, j) => fitText(k, b.x + 12 + j * cw, y0 + 13, cw - 8, `600 11.5px ${FONTS.sans}`, TH.muted));
+      items.forEach((it, i) => { const y = y0 + 26 + i * 24; if (y > bottom) return; ctx.beginPath(); ctx.moveTo(b.x + 1, y); ctx.lineTo(b.x + b.w - 1, y); ctx.strokeStyle = TH.line2 || TH.line; ctx.lineWidth = 1; ctx.stroke();
+        cols.forEach((k, j) => fitText(k === 'text' ? it.text : pipeField(it, k) ?? '', b.x + 12 + j * cw, y + 12, cw - 8, `400 12.5px ${FONTS.sans}`, TH.ink)); });
+    } else if (R.show === 'text'){
+      mctx.font = `400 13px ${FONTS.sans}`; let y = y0 + 18;
+      for (const it of items){ for (const line of wrapLines(it.text, b.w - 28)){ if (y > bottom) break; fitText(line, b.x + 14, y, b.w - 28, `400 13px ${FONTS.sans}`, TH.ink); y += 18; } y += 8; }
+    } else if (R.show === 'cards'){
+      const cw = 160, ch = 70, per = Math.max(1, Math.floor((b.w - 16) / (cw + 8)));
+      items.forEach((it, i) => { const x = b.x + 10 + (i % per) * (cw + 8), y = y0 + 10 + Math.floor(i / per) * (ch + 8); if (y + ch > b.y + b.h - 4) return;
+        rr(ctx, x, y, cw, ch, 8); ctx.fillStyle = tint(accent || TH.accent, .08); ctx.fill(); ctx.strokeStyle = TH.line2 || TH.line; ctx.stroke();
+        mctx.font = `500 12px ${FONTS.sans}`; wrapLines(it.text, cw - 16).slice(0, 3).forEach((l, k) => fitText(l, x + 8, y + 14 + k * 17, cw - 16, `500 12px ${FONTS.sans}`, TH.ink)); });
+    } else items.forEach((it, i) => { const y = y0 + 16 + i * 20; if (y > bottom) return; fitText((items.length > 1 ? '• ' : '') + it.text.replace(/\s+/g, ' '), b.x + 12, y, b.w - 24, `400 13px ${FONTS.sans}`, TH.ink); });
+    ctx.restore();
+    fitText(o.run ? `From ${samePerson(o.run.author, S.me?.id) ? 'your' : whoName(o.run.author) + '’s'} run, ${when(o.run.t)}` : 'Just now', b.x + 12, b.y + b.h - 12, b.w - 24, `500 11px ${FONTS.sans}`, TH.muted);
+  },
+  hit(el, w, b){ const o = pipeOut(el); return parseResults(el.text).show === 'page' && o?.out?.length && !resultsTrusted(el, o) && w.y > b.y + 36 ? { act: 'trust', press: true } : null; },
+  press(el){ const o = pipeOut(el); if (o?.run) CODE_OK.add('run:' + o.run.cid); dirty = true; },
+  others: 'It shows the last run of the flow it ends. Only its author changes how it shows it.',
+  async form(el){
+    const R = el ? parseResults(el.text) : null;
+    const v = await formDialog(el ? 'Edit results' : 'New results', [{ id: 'title', label: 'Name', type: 'text', value: R ? R.title : 'Results' },
+      { id: 'show', label: 'Show them as', type: 'select', value: R?.show || 'list', options: RESULT_SHOW, hint: 'A page renders the items as HTML in a sealed frame: a flow that writes a web page shows it here.' }],
+      { ok: el ? 'Sign the new version' : 'Add results', why: 'Connect it at the end of a flow: it shows what arrives each time the flow runs.' });
+    return v ? resultsText(v.title.trim() || 'Results', v.show) : null;
+  },
+  describe(el){ const items = resultsOut(el); return items.length ? `${plural(items.length, 'item')}: ${items.slice(0, 5).map(i => i.text.slice(0, 60)).join('; ')}` : 'nothing yet; it shows what reaches the end of a flow'; },
+  lines(el){ return resultsOut(el).slice(0, 30).map(i => i.text.replace(/\s+/g, ' ')); },
+});
+// a page from your own run, or from a run you chose to show
+const resultsTrusted = (el, o) => !o?.run || o.live || samePerson(o.run.author, S.me?.id) || CODE_OK.has('run:' + o.run.cid);
+LIVE_SOURCES.push(el => {
+  if (el.ek !== 'results' || parseResults(el.text).show !== 'page') return null;
+  const o = pipeOut(el); if (!o?.out?.length || o.state === 'run' || !resultsTrusted(el, o)) return null;
+  const b = box(el); return { lang: 'html', code: o.out.map(i => i.text).join('\n'), area: { x: 1, y: 37, w: b.w - 2, h: b.h - 54 } };
+});
+
+/* the live-code node: write code, and it runs on the canvas */
+const LIVE_DRAFT = new Map();   // root → { title, lang, code } typed in the editor, not signed yet: only this browser shows it
+const LIVE_LANGS = [['html', 'HTML, CSS and JavaScript'], ['js', 'JavaScript drawing on a canvas (canvas, ctx)']];
+const liveCode = el => { const C = parseCode(el.text), d = LIVE_DRAFT.get(dataRoot(el)); return d || { title: C.title, lang: C.lang === 'js' ? 'js' : 'html', code: C.lines.join('\n') }; };
+const LIVE_SAMPLE = `// canvas and ctx are ready; the frame is the node's size
+const dots = Array.from({ length: 24 }, (_, i) => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: Math.cos(i) * 2, vy: Math.sin(i * 1.7) * 2, r: 6 + i % 5 * 2 }));
+function frame(){
+  ctx.fillStyle = '#f7f7fb'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (const d of dots){
+    d.x += d.vx; d.y += d.vy;
+    if (d.x < d.r || d.x > canvas.width - d.r) d.vx *= -1;
+    if (d.y < d.r || d.y > canvas.height - d.r) d.vy *= -1;
+    ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fillStyle = \`hsl(\${d.r * 18} 70% 60%)\`; ctx.fill();
+  }
+  requestAnimationFrame(frame);
+}
+frame();`;
+registerDataKind('live', {
+  name: 'Live code', icon: 'code', glyph: '⟨⟩', menu: 'flow', blurb: 'Write HTML or JavaScript and see it run right on the canvas', min: [260, 160],
+  label: codeText('Live code', 'js', LIVE_SAMPLE),
+  layout(){ return { w: 420, h: 300 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const C = liveCode(el), draft = LIVE_DRAFT.has(dataRoot(el));
+    dataCard(b, accent || (draft ? TH.amber : null)); dataHead(b, C.title || 'Live code', 'LIVE CODE', draft ? 'unsigned changes' : C.lang === 'js' ? 'JavaScript' : 'HTML', draft ? TH.amber : TH.accent);
+    if (!codeTrusted(el)){ rr(ctx, b.x + b.w / 2 - 100, b.y + b.h / 2 - 15, 200, 30, 15); ctx.fillStyle = TH.accent; ctx.fill(); fitText(`▶ Run code by ${whoName(el.author)}`, b.x + b.w / 2, b.y + b.h / 2, 190, `600 12px ${FONTS.sans}`, '#fff', 'center');
+      fitText('It runs sealed off: no network, nothing of yours', b.x + b.w / 2, b.y + b.h / 2 + 30, b.w - 24, `500 11.5px ${FONTS.sans}`, TH.muted, 'center'); }
+    else { ctx.fillStyle = TH.panel2 || TH.paper; ctx.fillRect(b.x + 1, b.y + 37, b.w - 2, b.h - 38); fitText('Loading…', b.x + 12, b.y + 56, b.w - 24, `500 12px ${FONTS.sans}`, TH.muted); }
+  },
+  hit(el, w, b){ return w.y > b.y + 36 ? { act: codeTrusted(el) ? 'body' : 'trust', press: !codeTrusted(el) } : null; },
+  press(el){ CODE_OK.add(dataRoot(el)); dirty = true; say(`Running the code by ${whoName(el.author)}.`); },
+  edit(el){ if (el.author !== S.me.id){ if (!codeTrusted(el)){ CODE_OK.add(dataRoot(el)); dirty = true; } else toast('Only its author changes this code. Comment on it (M).'); return true; } openLive(el); return true; },
+  insert: async () => { closeMenu(false); const c = viewCenter(), cid = await commitNode({ kind: 'live', x: c.x - 210, y: c.y - 150, label: codeText('Live code', 'js', LIVE_SAMPLE) }); if (cid){ S.sel = new Set([cid]); openLive(current(cid)); } return cid; },
+  async form(el){ openLive(el); return null; },
+  title: text => parseCode(text).title || 'Live code',
+  describe(el){ const C = liveCode(el); return `${C.lang === 'js' ? 'JavaScript drawing on a canvas' : 'HTML'}, ${plural(C.code.split('\n').length, 'line')}, rendered in place${codeTrusted(el) ? '' : `; written by ${whoName(el.author)}, press Run to run it`}`; },
+  lines(el){ return liveCode(el).code.split('\n'); },
+});
+LIVE_SOURCES.push(el => { if (el.ek !== 'live' || !codeTrusted(el)) return null; const C = liveCode(el), b = box(el); return { lang: C.lang, code: C.code, area: { x: 1, y: 37, w: b.w - 2, h: b.h - 38 } }; });
+
+/* the editor: type, and the node on the canvas runs what you typed; sign to share it */
+const LIVE_ED = { root: null };
+const liveTarget = () => LIVE_ED.root && S.D.els.find(e => e.type === 'NODE' && e.ek === 'live' && !S.D.superseded.has(e.cid) && dataRoot(e) === LIVE_ED.root);
+function openLive(el){ LIVE_ED.root = dataRoot(el); S.sel = new Set([el.cid]); ensureVisible(el); openPanel('livecode'); setTimeout(() => document.querySelector('#px-livecode textarea')?.focus(), 30); }
+registerPanel({
+  id: 'livecode', title: 'Live code', blurb: 'Type and the node on the canvas runs it. Only you see changes until you sign them.',
+  paint(body){
+    const el = liveTarget(); if (!el){ body.innerHTML = '<p class="empty">Double-click a live-code node to edit it, or add one: Data → Live code.</p>'; return; }
+    const C = liveCode(el), draft = LIVE_DRAFT.has(dataRoot(el));
+    body.innerHTML = `<div class="row2"><label class="muted" for="lcT">Name</label><input id="lcT" data-k="lt" class="grow" value="${esc(C.title)}">
+      <label class="muted" for="lcL">Language</label><select id="lcL" data-k="ll">${LIVE_LANGS.map(([k, n]) => `<option value="${k}"${k === C.lang ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
+      <textarea id="lcC" data-k="lc" class="lc-code" rows="20" spellcheck="false" aria-label="Code">${esc(C.code)}</textarea>
+      <p class="muted">${C.lang === 'js' ? '<code>canvas</code> and <code>ctx</code> are ready, sized to the node.' : 'A whole page: HTML, &lt;style&gt; and &lt;script&gt;.'} It runs in a sealed frame with no network. Resize the node to give it room.</p>
+      <div class="acts"><button class="btn primary" data-save${draft ? '' : ' disabled'}>Sign this version</button><button class="btn" data-discard${draft ? '' : ' disabled'}>Discard changes</button><span class="pill ${draft ? 'warn' : 'good'}">${draft ? 'Unsigned changes' : 'Signed'}</span></div>`;
+  },
+  async click(e, b){
+    const el = liveTarget(); if (!el) return;
+    if (b.hasAttribute('data-discard')){ LIVE_DRAFT.delete(dataRoot(el)); paintPanel('livecode'); const t = $('lcC'); if (t) t.value = liveCode(el).code; dirty = true; return; }
+    if (b.hasAttribute('data-save')){ const d = LIVE_DRAFT.get(dataRoot(el)); if (!d) return; const cid = await dataSave(el, codeText(d.title.trim() || 'Live code', d.lang, d.code)); if (cid){ LIVE_DRAFT.delete(dataRoot(el)); toast('Signed: everyone sees this version now.'); } paintPanel('livecode'); }
+  },
+});
+let liveT = 0;
+PANELS.get('livecode').el.addEventListener('input', () => {
+  const el = liveTarget(); if (!el) return;
+  clearTimeout(liveT); liveT = setTimeout(() => {
+    const d = { title: $('lcT')?.value ?? '', lang: $('lcL')?.value === 'js' ? 'js' : 'html', code: $('lcC')?.value ?? '' }, C = parseCode(el.text);
+    if (d.code === C.lines.join('\n') && d.lang === (C.lang === 'js' ? 'js' : 'html') && d.title === C.title) LIVE_DRAFT.delete(dataRoot(el)); else LIVE_DRAFT.set(dataRoot(el), d);
+    dirty = true; const s = document.querySelector('#px-livecode .pill'); if (s){ s.className = `pill ${LIVE_DRAFT.has(dataRoot(el)) ? 'warn' : 'good'}`; s.textContent = LIVE_DRAFT.has(dataRoot(el)) ? 'Unsigned changes' : 'Signed'; }
+    document.querySelectorAll('#px-livecode [data-save],#px-livecode [data-discard]').forEach(x => x.disabled = !LIVE_DRAFT.has(dataRoot(el)));
+  }, 150);
+});
+PANELS.get('livecode').el.addEventListener('change', () => PANELS.get('livecode').el.dispatchEvent(new Event('input')));
+// research, product and meetings, placed in a free spot on the canvas you're on. Each runs as it is with the built-in
+// responders and runs better with AI connected; each is ordinary nodes, so it can be changed like anything else.
+// @uses features/flow/engine, features/flow/nodes, features/flow/output, features/data/table, features/data/code
+// A demo is a list of nodes [key, kind, x, y, label, parent key?, { color, W, H }?] and connectors [from key, to key].
+const FLOW_DEMOS = [];
+const DEMO_CATS = [['writing', 'Writing'], ['coding', 'Coding'], ['design', 'Design'], ['video', 'Video editing'], ['marketing', 'Marketing'], ['research', 'Research'], ['product', 'Product'], ['meetings', 'Meetings']];
+const demoStep = (title, cfg) => stepText(title, cfg);
+const demoX = k => k * 340;   // steps sit in a row, one every 340 units
+FLOW_DEMOS.push(
+  { id: 'blog', cat: 'writing', name: 'Blog post: outline to draft', blurb: 'Sections become headings, then a draft (AI writes it when connected)', nodes: [
+    ['f', 'flow', 0, 0, flowText('Blog post', ['Why changes should be signed', 'What a signed canvas lets you prove', 'How teams use it day to day', 'Where to start'])],
+    ['s1', 'step', demoX(1), 0, demoStep('Headings', { do: 'template', text: '## {{text}}' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('One outline', { do: 'join', with: 'lines' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('Draft it', { do: 'ask', prompt: 'Write a 400-word blog post with these sections, plain and practical:\n{{all}}', as: 'text', using: 'auto' }), 's2'],
+    ['r', 'results', demoX(4), 0, resultsText('Draft', 'text'), 's3']] },
+  { id: 'edit', cat: 'writing', name: 'Editing pass: long sentences', blurb: 'Splits a draft into sentences and lists the ones over 20 words', nodes: [
+    ['f', 'flow', 0, 0, flowText('Editing pass', [])],
+    ['n', 'sticky', 0, 150, 'We built the canvas so that every change anyone makes is signed with their key and stored as a record, which means that months later you can still prove who changed what and when, without trusting a server. It is simple. Try it with your team this week, and tell us what breaks.', null, { W: 300, H: 220 }],
+    ['s1', 'step', demoX(1), 0, demoStep('Sentences', { do: 'split', by: 'sentences' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('Over 20 words', { do: 'code', text: 'return items\n  .map(i => ({ ...i, n: i.text.split(/\\s+/).length }))\n  .filter(i => i.n > 20)\n  .map(i => ({ ...i, text: `${i.n} words: ${i.text}` }));' }), 's1'],
+    ['r', 'results', demoX(3), 0, resultsText('Sentences to shorten', 'list'), 's2']], arrows: [['n', 's1']] },
+  { id: 'landing', cat: 'coding', name: 'Landing page builder', blurb: 'A table of sections, code that writes the HTML, and the page rendered on the canvas', nodes: [
+    ['f', 'flow', 0, 0, flowText('Landing page', [])],
+    ['t', 'table', 0, 150, tableText('Sections', ['Heading', 'Text'], [['Every change, signed', 'A canvas where each edit carries its author’s signature.'], ['Work together live', 'Peer to peer, no server needed.'], ['Prove what was approved', 'Deliver a version and get a proof anyone can check.']])],
+    ['s1', 'step', demoX(1), 0, demoStep('Write the HTML', { do: 'code', text: 'const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));\nconst css = "body{font-family:system-ui;margin:0;color:#1d2129}header{background:#5b54e8;color:#fff;padding:28px}section{padding:16px 28px;border-bottom:1px solid #eee}h2{margin:0 0 4px;font-size:18px}p{margin:0;color:#555}";\nreturn `<style>${css}</style><header><h1>Flux Canvas</h1></header>` + items.map(i => `<section><h2>${esc(i.f.Heading)}</h2><p>${esc(i.f.Text)}</p></section>`).join("");' }), 'f'],
+    ['r', 'results', demoX(2), 0, resultsText('Preview', 'page'), 's1', { W: 420, H: 360 }]], arrows: [['t', 's1']] },
+  { id: 'tests', cat: 'coding', name: 'Spec to test plan', blurb: 'High-priority requirements become test cases on a checklist', nodes: [
+    ['f', 'flow', 0, 0, flowText('Test plan', [])],
+    ['t', 'table', 0, 150, tableText('Spec', ['Requirement', 'Priority'], [['user can sign up with email', 'High'], ['user can reset a password', 'High'], ['admin can export users', 'Low'], ['session expires after 30 days', 'High']])],
+    ['s1', 'step', demoX(1), 0, demoStep('High priority', { do: 'filter', where: 'Priority = High' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('As test names', { do: 'template', text: 'it(\'{{Requirement}}\')' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('Onto the checklist', { do: 'items', into: 'Test cases' }), 's2'],
+    ['c', 'checklist', demoX(4), 0, checklistText('Test cases', [])]], arrows: [['t', 's1']] },
+  { id: 'sketch', cat: 'coding', name: 'Live code sketches', blurb: 'Two pieces of code running on the canvas: an animation and a small app', nodes: [
+    ['a', 'live', 0, 0, codeText('Bouncing dots', 'js', LIVE_SAMPLE), null, { W: 420, H: 300 }],
+    ['b', 'live', 460, 0, codeText('Counter', 'html', '<style>body{display:grid;place-items:center;height:100vh;font-family:system-ui}button{font-size:18px;padding:10px 18px;border-radius:10px;border:0;background:#5b54e8;color:#fff}</style>\n<div><p id="n">Clicked 0 times</p><button id="b">Click me</button></div>\n<script>let n = 0; document.getElementById("b").onclick = () => document.getElementById("n").textContent = `Clicked ${++n} times`;<\/script>'), null, { W: 320, H: 300 }]] },
+  { id: 'palette', cat: 'design', name: 'Palette from brand colours', blurb: 'Brand colours in a table become swatches with tints, rendered as a page', nodes: [
+    ['f', 'flow', 0, 0, flowText('Palette', [])],
+    ['t', 'table', 0, 150, tableText('Brand colours', ['Name', 'Hex'], [['Indigo', '#5b54e8'], ['Coral', '#e8590c'], ['Mint', '#2f9e44'], ['Ink', '#1d2129']])],
+    ['s1', 'step', demoX(1), 0, demoStep('Swatches', { do: 'code', text: 'const mix = (h, t) => { const n = parseInt(h.slice(1), 16), c = [n >> 16, n >> 8 & 255, n & 255].map(v => Math.round(v + (255 - v) * t)); return `rgb(${c})`; };\nreturn "<style>body{font-family:system-ui;margin:12px}.row{display:flex;gap:6px;margin-bottom:10px;align-items:center}.s{width:44px;height:44px;border-radius:8px}b{width:70px;font-size:13px}</style>" +\n  items.map(i => `<div class=row><b>${i.f.Name}</b>${[0, .25, .5, .75].map(t => `<div class=s style="background:${mix(i.f.Hex, t)}"></div>`).join("")}</div>`).join("");' }), 'f'],
+    ['r', 'results', demoX(2), 0, resultsText('Palette', 'page'), 's1', { W: 380, H: 300 }]], arrows: [['t', 's1']] },
+  { id: 'critique', cat: 'design', name: 'Design critique to ideas', blurb: 'Feedback notes, split and de-duplicated, spark ideas onto new notes', nodes: [
+    ['f', 'flow', 0, 0, flowText('Critique', [])],
+    ['n1', 'sticky', 0, 150, 'Navigation is hard to find\nToo many colours on the home page', null, { color: 'pink' }],
+    ['n2', 'sticky', 190, 150, 'Buttons look disabled\nNavigation is hard to find', null, { color: 'pink' }],
+    ['s1', 'step', demoX(1), 0, demoStep('One per line', { do: 'split', by: 'lines' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('No repeats', { do: 'unique' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('Ideas', { do: 'ideas', count: '1', using: 'auto' }), 's2'],
+    ['s4', 'step', demoX(4), 0, demoStep('On notes', { do: 'notes', color: 'violet', max: '8' }), 's3']], arrows: [['n1', 's1'], ['n2', 's1']] },
+  { id: 'edl', cat: 'video', name: 'Edit decision list', blurb: 'Rated clips in, the best in order with running timecodes out', nodes: [
+    ['f', 'flow', 0, 0, flowText('Rough cut', [])],
+    ['t', 'table', 0, 150, tableText('Footage', ['Clip', 'Seconds', 'Rating'], [['Opening drone shot', '8', '5'], ['Interview A, take 2', '24', '4'], ['B-roll office', '12', '2'], ['Interview B, take 1', '18', '5'], ['Product close-up', '6', '4']])],
+    ['s1', 'step', demoX(1), 0, demoStep('Rated 4 or more', { do: 'filter', where: 'Rating >= 4' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('Best first', { do: 'sort', by: 'Rating', order: 'desc' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('Timecodes', { do: 'code', text: 'let t = 0;\nconst tc = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;\nreturn items.map(i => { const len = Number(i.f.Seconds) || 0, from = t; t += len;\n  return { text: `${tc(from)} to ${tc(t)}  ${i.text}`, f: { In: tc(from), Out: tc(t), Clip: i.text }, n: len }; });' }), 's2'],
+    ['r', 'results', demoX(4), 0, resultsText('Edit decision list', 'table'), 's3']], arrows: [['t', 's1']] },
+  { id: 'shots', cat: 'video', name: 'Script to shot list', blurb: 'A script becomes numbered shots with a time estimate for each', nodes: [
+    ['f', 'flow', 0, 0, flowText('Shot list', [])],
+    ['n', 'sticky', 0, 150, 'A team opens a blank canvas. Ana sketches the plan. Ben joins from his phone and adds three ideas. They vote, decide, and ship it before lunch.', null, { W: 300, H: 200 }],
+    ['s1', 'step', demoX(1), 0, demoStep('Sentences', { do: 'split', by: 'sentences' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('Number and time them', { do: 'code', text: 'return items.map((i, k) => {\n  const secs = Math.max(2, Math.round(i.text.split(/\\s+/).length / 2.5));\n  return { text: `Shot ${k + 1}, ${secs}s: ${i.text}`, f: { Shot: String(k + 1), Seconds: String(secs), Action: i.text }, n: secs };\n});' }), 's1'],
+    ['r', 'results', demoX(3), 0, resultsText('Shots', 'table'), 's2']], arrows: [['n', 's1']] },
+  { id: 'launch', cat: 'marketing', name: 'Launch posts', blurb: 'Features and benefits become post drafts on notes (AI writes them when connected)', nodes: [
+    ['f', 'flow', 0, 0, flowText('Launch posts', [])],
+    ['t', 'table', 0, 150, tableText('Features', ['Feature', 'Benefit'], [['Signed changes', 'prove who did what'], ['Live together', 'no server to set up'], ['Flows', 'turn ideas into results in one click']])],
+    ['s1', 'step', demoX(1), 0, demoStep('Feature and benefit', { do: 'template', text: '{{Feature}}: {{Benefit}}' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('Write posts', { do: 'ask', prompt: 'Write one short launch post per line, one for each:\n{{all}}', as: 'list', using: 'auto' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('On notes', { do: 'notes', color: 'blue', max: '6' }), 's2']], arrows: [['t', 's1']] },
+  { id: 'synthesis', cat: 'research', name: 'Interview synthesis', blurb: 'Tagged quotes grouped into themes, counted and ranked', nodes: [
+    ['f', 'flow', 0, 0, flowText('Synthesis', [])],
+    ['t', 'table', 0, 150, tableText('Quotes', ['Quote', 'Theme'], [['I never know who changed the plan', 'Trust'], ['Setting up the tool took a day', 'Onboarding'], ['We argue about what was agreed', 'Trust'], ['I gave up during signup', 'Onboarding'], ['Exports are fine', 'Export'], ['Approvals get lost in chat', 'Trust']])],
+    ['s1', 'step', demoX(1), 0, demoStep('Group by theme', { do: 'code', text: 'const g = {};\nfor (const i of items) (g[i.f.Theme] ||= []).push(i.text);\nreturn Object.entries(g).sort((a, b) => b[1].length - a[1].length)\n  .map(([theme, qs]) => ({ text: theme, f: { Theme: theme, Quotes: String(qs.length), Example: qs[0] }, n: qs.length }));' }), 'f'],
+    ['r', 'results', demoX(2), 0, resultsText('Themes', 'table'), 's1', { W: 420, H: 240 }]], arrows: [['t', 's1']] },
+  { id: 'rice', cat: 'product', name: 'Prioritise with RICE', blurb: 'Reach, impact, confidence and effort scored; the top three go to the next sprint', nodes: [
+    ['f', 'flow', 0, 0, flowText('Prioritise', [])],
+    ['t', 'table', 0, 150, tableText('Ideas', ['Idea', 'Reach', 'Impact', 'Confidence', 'Effort'], [['Shorter signup', '800', '2', '80', '2'], ['Dark mode', '300', '1', '90', '3'], ['Templates gallery', '600', '2', '70', '4'], ['Offline mode', '200', '3', '50', '8'], ['Slack alerts', '500', '1', '80', '1']])],
+    ['s1', 'step', demoX(1), 0, demoStep('RICE score', { do: 'code', text: 'return items.map(i => {\n  const f = i.f, score = Math.round(f.Reach * f.Impact * f.Confidence / 100 / f.Effort);\n  return { ...i, text: `${i.text} (RICE ${score})`, f: { ...f, RICE: String(score) }, n: score };\n});' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('Highest first', { do: 'sort', by: 'RICE', order: 'desc' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('Top three', { do: 'take', count: '3' }), 's2'],
+    ['s4', 'step', demoX(4), 0, demoStep('Into the sprint', { do: 'items', into: 'Next sprint' }), 's3'],
+    ['c', 'checklist', demoX(5), 0, checklistText('Next sprint', [])]], arrows: [['t', 's1']] },
+  { id: 'actions', cat: 'meetings', name: 'Meeting notes to actions', blurb: 'Lines that start with “Action:” become a checklist', nodes: [
+    ['f', 'flow', 0, 0, flowText('Actions', [])],
+    ['n', 'sticky', 0, 150, 'Decision: ship on the 15th\nAction: Ana drafts the announcement\nAction: Ben fixes the signup bug\nNote: pricing stays the same\nAction: Chen books the demo', null, { W: 300, H: 200 }],
+    ['s1', 'step', demoX(1), 0, demoStep('Lines', { do: 'split', by: 'lines' }), 'f'],
+    ['s2', 'step', demoX(2), 0, demoStep('Actions only', { do: 'filter', where: 'text contains action:' }), 's1'],
+    ['s3', 'step', demoX(3), 0, demoStep('Tidy', { do: 'code', text: 'return items.map(i => i.text.replace(/^action:\\s*/i, ""));' }), 's2'],
+    ['s4', 'step', demoX(4), 0, demoStep('Onto the list', { do: 'items', into: 'Action items' }), 's3'],
+    ['c', 'checklist', demoX(5), 0, checklistText('Action items', [])]], arrows: [['n', 's1']] },
+);
+// the box a demo will take, before anything is signed
+function demoBox(d){ let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [, kind, x, y, label, , o] of d.nodes){ const L = nodeLayout(kind, label, o?.W || 0, o?.H || 0); x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + L.w); y1 = Math.max(y1, y + L.h); }
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; }
+// somewhere free: where you're looking if it's empty, otherwise below everything already on the canvas
+function demoSpot(bb){
+  const c = viewCenter(), at = { x: Math.round(c.x - bb.w / 2), y: Math.round(c.y - bb.h / 2) }, r = { x: at.x - 40, y: at.y - 40, w: bb.w + 80, h: bb.h + 80 };
+  const boxes = S.D.els.filter(e => visible(e) && !S.D.hidden.has(e.cid) && e.type !== 'ARROW').map(box).filter(Boolean);
+  if (!boxes.some(b => b.x < r.x + r.w && r.x < b.x + b.w && b.y < r.y + r.h && r.y < b.y + b.h)) return at;
+  return { x: Math.round(Math.min(...boxes.map(b => b.x))), y: Math.round(Math.max(...boxes.map(b => b.y + b.h)) + 160) };
+}
+async function dropDemo(id){
+  const d = FLOW_DEMOS.find(x => x.id === id); if (!d) return null; closeMenu(false);
+  const bb = demoBox(d), at = demoSpot(bb), keys = new Map(), made = [];
+  await bulk(async () => {
+    for (const [k, kind, x, y, label, parent, o] of d.nodes){
+      const cid = await commitNode({ kind, x: at.x + x - bb.x, y: at.y + y - bb.y, label, parent: parent ? keys.get(parent) : null, color: o?.color || 'ink', W: o?.W || 0, H: o?.H || 0 });
+      if (cid){ keys.set(k, cid); made.push(cid); }
+    }
+  });
+  await new Promise(r => setTimeout(r, 0));
+  for (const [a, b] of d.arrows || []){ const A = current(keys.get(a)), B = current(keys.get(b)); if (A && B){ const c = await commitArrow(A, B); if (c) made.push(c); } }
+  await new Promise(r => setTimeout(r, 0));
+  // show all of it
+  const z = Math.max(.25, Math.min(1, (innerWidth - 120) / (bb.w + 120), (innerHeight - 220) / (bb.h + 120)));
+  S.view = { zoom: z, x: at.x + bb.w / 2 - innerWidth / 2 / z, y: at.y + bb.h / 2 - innerHeight / 2 / z };
+  const flow = d.nodes.find(n => n[1] === 'flow');
+  S.sel = new Set(flow ? [current(keys.get(flow[0]))?.cid].filter(Boolean) : made.slice(0, 1)); dirty = true;
+  toast(`${d.name} dropped in.${flow ? ' Press ▶ Run on the flow.' : ''}`); say(`${d.name}: ${d.blurb}. ${flow ? 'The flow is selected; press its Run button to run it.' : ''}`);
+  return { keys, made };
+}
+// the gallery: Data → Flow templates, the Flows panel, and the palette
+function demoMenu(){
+  const items = [];
+  for (const [cat, title] of DEMO_CATS){ const ds = FLOW_DEMOS.filter(d => d.cat === cat); if (!ds.length) continue; items.push({ head: title }); for (const d of ds) items.push({ label: d.name, sub: d.blurb, icon: d.nodes.some(n => n[1] === 'live') ? 'code' : 'pipe', run: () => dropDemo(d.id) }); }
+  openMenu(dataBtn, items, null, 'hub data');
+}
+DATA_MENU_EXTRA.push({ menu: 'flow', label: 'Flow templates…', sub: 'Ready-to-run flows for writing, coding, design, video and more', icon: 'hub', run: demoMenu });
+PALETTE_HOOKS.push(add => { for (const d of FLOW_DEMOS) add('data', `Drop in flow: ${d.name}`, () => dropDemo(d.id)); });
 // the canvas, the palette, and a template that brainstorms with a flow
 // @uses features/flow/engine, features/flow/nodes, ui/panels, ui/hub
 const flowsHereNow = () => S.D.els.filter(e => e.type === 'NODE' && e.ek === 'flow' && visible(e) && !S.D.hidden.has(e.cid) && !S.D.superseded.has(e.cid));

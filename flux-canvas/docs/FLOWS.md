@@ -35,6 +35,42 @@ Each item is `{ text, f: { field: value }, n }`:
 
 Steps name fields by column name, case-insensitive: `Votes >= 4`, `sort by Price`, `{{Plan}} costs {{Price}}`. `text` and `value` always work.
 
+## Flow templates: drop one in
+
+Data → *Build a flow* → **Flow templates…** opens a gallery of ready-to-run flows, grouped by kind of work. The palette lists them too (⌘K → "Drop in flow"). Each one is placed in a free spot on the canvas you're on: where you're looking if that's empty, otherwise below your work. The view moves to show it, with the flow selected so you can press ▶ Run. They are ordinary nodes, so you can change any of them.
+
+| Kind of work | Flows |
+|---|---|
+| Writing | **Blog post: outline to draft** (headings, then a draft; AI writes it) · **Editing pass** (lists sentences over 20 words) |
+| Coding | **Landing page builder** (a table of sections, code that writes HTML, the page rendered on the canvas) · **Spec to test plan** (high-priority requirements onto a test checklist) · **Live code sketches** (an animation and a small app running on the canvas) |
+| Design | **Palette from brand colours** (swatches with tints, rendered) · **Design critique to ideas** (feedback split, de-duplicated, ideas on notes) |
+| Video editing | **Edit decision list** (best-rated clips in order with running timecodes) · **Script to shot list** (numbered shots with time estimates) |
+| Marketing | **Launch posts** (features and benefits to post drafts on notes) |
+| Research | **Interview synthesis** (tagged quotes grouped into ranked themes) |
+| Product | **Prioritise with RICE** (scored, sorted, top three into the next sprint) |
+| Meetings | **Meeting notes to actions** (lines starting "Action:" onto a checklist) |
+
+Every one runs without AI. The responding steps use the built-in responders until AI is connected, then use it.
+
+## Code on the canvas
+
+- **Live code** (Data → Live code): write HTML, CSS and JavaScript, or JavaScript that draws on a canvas (`canvas` and `ctx` are ready, sized to the node), and it runs right on the board.
+  - Double-click it to open the editor beside it. The node updates as you type.
+  - Your changes are unsigned, and only you see them, until you press **Sign this version**.
+  - Resize the node to give the code room. Select it to interact with what it shows (click buttons, scroll).
+- **Run code step** (`do: code`): the body of a function of `items`; what it returns flows on. Return a list of items or strings, one string, or a number.
+- **Results** (`results` node): put it at the end of a flow. It shows what arrives as a list, a table of the fields, text, cards, or a **page**. A page renders the items as HTML, so a flow that writes a web page shows that page on the canvas.
+
+### Safety
+
+- **Flow code** runs in a sealed worker. It has no network (`fetch`, `XMLHttpRequest` and `WebSocket` are removed), no storage, and no access to the page, and it is stopped after two seconds.
+- **Live code and result pages** render in frames with `sandbox="allow-scripts"`, which gives them no origin, so they can't read the app, your keys or your storage. A content policy (`default-src 'none'`) blocks every network request from inside.
+- **Code someone else wrote never runs by itself:**
+  - their live code shows "▶ Run code by Ben" until you click it;
+  - a flow containing their code steps asks first and names them; *Cancel* means nothing runs;
+  - a page from their run waits for a click.
+  - The choice lasts for the browser session.
+
 ## Connecting AI
 
 A responder is one function. Register it and every *Ask* and *Ideas* step set to "Automatic" uses it in place of the built-in one:
@@ -91,6 +127,17 @@ The modules are:
 
 - `flow/engine.js`: the graph, the run, the steps, the responders and `RUN`;
 - `flow/nodes.js`: the Flow and Step nodes, and adding steps;
+- `flow/sandbox.js`: the sealed worker, the live frames and the consent to run others' code;
+- `flow/output.js`: the Code step, the Results node, the live-code node and its editor;
+- `flow/demos.js`: the drop-in flows (`FLOW_DEMOS`: nodes as `[key, kind, x, y, label, parent?, options?]` plus connectors), the gallery and `dropDemo(id)`;
 - `flow/panel.js`: the panel, the live view, the palette and the template.
+
+`tests/livecode.mjs` (29 checks, two people) covers:
+- the live editor updating the canvas as you type, and signing;
+- Ben clicking before Ana's code runs;
+- the Code step, including a runaway loop and blocked network and storage;
+- asking before running someone else's code, where "no" means no run;
+- every demo flow dropping in and running without errors;
+- the landing page rendered on the canvas, which Ben sees only once he asks.
 
 Tests: `tests/pipes.mjs` runs two people over WebRTC, with a stand-in AI on one side only (21 checks). It covers building a flow through the menus, a table feeding a step, one click on Run, and that the filter only passes data. It also checks that the AI responds and writes rows, that the other person sees the identical responses without AI, and that their own run uses the built-in responders. Finally it covers a missing responder, a loop, and a hostile run log.

@@ -13,7 +13,8 @@ const flowText = (title, input) => [title, ...input.map(i => `- ${i}`)].join('\n
 function parseStep(text){
   const ls = String(text).split('\n'), c = { title: '', do: 'filter' }; let last = null;
   for (const l of ls){
-    const m = l.match(/^\s*([a-z]+)\s*:\s?(.*)$/i);
+    const m = l.match(/^([a-z]+)\s*:\s?(.*)$/i);
+    if (last && (last === 'prompt' || last === 'text') && /^ {2}|^$/.test(l)){ c[last] += '\n' + l.replace(/^ {2}/, ''); continue; }   // indented: more of a prompt or code
     if (m && STEP_KEYS.has(m[1].toLowerCase())){ last = m[1].toLowerCase(); c[last] = m[2].trim().slice(0, 2000); }
     else if (!c.title && !last && l.trim()) c.title = l.trim().slice(0, 120);
     else if (last && (last === 'prompt' || last === 'text')) c[last] += '\n' + l.replace(/^ {2}/, '');

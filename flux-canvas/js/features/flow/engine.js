@@ -13,6 +13,7 @@ const PIPE_STEPS = {};       // do → { mode: 'pass' | 'respond' | 'write', nam
 const FLOW_RESPONDERS = {};  // id → { name, builtin?, run: async ({ kind, prompt, items, count, cfg, step }) → string | string[] }: AI connects here
 const PIPE_MODES = { pass: ['Passes data', null], respond: ['Responds', 'acc'], write: ['Writes', 'good'] };
 const PIPE = { runs: new Map(), last: new Map(), logs: new Map(), focus: null };
+const PIPE_GUARDS = [];      // async (plan, flow) → false to stop a run before it starts (code by someone else: features/flow/sandbox)
 const PIPE_LIVE = new Map();  // during a run in this browser: element → { state: 'wait' | 'run' | 'ok' | 'err', out, err, ms }
 let pipeRunning = null;
 const PIPE_CAP = { steps: 60, items: 500, text: 2000, writes: 100, log: 256 * 1024 };
@@ -95,7 +96,8 @@ function pipeItems(el){
   if (t === 'date'){ const D = parseDate(el.text), d = dateDays(el), it = { text: `${D.title}: ${dateRel(d).toLowerCase()}`, f: { name: D.title, days: String(d ?? '') } }; if (d != null) it.n = d; return [it]; }
   if (t === 'link'){ const K = parseLink(el.text); return [{ text: [K.title, K.url, K.note].filter(Boolean).join(' — '), f: { title: K.title, url: K.url, note: K.note } }]; }
   if (t === 'code'){ const C = parseCode(el.text); return [{ text: C.lines.join('\n'), f: { language: C.lang } }]; }
-  if (t === 'chart' || t === 'flow' || t === 'frame') return [];
+  if (t === 'live'){ const C = parseCode(el.text); return [{ text: C.lines.join('\n'), f: { language: C.lang } }]; }
+  if (t === 'chart' || t === 'flow' || t === 'frame' || t === 'results') return [];   // a results node shows what reaches it and passes it on
   return el.text.trim() ? [{ text: el.text.trim() }] : [];   // a note, card, idea or shape: its words are context
 }
 
@@ -105,6 +107,7 @@ async function runFlow(flowEl){
   flowEl = current(flowEl.cid);
   if (pipeRunning){ toast('A flow is already running here. Wait for it to finish.'); return null; }
   const P = pipePlan(flowEl); if (P.err){ toast(P.err); if (P.at) goTo(P.at); return null; }
+  for (const g of PIPE_GUARDS) if (await g(P, flowEl) === false){ say('Run cancelled.'); return null; }
   const F = parseFlow(flowEl.text), outs = new Map(), log = [], ctx = { flow: flowEl, writes: 0, made: [] };
   pipeRunning = flowEl.cid; PIPE_LIVE.clear(); for (const c of P.order) PIPE_LIVE.set(c, { state: 'wait' }); dirty = true;
   say(`Running “${F.title}”: ${plural(P.order.length - 1, 'step')}.`);
@@ -204,7 +207,8 @@ pipeStep('ideas', { mode: 'respond', name: 'Ideas', blurb: 'New ideas from each 
   summary: c => `${c.count || 3} per item`,
   async run(items, c, ctx){ const R = pipeResponder(c, 'spark'), n = Math.min(10, Math.max(1, parseInt(c.count, 10) || 3));
     const r = await R.run({ kind: 'ideas', prompt: c.prompt || '', items: items.slice(0, 20), count: n, cfg: c, step: ctx.step }); return pipeLines(r).slice(0, 100).map(text => ({ text })); } });
-FLOW_RESPONDERS.echo = { name: 'Built-in: fill in the prompt', builtin: true, run: ({ prompt }) => prompt };
+// without AI: one answer is the prompt filled in (what an AI would be asked); a list is one draft line per item
+FLOW_RESPONDERS.echo = { name: 'Built-in: fill in the prompt', builtin: true, run: ({ prompt, items, cfg }) => cfg?.as === 'list' && items.length ? items.map(i => `Draft: ${i.text}`) : prompt };
 // built-in brainstorming without AI: prompts that turn each item into new angles (SCAMPER), and pairs of items combined
 const SPARK = ['What if “%” were free for the first month?', 'What could replace “%” entirely?', 'Combine “%” with something people already use daily', 'What if “%” took one click instead of many?',
   'Who else could use “%”, and how?', 'Remove one step from “%”: what breaks, what improves?', 'Do “%” in reverse order', 'Make “%” visible to the whole team', 'What would “%” look like on a phone?', 'Turn “%” into a weekly ritual'];

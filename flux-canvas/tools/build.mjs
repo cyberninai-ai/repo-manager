@@ -28,7 +28,8 @@ for (const l of src){
 }
 if (cssAt < 0 || jsAt < 0) throw new Error('index.html has no stylesheet or script tags');
 html[cssAt] = `<style>\n${css.join('\n')}\n</style>`;
-html[jsAt] = `<script>\n'use strict';\n${js.join('\n')}\n</script>`;
+// a literal "</script" inside the code (HTML a feature writes into a frame) would end the inlined script early
+html[jsAt] = `<script>\n'use strict';\n${js.join('\n').replace(/<\/script/gi, '<\\/script')}\n</script>`;
 const bundle = html.join('\n');
 
 if (process.argv.includes('--check')){

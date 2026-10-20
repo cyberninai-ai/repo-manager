@@ -145,11 +145,16 @@ function dataEdit(el, w){
 async function dataStructure(el){
   const K = DATA_KINDS[el.ek], text = await K.form(el, {}); if (text == null) return;
   const cur = current(el.cid); if (!cur) return;
-  const label = typeof text === 'string' ? text : text.label, parent = typeof text === 'string' ? cur.parent : text.parent ?? null;
-  if (label === cur.text && parent === cur.parent){ toast('Nothing changed.'); return; }
+  return dataSave(cur, typeof text === 'string' ? text : text.label, typeof text === 'string' ? cur.parent : text.parent ?? null);
+}
+// a new version of a data node in place: same spot, same size, same colour
+async function dataSave(el, label, parent = el.parent){
+  const cur = current(el.cid), K = DATA_KINDS[cur.ek];
+  if (label === cur.text && parent === cur.parent){ toast('Nothing changed.'); return null; }
   const b = box(cur), o = S.D.off.get(cur.cid) || { w: 0, h: 0 };
   const cid = await commitNode({ kind: cur.ek, x: b.x, y: b.y, W: cur.bw + o.w, H: cur.bh + o.h, label, color: ecol(cur), parent, edits: cur.cid, fill: cur.fill });
   if (cid){ S.sel = new Set([cid]); dirty = true; say(`${K.name} updated.`); }
+  return cid;
 }
 async function dataInsert(kind, at = null){
   const K = DATA_KINDS[kind]; closeMenu(false);
@@ -233,8 +238,9 @@ function dataSVG(el, b, n){
 const DATA_ORDER = ['table', 'checklist', 'metric', 'chart', 'formula', 'date', 'link', 'code'];
 // kinds with menu: 'flow' (features/flow) get their own heading; a kind may insert its own way (insert)
 const dataItem = k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => (DATA_KINDS[k].insert || dataInsert)(k) });
-const dataItems = () => { const flow = Object.keys(DATA_KINDS).filter(k => DATA_KINDS[k].menu === 'flow');
-  return [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(dataItem), ...(flow.length ? [{ head: 'Build a flow' }, ...flow.map(dataItem)] : [])]; };
+const DATA_MENU_EXTRA = [];   // { menu: 'flow', label, sub, icon, run }: entries that aren't a kind (the flow templates gallery)
+const dataItems = () => { const flow = [...Object.keys(DATA_KINDS).filter(k => DATA_KINDS[k].menu === 'flow').map(dataItem), ...DATA_MENU_EXTRA.filter(x => x.menu === 'flow')];
+  return [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(dataItem), ...(flow.length ? [{ head: 'Build a flow' }, ...flow] : [])]; };
 const dataBtn = $('dataBtn');
 function openData(){ openMenu(dataBtn, dataItems(), null, 'hub data'); }
 dataBtn.onclick = () => $('menu').hidden ? openData() : closeMenu();

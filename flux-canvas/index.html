@@ -336,6 +336,7 @@
     <tr><td>Double-click a cell · Tab</td><td>Change one value in place; Tab moves to the next cell. Anyone who can draw can change cells, tick boxes, add rows and log values; each change is signed, and ⌘Z takes yours back</td></tr>
     <tr><td>Enter on a data node</td><td>Its author changes the structure: columns, items, the unit and target, the expression</td></tr>
     <tr><td>Flow · Step</td><td>Data → Flow starts a flow; with it (or the last step) selected, Data → Step adds the next one, connected. Connect notes and tables into steps; press ▶ Run. Steps pass data, respond (AI connects here) or write back</td></tr>
+    <tr><td>Live code · Results · Flow templates</td><td>Data → Live code runs HTML or JavaScript on the canvas; double-click it to edit as it runs. A Results node at the end of a flow shows what it produced, even as a web page. Data → Flow templates drops in ready-made flows for writing, coding, design, video and more</td></tr>
     <tr><td>Chart · Formula</td><td>A chart connected to a table or metric redraws as it changes; a formula names other nodes, as in [Revenue] / [Costs] or sum([Work.Days])</td></tr>
   </table>
   <h2>Keyboard only</h2>
@@ -496,6 +497,9 @@
 <script src="js/features/data/templates.js"></script>
 <script src="js/features/flow/engine.js"></script>
 <script src="js/features/flow/nodes.js"></script>
+<script src="js/features/flow/sandbox.js"></script>
+<script src="js/features/flow/output.js"></script>
+<script src="js/features/flow/demos.js"></script>
 <script src="js/features/flow/panel.js"></script>
 <script src="js/ui/toolbar.js"></script>
 <script src="js/interaction/keyboard.js"></script>

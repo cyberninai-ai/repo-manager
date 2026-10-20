@@ -275,6 +275,9 @@ Each row is one user-facing surface, with the files that own it.
 | features/data/templates.js | The Project tracker template |
 | features/flow/engine.js | Flows: the graph and run order, the steps (pass, respond, write), responders (where AI connects), RUN and its log |
 | features/flow/nodes.js | The Flow node (Run button) and the Step node; adding a step connected to the last |
+| features/flow/sandbox.js | Running code safely: a sealed worker for Code steps, sandboxed frames over the canvas, asking before others' code runs |
+| features/flow/output.js | The Code step, the Results node (list, table, text, cards, page), the live-code node and its editor |
+| features/flow/demos.js | Drop-in flows for writing, coding, design, video, marketing, research, product and meetings |
 | features/flow/panel.js | The Flows panel, the live view of a run, palette commands, the Brainstorm flow template |
 | ui/toolbar.js | The tool model (select, hand, draw, eraser, rectangle, ellipse, line, sticky note, shapes, text, |
 | interaction/keyboard.js | Global keyboard map |
