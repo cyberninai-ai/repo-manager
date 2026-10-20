@@ -120,20 +120,43 @@ function commitKb(){
   if (g.dy) parts.push(`${Math.abs(g.dy)} ${g.dy < 0 ? 'up' : 'down'}`);
   say(`Moved ${g.pin ? 'the comment pin' : `${n} element${n > 1 ? 's' : ''}`} ${parts.join(' and ')}.`);
 }
-async function kbResize(f){
-  const h = resizeHandle(); if (!h) return false;
-  const b = box(h.el);
-  if (h.el.type === 'NODE'){
-    const el = h.el, o = S.D.off.get(el.cid) || { w: 0, h: 0 }, L = nodeLayout(el.ek, el.text, 0, 0, el.esize);
-    const tw = Math.max(L.w, Math.round(b.w * f)), th = Math.max(L.h, Math.round(b.h * f));
-    const dw = tw - (el.bw + (o.w || 0)), dh = th - (el.bh + (o.h || 0));
-    if (dw || dh){ await commitMove(el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [el.cid], dx: 0, dy: 0, dw, dh }); S.redo = []; }
-    say(`Resized to ${tw} by ${th}.`); return true;
-  }
-  const dw = Math.round(b.w * f) - b.w, dh = Math.round(b.h * f) - b.h;
-  if (b.w + dw < 16) return true;
-  await commitMove(h.el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [h.el.cid], dx: 0, dy: 0, dw, dh }); S.redo = [];
-  say(`Resized to ${b.w + dw} by ${b.h + dh}.`); return true;
+// A box scaled by s about its centre: both ends move by the same whole number of units, so the centre never drifts.
+function scaleCentred(b, s){ const dw = 2 * Math.round(b.w * (s - 1) / 2), dh = 2 * Math.round(b.h * (s - 1) / 2); return { x: b.x - dw / 2, y: b.y - dh / 2, w: b.w + dw, h: b.h + dh }; }
+// the smallest scale of b an element allows: a node keeps room for its label (and live data), anything else 16 units
+function minScale(el, b){
+  if (el.type !== 'NODE') return 16 / Math.min(b.w, b.h);
+  const L = nodeLayout(el.ek, el.text, 0, 0, el.esize), f = L.K.fit?.(el, L);
+  return Math.max(Math.max(L.w, f?.w || 0) / b.w, Math.max(L.h, f?.h || 0) / b.h);
+}
+// the MOVE that turns box b into nb: position and size (a node's W/H is a minimum on top of its own, so it counts from that)
+function resizeDelta(el, b, nb){
+  const o = S.D.off.get(el.cid) || { w: 0, h: 0 }, own = el.type === 'NODE';
+  return { dx: Math.round(nb.x - b.x), dy: Math.round(nb.y - b.y),
+    dw: nb.w === b.w ? 0 : Math.round(nb.w - (own ? el.bw + (o.w || 0) : b.w)), dh: nb.h === b.h ? 0 : Math.round(nb.h - (own ? el.bh + (o.h || 0) : b.h)) };
+}
+// + / − scale the selected element by 10% about its centre, keeping its proportions. Steps count from the size the run of key
+// presses started at, so + then − comes back to exactly that box; presses queue, so held keys never race each other.
+let KS = null, kbChain = Promise.resolve();
+const near = (a, b) => a && b && ['x', 'y', 'w', 'h'].every(k => Math.abs(a[k] - b[k]) <= 1);
+function kbResize(f){
+  if (!resizeHandle()) return Promise.resolve(false);
+  kbChain = kbChain.then(() => kbScale(f > 1 ? 1 : -1)).catch(err => console.warn(err));
+  return kbChain.then(() => true);
+}
+async function kbScale(step){
+  const h = resizeHandle(); if (!h) return;
+  const el = h.el, b = box(el); if (!b) return;
+  if (!KS || KS.cid !== el.cid || !near(KS.last, b)) KS = { cid: el.cid, b0: { ...b }, k: 0, last: { ...b } };
+  const lo = minScale(el, KS.b0), kMin = Math.ceil(Math.log(lo) / Math.log(1.1) - 1e-9), hi = Math.floor(Math.log(20000 / Math.max(KS.b0.w, KS.b0.h)) / Math.log(1.1));
+  let k = Math.min(hi, KS.k + step);
+  if (k < kMin) k = kMin - 1;   // one notch below the last 10% step lands exactly on the smallest size
+  if (k === KS.k){ say(step < 0 ? 'Already as small as its content allows.' : 'Already as large as it can be.'); return; }
+  const nb = scaleCentred(KS.b0, k < kMin ? lo : 1.1 ** k), d = resizeDelta(el, b, nb);
+  KS.k = k; KS.last = { ...nb };
+  if (!d.dx && !d.dy && !d.dw && !d.dh) return;
+  await commitMove(el.cid, d.dx, d.dy, d.dw, d.dh); S.hist.push({ kind: 'move', targets: [el.cid], ...d }); S.redo = [];
+  await new Promise(r => setTimeout(r, 0));   // let derive() place it before the next press reads its box
+  say(`Scaled to ${Math.round(nb.w)} by ${Math.round(nb.h)}, from the centre.`);
 }
 const viewCenter = () => toWorld(innerWidth / 2, innerHeight / 2);
 async function kbInsert(kind){

@@ -952,6 +952,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
     <tr><td>Drag from an element's edge</td><td>Arrow, bound to both elements by CID</td></tr>
     <tr><td>T · the Text tool · double-tap</td><td>Text. Double-tap your own text (or Enter on it) to edit it</td></tr>
     <tr><td>N · the Shapes and cards tool</td><td>Pick a kind in the style bar, then place a card, mind-map topic, flowchart shape, sticky or wireframe piece. It sizes itself to its label</td></tr>
+    <tr><td>Shift + drag a resize handle</td><td>Scale from the centre, keeping the proportions: both ends move together. Alt frees an image’s proportions</td></tr>
     <tr><td>“+” handles on a selected node</td><td>Click: new connected node in that direction. Drag: to another element to connect it, or to empty space for a new node there</td></tr>
     <tr><td>While typing a node label</td><td>Enter saves · Tab saves and adds a child · ⌘/Ctrl+Enter saves and adds a sibling</td></tr>
     <tr><td>M · the Comment tool</td><td>Comment: click an element to pin it there (it follows the element) or empty space. Threads, replies and resolve live in the comments panel</td></tr>
@@ -990,7 +991,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
     <tr><td>Tab / Shift+Tab</td><td>Step through elements; each is announced. Tab past the last one leaves the canvas</td></tr>
     <tr><td>Arrow keys (Shift = ×10)</td><td>Move the selection, or pan when nothing is selected</td></tr>
     <tr><td>Delete / Backspace</td><td>Delete the selection</td></tr>
-    <tr><td>+ / −</td><td>Resize a selected image, otherwise zoom</td></tr>
+    <tr><td>+ / −</td><td>Scale the selected image, shape or node by 10% from its centre, keeping its proportions; otherwise zoom</td></tr>
     <tr><td>R · O · T · I</td><td>Insert rectangle · circle · text · image at the centre</td></tr>
     <tr><td>C</td><td>Connect the two selected elements with an arrow (first → second)</td></tr>
     <tr><td>Alt + arrow · ⌘/Ctrl + Enter · Enter</td><td>On a selected node: new connected child in that direction · new sibling · edit its label</td></tr>
@@ -2750,20 +2751,43 @@ function commitKb(){
   if (g.dy) parts.push(`${Math.abs(g.dy)} ${g.dy < 0 ? 'up' : 'down'}`);
   say(`Moved ${g.pin ? 'the comment pin' : `${n} element${n > 1 ? 's' : ''}`} ${parts.join(' and ')}.`);
 }
-async function kbResize(f){
-  const h = resizeHandle(); if (!h) return false;
-  const b = box(h.el);
-  if (h.el.type === 'NODE'){
-    const el = h.el, o = S.D.off.get(el.cid) || { w: 0, h: 0 }, L = nodeLayout(el.ek, el.text, 0, 0, el.esize);
-    const tw = Math.max(L.w, Math.round(b.w * f)), th = Math.max(L.h, Math.round(b.h * f));
-    const dw = tw - (el.bw + (o.w || 0)), dh = th - (el.bh + (o.h || 0));
-    if (dw || dh){ await commitMove(el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [el.cid], dx: 0, dy: 0, dw, dh }); S.redo = []; }
-    say(`Resized to ${tw} by ${th}.`); return true;
-  }
-  const dw = Math.round(b.w * f) - b.w, dh = Math.round(b.h * f) - b.h;
-  if (b.w + dw < 16) return true;
-  await commitMove(h.el.cid, 0, 0, dw, dh); S.hist.push({ kind: 'move', targets: [h.el.cid], dx: 0, dy: 0, dw, dh }); S.redo = [];
-  say(`Resized to ${b.w + dw} by ${b.h + dh}.`); return true;
+// A box scaled by s about its centre: both ends move by the same whole number of units, so the centre never drifts.
+function scaleCentred(b, s){ const dw = 2 * Math.round(b.w * (s - 1) / 2), dh = 2 * Math.round(b.h * (s - 1) / 2); return { x: b.x - dw / 2, y: b.y - dh / 2, w: b.w + dw, h: b.h + dh }; }
+// the smallest scale of b an element allows: a node keeps room for its label (and live data), anything else 16 units
+function minScale(el, b){
+  if (el.type !== 'NODE') return 16 / Math.min(b.w, b.h);
+  const L = nodeLayout(el.ek, el.text, 0, 0, el.esize), f = L.K.fit?.(el, L);
+  return Math.max(Math.max(L.w, f?.w || 0) / b.w, Math.max(L.h, f?.h || 0) / b.h);
+}
+// the MOVE that turns box b into nb: position and size (a node's W/H is a minimum on top of its own, so it counts from that)
+function resizeDelta(el, b, nb){
+  const o = S.D.off.get(el.cid) || { w: 0, h: 0 }, own = el.type === 'NODE';
+  return { dx: Math.round(nb.x - b.x), dy: Math.round(nb.y - b.y),
+    dw: nb.w === b.w ? 0 : Math.round(nb.w - (own ? el.bw + (o.w || 0) : b.w)), dh: nb.h === b.h ? 0 : Math.round(nb.h - (own ? el.bh + (o.h || 0) : b.h)) };
+}
+// + / − scale the selected element by 10% about its centre, keeping its proportions. Steps count from the size the run of key
+// presses started at, so + then − comes back to exactly that box; presses queue, so held keys never race each other.
+let KS = null, kbChain = Promise.resolve();
+const near = (a, b) => a && b && ['x', 'y', 'w', 'h'].every(k => Math.abs(a[k] - b[k]) <= 1);
+function kbResize(f){
+  if (!resizeHandle()) return Promise.resolve(false);
+  kbChain = kbChain.then(() => kbScale(f > 1 ? 1 : -1)).catch(err => console.warn(err));
+  return kbChain.then(() => true);
+}
+async function kbScale(step){
+  const h = resizeHandle(); if (!h) return;
+  const el = h.el, b = box(el); if (!b) return;
+  if (!KS || KS.cid !== el.cid || !near(KS.last, b)) KS = { cid: el.cid, b0: { ...b }, k: 0, last: { ...b } };
+  const lo = minScale(el, KS.b0), kMin = Math.ceil(Math.log(lo) / Math.log(1.1) - 1e-9), hi = Math.floor(Math.log(20000 / Math.max(KS.b0.w, KS.b0.h)) / Math.log(1.1));
+  let k = Math.min(hi, KS.k + step);
+  if (k < kMin) k = kMin - 1;   // one notch below the last 10% step lands exactly on the smallest size
+  if (k === KS.k){ say(step < 0 ? 'Already as small as its content allows.' : 'Already as large as it can be.'); return; }
+  const nb = scaleCentred(KS.b0, k < kMin ? lo : 1.1 ** k), d = resizeDelta(el, b, nb);
+  KS.k = k; KS.last = { ...nb };
+  if (!d.dx && !d.dy && !d.dw && !d.dh) return;
+  await commitMove(el.cid, d.dx, d.dy, d.dw, d.dh); S.hist.push({ kind: 'move', targets: [el.cid], ...d }); S.redo = [];
+  await new Promise(r => setTimeout(r, 0));   // let derive() place it before the next press reads its box
+  say(`Scaled to ${Math.round(nb.w)} by ${Math.round(nb.h)}, from the centre.`);
 }
 const viewCenter = () => toWorld(innerWidth / 2, innerHeight / 2);
 async function kbInsert(kind){
@@ -3014,7 +3038,7 @@ cv.addEventListener('pointermove', e => {
       G.moved = true; G.dx = Math.round(w.x - G.start.x); G.dy = Math.round(w.y - G.start.y);
       if (G.id === 'draft'){ draft.px += G.dx; draft.py += G.dy; draft.x += G.dx; draft.y += G.dy; G.start = w; G.dx = G.dy = 0; }
       break;
-    case 'resize': G.nb = resizedBox(G, w, e.shiftKey); break;
+    case 'resize': G.nb = resizedBox(G, w, e.shiftKey, e.altKey); G.at = w; break;
     case 'rect': case 'circle': case 'place': G.b = w; break;
     case 'marquee': {   // live: what the rectangle touches is selected as you drag
       G.b = w; const r = norm(G.a, G.b), next = new Set(G.add ? G.base : []);
@@ -3115,9 +3139,7 @@ function endPointer(e, cancelled){
     }
     case 'resize': {
       // sizes are stored as the element's own W/H plus resize offsets (for a node, W/H is a minimum where 0 means "fit the label")
-      const el = S.records.get(g.target), o = S.D.off.get(g.target) || { w: 0, h: 0 };
-      const dx = Math.round(g.nb.x - g.b0.x), dy = Math.round(g.nb.y - g.b0.y);
-      const dw = g.nb.w === g.b0.w ? 0 : Math.round(g.nb.w - (el.bw + (o.w || 0))), dh = g.nb.h === g.b0.h ? 0 : Math.round(g.nb.h - (el.bh + (o.h || 0)));
+      const { dx, dy, dw, dh } = resizeDelta(S.records.get(g.target), g.b0, g.nb);
       if (!dx && !dy && !dw && !dh) return;
       (async () => { await commitMove(g.target, dx, dy, dw, dh); S.hist.push({ kind: 'move', targets: [g.target], dx, dy, dw, dh }); S.redo = []; })();
       say(`Resized to ${Math.round(g.nb.w)} by ${Math.round(g.nb.h)}.`);
@@ -3148,13 +3170,19 @@ cv.addEventListener('pointerup', e => endPointer(e, false));
 cv.addEventListener('pointercancel', e => endPointer(e, true));
 // the box a resize handle gives: the opposite edge stays put; Shift keeps proportions (images keep them unless Shift);
 // a node never gets smaller than its label needs
-function resizedBox(g, w, shift){
+// Shift scales from the centre, keeping the proportions: the opposite ends move together. Without it the opposite edge stays
+// put; a corner keeps an image's proportions, and Alt frees them.
+function resizedBox(g, w, shift, alt = false){
   const b = g.b0, h = g.h, right = b.x + b.w, bottom = b.y + b.h;
+  if (shift){
+    const c = center(b), sx = /[ew]/.test(h) ? Math.abs(w.x - c.x) * 2 / b.w : 0, sy = /[ns]/.test(h) ? Math.abs(w.y - c.y) * 2 / b.h : 0;
+    return scaleCentred(b, Math.max(sx, sy, minScale(g.el, b)));
+  }
   let x0 = b.x, y0 = b.y, x1 = right, y1 = bottom;
   if (h.includes('w')) x0 = Math.min(w.x, right - 8); if (h.includes('e')) x1 = Math.max(w.x, b.x + 8);
   if (h.includes('n')) y0 = Math.min(w.y, bottom - 8); if (h.includes('s')) y1 = Math.max(w.y, b.y + 8);
   let nw = x1 - x0, nh = y1 - y0;
-  const keep = (g.el.type === 'IMAGE') !== shift;
+  const keep = g.el.type === 'IMAGE' && !alt;
   if (keep && h.length === 2){   // corner: follow the larger change, keep the aspect
     const a = b.w / b.h; if (nw / a > nh) nh = nw / a; else nw = nh * a;
     if (h.includes('w')) x0 = right - nw; if (h.includes('n')) y0 = bottom - nh;
@@ -3176,6 +3204,8 @@ cv.addEventListener('wheel', e => {
   dirty = true;
 }, { passive: false });
 
+// pressing or letting go of Shift (or Alt) mid-resize switches at once, without waiting for the pointer to move
+for (const t of ['keydown', 'keyup']) addEventListener(t, e => { if (G?.kind === 'resize' && G.at && (e.key === 'Shift' || e.key === 'Alt')){ G.nb = resizedBox(G, G.at, e.shiftKey, e.altKey); dirty = true; } });
 /* ---------- text ---------- */
 const ta = document.getElementById('ta');
 let taAt = null;

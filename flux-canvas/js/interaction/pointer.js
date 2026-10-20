@@ -114,7 +114,7 @@ cv.addEventListener('pointermove', e => {
       G.moved = true; G.dx = Math.round(w.x - G.start.x); G.dy = Math.round(w.y - G.start.y);
       if (G.id === 'draft'){ draft.px += G.dx; draft.py += G.dy; draft.x += G.dx; draft.y += G.dy; G.start = w; G.dx = G.dy = 0; }
       break;
-    case 'resize': G.nb = resizedBox(G, w, e.shiftKey); break;
+    case 'resize': G.nb = resizedBox(G, w, e.shiftKey, e.altKey); G.at = w; break;
     case 'rect': case 'circle': case 'place': G.b = w; break;
     case 'marquee': {   // live: what the rectangle touches is selected as you drag
       G.b = w; const r = norm(G.a, G.b), next = new Set(G.add ? G.base : []);
@@ -215,9 +215,7 @@ function endPointer(e, cancelled){
     }
     case 'resize': {
       // sizes are stored as the element's own W/H plus resize offsets (for a node, W/H is a minimum where 0 means "fit the label")
-      const el = S.records.get(g.target), o = S.D.off.get(g.target) || { w: 0, h: 0 };
-      const dx = Math.round(g.nb.x - g.b0.x), dy = Math.round(g.nb.y - g.b0.y);
-      const dw = g.nb.w === g.b0.w ? 0 : Math.round(g.nb.w - (el.bw + (o.w || 0))), dh = g.nb.h === g.b0.h ? 0 : Math.round(g.nb.h - (el.bh + (o.h || 0)));
+      const { dx, dy, dw, dh } = resizeDelta(S.records.get(g.target), g.b0, g.nb);
       if (!dx && !dy && !dw && !dh) return;
       (async () => { await commitMove(g.target, dx, dy, dw, dh); S.hist.push({ kind: 'move', targets: [g.target], dx, dy, dw, dh }); S.redo = []; })();
       say(`Resized to ${Math.round(g.nb.w)} by ${Math.round(g.nb.h)}.`);
@@ -248,13 +246,19 @@ cv.addEventListener('pointerup', e => endPointer(e, false));
 cv.addEventListener('pointercancel', e => endPointer(e, true));
 // the box a resize handle gives: the opposite edge stays put; Shift keeps proportions (images keep them unless Shift);
 // a node never gets smaller than its label needs
-function resizedBox(g, w, shift){
+// Shift scales from the centre, keeping the proportions: the opposite ends move together. Without it the opposite edge stays
+// put; a corner keeps an image's proportions, and Alt frees them.
+function resizedBox(g, w, shift, alt = false){
   const b = g.b0, h = g.h, right = b.x + b.w, bottom = b.y + b.h;
+  if (shift){
+    const c = center(b), sx = /[ew]/.test(h) ? Math.abs(w.x - c.x) * 2 / b.w : 0, sy = /[ns]/.test(h) ? Math.abs(w.y - c.y) * 2 / b.h : 0;
+    return scaleCentred(b, Math.max(sx, sy, minScale(g.el, b)));
+  }
   let x0 = b.x, y0 = b.y, x1 = right, y1 = bottom;
   if (h.includes('w')) x0 = Math.min(w.x, right - 8); if (h.includes('e')) x1 = Math.max(w.x, b.x + 8);
   if (h.includes('n')) y0 = Math.min(w.y, bottom - 8); if (h.includes('s')) y1 = Math.max(w.y, b.y + 8);
   let nw = x1 - x0, nh = y1 - y0;
-  const keep = (g.el.type === 'IMAGE') !== shift;
+  const keep = g.el.type === 'IMAGE' && !alt;
   if (keep && h.length === 2){   // corner: follow the larger change, keep the aspect
     const a = b.w / b.h; if (nw / a > nh) nh = nw / a; else nw = nh * a;
     if (h.includes('w')) x0 = right - nw; if (h.includes('n')) y0 = bottom - nh;
@@ -276,3 +280,5 @@ cv.addEventListener('wheel', e => {
   dirty = true;
 }, { passive: false });
 
+// pressing or letting go of Shift (or Alt) mid-resize switches at once, without waiting for the pointer to move
+for (const t of ['keydown', 'keyup']) addEventListener(t, e => { if (G?.kind === 'resize' && G.at && (e.key === 'Shift' || e.key === 'Alt')){ G.nb = resizedBox(G, G.at, e.shiftKey, e.altKey); dirty = true; } });
