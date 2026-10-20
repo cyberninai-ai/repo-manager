@@ -11,6 +11,7 @@ ok(await until(B, i => S.records.has(i.src), ids), 'notes reach Ben');
 
 // stances: Ana agrees, Ben disagrees → split; Ben changes to agree → converged, and the trend shows it moved
 await A.evaluate(i => takeStance([i.price], 'agree'), ids);
+await until(B, i => consensus(i.price).c.agree === 1, ids);   // Ben answers Ana's stance: signed before it arrived, his could sort first
 await B.evaluate(i => takeStance([i.price], 'disagree', 'Too low for enterprise'), ids);
 ok(await until(A, i => consensus(i.price).level === 'split', ids), 'one agree, one disagree: split');
 await B.evaluate(i => takeStance([i.price], 'agree'), ids);

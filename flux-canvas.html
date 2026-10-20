@@ -669,6 +669,10 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
 .data-field[hidden]{display:none}
 #formDlg textarea.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.45;tab-size:2;white-space:pre;overflow:auto}
 #menu.data{width:min(460px,calc(100vw - 16px))}
+.fx .fl-trace{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:st}
+.fx .fl-trace > li{border:1px solid var(--line2);border-radius:10px;padding:8px 10px;display:grid;gap:4px;font-size:12.5px}
+.fx .fl-trace .hd{display:flex;align-items:center;gap:8px} .fx .fl-trace .hd b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .fx .fl-trace .hd small{color:var(--muted);white-space:nowrap}
+.fx .fl-trace ul{margin:0;padding-left:16px;display:grid;gap:2px} .fx .fl-trace .bad{color:var(--red);margin:0}
 </style>
 </head>
 <body>
@@ -769,6 +773,8 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
   <symbol id="i-zone" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" stroke-dasharray="3 3"/><path d="M9 12h6"/></symbol>
   <symbol id="i-mesh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6.5 10.5l4-4M13.5 6.5l4 4M17.5 13.5l-4 4M10.5 17.5l-4-4"/></symbol>
   <symbol id="i-excerpt" viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8.2 8.4 20 17M8.2 15.6 20 7"/></symbol>
+  <symbol id="i-pipe" viewBox="0 0 24 24"><rect x="2.5" y="9" width="6" height="6" rx="1.5"/><rect x="15.5" y="4" width="6" height="6" rx="1.5"/><rect x="15.5" y="14" width="6" height="6" rx="1.5"/><path d="M8.5 12h3a2 2 0 0 0 2-2V9a2 2 0 0 1 2-2M11.5 12h0a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2"/></symbol>
+  <symbol id="i-step" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 12h6M13 9.5 15.5 12 13 14.5"/></symbol>
   <symbol id="i-table" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10"/></symbol>
   <symbol id="i-checklist" viewBox="0 0 24 24"><path d="M4 6.5l1.6 1.6L8.5 5M4 12.5l1.6 1.6 2.9-3.1M4.5 18h3"/><path d="M11.5 6.5H20M11.5 12.5H20M11.5 18H20"/></symbol>
   <symbol id="i-metric" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-7"/><path d="M15 7h3v3"/></symbol>
@@ -984,6 +990,7 @@ body.dim #c{filter:saturate(.4) brightness(.92);transition:filter .6s}
     <tr><td>Data button (grid) · D</td><td>Insert a table, checklist, metric, chart, formula, date, link or code snippet</td></tr>
     <tr><td>Double-click a cell · Tab</td><td>Change one value in place; Tab moves to the next cell. Anyone who can draw can change cells, tick boxes, add rows and log values; each change is signed, and ⌘Z takes yours back</td></tr>
     <tr><td>Enter on a data node</td><td>Its author changes the structure: columns, items, the unit and target, the expression</td></tr>
+    <tr><td>Flow · Step</td><td>Data → Flow starts a flow; with it (or the last step) selected, Data → Step adds the next one, connected. Connect notes and tables into steps; press ▶ Run. Steps pass data, respond (AI connects here) or write back</td></tr>
     <tr><td>Chart · Formula</td><td>A chart connected to a table or metric redraws as it changes; a formula names other nodes, as in [Revenue] / [Costs] or sum([Work.Days])</td></tr>
   </table>
   <h2>Keyboard only</h2>
@@ -6404,7 +6411,7 @@ function closeForm(v){
 const localDT = t => { const d = new Date(t - new Date(t).getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
 // (a silent round running, a decision due for review). Features add themselves with registerFeature (core/hooks).
 // @uses ui/toolbar (menus), ui/palette
-const HUB_GROUPS = [['meet', 'Run the session'], ['decide', 'Decide'], ['deliver', 'Deliver and get paid'], ['remember', 'Remember'], ['network', 'Network and identity']];
+const HUB_GROUPS = [['meet', 'Run the session'], ['decide', 'Decide'], ['deliver', 'Deliver and get paid'], ['data', 'Data and flows'], ['remember', 'Remember'], ['network', 'Network and identity']];
 // what is waiting on you, from every feature: approvals, suggestions to answer, reviews due, checks to make…
 function needsYou(){ const out = []; for (const f of FEATURES) if (f.needs) try { for (const n of f.needs() || []) out.push({ ...n, icon: n.icon || f.icon }); } catch {} return out; }
 function paintHubBadge(){ const b = $('hubN'), n = S.me ? needsYou().length : 0; if (b) b.textContent = n || ''; $('hubBtn').setAttribute('aria-label', `Team: meetings, decisions, delivery, memory${n ? ` · ${n} waiting for you` : ''}`); }
@@ -8655,12 +8662,12 @@ function dataCard(b, accent, kind){
   if (accent){ ctx.save(); rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(b.x, b.y, b.w, 3); ctx.restore(); }
 }
 // the title row: a small kind tag on the right, the title on the left; returns the y where content starts
-function dataHead(b, title, tag, extra = ''){
+function dataHead(b, title, tag, extra = '', tone = null){
   const y = b.y + 18;
   ctx.font = `500 12px ${FONTS.sans}`; const ew = extra ? ctx.measureText(extra).width : 0;
   ctx.font = `600 10px ${FONTS.sans}`; const tw = ctx.measureText(tag).width + 12;
-  rr(ctx, b.x + b.w - tw - 10, y - 8, tw, 16, 8); ctx.fillStyle = TH.panel2 || TH.paper; ctx.fill();
-  ctx.fillStyle = TH.muted; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(tag, b.x + b.w - tw / 2 - 10, y + .5);
+  rr(ctx, b.x + b.w - tw - 10, y - 8, tw, 16, 8); ctx.fillStyle = tone ? tint(tone, .14) : TH.panel2 || TH.paper; ctx.fill();
+  ctx.fillStyle = tone || TH.muted; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(tag, b.x + b.w - tw / 2 - 10, y + .5);
   ctx.textAlign = 'left';
   fitText(title || 'Untitled', b.x + 12, y, b.w - tw - 34 - (extra ? ew + 8 : 0), `650 14px ${FONTS.sans}`, TH.ink);
   if (extra){ ctx.font = `500 12px ${FONTS.sans}`; ctx.fillStyle = TH.muted; ctx.textBaseline = 'middle'; ctx.fillText(extra, b.x + b.w - tw - 18 - ew, y + .5); }
@@ -8805,13 +8812,16 @@ function dataSVG(el, b, n){
 
 /* inserting: the Data button in the dock, the palette, and D */
 const DATA_ORDER = ['table', 'checklist', 'metric', 'chart', 'formula', 'date', 'link', 'code'];
-const dataItems = () => [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => dataInsert(k) }))];
+// kinds with menu: 'flow' (features/flow) get their own heading; a kind may insert its own way (insert)
+const dataItem = k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => (DATA_KINDS[k].insert || dataInsert)(k) });
+const dataItems = () => { const flow = Object.keys(DATA_KINDS).filter(k => DATA_KINDS[k].menu === 'flow');
+  return [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(dataItem), ...(flow.length ? [{ head: 'Build a flow' }, ...flow.map(dataItem)] : [])]; };
 const dataBtn = $('dataBtn');
 function openData(){ openMenu(dataBtn, dataItems(), null, 'hub data'); }
 dataBtn.onclick = () => $('menu').hidden ? openData() : closeMenu();
-PALETTE_HOOKS.push(add => { for (const k of DATA_ORDER) if (DATA_KINDS[k]) add('data', `Insert ${DATA_KINDS[k].name.toLowerCase()}: ${DATA_KINDS[k].blurb}`, () => dataInsert(k)); });
+PALETTE_HOOKS.push(add => { for (const k of Object.keys(DATA_KINDS)) add('data', `Insert ${DATA_KINDS[k].name.toLowerCase()}: ${DATA_KINDS[k].blurb}`, () => (DATA_KINDS[k].insert || dataInsert)(k)); });
 KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'd'){ e.preventDefault(); openData(); return true; } return false; });
-registerFeature({ id: 'data', name: 'Data nodes', group: 'remember', icon: 'table', records: ['CELL', 'TICK', 'READING', 'ROW'],
+registerFeature({ id: 'data', name: 'Data nodes', group: 'data', icon: 'table', records: ['CELL', 'TICK', 'READING', 'ROW'],
   blurb: 'Tables, checklists, metrics, charts, formulas, dates, links and code on the canvas, edited one signed value at a time',
   status: () => { const n = S.D.els.filter(el => el.type === 'NODE' && DATA_KINDS[el.ek] && visible(el)).length; return n ? plural(n, 'data node') : ''; },
   open: openData });
@@ -9532,6 +9542,418 @@ TEMPLATES.push({ id: 'tracker', name: 'Project tracker', icon: 'table', blurb: '
   await mk('formula', -120, 0, formulaText({ title: 'Slack', expr: '[Launch] - [Total days]', unit: 'days' }));
   await mk('checklist', 180, -260, checklistText('Before launch', [{ text: 'Pricing page live' }, { text: 'Docs updated' }, { text: 'Support briefed' }]));
   await mk('metric', 180, -20, metricText({ title: 'Teams in the beta', value: 0, target: 20 }));
+} });
+// and follows its connectors (arrows, and the links "+" handles make) through every item it reaches, in order. Notes and
+// data nodes pass their content along; Step nodes act on it: some only pass data (filter, sort, pick…), some respond
+// (ask, ideas: a responder writes something new, which is where AI plugs in), some write back to the canvas (notes,
+// rows, items, readings). A run is signed: RUN names the flow and a log of what every step produced, so everyone sees
+// the same responses and where they came from.
+// @uses features/data/core, features/data/table, features/data/checklist, features/data/metric, features/data/formula, features/data/date, features/data/link, features/data/code, diagrams
+// RUN-I-R-{flow root}-V-{log blob}-S-{ok|error}-C-{steps}-Z-T-SIG     the log is JSON: [{ r, t, mode, in, out: [item], err, ms }]
+// An item is { text, f?: { field: value }, n?: number }: a row, a line, a value.
+
+const PIPE_STEPS = {};       // do → { mode: 'pass' | 'respond' | 'write', name, blurb, fields: [form fields], summary(cfg), run: async (items, cfg, ctx) → items }
+const FLOW_RESPONDERS = {};  // id → { name, builtin?, run: async ({ kind, prompt, items, count, cfg, step }) → string | string[] }: AI connects here
+const PIPE_MODES = { pass: ['Passes data', null], respond: ['Responds', 'acc'], write: ['Writes', 'good'] };
+const PIPE = { runs: new Map(), last: new Map(), logs: new Map(), focus: null };
+const PIPE_LIVE = new Map();  // during a run in this browser: element → { state: 'wait' | 'run' | 'ok' | 'err', out, err, ms }
+let pipeRunning = null;
+const PIPE_CAP = { steps: 60, items: 500, text: 2000, writes: 100, log: 256 * 1024 };
+
+registerRecord('RUN', { parse(r, f){ must(isCid(f.R) && isCid(f.V) && (f.S === 'ok' || f.S === 'error'), 'run'); r.ok = f.S === 'ok'; r.steps = Math.min(999, Math.max(0, decInt(f.C || '0'))); r.title = decTxt(f.M || '').slice(0, 120); },
+  blob: 'V', say: r => `ran the flow “${r.title.slice(0, 40)}”${r.ok ? '' : ' (with errors)'}` });
+// a peer's log is untrusted: rebuilt field by field, capped, nothing but strings and finite numbers
+function pipeLog(r){
+  if (PIPE.logs.has(r.cid)) return PIPE.logs.get(r.cid);
+  const b = S.blobs.get(r.f.V); if (!b) return null;
+  let out = [];
+  try {
+    const raw = JSON.parse(new TextDecoder().decode(b)); if (!Array.isArray(raw)) throw 0;
+    const str = (s, m) => typeof s === 'string' ? s.slice(0, m) : '';
+    out = raw.slice(0, 100).map(s => ({ r: str(s?.r, 80), t: str(s?.t, 200), mode: own(PIPE_MODES, s?.mode) ? s.mode : 'pass', in: Number.isFinite(s?.in) ? s.in : 0, ms: Number.isFinite(s?.ms) ? s.ms : 0,
+      err: str(s?.err, 300), out: (Array.isArray(s?.out) ? s.out : []).slice(0, PIPE_CAP.items).map(pipeItem) }));
+  } catch { out = []; }
+  PIPE.logs.set(r.cid, out); return out;
+}
+function pipeItem(i){
+  const it = { text: typeof i?.text === 'string' ? i.text.slice(0, PIPE_CAP.text) : String(i?.text ?? '').slice(0, PIPE_CAP.text) };
+  if (Number.isFinite(i?.n)) it.n = i.n;
+  if (i?.f && typeof i.f === 'object'){ it.f = {}; for (const [k, v] of Object.entries(i.f).slice(0, 20)) if (typeof k === 'string' && k !== '__proto__') it.f[k.slice(0, 60)] = String(v ?? '').slice(0, 400); }
+  return it;
+}
+DERIVE_HOOKS.push((D, by) => {
+  PIPE.runs = new Map(); PIPE.last = new Map(); PIPE.edges = null;
+  for (const r of by.RUN || []){ if (D.hidden.has(r.cid)) continue; if (!PIPE.runs.has(r.f.R)) PIPE.runs.set(r.f.R, []); PIPE.runs.get(r.f.R).push(r); }
+  // what each step produced in the latest run that reached it
+  for (const runs of PIPE.runs.values()) for (const r of runs){ const log = pipeLog(r); if (log) for (const s of log) if (s.r){ const p = PIPE.last.get(s.r); if (!p || p.run.z <= r.z) PIPE.last.set(s.r, { s, run: r }); } }
+});
+// blobs can arrive after their record: read the log once it's here
+CHANGE_HOOKS.push(() => { for (const runs of PIPE.runs.values()) for (const r of runs) if (!PIPE.logs.has(r.cid) && S.blobs.has(r.f.V)){ changed(); return; } });
+
+/* the graph: arrows and "+" links between visible elements */
+const pipeKey = el => el.type === 'NODE' ? dataRoot(el) : el.cid;   // a node keeps its key across its author's edits
+function pipeEdges(){
+  if (PIPE.edges) return PIPE.edges;
+  const out = new Map(), add = (a, b) => { if (!a || !b || a.cid === b.cid || !visible(a) || !visible(b) || S.D.hidden.has(a.cid) || S.D.hidden.has(b.cid)) return; if (!out.has(a.cid)) out.set(a.cid, []); if (!out.get(a.cid).includes(b.cid)) out.get(a.cid).push(b.cid); };
+  for (const el of S.D.els){
+    if (el.type === 'ARROW' && visible(el) && !S.D.hidden.has(el.cid)) add(current(el.f.FROM), current(el.f.TO));
+    else if (el.type === 'NODE' && el.parent && !S.D.superseded.has(el.cid)) add(current(el.parent), el);
+  }
+  return PIPE.edges = out;
+}
+// every item the flow reaches, plus what feeds into those items from outside (a table connected into a step), in an order
+// that respects the connectors; ties read left to right, then top to bottom. Another flow's start is never pulled in.
+function pipePlan(flow){
+  const E = pipeEdges(), seen = new Set([flow.cid]), q = [flow.cid], rev = new Map();
+  for (const [a, bs] of E) for (const b of bs){ if (!rev.has(b)) rev.set(b, []); rev.get(b).push(a); }
+  const isFlow = c => c !== flow.cid && S.records.get(c)?.ek === 'flow';
+  while (q.length && seen.size <= PIPE_CAP.steps) for (const n of E.get(q.shift()) || []) if (!seen.has(n) && !isFlow(n)){ seen.add(n); q.push(n); }
+  const up = [...seen];
+  while (up.length && seen.size <= PIPE_CAP.steps) for (const p of rev.get(up.shift()) || []) if (!seen.has(p) && !isFlow(p)){ seen.add(p); up.push(p); }
+  if (seen.size > PIPE_CAP.steps) return { err: `A flow can have up to ${PIPE_CAP.steps} steps.` };
+  const preds = new Map([...seen].map(c => [c, []]));
+  for (const a of seen) for (const b of E.get(a) || []) if (seen.has(b) && b !== flow.cid) preds.get(b).push(a);
+  const deg = new Map([...seen].map(c => [c, preds.get(c).length])), at = c => { const b = box(S.records.get(c)); return b ? [b.x, b.y] : [0, 0]; };
+  const order = [], ready = [...seen].filter(c => !deg.get(c));
+  while (ready.length){
+    ready.sort((a, b) => (b === flow.cid) - (a === flow.cid) || at(a)[0] - at(b)[0] || at(a)[1] - at(b)[1]);   // the flow first
+    const c = ready.shift(); order.push(c);
+    for (const n of E.get(c) || []) if (seen.has(n) && n !== flow.cid && deg.set(n, deg.get(n) - 1).get(n) === 0) ready.push(n);
+  }
+  if (order.length < seen.size){ const stuck = [...seen].find(c => !order.includes(c)); return { err: `These steps feed each other in a loop, at “${elTitle(stuck)}”.`, at: stuck }; }
+  return { order, preds };
+}
+
+/* what an item on the canvas contributes */
+function pipeItems(el){
+  if (el.type === 'TEXT') return el.text.trim() ? [{ text: el.text.trim() }] : [];
+  if (el.type === 'IMAGE') return el.alt ? [{ text: el.alt }] : [];
+  if (el.type !== 'NODE') return [];
+  const t = el.ek;
+  if (t === 'table'){ const V = tableView(el), j = V.sums.findIndex(s => s != null);   // a row reads as its name; its cells are fields; its value the first number column
+    return V.rows.map(r => { const it = { text: r.vals[0] || r.vals.filter(Boolean).join(' · '), f: Object.fromEntries(V.cols.map((c, k) => [c, r.vals[k] ?? ''])) }, n = j > 0 ? dataNum(r.vals[j]) : null; if (n != null) it.n = n; return it; }); }
+  if (t === 'checklist'){ const V = checklistView(el); return V.items.map(i => ({ text: i.text, f: { done: i.done ? 'yes' : 'no' } })); }
+  if (t === 'metric'){ const V = metricView(el); return V.cur ? [{ text: `${V.title}: ${fmtNum(V.cur.value)}${V.unit ? ' ' + V.unit : ''}`, n: V.cur.value, f: { name: V.title, value: String(V.cur.value), unit: V.unit } }] : []; }
+  if (t === 'formula'){ const R = formulaResult(el); return R.err ? [] : [{ text: `${R.title}: ${fmtNum(R.value, R.dp)}${R.unit ? ' ' + R.unit : ''}`, n: R.value, f: { name: R.title, value: String(R.value) } }]; }
+  if (t === 'date'){ const D = parseDate(el.text), d = dateDays(el), it = { text: `${D.title}: ${dateRel(d).toLowerCase()}`, f: { name: D.title, days: String(d ?? '') } }; if (d != null) it.n = d; return [it]; }
+  if (t === 'link'){ const K = parseLink(el.text); return [{ text: [K.title, K.url, K.note].filter(Boolean).join(' — '), f: { title: K.title, url: K.url, note: K.note } }]; }
+  if (t === 'code'){ const C = parseCode(el.text); return [{ text: C.lines.join('\n'), f: { language: C.lang } }]; }
+  if (t === 'chart' || t === 'flow' || t === 'frame') return [];
+  return el.text.trim() ? [{ text: el.text.trim() }] : [];   // a note, card, idea or shape: its words are context
+}
+
+/* running */
+const pipeTitle = el => el.type === 'NODE' && DATA_KINDS[el.ek] ? dataTitle(el) || DATA_KINDS[el.ek].name : elTitle(el.cid);
+async function runFlow(flowEl){
+  flowEl = current(flowEl.cid);
+  if (pipeRunning){ toast('A flow is already running here. Wait for it to finish.'); return null; }
+  const P = pipePlan(flowEl); if (P.err){ toast(P.err); if (P.at) goTo(P.at); return null; }
+  const F = parseFlow(flowEl.text), outs = new Map(), log = [], ctx = { flow: flowEl, writes: 0, made: [] };
+  pipeRunning = flowEl.cid; PIPE_LIVE.clear(); for (const c of P.order) PIPE_LIVE.set(c, { state: 'wait' }); dirty = true;
+  say(`Running “${F.title}”: ${plural(P.order.length - 1, 'step')}.`);
+  let ok = true;
+  try {
+    for (const c of P.order){
+      const el = current(c) || S.records.get(c), input = P.preds.get(c).flatMap(p => outs.get(p) || []), live = PIPE_LIVE.get(c);
+      live.state = 'run'; dirty = true; await new Promise(r => setTimeout(r, 60));   // let people see it move
+      const t0 = performance.now();
+      let out = [], err = '';
+      try {
+        if (c === flowEl.cid) out = F.input.map(text => ({ text }));
+        else if (el.type === 'NODE' && el.ek === 'step'){ const cfg = parseStep(el.text), st = PIPE_STEPS[cfg.do]; if (!st) throw new Error(`No action “${cfg.do}”`); ctx.step = el; out = await st.run(input.map(i => ({ ...i })), cfg, ctx); }
+        else out = [...input, ...pipeItems(el)];
+        out = (out || []).slice(0, PIPE_CAP.items).map(pipeItem);
+      } catch (e){ err = e?.message || 'failed'; ok = false; if (e?.name === 'NotPermitted' || e?.name === 'HistoryView') { log.push({ r: pipeKey(el), t: pipeTitle(el), mode: pipeMode(el), in: input.length, out: [], err, ms: 0 }); throw e; } }
+      const ms = Math.round(performance.now() - t0);
+      outs.set(c, out); Object.assign(live, { state: err ? 'err' : 'ok', out, err, ms, in: input.length }); dirty = true;
+      log.push({ r: pipeKey(el), t: pipeTitle(el), mode: pipeMode(el), in: input.length, out, err, ms });
+    }
+  } catch (e){ ok = false; if (e?.name !== 'NotPermitted' && e?.name !== 'HistoryView') console.warn(e); }
+  finally { pipeRunning = null; dirty = true; }
+  // sign the run: the log goes with it as a blob, so the responses are the same for everyone
+  let json = JSON.stringify(log);
+  for (let cap = 200; json.length > PIPE_CAP.log && cap >= 5; cap = Math.floor(cap / 2)) json = JSON.stringify(log.map(s => ({ ...s, out: s.out.slice(0, cap) })));
+  const bytes = te.encode(json), V = await cidOf(bytes);
+  let cid = null;
+  try { cid = await publish(await signed('RUN', [['I', S.me.id], ['R', pipeKey(flowEl)], ['V', V], ['S', ok ? 'ok' : 'error'], ['C', log.length - 1], ['M', encTxt(F.title)], ['Z', ++S.lamport], ['T', Date.now()]]), { [V]: bytes }); }
+  catch (e){ if (e?.name !== 'NotPermitted' && e?.name !== 'HistoryView') console.warn(e); }
+  const last = log.at(-1);
+  say(`${F.title}: ${ok ? 'done' : 'finished with errors'}. ${last ? `The last step gave ${plural(last.out.length, 'item')}.` : ''}`);
+  toast(`${F.title} ran · ${plural(log.length - 1, 'step')}${ok ? '' : ' · with errors'}${ctx.made.length ? ` · ${plural(ctx.made.length, 'thing')} written` : ''}`);
+  setTimeout(() => { if (!pipeRunning){ PIPE_LIVE.clear(); dirty = true; } }, 4000);
+  PIPE.focus = pipeKey(flowEl); if (panelOpen === 'pipes') paintPanel('pipes');
+  return cid;
+}
+function pipeMode(el){ return el.type === 'NODE' && el.ek === 'step' ? PIPE_STEPS[parseStep(el.text).do]?.mode || 'pass' : 'pass'; }
+// the output a step shows: the run happening here, else the latest signed run that reached it
+function pipeOut(el){ const live = PIPE_LIVE.get(el.cid); if (live && live.state !== 'wait') return { live: true, state: live.state, out: live.out || [], err: live.err, ms: live.ms, in: live.in };
+  const l = PIPE.last.get(pipeKey(el)); return l ? { state: l.s.err ? 'err' : 'ok', out: l.s.out, err: l.s.err, ms: l.s.ms, in: l.s.in, run: l.run } : null; }
+
+/* the steps */
+// a field of an item, by name, case-insensitive; "text" and "value" always work
+function pipeField(it, name){
+  const k = String(name).trim().toLowerCase(); if (k === 'text') return it.text; if ((k === 'value' || k === 'n') && it.n != null) return it.n;
+  if (it.f) for (const [f, v] of Object.entries(it.f)) if (f.toLowerCase() === k) return v;
+  return undefined;
+}
+const pipeFill = (tpl, it, all) => String(tpl).replace(/\{\{\s*([^}]{1,60}?)\s*\}\}/g, (_, k) => k.toLowerCase() === 'all' ? all : k.toLowerCase() === 'count' ? String(all.split('\n').filter(Boolean).length) : String(it ? pipeField(it, k) ?? '' : ''));
+const pipeAll = items => items.map(i => (items.length > 1 ? '- ' : '') + i.text).join('\n');
+function pipeTest(it, where){
+  const m = String(where).match(/^(.+?)\s*(>=|<=|!=|=|>|<|\bcontains\b|\bhas\b|\bis not\b|\bis\b)\s*(.*)$/i); if (!m) return String(it.text).toLowerCase().includes(String(where).trim().toLowerCase());
+  const [, f, op0, want] = m, op = op0.toLowerCase(), have = pipeField(it, f), hn = dataNum(have), wn = dataNum(want), h = String(have ?? '').toLowerCase(), w = want.trim().toLowerCase();
+  if (op === 'contains' || op === 'has') return h.includes(w);
+  if (op === '=' || op === 'is') return hn != null && wn != null ? hn === wn : h === w;
+  if (op === '!=' || op === 'is not') return hn != null && wn != null ? hn !== wn : h !== w;
+  if (hn == null || wn == null) return false;
+  return op === '>' ? hn > wn : op === '<' ? hn < wn : op === '>=' ? hn >= wn : hn <= wn;
+}
+function pipeStep(id, spec){ PIPE_STEPS[id] = spec; }
+pipeStep('filter', { mode: 'pass', name: 'Filter', blurb: 'Keep the items that match', fields: [{ id: 'where', label: 'Keep items where', type: 'text', value: 'Price > 50', hint: 'A field and a test: Price > 50, Status = Done, text contains pricing. Or just words to look for.' }],
+  summary: c => `where ${c.where || '…'}`, run: (items, c) => c.where ? items.filter(i => pipeTest(i, c.where)) : items });
+pipeStep('sort', { mode: 'pass', name: 'Sort', blurb: 'Put the items in order', fields: [{ id: 'by', label: 'Sort by', type: 'text', value: 'text', half: true }, { id: 'order', label: 'Order', type: 'select', value: 'asc', options: [['asc', 'Low to high, A to Z'], ['desc', 'High to low, Z to A']], half: true }],
+  summary: c => `by ${c.by || 'text'}${c.order === 'desc' ? ', descending' : ''}`,
+  run: (items, c) => { const k = i => pipeField(i, c.by || 'text'), s = [...items].sort((a, b) => { const x = k(a), y = k(b), nx = dataNum(x), ny = dataNum(y); return nx != null && ny != null ? nx - ny : String(x ?? '').localeCompare(String(y ?? '')); }); return c.order === 'desc' ? s.reverse() : s; } });
+pipeStep('take', { mode: 'pass', name: 'Take', blurb: 'Keep the first few', fields: [{ id: 'count', label: 'How many', type: 'text', value: '5' }], summary: c => `the first ${c.count || 5}`, run: (items, c) => items.slice(0, Math.max(0, parseInt(c.count, 10) || 5)) });
+pipeStep('pick', { mode: 'pass', name: 'Pick fields', blurb: 'Keep only some columns', fields: [{ id: 'fields', label: 'Fields', type: 'text', value: 'Plan, Price', hint: 'Separated by commas' }], summary: c => c.fields || '…',
+  run: (items, c) => { const fs = String(c.fields || '').split(',').map(s => s.trim()).filter(Boolean); return items.map(i => ({ ...i, f: Object.fromEntries(fs.map(f => [f, pipeField(i, f) ?? ''])), text: fs.map(f => pipeField(i, f) ?? '').filter(v => v !== '').join(' · ') })); } });
+pipeStep('unique', { mode: 'pass', name: 'Remove repeats', blurb: 'One of each', fields: [], summary: () => 'one of each', run: items => { const seen = new Set(); return items.filter(i => { const k = i.text.trim().toLowerCase(); return !seen.has(k) && seen.add(k); }); } });
+pipeStep('split', { mode: 'pass', name: 'Split', blurb: 'One item per line or comma', fields: [{ id: 'by', label: 'Split at', type: 'select', value: 'lines', options: [['lines', 'Lines'], ['commas', 'Commas'], ['sentences', 'Sentences']] }], summary: c => `at ${c.by || 'lines'}`,
+  run: (items, c) => items.flatMap(i => i.text.split(c.by === 'commas' ? /\s*,\s*/ : c.by === 'sentences' ? /(?<=[.!?])\s+/ : /\n+/).map(s => s.replace(/^[-*•]\s*/, '').trim()).filter(Boolean).map(text => ({ text }))) });
+pipeStep('join', { mode: 'pass', name: 'Join', blurb: 'Everything as one item', fields: [{ id: 'with', label: 'Between items', type: 'select', value: 'lines', options: [['lines', 'New lines'], ['bullets', 'Bullets'], ['commas', 'Commas']] }], summary: c => `with ${c.with || 'lines'}`,
+  run: (items, c) => items.length ? [{ text: items.map(i => (c.with === 'bullets' ? '• ' : '') + i.text).join(c.with === 'commas' ? ', ' : '\n') }] : [] });
+pipeStep('template', { mode: 'pass', name: 'Format', blurb: 'Rewrite each item from a pattern', fields: [{ id: 'text', label: 'Pattern', type: 'text', value: '{{Plan}} costs ${{Price}}', hint: '{{field}} for a field, {{text}} for the item' }], summary: c => c.text || '…',
+  run: (items, c) => items.map(i => ({ ...i, text: pipeFill(c.text || '{{text}}', i, '') })) });
+pipeStep('count', { mode: 'pass', name: 'Count', blurb: 'How many came in', fields: [], summary: () => 'the items', run: items => [{ text: plural(items.length, 'item'), n: items.length }] });
+pipeStep('sum', { mode: 'pass', name: 'Total', blurb: 'Add up a field', fields: [{ id: 'field', label: 'Field', type: 'text', value: 'value' }], summary: c => `of ${c.field || 'value'}`,
+  run: (items, c) => { const t = items.reduce((s, i) => s + (dataNum(pipeField(i, c.field || 'value')) ?? 0), 0); return [{ text: `Total ${c.field || 'value'}: ${fmtNum(t)}`, n: t }]; } });
+// responders: who answers a step that responds. "auto" uses a connected AI first, then the built-in one
+function pipeResponder(c, fallback){
+  const id = (c.using || 'auto').toLowerCase();
+  if (id !== 'auto'){ if (!own(FLOW_RESPONDERS, id)) throw new Error(`No responder “${id}” is connected`); return FLOW_RESPONDERS[id]; }
+  return Object.values(FLOW_RESPONDERS).find(r => !r.builtin) || FLOW_RESPONDERS[fallback];
+}
+const pipeLines = r => (Array.isArray(r) ? r : String(r ?? '').split(/\n+/)).map(s => String(s).replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim()).filter(Boolean);
+pipeStep('ask', { mode: 'respond', name: 'Ask', blurb: 'A responder answers a prompt about what came in', fields: [
+  { id: 'prompt', label: 'Prompt', type: 'textarea', rows: 4, value: 'Summarise these in one sentence:\n{{all}}', hint: '{{all}} is everything that came in, {{count}} how many' },
+  { id: 'as', label: 'Answer as', type: 'select', value: 'text', options: [['text', 'One answer'], ['list', 'A list (one item per line)']], half: true },
+  { id: 'using', label: 'Responder', type: 'select', value: 'auto', half: true, options: () => [['auto', 'Automatic'], ...Object.entries(FLOW_RESPONDERS).map(([k, r]) => [k, r.name])] }],
+  summary: c => `${(c.prompt || '').split('\n')[0].slice(0, 40)}`,
+  async run(items, c, ctx){ const R = pipeResponder(c, 'echo'), prompt = pipeFill(c.prompt || '{{all}}', items[0], pipeAll(items));
+    const r = await R.run({ kind: 'ask', prompt, items, cfg: c, step: ctx.step }); return c.as === 'list' ? pipeLines(r).map(text => ({ text })) : [{ text: (Array.isArray(r) ? r.join('\n') : String(r ?? '')).trim() }]; } });
+pipeStep('ideas', { mode: 'respond', name: 'Ideas', blurb: 'New ideas from each item, to brainstorm on', fields: [
+  { id: 'count', label: 'Ideas per item', type: 'text', value: '3', half: true },
+  { id: 'using', label: 'Responder', type: 'select', value: 'auto', half: true, options: () => [['auto', 'Automatic'], ...Object.entries(FLOW_RESPONDERS).map(([k, r]) => [k, r.name])] },
+  { id: 'prompt', label: 'Steer it (optional)', type: 'text', value: '', hint: 'For an AI responder: “cheap to try”, “for first-time users”…' }],
+  summary: c => `${c.count || 3} per item`,
+  async run(items, c, ctx){ const R = pipeResponder(c, 'spark'), n = Math.min(10, Math.max(1, parseInt(c.count, 10) || 3));
+    const r = await R.run({ kind: 'ideas', prompt: c.prompt || '', items: items.slice(0, 20), count: n, cfg: c, step: ctx.step }); return pipeLines(r).slice(0, 100).map(text => ({ text })); } });
+FLOW_RESPONDERS.echo = { name: 'Built-in: fill in the prompt', builtin: true, run: ({ prompt }) => prompt };
+// built-in brainstorming without AI: prompts that turn each item into new angles (SCAMPER), and pairs of items combined
+const SPARK = ['What if “%” were free for the first month?', 'What could replace “%” entirely?', 'Combine “%” with something people already use daily', 'What if “%” took one click instead of many?',
+  'Who else could use “%”, and how?', 'Remove one step from “%”: what breaks, what improves?', 'Do “%” in reverse order', 'Make “%” visible to the whole team', 'What would “%” look like on a phone?', 'Turn “%” into a weekly ritual'];
+FLOW_RESPONDERS.spark = { name: 'Built-in: idea prompts', builtin: true, run: ({ items, count }) => {
+  const out = [], seed = s => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+  for (const it of items){ const t = it.text.replace(/\s+/g, ' ').slice(0, 60), s = seed(t); for (let k = 0; k < count; k++) out.push(SPARK[(s + k * 3) % SPARK.length].replace('%', t)); }
+  if (items.length > 1) out.push(`Combine “${items[0].text.slice(0, 40)}” with “${items[1].text.slice(0, 40)}”`);
+  return out; } };
+// writing back to the canvas: each write is an ordinary signed record by whoever runs the flow
+const pipeTarget = (c, kind) => { const t = DATA.titles.get(String(c.into || '').trim().toLowerCase()); if (!t || t.ek !== kind) throw new Error(`No ${DATA_KINDS[kind].name.toLowerCase()} called “${c.into || ''}” here`); return t; };
+const pipeBudget = (ctx, n) => { if (ctx.writes + n > PIPE_CAP.writes) throw new Error(`A run writes at most ${PIPE_CAP.writes} things`); ctx.writes += n; };
+const titlesOf = kind => () => [...DATA.titles.values()].filter(e => e.ek === kind).map(e => [dataTitle(e), dataTitle(e)]);
+pipeStep('notes', { mode: 'write', name: 'Make notes', blurb: 'A sticky note for each item, beside this step', fields: [{ id: 'color', label: 'Colour', type: 'select', value: 'ink', options: [['ink', 'Yellow'], ['blue', 'Blue'], ['green', 'Green'], ['pink', 'Pink'], ['violet', 'Violet'], ['orange', 'Orange']] }, { id: 'max', label: 'At most', type: 'text', value: '12', half: true }],
+  summary: c => `up to ${c.max || 12}`,
+  async run(items, c, ctx){ const max = Math.min(30, Math.max(1, parseInt(c.max, 10) || 12)), list = items.slice(0, max); pipeBudget(ctx, list.length);
+    const b = box(ctx.step), cols = Math.ceil(Math.sqrt(list.length));
+    for (const [k, it] of list.entries()){ const cid = await commitNode({ kind: 'sticky', x: b.x + b.w + 80 + (k % cols) * 180, y: b.y + Math.floor(k / cols) * 160, label: it.text.slice(0, 300), color: c.color || 'ink' }); if (cid) ctx.made.push(cid); }
+    return items; } });
+pipeStep('rows', { mode: 'write', name: 'Add rows to a table', blurb: 'Each item becomes a row; fields fill the columns with the same name', fields: [{ id: 'into', label: 'Table', type: 'select', value: '', options: titlesOf('table') }],
+  summary: c => `into ${c.into || '…'}`,
+  async run(items, c, ctx){ const t = pipeTarget(c, 'table'), V = tableView(t); pipeBudget(ctx, items.length);
+    for (const it of items){ const vals = V.cols.map((col, j) => { const v = pipeField(it, col); return v != null ? String(v) : j === 0 ? it.text : ''; }); const cid = await addRow(t, vals); if (cid) ctx.made.push(cid); }
+    return items; } });
+pipeStep('items', { mode: 'write', name: 'Add to a checklist', blurb: 'Each item becomes a checklist item', fields: [{ id: 'into', label: 'Checklist', type: 'select', value: '', options: titlesOf('checklist') }], summary: c => `into ${c.into || '…'}`,
+  async run(items, c, ctx){ const t = pipeTarget(c, 'checklist'); pipeBudget(ctx, items.length); for (const it of items){ const cid = await addRow(t, [it.text.slice(0, 300)]); if (cid) ctx.made.push(cid); } return items; } });
+pipeStep('log', { mode: 'write', name: 'Log to a metric', blurb: 'The first number that comes in becomes a reading', fields: [{ id: 'into', label: 'Metric', type: 'select', value: '', options: titlesOf('metric') }], summary: c => `into ${c.into || '…'}`,
+  async run(items, c, ctx){ const t = pipeTarget(c, 'metric'), v = items.map(i => i.n ?? dataNum(i.text)).find(v => v != null); if (v == null) throw new Error('No number came in'); pipeBudget(ctx, 1); const cid = await addReading(t, v, `from the flow “${parseFlow(ctx.flow.text).title}”`); if (cid) ctx.made.push(cid); return items; } });
+// it passes data, responds, or writes), and adding steps so each one connects to the last
+// @uses features/flow/engine, features/data/core, diagrams, ui/form
+// Flow label:  Brainstorm onboarding           Step label:  Keep the painful ones
+//              Long signup form                             do: filter
+//              No sample data                               where: votes > 2
+// (the lines under a flow's title are what it starts with; a step's lines are its action and settings)
+const STEP_KEYS = new Set(['do', 'where', 'by', 'order', 'count', 'fields', 'with', 'text', 'prompt', 'as', 'using', 'color', 'max', 'into', 'field']);
+function parseFlow(text){ const ls = String(text).split('\n').map(l => l.trim()).filter(Boolean); return { title: (ls[0] || 'Flow').slice(0, 120), input: ls.slice(1, 101).map(l => l.replace(/^[-*•]\s*/, '').slice(0, 500)).filter(Boolean) }; }
+const flowText = (title, input) => [title, ...input.map(i => `- ${i}`)].join('\n');
+// "key: value" lines; a line that isn't a known key continues the one before (a prompt can span lines)
+function parseStep(text){
+  const ls = String(text).split('\n'), c = { title: '', do: 'filter' }; let last = null;
+  for (const l of ls){
+    const m = l.match(/^\s*([a-z]+)\s*:\s?(.*)$/i);
+    if (m && STEP_KEYS.has(m[1].toLowerCase())){ last = m[1].toLowerCase(); c[last] = m[2].trim().slice(0, 2000); }
+    else if (!c.title && !last && l.trim()) c.title = l.trim().slice(0, 120);
+    else if (last && (last === 'prompt' || last === 'text')) c[last] += '\n' + l.replace(/^ {2}/, '');
+  }
+  c.do = String(c.do || 'filter').toLowerCase().trim();
+  return c;
+}
+const stepText = (title, c) => [title, `do: ${c.do}`, ...Object.entries(c).filter(([k, v]) => k !== 'do' && k !== 'title' && STEP_KEYS.has(k) && String(v ?? '').trim() !== '').map(([k, v]) => `${k}: ${String(v).replace(/\n/g, '\n  ')}`)].join('\n');
+
+/* the flow node */
+const FLOW_RUN = b => ({ x: b.x + b.w - 84, y: b.y + 12, w: 72, h: 26 });
+registerDataKind('flow', {
+  name: 'Flow', icon: 'pipe', glyph: '▶', menu: 'flow', blurb: 'Where a flow starts: connect steps to it, then run it', min: [300, 104],
+  label: flowText('Flow', []),
+  layout(){ return { w: 300, h: 104 }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const F = parseFlow(el.text), P = dataMemo(el, 'plan', () => pipePlan(el)), runs = PIPE.runs.get(pipeKey(el)) || [], last = runs.at(-1), running = pipeRunning === el.cid, tone = accent || TH.accent;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.10)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 2; rr(ctx, b.x, b.y, b.w, b.h, 12); ctx.fillStyle = TH.panel; ctx.fill(); ctx.restore();
+    rr(ctx, b.x, b.y, b.w, b.h, 12); ctx.lineWidth = 1.5; ctx.strokeStyle = tone; ctx.stroke();
+    ctx.save(); rr(ctx, b.x, b.y, b.w, b.h, 12); ctx.clip(); ctx.fillStyle = tint(tone, .08); ctx.fillRect(b.x, b.y, b.w, 50); ctx.restore();
+    fitText(F.title, b.x + 14, b.y + 25, b.w - 110, `700 15px ${FONTS.sans}`, TH.ink);
+    const r = FLOW_RUN(b); rr(ctx, r.x, r.y, r.w, r.h, 13); ctx.fillStyle = running ? tint(tone, .3) : tone; ctx.fill();
+    fitText(running ? 'Running…' : '▶ Run', r.x + r.w / 2, r.y + 13, r.w - 8, `650 12.5px ${FONTS.sans}`, running ? tone : '#fff', 'center');
+    const n = P.err ? 0 : P.order.length - 1;
+    fitText(P.err ? '⚠ ' + P.err : n ? P.order.slice(1, 6).map(c => pipeTitle(current(c) || S.records.get(c))).join(' → ') + (n > 5 ? ' → …' : '') : 'Connect a step to it: select it, then D → Step', b.x + 14, b.y + 64, b.w - 28, `500 12px ${FONTS.sans}`, P.err ? TH.red : TH.muted);
+    fitText(last ? `${last.ok ? '✓' : '⚠'} Ran ${when(last.t)} by ${whoName(last.author)} · ${plural(runs.length, 'run')}` : `${plural(n, 'step')}${F.input.length ? ` · starts with ${plural(F.input.length, 'item')}` : ''} · not run yet`,
+      b.x + 14, b.y + 86, b.w - 28, `500 11.5px ${FONTS.sans}`, last && !last.ok ? TH.red : TH.muted);
+  },
+  hit(el, w, b){ return inRect(w, FLOW_RUN(b)) ? { act: 'run', press: true } : null; },
+  press(el){ return runFlow(el); },
+  others: 'Press ▶ Run to run it. Only its author changes what it starts with.',
+  async form(el){
+    const F = el ? parseFlow(el.text) : null;
+    const v = await formDialog(el ? 'Edit flow' : 'New flow', [
+      { id: 'title', label: 'Name', type: 'text', value: F ? F.title : 'Brainstorm onboarding' },
+      { id: 'input', label: 'Start with (optional)', type: 'textarea', rows: 4, value: F ? F.input.join('\n') : 'Long signup form\nNo sample data\nPricing unclear', hint: 'One item per line. Steps connected to the flow receive these, plus whatever the items they pass through add.' },
+    ], { ok: el ? 'Sign the new version' : 'Add flow', why: 'A flow runs everything connected after it, in order. Every run is signed with what each step produced.' });
+    if (!v) return null;
+    return flowText(v.title.trim() || 'Flow', v.input.split('\n').map(s => s.trim()).filter(Boolean));
+  },
+  describe(el){ const P = dataMemo(el, 'plan', () => pipePlan(el)), runs = PIPE.runs.get(pipeKey(el)) || []; return `${P.err ? P.err : plural(P.order.length - 1, 'step')}${runs.length ? `, last run ${runs.at(-1).ok ? 'succeeded' : 'had errors'}` : ', not run yet'}. Press Run to run it`; },
+  lines(el){ const P = pipePlan(el); return P.err ? [P.err] : P.order.slice(1).map((c, i) => `${i + 1}. ${pipeTitle(current(c) || S.records.get(c))}`); },
+});
+
+/* the step node */
+const STEP_H = 158;
+registerDataKind('step', {
+  name: 'Step', icon: 'step', glyph: '◆', menu: 'flow', blurb: 'One action: pass data on, respond, or write to the canvas', min: [270, STEP_H],
+  label: stepText('Step', { do: 'filter', where: '' }),
+  layout(){ return { w: 280, h: STEP_H }; },
+  draw(b, L, { el, accent }){
+    if (!el) return;
+    const c = parseStep(el.text), st = PIPE_STEPS[c.do], mode = st?.mode || 'pass', tone = mode === 'respond' ? TH.accent : mode === 'write' ? TH.green : null, o = pipeOut(el);
+    dataCard(b, accent || (o?.state === 'run' ? TH.accent : null)); dataHead(b, c.title || st?.name || 'Step', PIPE_MODES[mode][0].toUpperCase(), '', tone);
+    fitText(st ? `${st.name} · ${st.summary(c)}` : `⚠ No action “${c.do}”`, b.x + 12, b.y + 50, b.w - 24, `500 12px ${FONTS.sans}`, st ? TH.muted : TH.red);
+    const ax = b.x + 8, ay = b.y + 62, aw = b.w - 16, ah = b.h - 62 - 30;
+    rr(ctx, ax, ay, aw, ah, 7); ctx.fillStyle = TH.panel2 || TH.paper; ctx.fill();
+    if (!o || o.state === 'run' && !o.out.length) fitText(o?.state === 'run' ? 'Working…' : 'Run the flow to see what comes out', ax + 10, ay + ah / 2, aw - 20, `500 12px ${FONTS.sans}`, o?.state === 'run' ? TH.accent : TH.muted);
+    else if (o.err) fitText('⚠ ' + o.err, ax + 10, ay + 16, aw - 20, `600 12px ${FONTS.sans}`, TH.red);
+    else { const rows = Math.floor((ah - 8) / 17), shown = o.out.slice(0, o.out.length > rows ? rows - 1 : rows);
+      shown.forEach((it, i) => fitText((o.out.length > 1 ? '• ' : '') + it.text.replace(/\s+/g, ' '), ax + 10, ay + 13 + i * 17, aw - 20, `${mode === 'respond' ? 500 : 400} 12px ${FONTS.sans}`, TH.ink));
+      if (o.out.length > shown.length) fitText(`+ ${o.out.length - shown.length} more`, ax + 10, ay + 13 + shown.length * 17, aw - 20, `500 11.5px ${FONTS.sans}`, TH.muted);
+      if (!o.out.length) fitText('Nothing came out', ax + 10, ay + 16, aw - 20, `500 12px ${FONTS.sans}`, TH.muted); }
+    const foot = !o ? 'Not run yet' : o.state === 'run' ? 'Running…' : `${o.err ? '⚠' : '✓'} ${o.in != null ? `${o.in} in → ` : ''}${o.out.length} out${o.ms ? ` · ${o.ms} ms` : ''}${o.run ? ` · ${whoName(o.run.author)}, ${when(o.run.t)}` : ''}`;
+    fitText(foot, b.x + 12, b.y + b.h - 14, b.w - 24, `500 11.5px ${FONTS.sans}`, o?.err ? TH.red : o?.state === 'run' ? TH.accent : TH.muted);
+  },
+  others: 'Only its author changes this step. Run the flow to see what it does.',
+  insert: () => stepMenu(),
+  form: (el, { action } = {}) => stepForm(el, action),
+  describe(el){ const c = parseStep(el.text), st = PIPE_STEPS[c.do], o = pipeOut(el); return `${st ? `${st.name.toLowerCase()} ${st.summary(c)}, ${PIPE_MODES[st.mode][0].toLowerCase()}` : `unknown action ${c.do}`}${o ? `; last gave ${plural(o.out.length, 'item')}${o.err ? `, error: ${o.err}` : ''}` : ''}`; },
+  lines(el){ const c = parseStep(el.text), o = pipeOut(el); return [`${c.do}: ${PIPE_STEPS[c.do]?.summary(c) || ''}`, ...(o ? o.out.slice(0, 8).map(i => '• ' + i.text) : [])]; },
+});
+// the form for one action's settings; options can be computed when it opens (tables on the canvas, responders)
+async function stepForm(el, action){
+  const c = el ? parseStep(el.text) : { do: action }, st = PIPE_STEPS[c.do]; if (!st){ toast(`No action “${c.do}”.`); return null; }
+  const fields = st.fields.map(f => ({ ...f, value: c[f.id] ?? f.value, options: typeof f.options === 'function' ? f.options() : f.options }));
+  for (const f of fields) if (f.type === 'select' && f.options && !f.options.length) f.options = [['', 'Nothing to pick on this canvas yet']];
+  const v = await formDialog(`${el ? 'Edit' : 'New'} step: ${st.name}`, [
+    { id: 'title', label: 'Name', type: 'text', value: c.title || st.name },
+    ...(el ? [{ id: 'do', label: 'Action', type: 'select', value: c.do, options: Object.entries(PIPE_STEPS).map(([k, s]) => [k, `${s.name} (${PIPE_MODES[s.mode][0].toLowerCase()})`]) }] : []),
+    ...(fields.length ? [{ id: 'sec', label: 'Settings', type: 'section' }] : []), ...fields,
+  ], { ok: el ? 'Sign the new version' : 'Add step', why: `${st.blurb}. ${st.mode === 'pass' ? 'It only passes data on, changed.' : st.mode === 'respond' ? 'A responder writes something new; with AI connected, it answers.' : 'It writes to the canvas when the flow runs, signed by whoever runs it.'}` });
+  if (!v) return null;
+  const out = { do: v.do || c.do }; for (const f of fields) out[f.id] = String(v[f.id] ?? '').trim();
+  return stepText(v.title.trim() || st.name, out);
+}
+// D → Step: pick an action, fill it in, and it lands after what's selected, connected to it
+function stepMenu(){
+  const items = [];
+  for (const [mode, [label]] of Object.entries(PIPE_MODES)){ items.push({ head: label }); for (const [k, s] of Object.entries(PIPE_STEPS)) if (s.mode === mode) items.push({ label: s.name, sub: s.blurb, icon: mode === 'respond' ? 'sparkle' : mode === 'write' ? 'edit' : 'step', tone: mode === 'respond' ? 'mlive' : '', run: () => stepInsert(k) }); }
+  openMenu(dataBtn, items, null, 'hub data');
+}
+async function stepInsert(action){
+  closeMenu(false);
+  const sel = S.sel.size === 1 ? current([...S.sel][0]) : null, from = sel && sel.type !== 'ARROW' && visible(sel) ? sel : null;
+  const label = await stepForm(null, action); if (label == null) return null;
+  const L = nodeLayout('step', label), sb = from && box(from), c = viewCenter();
+  const spot = sb ? placeNear(sb, 'right', L.w, L.h, null) : { x: c.x - L.w / 2, y: c.y - L.h / 2 };
+  const cid = await commitNode({ kind: 'step', x: spot.x, y: spot.y, label, color: 'ink', parent: from?.type === 'NODE' ? from.cid : null });
+  if (!cid) return null;
+  if (from && from.type !== 'NODE') await commitArrow(from, current(cid));
+  S.sel = new Set([cid]); ensureVisible(current(cid)); dirty = true;
+  say(`Step “${parseStep(label).title}” added${from ? ` after ${pipeTitle(from)}` : ''}. With it selected, D → Step adds the next one.`);
+  return cid;
+}
+// the canvas, the palette, and a template that brainstorms with a flow
+// @uses features/flow/engine, features/flow/nodes, ui/panels, ui/hub
+const flowsHereNow = () => S.D.els.filter(e => e.type === 'NODE' && e.ek === 'flow' && visible(e) && !S.D.hidden.has(e.cid) && !S.D.superseded.has(e.cid));
+registerPanel({
+  id: 'pipes', title: 'Flows', blurb: 'Items connected in order and run: some pass data on, some respond, some write back. Every run is signed.',
+  paint(body){
+    const fs = flowsHereNow();
+    if (!fs.length){ body.innerHTML = `<p class="empty">No flows yet. A flow starts at a Flow node; connect notes, data and steps after it, then run it.</p><div class="acts"><button class="btn" data-new>${ic('pipe')}New flow</button></div>`; return; }
+    const focus = fs.find(f => pipeKey(f) === PIPE.focus) || fs[0];
+    const card = f => { const P = dataMemo(f, 'plan', () => pipePlan(f)), runs = PIPE.runs.get(pipeKey(f)) || [], last = runs.at(-1);
+      return `<li class="card${f === focus ? ' hot' : ''}"><div class="hd"><b>${esc(parseFlow(f.text).title)}</b>${last ? `<span class="pill ${last.ok ? 'good' : 'bad'}">${last.ok ? 'Ran' : 'Errors'}</span>` : '<span class="pill">Not run</span>'}</div>
+        <small>${P.err ? esc(P.err) : plural(P.order.length - 1, 'step')}${last ? ` · ${esc(whoName(last.author))}, ${when(last.t)} · ${plural(runs.length, 'run')}` : ''}</small>
+        <div class="acts"><button class="btn primary" data-run="${f.cid}"${pipeRunning ? ' disabled' : ''}>${pipeRunning === f.cid ? 'Running…' : '▶ Run'}</button><button class="btn" data-trace="${f.cid}">What it did</button><button class="btn" data-go="${f.cid}">Show</button></div></li>`; };
+    const runs = PIPE.runs.get(pipeKey(focus)) || [], last = runs.at(-1), log = last && pipeLog(last);
+    const trace = !last ? '<p class="muted">Run it to see what each step produces.</p>' : !log ? '<p class="muted">The run’s log hasn’t arrived yet.</p>'
+      : `<ol class="fl-trace">${log.map((s, i) => `<li><div class="hd"><span class="pill ${i ? PIPE_MODES[s.mode][1] || '' : 'acc'}">${i ? PIPE_MODES[s.mode][0] : 'Starts'}</span><b>${esc(s.t || 'Step')}</b><small>${i ? `${s.in} in → ${s.out.length} out` : plural(s.out.length, 'item')}</small></div>
+          ${s.err ? `<p class="bad">⚠ ${esc(s.err)}</p>` : s.out.length ? `<ul>${s.out.slice(0, 4).map(i => `<li>${esc(i.text.slice(0, 160))}</li>`).join('')}${s.out.length > 4 ? `<li class="muted">+ ${s.out.length - 4} more</li>` : ''}</ul>` : i ? '<p class="muted">Nothing came out.</p>' : '<p class="muted">Starts empty: the steps bring the data.</p>'}</li>`).join('')}</ol>
+        <small class="muted">Signed by ${esc(whoName(last.author))}, ${when(last.t)}. Responses are kept exactly as given, so everyone sees the same answer.</small>`;
+    body.innerHTML = `<ul class="plain">${fs.map(card).join('')}</ul><h3>What “${esc(parseFlow(focus.text).title)}” did</h3>${trace}
+      <div class="acts"><button class="btn" data-new>${ic('pipe')}New flow</button></div>`;
+  },
+  async click(e, b){
+    if (b.dataset.run){ const f = S.records.get(b.dataset.run); if (f) await runFlow(f); return; }
+    if (b.dataset.trace){ PIPE.focus = pipeKey(S.records.get(b.dataset.trace)); paintPanel('pipes'); return; }
+    if (b.dataset.go) return goTo(b.dataset.go);
+    if (b.hasAttribute('data-new')){ closePanel(false); dataInsert('flow'); }
+  },
+});
+CHANGE_HOOKS.push(() => paintPanel('pipes'));
+registerFeature({ id: 'pipes', name: 'Flows', group: 'data', icon: 'pipe', records: ['RUN'],
+  blurb: 'Connect notes, data and steps in order and run them; responses are signed, and AI can answer when connected',
+  status: () => pipeRunning ? 'running' : (n => n ? plural(n, 'flow') : '')(flowsHereNow().length), open: () => openPanel('pipes') });
+PALETTE_HOOKS.push(add => { for (const f of flowsHereNow()) add('data', `Run flow: ${parseFlow(f.text).title}`, () => runFlow(f)); add('data', 'Flows: every flow and what it did', () => openPanel('pipes')); });
+
+/* a run on the canvas: the step at work is outlined and the connectors it has passed along light up */
+RENDER_HOOKS.world.push(() => {
+  if (!PIPE_LIVE.size) return;
+  const z = S.view.zoom, t = performance.now() / 60;
+  for (const [c, s] of PIPE_LIVE){ const el = S.records.get(c), b = el && visible(el) && box(el); if (!b) continue;
+    if (s.state === 'run'){ ctx.save(); ctx.strokeStyle = TH.accent; ctx.lineWidth = 2.5 / z; ctx.setLineDash([8 / z, 6 / z]); ctx.lineDashOffset = -t / z; rr(ctx, b.x - 6 / z, b.y - 6 / z, b.w + 12 / z, b.h + 12 / z, 14 / z); ctx.stroke(); ctx.restore(); }
+    else if (s.state === 'wait'){ ctx.save(); ctx.globalAlpha = .5; ctx.strokeStyle = TH.line; ctx.lineWidth = 1 / z; ctx.setLineDash([3 / z, 4 / z]); rr(ctx, b.x - 4 / z, b.y - 4 / z, b.w + 8 / z, b.h + 8 / z, 12 / z); ctx.stroke(); ctx.restore(); }
+  }
+});
+FRAME_HOOKS.push(() => { if (pipeRunning) dirty = true; });
+// notes and data nodes in a running flow say what they passed on; steps and flows show it themselves
+RENDER_HOOKS.screen.push(() => {
+  for (const [c, s] of PIPE_LIVE){ const el = S.records.get(c); if (!el || !visible(el) || el.type === 'NODE' && (el.ek === 'step' || el.ek === 'flow') || s.state === 'wait') continue;
+    placeBadge(el, 'bottom', s.state === 'run' ? '… passing on' : s.err ? '⚠ ' + s.err.slice(0, 30) : `✓ passes ${plural(s.out?.length || 0, 'item')}`, s.state === 'run' ? 'acc' : s.err ? 'bad' : 'good'); }
+});
+
+/* a canvas to start from: brainstorm with a flow */
+TEMPLATES.push({ id: 'flow-brainstorm', name: 'Brainstorm flow', icon: 'pipe', blurb: 'A flow that takes pain points, keeps the big ones, sparks ideas and puts them on notes. Connect AI to make the ideas smarter.', build: async c => {
+  const mk = (kind, dx, dy, label, parent = null) => commitNode({ kind, x: c.x + dx, y: c.y + dy, label, parent });
+  const f = await mk('flow', -620, -200, flowText('Brainstorm onboarding', []));
+  const t = await mk('table', -620, -40, tableText('Pain points', ['Pain', 'Votes'], [['Long signup form', '5'], ['No sample data', '4'], ['Pricing unclear', '1'], ['Slow first load', '3']]));
+  const s1 = await mk('step', -260, -200, stepText('Keep the big ones', { do: 'filter', where: 'Votes >= 3' }), f);
+  await commitArrow(current(t), current(s1));
+  const s2 = await mk('step', 60, -200, stepText('Spark ideas', { do: 'ideas', count: '2', using: 'auto' }), s1);
+  await mk('step', 380, -200, stepText('Put them on notes', { do: 'notes', color: 'ink', max: '8' }), s2);
 } });
 // comment), the tool dock, contextual hints, tooltips, the menu component, the Share menu and the welcome card.
 // @uses interaction (setMode, setPlacing, placing), eraser (erasing), canvases, diagrams, feedback, story, audit

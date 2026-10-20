@@ -22,6 +22,7 @@ Every feature is **one module** in `js/features/`. It registers itself (`registe
 | **Session bar** (under the title) | A silent round's prompt and time, the agenda item and its time box with the queue for the floor, a ritual's outputs; each with its buttons |
 | **On the canvas** | Stance counts, "Decided", claim states, tasks blocked and the critical path, zone owners and suggestions to accept, where attention gathers, sealed cards, replay's marker, what changed |
 | **Data button** (grid, in the dock; D) | Tables, checklists, metrics, charts, formulas, dates, links and code: data anyone can change one signed value at a time ([DATA.md](DATA.md)) |
+| **Flows** (Data → Flow, Step; Team → Flows) | Chain notes, data and steps and run them; responses are signed, AI connects as a responder ([FLOWS.md](FLOWS.md)) |
 | **Canvas home** | Retro, sprint planning, design review and kickoff with their contract running |
 | **Help (?)** | *Working as a team* explains all of this |
 

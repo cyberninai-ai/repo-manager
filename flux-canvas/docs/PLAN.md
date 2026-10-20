@@ -123,6 +123,12 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 - **Interface:** the Data button and D, in-place editing (double-click, Tab), one-click ticks and "+ Add row", the Project tracker template.
 - **Accept:** `tests/datanodes.mjs` (36 checks, two people over WebRTC).
 
+### 17 · Flows (done) · see FLOWS.md
+- **Model:** a Flow node and whatever its connectors reach, run in order; Step nodes that pass data, respond or write.
+- **Signed runs:** `RUN` carries every step's output, so responses (AI's especially) are the same for everyone and attributable.
+- **AI-ready:** `FLOW_RESPONDERS` takes any responder; until one is connected, built-in responders fill in prompts and spark ideas.
+- **Accept:** `tests/pipes.mjs` (21 checks, two people, a stand-in AI on one side).
+
 ### Decisions recorded
 - **Transport:** a plain WebSocket relay rather than Gun, untrusted by design because clients verify every record. WebRTC was added in phase 14 as a third transport behind the same `post()`/`onWire()` pair; codes are swapped by hand so no signalling server is needed.
 - **ES modules:** deferred. `file://` refuses them, and the shared frame state would need setters everywhere. Enforced layers give the boundary guarantee now.
@@ -136,6 +142,7 @@ The plan is ordered so each phase ships on its own and leaves the app working. P
 | End-to-end encryption on the relay | The relay can read what it forwards and stores | Per-canvas symmetric key shared in the link fragment; encrypt `msg` bodies |
 | Public anchoring of deliveries | Witnesses date a version among people; a chain dates it for anyone | One transaction per delivery root; a payout connector can do it with the settlement |
 | A payout connector (FXN service pool) | Settlements are signed instructions; something must move the money | `PAYOUT_CONNECTORS.push({ name, run })`; the manifest is the input |
+| An AI responder for flows | Ask and Ideas steps answer with built-in responders today | `FLOW_RESPONDERS.ai = { name, run }`; key handling stays in the browser or a relay-side proxy |
 | An automatic grounder | Claims are grounded by people today | `GROUNDERS.push({ name, run })`; it signs checks with its own key |
 | Time-locked sealing | A sealer who goes offline can't be forced to reveal | Encrypt to a time-lock service (drand tlock) instead of the sealer's key |
 | Scoped reveal and private canvases | Sealed records open to everyone; the relay reads plaintext | Per-person encryption keys published with profiles |

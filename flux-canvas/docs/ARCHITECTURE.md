@@ -133,6 +133,7 @@ A feature registers here and needs no edits to the core:
 | `drawBadge(x, y, text, tone, run?)` / `screenBox(el)` (ui/panels) | clickable labels beside elements | stances, decisions, claims, zones, dependencies, what changed |
 | `NODE_KINDS[kind].layout` / `.draw` / `.fit` / `.edit` / `.svg` / `.describe` (render/nodes) | a node kind that lays itself out from its label, draws itself, grows with live data, edits and exports its own way | data nodes |
 | `registerDataKind(kind, spec)` (features/data/core) | a data node kind: layout, draw, hit areas, in-place edits, structure form, description, export lines ([DATA.md](DATA.md)) | table, checklist, metric, chart, formula, date, link, code |
+| `pipeStep(id, { mode, name, blurb, fields, summary, run })` / `FLOW_RESPONDERS[id] = { name, run }` (features/flow/engine) | a flow action; a responder for Ask and Ideas steps, which is where AI connects ([FLOWS.md](FLOWS.md)) | the built-in steps and responders |
 | `RECORD_TYPES[action].say(rec, target)` | what a record did, in words, for the activity log | data records |
 | `runHooks(list, …)` | calls each hook, logs and isolates failures | — |
 
@@ -272,6 +273,9 @@ Each row is one user-facing surface, with the files that own it.
 | features/data/link.js | Link cards: http(s) only, opened with one click |
 | features/data/code.js | Code snippets: line numbers, fixed width, light colours |
 | features/data/templates.js | The Project tracker template |
+| features/flow/engine.js | Flows: the graph and run order, the steps (pass, respond, write), responders (where AI connects), RUN and its log |
+| features/flow/nodes.js | The Flow node (Run button) and the Step node; adding a step connected to the last |
+| features/flow/panel.js | The Flows panel, the live view of a run, palette commands, the Brainstorm flow template |
 | ui/toolbar.js | The tool model (select, hand, draw, eraser, rectangle, ellipse, line, sticky note, shapes, text, |
 | interaction/keyboard.js | Global keyboard map |
 | boot.js | Boot: identity, saved records, first render |

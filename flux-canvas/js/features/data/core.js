@@ -81,12 +81,12 @@ function dataCard(b, accent, kind){
   if (accent){ ctx.save(); rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(b.x, b.y, b.w, 3); ctx.restore(); }
 }
 // the title row: a small kind tag on the right, the title on the left; returns the y where content starts
-function dataHead(b, title, tag, extra = ''){
+function dataHead(b, title, tag, extra = '', tone = null){
   const y = b.y + 18;
   ctx.font = `500 12px ${FONTS.sans}`; const ew = extra ? ctx.measureText(extra).width : 0;
   ctx.font = `600 10px ${FONTS.sans}`; const tw = ctx.measureText(tag).width + 12;
-  rr(ctx, b.x + b.w - tw - 10, y - 8, tw, 16, 8); ctx.fillStyle = TH.panel2 || TH.paper; ctx.fill();
-  ctx.fillStyle = TH.muted; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(tag, b.x + b.w - tw / 2 - 10, y + .5);
+  rr(ctx, b.x + b.w - tw - 10, y - 8, tw, 16, 8); ctx.fillStyle = tone ? tint(tone, .14) : TH.panel2 || TH.paper; ctx.fill();
+  ctx.fillStyle = tone || TH.muted; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(tag, b.x + b.w - tw / 2 - 10, y + .5);
   ctx.textAlign = 'left';
   fitText(title || 'Untitled', b.x + 12, y, b.w - tw - 34 - (extra ? ew + 8 : 0), `650 14px ${FONTS.sans}`, TH.ink);
   if (extra){ ctx.font = `500 12px ${FONTS.sans}`; ctx.fillStyle = TH.muted; ctx.textBaseline = 'middle'; ctx.fillText(extra, b.x + b.w - tw - 18 - ew, y + .5); }
@@ -231,13 +231,16 @@ function dataSVG(el, b, n){
 
 /* inserting: the Data button in the dock, the palette, and D */
 const DATA_ORDER = ['table', 'checklist', 'metric', 'chart', 'formula', 'date', 'link', 'code'];
-const dataItems = () => [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => dataInsert(k) }))];
+// kinds with menu: 'flow' (features/flow) get their own heading; a kind may insert its own way (insert)
+const dataItem = k => ({ label: DATA_KINDS[k].name, sub: DATA_KINDS[k].blurb, icon: DATA_KINDS[k].icon, run: () => (DATA_KINDS[k].insert || dataInsert)(k) });
+const dataItems = () => { const flow = Object.keys(DATA_KINDS).filter(k => DATA_KINDS[k].menu === 'flow');
+  return [{ head: 'Insert data' }, ...DATA_ORDER.filter(k => DATA_KINDS[k]).map(dataItem), ...(flow.length ? [{ head: 'Build a flow' }, ...flow.map(dataItem)] : [])]; };
 const dataBtn = $('dataBtn');
 function openData(){ openMenu(dataBtn, dataItems(), null, 'hub data'); }
 dataBtn.onclick = () => $('menu').hidden ? openData() : closeMenu();
-PALETTE_HOOKS.push(add => { for (const k of DATA_ORDER) if (DATA_KINDS[k]) add('data', `Insert ${DATA_KINDS[k].name.toLowerCase()}: ${DATA_KINDS[k].blurb}`, () => dataInsert(k)); });
+PALETTE_HOOKS.push(add => { for (const k of Object.keys(DATA_KINDS)) add('data', `Insert ${DATA_KINDS[k].name.toLowerCase()}: ${DATA_KINDS[k].blurb}`, () => (DATA_KINDS[k].insert || dataInsert)(k)); });
 KEY_HOOKS.push((e, c) => { if (c.onCanvas && !c.mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'd'){ e.preventDefault(); openData(); return true; } return false; });
-registerFeature({ id: 'data', name: 'Data nodes', group: 'remember', icon: 'table', records: ['CELL', 'TICK', 'READING', 'ROW'],
+registerFeature({ id: 'data', name: 'Data nodes', group: 'data', icon: 'table', records: ['CELL', 'TICK', 'READING', 'ROW'],
   blurb: 'Tables, checklists, metrics, charts, formulas, dates, links and code on the canvas, edited one signed value at a time',
   status: () => { const n = S.D.els.filter(el => el.type === 'NODE' && DATA_KINDS[el.ek] && visible(el)).length; return n ? plural(n, 'data node') : ''; },
   open: openData });

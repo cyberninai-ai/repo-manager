@@ -13,7 +13,7 @@ const feats = await A.evaluate(() => FEATURES.filter(f => f.open).map(f => ({ id
 ok(feats.length >= 22, `the Team hub lists ${feats.length} features`);
 for (const f of feats){
   await A.click('#hubBtn'); await A.waitForTimeout(80);
-  const item = A.locator('#menu [role^=menuitem]', { hasText: f.name }).first();
+  const item = A.locator('#menu [role^=menuitem]', { hasText: new RegExp('^' + f.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).first();   // by its label, so “Flows” isn’t “Approval flows”
   await item.click(); await A.waitForTimeout(250);
   const where = await A.evaluate(id => document.getElementById('px-' + id)?.style.display === 'flex' ? '#px-' + id : !document.getElementById('history').hidden ? '#history' : !document.getElementById('menu').hidden && /Insert data/.test(document.getElementById('menu').textContent) ? '#menu' : document.getElementById('formDlg')?.style.display === 'block' ? '#formDlg' : WK.on ? '#work' : '', f.id);
   ok(!!where, `${f.name} opens (${where || 'nothing'})`);

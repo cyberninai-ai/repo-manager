@@ -8,7 +8,7 @@ const scr = async (p, kind, geom) => { await p.evaluate(k => { const el = S.D.el
 
 // 1. Ana inserts a table from the Data button: one form, then it's on the canvas for both
 await A.click('#dataBtn'); await A.waitForTimeout(150);
-ok(await A.evaluate(() => /Insert data/.test(document.getElementById('menu').textContent) && document.querySelectorAll('#menu [role=menuitem]').length === 8), 'the Data menu offers eight kinds');
+ok(await A.evaluate(() => /Insert data/.test(document.getElementById('menu').textContent) && document.querySelectorAll('#menu [role=menuitem]').length === 10), 'the Data menu offers eight data kinds, plus Flow and Step');
 v.push(...(await axeOn(A, '#menu')).map(x => `menu: ${x}`));
 await A.locator('#menu [role=menuitem]', { hasText: 'Rows and columns' }).click(); await A.waitForTimeout(150);
 await A.fill('#ff-title', 'Pricing'); await A.fill('#ff-cols', 'Plan, Price, Seats');

@@ -2,7 +2,7 @@
 // @module ui/hub — The Team button: every team feature, grouped by what you are trying to do, with live status
 // (a silent round running, a decision due for review). Features add themselves with registerFeature (core/hooks).
 // @uses ui/toolbar (menus), ui/palette
-const HUB_GROUPS = [['meet', 'Run the session'], ['decide', 'Decide'], ['deliver', 'Deliver and get paid'], ['remember', 'Remember'], ['network', 'Network and identity']];
+const HUB_GROUPS = [['meet', 'Run the session'], ['decide', 'Decide'], ['deliver', 'Deliver and get paid'], ['data', 'Data and flows'], ['remember', 'Remember'], ['network', 'Network and identity']];
 // what is waiting on you, from every feature: approvals, suggestions to answer, reviews due, checks to make…
 function needsYou(){ const out = []; for (const f of FEATURES) if (f.needs) try { for (const n of f.needs() || []) out.push({ ...n, icon: n.icon || f.icon }); } catch {} return out; }
 function paintHubBadge(){ const b = $('hubN'), n = S.me ? needsYou().length : 0; if (b) b.textContent = n || ''; $('hubBtn').setAttribute('aria-label', `Team: meetings, decisions, delivery, memory${n ? ` · ${n} waiting for you` : ''}`); }

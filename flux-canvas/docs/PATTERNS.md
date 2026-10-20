@@ -129,6 +129,14 @@ Tables, checklists, metrics, charts, formulas, dates, links and code are `NODE` 
 
 While a node is locked, values signed after the lock take no part. In a zone they are gated like any edit.
 
+## Flows
+
+A flow is a `flow` node plus whatever its connectors reach; steps are `step` nodes whose label is `do: action` and its settings. Running signs one record; full reference: [FLOWS.md](FLOWS.md).
+
+| Action | Fields | Who · rule |
+|---|---|---|
+| `RUN` | `I R V S C M` | the flow's first version, a log blob (what each step produced, responses included), ok or error, step count, title; the log is rebuilt and capped by every reader · draw |
+
 `N` is reserved on every record (revoke or restore). Records marked `inherit: false` (ownership, grants, titles, deliveries, approvals, payments, meetings, identity) stay out of forks.
 
 ## Not records
