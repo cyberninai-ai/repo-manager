@@ -1,0 +1,7 @@
+{"n":5,"types":["DRAW","SHAPE","SHAPE","ARROW","TEXT"],"rej":0}
+sel 1
+{"n":8,"hidden":1,"rej":0,"lam":8}
+export bytes <n> CANVAS-I-<key>-R-testcanvas01-P-.DRAW-I-<key>-R-<cid>-C-ink-W-4-
+after reload {"n":8,"hidden":1,"rej":0}
+p1 sees {"n":9,"authors":2}
+tamper rejected 1

@@ -1,0 +1,30 @@
+/* @module css/bottom-bar — Contextual style bar: only the groups the current tool or selection can use */
+#bar{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:4px;
+  width:max-content;max-width:calc(100% - 24px);padding:5px 6px;border-radius:var(--r-lg);flex-wrap:wrap;justify-content:center}
+#bar .grp{display:flex;align-items:center;gap:6px;padding:0 8px;height:36px}
+#bar .grp:not([hidden]) ~ .grp:not([hidden]){border-left:1px solid var(--line2)}
+#bar .lbl2{font-size:11px;font-weight:600;color:var(--muted);margin-right:2px}
+#bar .sws{display:flex;gap:4px;align-items:center}
+#bar .sw2{width:22px;height:22px;border-radius:50%;border:0;padding:0;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);transition:transform .1s}
+#bar .sw2:hover{transform:scale(1.1)}
+#bar .sw2[aria-checked="true"]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--cyan)}
+#bar input[type=range]{width:96px;accent-color:var(--cyan);margin:0}
+#bar .val{font-size:12px;min-width:22px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+#bar .pre{width:26px;height:26px;display:grid;place-items:center;overflow:hidden}
+#bar .pre i{display:block;border-radius:50%;background:currentColor;max-width:22px;max-height:22px}
+#bar .pre b{font-weight:600;line-height:1}
+#bar .tgt{font-size:11px;font-weight:500;color:var(--cyan);background:var(--accent-weak);padding:2px 8px;border-radius:999px;white-space:nowrap}
+#bar .tgt:empty{display:none}
+#bar .kd,#bar .ft{width:32px;height:32px;border-radius:7px;border:0;background:transparent;cursor:pointer;color:var(--ink);padding:0;display:grid;place-items:center}
+#bar .kd .ic{width:20px;height:20px;stroke-width:1.5}
+#bar .kd:hover,#bar .ft:hover{background:var(--hover)}
+#bar .kd[aria-checked="true"],#bar .ft[aria-checked="true"]{background:var(--accent-weak);color:var(--cyan)}
+#bar .fonts,#bar .seg{display:flex;gap:2px;margin-left:4px}
+#bar .ft{font-size:14px;font-weight:600}
+#bar .tog{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted)}
+#bar .tog[aria-pressed="true"]{background:var(--accent-weak);border-color:var(--accent-line);color:var(--cyan)}
+#bar .fold{width:28px;height:28px;border:0;background:transparent;cursor:pointer;color:var(--muted);border-radius:7px;display:grid;place-items:center}
+#bar .fold:hover{background:var(--hover)}
+#bar .fold .ic{width:16px;height:16px}
+#bar.min{padding:3px}
+#bar.min > :not(.fold){display:none}

@@ -1,0 +1,6 @@
+image/png  {"open":true,"preview":305,"val":""} {"t":"ImageBitmap","alt":"image/png sample"}
+image/jpeg {"open":true,"preview":305,"val":""} {"t":"ImageBitmap","alt":"image/jpeg sample"}
+image/webp {"open":true,"preview":305,"val":""} {"t":"ImageBitmap","alt":"image/webp sample"}
+svg        {"open":true,"preview":250,"val":""} {"t":"HTMLCanvasElement","alt":"svg sample"}
+junk       {"open":false,"preview":250,"val":"svg sample"} {"t":"HTMLCanvasElement","alt":"svg sample"} | toast: This browser cannot read that image (application/octet-stream). Try a PNG, JPEG, WebP or GIF.
+after reload ["ImageBitmap","ImageBitmap","ImageBitmap","HTMLCanvasElement"]

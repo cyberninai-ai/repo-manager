@@ -1,0 +1,9 @@
+previews [
+  'you<date> Should this wall move 1m to the left? It would free up the h',
+  'you<date> Storage unit, check the depth',
+  'you<date> Overall looks good'
+]
+hover big: you<date> Should this wall move 1m to the left? It would free up the hallway. 1 reply · latest from you: Yes, agreed.
+follow dx 60
+opened thread { panel: 'flex', active: true, thumbs: [ true, true, true ] }
+toggle off -> 2 (only active/hover remain)

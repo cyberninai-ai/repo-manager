@@ -1,0 +1,2 @@
+dialog {"open":"block","preview":333,"tag":"CANVAS"}
+after OK {"open":"none","images":1}

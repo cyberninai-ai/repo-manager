@@ -1,0 +1,3 @@
+guides [ 'x', 'y' ]
+left edges -300 -300 | B top vs A bottom -56 -56
+free drag x -297

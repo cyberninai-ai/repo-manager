@@ -1,0 +1,20 @@
+{
+  "name": "flux-canvas",
+  "private": true,
+  "type": "module",
+  "description": "A signing surface that happens to be a drawing tool: every element is a signed, content-addressed pattern.",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "check": "node tools/build.mjs --check && node tools/deps.mjs",
+    "test": "node tests/run.mjs",
+    "test:source": "FLUX_TARGET=source node tests/run.mjs",
+    "serve": "python3 -m http.server 8080",
+    "relay": "node tools/relay.mjs --data relay-data",
+    "deps": "node tools/deps.mjs --write",
+    "test:update": "UPDATE_SNAPSHOTS=1 node tests/run.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "^4.10.0",
+    "playwright": "^1.48.0"
+  }
+}

@@ -1,0 +1,41 @@
+/* @module css/base — Reset, page, canvas element and the shared controls (icon, icon button, button, chip, link, kbd) */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+  font:14px/1.45 var(--font-ui);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+button,input,textarea,select{font:inherit;color:inherit}
+button{-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+
+/* one icon style everywhere: 1.75px strokes on a 24px grid */
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;display:block}
+.gl{font-size:14px;line-height:1;min-width:18px;text-align:center;display:inline-block}
+
+/* a surface that floats over the canvas */
+.panel,#titlebar,#tools,#corner .grp,#bar,#zoomui .row,#insp,#menu,#hint,#present,#history{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+
+.ibtn{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:36px;height:36px;padding:0;border:0;border-radius:8px;
+  background:transparent;color:var(--ink);cursor:pointer;flex:none;position:relative;transition:background .12s,color .12s}
+.ibtn:hover{background:var(--hover)}
+.ibtn:active{transform:translateY(.5px)}
+.ibtn[aria-pressed="true"],.ibtn[aria-expanded="true"]{background:var(--accent-weak);color:var(--cyan)}
+.ibtn.sm{width:30px;height:30px;border-radius:7px}
+.ibtn.sm .ic{width:16px;height:16px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;
+  background:var(--panel);color:var(--ink);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--hover)}
+.btn.primary,.btn[data-primary]{background:var(--cyan);border-color:var(--cyan);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{color:var(--red)}
+.btn.danger:hover{border-color:var(--red);background:color-mix(in srgb,var(--red) 8%,var(--panel))}
+.btn kbd{color:var(--muted)}
+.link{border:0;background:transparent;color:var(--cyan);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:4px;padding:6px 4px;border-radius:6px}
+.link:hover{text-decoration:underline}
+.link .ic{width:16px;height:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--line);background:var(--panel);
+  color:var(--ink);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap}
+.chip:hover{background:var(--hover)}
+kbd,.kbd{font-family:var(--font-mono);font-size:11px;line-height:1;padding:2px 5px;border-radius:4px;border:1px solid var(--line);
+  border-bottom-width:2px;background:var(--panel2);color:var(--muted)}
+.ok{color:var(--green)} .bad{color:var(--red)}
+::selection{background:var(--accent-weak)}
