@@ -1,4 +1,4 @@
-{"sel":0,"box":{"x":-225,"y":-150,"w":450,"h":300},"blob":12342,"raw":"IMAGE-I-<key>-R-<cid>"}
+{"sel":0,"box":{"x":-225,"y":-150,"w":450,"h":300},"blob":true,"raw":"IMAGE-I-<key>-R-<cid>"}
 moved {"x":-225,"y":-150,"w":450,"h":300} resized {"x":-225,"y":-150,"w":450,"h":300}
 tap selects image
 after reload {"n":6,"types":"IMAGE,DRAW,DRAW,DRAW,DRAW,DRAW","rej":0,"box":{"x":-225,"y":-150,"w":450,"h":300}}

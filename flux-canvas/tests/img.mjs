@@ -14,7 +14,7 @@ await p.evaluate(async()=>{ const c=document.createElement('canvas'); c.width=24
   g.fillStyle='#fff'; g.font='bold 200px sans-serif'; g.fillText('PHOTO',700,900);
   const blob=await new Promise(r=>c.toBlob(r,'image/png')); await insertImage(new File([blob],'p.png',{type:'image/png'})); });
 await p.waitForTimeout(500);
-let st=await p.evaluate(()=>{ const r=[...S.records.values()].find(r=>r.type==='IMAGE'); const b=box(r); return {sel:S.sel.size, box:b, blob:S.blobs.get(r.f.R).length, raw:r.raw.split('-X-')[0]} });
+let st=await p.evaluate(()=>{ const r=[...S.records.values()].find(r=>r.type==='IMAGE'); const b=box(r); return {sel:S.sel.size, box:b, blob:S.blobs.get(r.f.R).length>1000, raw:r.raw.split('-X-')[0]} });
 console.log(JSON.stringify(st));
 const B=st.box, sx=x=>(x-(-550))*1, sy=y=>(y-(-375));
 // move: drag from inside image

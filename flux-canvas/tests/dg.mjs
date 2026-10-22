@@ -10,7 +10,7 @@ const errs=[]; p.on('pageerror', e=>errs.push(e.message+' '+(e.stack||'').split(
 await p.goto(BASE + '#dgtest00001'); await p.waitForTimeout(700);
 const W = (t=250)=>p.waitForTimeout(t);
 const sr = () => p.evaluate(()=>document.getElementById('sr').textContent);
-const nodes = () => p.evaluate(()=>S.D.els.filter(e=>e.type==='NODE'&&visible(e)).map(e=>({k:e.ek,t:e.text,p:e.parent?current(e.parent)?.text:null,w:box(e).w,h:box(e).h})));
+const nodes = () => p.evaluate(()=>S.D.els.filter(e=>e.type==='NODE'&&visible(e)).map(e=>({k:e.ek,t:e.text,p:e.parent?current(e.parent)?.text:null,fit:box(e).w===nodeLayout(e.ek,e.text,0,0,e.esize).w,h:box(e).h})));   // fit: sized to its label (pixel widths depend on the fonts installed)
 // 1. N tool → click → type → Tab (child) → type → Ctrl+Enter (sibling) → type → Enter
 await p.evaluate(()=>document.getElementById('c').focus());
 await p.click('#nodeBtn'); await W();
@@ -47,8 +47,8 @@ console.log('dropped', JSON.stringify((await nodes()).filter(n=>n.t==='Dropped')
 const ml = await p.evaluate(()=>{ const n=S.D.els.find(e=>e.type==='NODE'&&visible(e)&&e.text==='Marketing'); const c=center(box(n)); return {...toScreen(c.x,c.y), w:box(n).w} });
 await p.mouse.click(ml.x, ml.y); await p.waitForTimeout(80); await p.mouse.click(ml.x, ml.y); await W();
 await p.keyboard.press('Control+a'); await p.keyboard.type('Marketing & growth team'); await p.keyboard.press('Enter'); await W(400);
-const m2 = await p.evaluate(()=>{ const n=S.D.els.find(e=>e.type==='NODE'&&visible(e)&&e.text.startsWith('Marketing')); return {t:n.text, w:box(n).w, arrowsOk:S.D.els.filter(e=>e.type==='ARROW'&&visible(e)).length, kids:descendants(current(S.D.els.find(x=>x.type==='NODE'&&x.text==='Product launch'&&visible(x)).cid)).length} });
-console.log('edit', JSON.stringify(m2), 'grew', m2.w - ml.w);
+const m2 = await p.evaluate(()=>{ const n=S.D.els.find(e=>e.type==='NODE'&&visible(e)&&e.text.startsWith('Marketing')); return {t:n.text, w:box(n).w, fit:box(n).w===nodeLayout(n.ek,n.text,0,0,n.esize).w, arrowsOk:S.D.els.filter(e=>e.type==='ARROW'&&visible(e)).length, kids:descendants(current(S.D.els.find(x=>x.type==='NODE'&&x.text==='Product launch'&&visible(x)).cid)).length} });
+console.log('edit', JSON.stringify({ ...m2, w: undefined }), 'grew', m2.w > ml.w);
 // 6. move root moves subtree
 const before = await p.evaluate(()=>(S.D.els.filter(e=>e.type==='NODE'&&visible(e)).map(e=>[e.text, Math.round(box(e).x)])));
 await p.evaluate(()=>{ const r=S.D.els.find(x=>x.type==='NODE'&&x.text==='Product launch'&&visible(x)); S.sel=new Set([r.cid]); document.getElementById('c').focus() });
@@ -69,7 +69,7 @@ await p.mouse.move(rh.x,rh.y); await p.mouse.down(); await p.mouse.move(rh.x+80,
 const db2 = await p.evaluate(()=>box(soleNode()));
 await p.mouse.move(rh.x+80,rh.y+40); await p.mouse.down(); await p.mouse.move(rh.x-200, rh.y-100, {steps:5}); await p.mouse.up(); await W(400);
 const db3 = await p.evaluate(()=>box(soleNode()));
-console.log('resize', db2.w-db.w, db2.h-db.h, '| shrink floor', db3.w, db3.h, 'auto', JSON.stringify(await p.evaluate(()=>{ const L=nodeLayout(soleNode().ek, soleNode().text); return [L.w,L.h] })));
+console.log('resize', db2.w-db.w, db2.h-db.h, '| shrink stops at the label size', await p.evaluate(([w,h])=>{ const L=nodeLayout(soleNode().ek, soleNode().text); return w===L.w && h===L.h }, [db3.w, db3.h]));
 await p.screenshot({path:OUT+'/dg1.png'});
 // 10. templates
 for (const t of ['mindmap','flow','mobile','web']) { await p.evaluate(t=>{ S.view.x += 1400; }, t); await p.evaluate(t=>insertTemplate(t), t); await W(600); }
@@ -84,6 +84,8 @@ fs.writeFileSync(OUT+'/out.svg', svg);
 const p2 = await ctx.newPage(); await p2.goto(BASE + '#dgtest00001'); await p2.waitForTimeout(1200);
 console.log('tab2 nodes', await p2.evaluate(()=>S.D.els.filter(e=>e.type==='NODE'&&visible(e)).length), 'rej', await p2.evaluate(()=>S.rejected));
 await p.addScriptTag({content: axe});
+// a toast fading in or out reads as low contrast mid-way: check once it has settled
+await p.waitForFunction(() => { const t = document.getElementById('toast'), o = t && getComputedStyle(t).opacity; return !t || o === '1' || o === '0'; }, null, { timeout: 3000 }).catch(() => {});
 console.log('axe', JSON.stringify(await p.evaluate(async()=> (await axe.run(document,{resultTypes:['violations']})).violations.map(v=>v.id+': '+v.nodes.slice(0,2).map(n=>n.target.join(' ')).join(' | ')))));
 console.log('errors', errs);
 await b.close();
